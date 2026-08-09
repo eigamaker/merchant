@@ -114,6 +114,8 @@ export interface GameState {
   smokeBombs: number;
   location: Location;
   townPos: Vec;
+  /** 固定町マップの配置版。旧セーブを安全な初期位置へ移行するために使う。 */
+  townMapRevision: number;
   inventory: ItemInstance[];
   store: ItemInstance[];
   archive: ItemInstance[];

@@ -18,4 +18,5 @@ export const ASSET_MANIFEST = {
   dungeonWalls: { textureKey: "tile.dungeon-wall", path: "assets/tiles/dungeon_walls.png", frameWidth: 24, frameHeight: 24 },
   townTiles: { textureKey: "tile.town", path: "assets/tiles/town_terrain.png", frameWidth: 24, frameHeight: 24 },
   townBuildings: { textureKey: "tile.town-building", path: "assets/tiles/town_buildings.png", frameWidth: 24, frameHeight: 24 },
+  townObjects: { textureKey: "tile.town-object", path: "assets/tiles/town_objects.png", frameWidth: 24, frameHeight: 24 },
 } as const;

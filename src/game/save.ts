@@ -1,4 +1,5 @@
 import type { GameState } from "./types";
+import { safeTownPosition, TOWN_SPAWN } from "./townMap";
 
 export type SaveSlot = "autosave" | "manual-1" | "manual-2" | "manual-3";
 
@@ -20,6 +21,13 @@ function migrate(state: GameState): GameState {
   // 旧セーブはタイル座標、現在は町だけピクセル座標で保存する。
   if (state.townPos.x <= 21 && state.townPos.y <= 12) {
     state.townPos = { x: state.townPos.x * 24 + 12, y: state.townPos.y * 24 + 12 };
+  }
+  const legacy = state as GameState & { townMapRevision?: number };
+  if ((legacy.townMapRevision ?? 0) < 2) {
+    state.townPos = { ...TOWN_SPAWN };
+    legacy.townMapRevision = 2;
+  } else {
+    state.townPos = safeTownPosition(state.townPos);
   }
   return state;
 }

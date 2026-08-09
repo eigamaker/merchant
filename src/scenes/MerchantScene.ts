@@ -22,6 +22,21 @@ import {
   useSmokeBomb,
 } from "../game/engine";
 import { SaveRepository, type SaveSlot } from "../game/save";
+import {
+  moveTownPosition,
+  TOWN_BUILDINGS,
+  TOWN_HEIGHT,
+  TOWN_POINTS,
+  TOWN_PLOTS,
+  TOWN_TILE,
+  TOWN_WIDTH,
+  TOWN_WORLD_HEIGHT,
+  TOWN_WORLD_WIDTH,
+  townSurfaceAt,
+  type TownBuilding,
+  type TownPointOfInterest,
+  type TownPlot,
+} from "../game/townMap";
 import type { Customer, GameState, ItemInstance, MenuChoice, Vec } from "../game/types";
 
 const TILE = 24;
@@ -38,33 +53,14 @@ type Modal = {
   index: number;
 };
 
-type PointOfInterest = {
-  id: string;
-  name: string;
-  pos: Vec;
-  kind: "shop" | "guild" | "tavern" | "entrance" | "customer";
-  customerId?: string;
-  color: number;
-};
-
-const POIS: PointOfInterest[] = [
-  { id: "shop", name: "珍品店", pos: { x: 5, y: 5 }, kind: "shop", color: 0xdca65a },
-  { id: "tavern", name: "酒場", pos: { x: 10, y: 2 }, kind: "tavern", color: 0xc87762 },
-  { id: "guild", name: "冒険者ギルド", pos: { x: 16, y: 3 }, kind: "guild", color: 0x73a4c2 },
-  { id: "entrance", name: "ダンジョン入口", pos: { x: 2, y: 9 }, kind: "entrance", color: 0x687890 },
-  { id: "duke", name: "ローデン公爵", pos: { x: 14, y: 9 }, kind: "customer", customerId: "duke", color: 0xb9a5eb },
-  { id: "scholar", name: "エリス研究室", pos: { x: 18, y: 8 }, kind: "customer", customerId: "scholar", color: 0xf0cf83 },
-  { id: "mage", name: "ネヴァ魔術店", pos: { x: 7, y: 10 }, kind: "customer", customerId: "mage", color: 0x92b8ea },
-  { id: "jeweler", name: "サフィ宝石商", pos: { x: 11, y: 10 }, kind: "customer", customerId: "jeweler", color: 0xe58eb1 },
-  { id: "merchant", name: "ミラ道具店", pos: { x: 2, y: 5 }, kind: "customer", customerId: "merchant", color: 0x8fc6a5 },
-];
-
 function same(a: Vec, b: Vec): boolean {
   return a.x === b.x && a.y === b.y;
 }
 
-function distance(a: Vec, b: Vec): number {
-  return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
+function distanceSquared(a: Vec, b: Vec): number {
+  const dx = a.x - b.x;
+  const dy = a.y - b.y;
+  return dx * dx + dy * dy;
 }
 
 export class MerchantScene extends Phaser.Scene {
@@ -74,6 +70,8 @@ export class MerchantScene extends Phaser.Scene {
   private readonly saves = new SaveRepository();
   private gameStarted = false;
   private lastAutoSaveAt = Number.NEGATIVE_INFINITY;
+  private townWorld?: Phaser.GameObjects.Container;
+  private townPlayer?: Phaser.GameObjects.Image;
 
   constructor() {
     super("merchant");
@@ -165,23 +163,31 @@ export class MerchantScene extends Phaser.Scene {
     if (horizontal !== 0 || vertical !== 0) {
       const length = Math.hypot(horizontal, vertical);
       const speed = 126;
-      const radius = 10;
-      const next = {
-        x: Phaser.Math.Clamp(this.state.townPos.x + (horizontal / length) * speed * (delta / 1000), radius, MAP_W - radius),
-        y: Phaser.Math.Clamp(this.state.townPos.y + (vertical / length) * speed * (delta / 1000), radius, MAP_H - radius),
-      };
+      const next = moveTownPosition(this.state.townPos, {
+        x: (horizontal / length) * speed * (delta / 1000),
+        y: (vertical / length) * speed * (delta / 1000),
+      });
+      moved = next.x !== this.state.townPos.x || next.y !== this.state.townPos.y;
       this.state.townPos = next;
-      moved = true;
     }
-    if (this.just("enter") || this.just("space")) this.interactTown();
-    if (this.just("i")) this.openInventory();
-    if (this.just("l")) this.openLedger();
-    if (this.just("q")) this.openQuestBoard();
-    if (this.just("h")) this.openHelp();
+    const interact = this.just("enter") || this.just("space");
+    const inventory = this.just("i");
+    const ledger = this.just("l");
+    const quest = this.just("q");
+    const help = this.just("h");
+    if (interact) this.interactTown();
+    if (inventory) this.openInventory();
+    if (ledger) this.openLedger();
+    if (quest) this.openQuestBoard();
+    if (help) this.openHelp();
     if (this.just("f1")) void this.saveManual("manual-1");
     if (this.just("f2")) void this.saveManual("manual-2");
     if (this.just("f3")) void this.saveManual("manual-3");
-    if (moved || this.just("enter") || this.just("space") || this.just("i") || this.just("l") || this.just("q") || this.just("h")) this.render();
+    if (moved) {
+      this.updateTownPresentation();
+      this.saveAuto();
+    }
+    if (interact || inventory || ledger || quest || help) this.render();
   }
 
   private updateDungeon(): void {
@@ -208,7 +214,7 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private interactTown(): void {
-    const poi = POIS.find((entry) => distance(this.poiPosition(entry), this.state.townPos) <= 30);
+    const poi = TOWN_POINTS.find((entry) => distanceSquared(this.poiPosition(entry), this.state.townPos) <= 30 * 30);
     if (!poi) {
       this.state.message = "近くに話せる相手や施設はない。";
       return;
@@ -247,7 +253,7 @@ export class MerchantScene extends Phaser.Scene {
     this.state.message = "何も見つからない。";
   }
 
-  private poiPosition(poi: PointOfInterest): Vec {
+  private poiPosition(poi: TownPointOfInterest): Vec {
     return { x: poi.pos.x * TILE + TILE / 2, y: poi.pos.y * TILE + TILE / 2 };
   }
 
@@ -455,29 +461,54 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private renderTown(): void {
-    this.add.rectangle(MAP_W / 2, MAP_H / 2, MAP_W, MAP_H, 0x31514b);
-    for (let y = 0; y < GRID_H; y += 1) {
-      for (let x = 0; x < GRID_W; x += 1) {
-        const road = y === 6 || x === 9 || (x > 2 && x < 19 && y === 9);
-        this.add.rectangle(x * TILE + TILE / 2, y * TILE + TILE / 2, TILE - 1, TILE - 1, road ? 0x8c7a5b : 0x416754);
-      }
+    const world = this.add.container(0, 0);
+    const ground = this.add.graphics();
+    const front = this.add.graphics();
+    world.add(ground);
+    this.drawTownGround(ground);
+    this.drawTownPlots(ground, TOWN_PLOTS);
+    for (const building of TOWN_BUILDINGS) this.drawTownBuilding(ground, building);
+    this.drawTownLandmarks(ground);
+    const player = this.add.image(this.state.townPos.x, this.state.townPos.y, ASSET_MANIFEST.player.textureKey);
+    world.add(player);
+    this.townPlayer = player;
+    world.add(front);
+    for (const building of TOWN_BUILDINGS) this.drawTownRoofFront(front, building);
+    this.drawTownNpcs(front);
+    for (const poi of TOWN_POINTS.filter((entry) => entry.kind !== "customer")) {
+      const position = this.poiPosition(poi);
+      const label = this.add.text(position.x, position.y - 12, poi.name, { fontSize: "6px", color: "#fff2d7", stroke: "#251d25", strokeThickness: 2 }).setOrigin(0.5);
+      world.add(label);
     }
-    for (const poi of POIS) {
-      this.add.rectangle(poi.pos.x * TILE + TILE / 2, poi.pos.y * TILE + TILE / 2, 22, 22, poi.color, poi.kind === "entrance" ? 0.65 : 1).setStrokeStyle(1, 0x251d25);
-      this.add.text(poi.pos.x * TILE + 12, poi.pos.y * TILE - 10, poi.name, { fontSize: "6px", color: "#fff2d7", stroke: "#251d25", strokeThickness: 2 }).setOrigin(0.5);
-    }
-    this.add.image(this.state.townPos.x, this.state.townPos.y, ASSET_MANIFEST.player.textureKey);
+    this.townWorld = world;
+    this.updateTownPresentation(true);
     this.add.text(8, 8, `灰灯町 — ${this.state.day}日目`, { fontSize: "11px", color: "#fff2d7", stroke: "#1b1620", strokeThickness: 3 });
   }
 
   private renderDungeon(): void {
     const run = this.state.run;
     if (!run) return;
+    const terrain = this.add.graphics();
     for (let y = 0; y < run.map.height; y += 1) {
       for (let x = 0; x < run.map.width; x += 1) {
         const wall = run.map.tiles[y]![x] === 1;
-        this.add.rectangle(x * TILE + TILE / 2, y * TILE + TILE / 2, TILE - 1, TILE - 1, wall ? 0x342c3a : 0x6d5e52)
-          .setStrokeStyle(1, wall ? 0x2a2330 : 0x807261);
+        const px = x * TILE;
+        const py = y * TILE;
+        const noise = (run.seed * 31 + x * 17 + y * 43) >>> 0;
+        if (!wall) {
+          terrain.fillStyle(noise % 3 === 0 ? 0x655c55 : 0x71655a, 1).fillRect(px, py, TILE, TILE);
+          terrain.fillStyle(0x4d4745, 0.45).fillRect(px + 4 + (noise % 7), py + 5 + ((noise >> 3) % 8), 2, 1);
+          if (noise % 11 === 0) terrain.fillStyle(0x88906e, 0.7).fillRect(px + 15, py + 17, 3, 2);
+        } else {
+          terrain.fillStyle(0x332d38, 1).fillRect(px, py, TILE, TILE);
+          terrain.fillStyle(noise % 2 === 0 ? 0x4d4551 : 0x443e49, 1).fillRect(px + 2, py + 2, TILE - 4, TILE - 5);
+          terrain.fillStyle(0x27222d, 1).fillRect(px, py + 18, TILE, 6);
+          if (run.map.tiles[y + 1]?.[x] === 0) {
+            terrain.fillStyle(0x211d27, 0.65).fillRect(px, py + 20, TILE, 4);
+            terrain.lineStyle(1, 0x786b75, 0.75).lineBetween(px + 2, py + 18, px + TILE - 3, py + 18);
+          }
+          if (noise % 5 === 0) terrain.lineStyle(1, 0x74636d, 0.6).lineBetween(px + 8, py + 5, px + 11, py + 13);
+        }
       }
     }
     this.add.text(run.map.stairs.x * TILE + 12, run.map.stairs.y * TILE + 11, "▼", { fontSize: "15px", color: "#f6e59c" }).setOrigin(0.5);
@@ -490,6 +521,146 @@ export class MerchantScene extends Phaser.Scene {
     for (const enemy of run.enemies) this.add.image(enemy.pos.x * TILE + 12, enemy.pos.y * TILE + 12, ASSET_MANIFEST.enemy.textureKey);
     this.add.image(run.player.x * TILE + 12, run.player.y * TILE + 12, ASSET_MANIFEST.player.textureKey);
     this.add.text(8, 8, `深層ダンジョン 地下${run.floor}階 / ${run.turn}手`, { fontSize: "11px", color: "#fff2d7", stroke: "#1b1620", strokeThickness: 3 });
+  }
+
+  private updateTownPresentation(immediate = false): void {
+    if (!this.townWorld || !this.townPlayer) return;
+    this.townPlayer.setPosition(this.state.townPos.x, this.state.townPos.y);
+    const targetX = Phaser.Math.Clamp(this.state.townPos.x - MAP_W / 2, 0, TOWN_WORLD_WIDTH - MAP_W);
+    const targetY = Phaser.Math.Clamp(this.state.townPos.y - MAP_H / 2, 0, TOWN_WORLD_HEIGHT - MAP_H);
+    const currentX = -this.townWorld.x;
+    const currentY = -this.townWorld.y;
+    const nextX = immediate ? targetX : Phaser.Math.Linear(currentX, targetX, 0.18);
+    const nextY = immediate ? targetY : Phaser.Math.Linear(currentY, targetY, 0.18);
+    this.townWorld.setPosition(-Math.round(nextX), -Math.round(nextY));
+  }
+
+  private drawTownGround(graphics: Phaser.GameObjects.Graphics): void {
+    for (let y = 0; y < TOWN_HEIGHT; y += 1) {
+      for (let x = 0; x < TOWN_WIDTH; x += 1) {
+        const px = x * TOWN_TILE;
+        const py = y * TOWN_TILE;
+        const surface = townSurfaceAt(x, y);
+        const seed = (x * 73856093 ^ y * 19349663) >>> 0;
+        const color = surface === "grass" ? (seed % 3 === 0 ? 0x496b45 : 0x526f49)
+          : surface === "road" ? 0x9b8561
+            : surface === "plaza" ? 0x8a8171
+              : surface === "dock" ? 0x805b3e : 0x26616a;
+        graphics.fillStyle(color, 1).fillRect(px, py, TOWN_TILE, TOWN_TILE);
+        if (surface === "grass") {
+          graphics.fillStyle(seed % 2 ? 0x6f8b58 : 0x3d5d3e, 0.7).fillRect(px + 3 + (seed % 11), py + 4 + ((seed >> 4) % 13), 2, 2);
+          if (seed % 9 === 0) graphics.fillStyle(0xd5bc76, 0.8).fillRect(px + 16, py + 7, 1, 1);
+        } else if (surface === "road" || surface === "plaza") {
+          graphics.fillStyle(surface === "road" ? 0xc0a97a : 0xb3aa97, 0.42).fillRect(px + 3 + (seed % 10), py + 4 + ((seed >> 3) % 12), 3, 2);
+        } else if (surface === "water") {
+          graphics.lineStyle(1, 0x63a4a5, 0.65).lineBetween(px + 3, py + 7 + (seed % 8), px + 14, py + 7 + (seed % 8));
+        } else {
+          graphics.fillStyle(0xae8055, 0.8).fillRect(px + 2, py + 3, TOWN_TILE - 4, 3);
+          graphics.lineStyle(1, 0x4e382d, 0.75).lineBetween(px + 3, py + 12, px + TOWN_TILE - 3, py + 12);
+        }
+      }
+    }
+  }
+
+  private drawTownPlots(graphics: Phaser.GameObjects.Graphics, plots: TownPlot[]): void {
+    for (const plot of plots) {
+      const px = plot.x * TOWN_TILE;
+      const py = plot.y * TOWN_TILE;
+      if (plot.kind === "farm") {
+        graphics.fillStyle(0x765d3b, 0.8).fillRect(px + TOWN_TILE, py + TOWN_TILE, (plot.width - 2) * TOWN_TILE, (plot.height - 2) * TOWN_TILE);
+        for (let y = plot.y + 1; y < plot.y + plot.height - 1; y += 2) for (let x = plot.x + 1; x < plot.x + plot.width - 1; x += 2) {
+          graphics.fillStyle(0x6b944d, 1).fillCircle(x * TOWN_TILE + 12, y * TOWN_TILE + 13, 4);
+          graphics.fillStyle(0xb6d46e, 0.9).fillRect(x * TOWN_TILE + 11, y * TOWN_TILE + 7, 2, 5);
+        }
+      } else if (plot.kind === "pen") {
+        graphics.fillStyle(0x867254, 0.65).fillRect(px + TOWN_TILE, py + TOWN_TILE, (plot.width - 2) * TOWN_TILE, (plot.height - 2) * TOWN_TILE);
+        graphics.fillStyle(0xd1b686, 1).fillCircle(px + 86, py + 76, 6).fillCircle(px + 172, py + 96, 5);
+      } else {
+        graphics.fillStyle(0x6d7a50, 0.45).fillRect(px + TOWN_TILE, py + TOWN_TILE, (plot.width - 2) * TOWN_TILE, (plot.height - 2) * TOWN_TILE);
+      }
+      this.drawFence(graphics, plot);
+    }
+  }
+
+  private drawFence(graphics: Phaser.GameObjects.Graphics, plot: TownPlot): void {
+    const gates = new Set(plot.gates.map((gate) => `${gate.x},${gate.y}`));
+    graphics.lineStyle(2, 0x4d3529, 1);
+    for (let x = plot.x; x < plot.x + plot.width; x += 1) {
+      if (!gates.has(`${x},${plot.y}`)) graphics.lineBetween(x * TOWN_TILE, plot.y * TOWN_TILE + 4, (x + 1) * TOWN_TILE, plot.y * TOWN_TILE + 4);
+      const bottom = plot.y + plot.height - 1;
+      if (!gates.has(`${x},${bottom}`)) graphics.lineBetween(x * TOWN_TILE, (bottom + 1) * TOWN_TILE - 4, (x + 1) * TOWN_TILE, (bottom + 1) * TOWN_TILE - 4);
+    }
+    for (let y = plot.y; y < plot.y + plot.height; y += 1) {
+      if (!gates.has(`${plot.x},${y}`)) graphics.lineBetween(plot.x * TOWN_TILE + 4, y * TOWN_TILE, plot.x * TOWN_TILE + 4, (y + 1) * TOWN_TILE);
+      const right = plot.x + plot.width - 1;
+      if (!gates.has(`${right},${y}`)) graphics.lineBetween((right + 1) * TOWN_TILE - 4, y * TOWN_TILE, (right + 1) * TOWN_TILE - 4, (y + 1) * TOWN_TILE);
+    }
+    graphics.fillStyle(0x8e6542, 1);
+    for (let x = plot.x; x <= plot.x + plot.width; x += 1) {
+      graphics.fillRect(x * TOWN_TILE + 2, plot.y * TOWN_TILE, 4, 7);
+      graphics.fillRect(x * TOWN_TILE + 2, (plot.y + plot.height) * TOWN_TILE - 7, 4, 7);
+    }
+  }
+
+  private drawTownBuilding(graphics: Phaser.GameObjects.Graphics, building: TownBuilding): void {
+    const px = building.x * TOWN_TILE;
+    const py = building.y * TOWN_TILE;
+    const width = building.width * TOWN_TILE;
+    const height = building.height * TOWN_TILE;
+    graphics.fillStyle(0x1e2021, 0.28).fillRect(px + 5, py + 8, width, height);
+    graphics.fillStyle(building.wall, 1).fillRect(px + 3, py + 18, width - 6, height - 21);
+    graphics.fillStyle(0x573e32, 1);
+    for (let x = px + 8; x < px + width - 5; x += 18) graphics.fillRect(x, py + 18, 3, height - 21);
+    graphics.fillStyle(building.roof, 1).fillTriangle(px, py + 24, px + width / 2, py - 8, px + width, py + 24);
+    graphics.fillStyle(0xd1b173, 0.5);
+    for (let offset = 6; offset < width - 4; offset += 10) graphics.fillRect(px + offset, py + 8 + Math.abs(width / 2 - offset) * 0.2, 7, 2);
+    const doorX = building.entrance.x * TOWN_TILE + 5;
+    graphics.fillStyle(0x453126, 1).fillRect(doorX, py + height - 14, 14, 14);
+    graphics.fillStyle(building.accent, 1).fillRect(doorX + 10, py + height - 7, 2, 2);
+    for (let window = px + 18; window < px + width - 18; window += 28) {
+      graphics.fillStyle(0x3d5b68, 1).fillRect(window, py + height - 20, 8, 7);
+      graphics.lineStyle(1, 0xe9d59d, 0.75).strokeRect(window, py + height - 20, 8, 7);
+    }
+    graphics.fillStyle(building.accent, 1).fillRect(px + width / 2 - 7, py + height - 28, 14, 6);
+  }
+
+  private drawTownRoofFront(graphics: Phaser.GameObjects.Graphics, building: TownBuilding): void {
+    const px = building.x * TOWN_TILE;
+    const py = building.y * TOWN_TILE;
+    const width = building.width * TOWN_TILE;
+    const bottom = py + 24;
+    graphics.fillStyle(0x201c25, 0.32).fillRect(px + 2, bottom - 2, width - 4, 5);
+    graphics.lineStyle(2, 0x32272a, 0.9).lineBetween(px + 2, bottom, px + width - 2, bottom);
+  }
+
+  private drawTownLandmarks(graphics: Phaser.GameObjects.Graphics): void {
+    const trees: Array<[number, number]> = [[2, 3], [4, 3], [14, 4], [31, 3], [45, 4], [2, 27], [12, 33], [46, 25], [30, 30], [15, 2], [45, 30], [28, 34]];
+    for (const [x, y] of trees) {
+      const px = x * TOWN_TILE + 12;
+      const py = y * TOWN_TILE + 13;
+      graphics.fillStyle(0x2c4539, 1).fillCircle(px + 2, py + 4, 11);
+      graphics.fillStyle(0x416742, 1).fillCircle(px - 3, py, 10).fillCircle(px + 6, py - 3, 9);
+      graphics.fillStyle(0x6f8c54, 0.75).fillCircle(px - 5, py - 5, 4);
+      graphics.fillStyle(0x5c4030, 1).fillRect(px - 2, py + 7, 5, 11);
+    }
+    // 市場のテントと井戸は、単一セルの施設ではなく広場の景観小物として扱う。
+    graphics.fillStyle(0x6f7378, 1).fillCircle(24 * TOWN_TILE + 12, 18 * TOWN_TILE + 12, 12);
+    graphics.lineStyle(2, 0xc1c7c7, 0.8).strokeCircle(24 * TOWN_TILE + 12, 18 * TOWN_TILE + 12, 8);
+    for (const [x, color] of [[15, 0xbf6456], [30, 0x507bb0]] as Array<[number, number]>) {
+      graphics.fillStyle(color, 1).fillTriangle(x * TOWN_TILE, 20 * TOWN_TILE, x * TOWN_TILE + 24, 20 * TOWN_TILE, x * TOWN_TILE + 12, 20 * TOWN_TILE - 15);
+      graphics.fillStyle(0x6e4b34, 1).fillRect(x * TOWN_TILE + 3, 20 * TOWN_TILE, 18, 12);
+    }
+  }
+
+  private drawTownNpcs(graphics: Phaser.GameObjects.Graphics): void {
+    for (const poi of TOWN_POINTS) {
+      const position = this.poiPosition(poi);
+      const y = position.y + (poi.kind === "customer" ? 0 : 14);
+      graphics.fillStyle(0x261f28, 0.5).fillEllipse(position.x, y + 9, 12, 4);
+      graphics.fillStyle(poi.color, 1).fillRect(position.x - 4, y - 3, 8, 10);
+      graphics.fillStyle(0xf0c8a2, 1).fillCircle(position.x, y - 7, 4);
+      graphics.fillStyle(0x2d2630, 1).fillRect(position.x - 4, y - 11, 8, 4);
+    }
   }
 
   private renderHud(): void {

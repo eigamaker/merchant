@@ -1,5 +1,6 @@
 import { CUSTOMERS, INITIAL_QUESTS, ITEM_DEFINITIONS } from "./content";
 import { Rng } from "./rng";
+import { TOWN_SPAWN } from "./townMap";
 import type {
   Customer,
   DungeonMap,
@@ -38,7 +39,8 @@ export function createNewGame(): GameState {
     returnStones: 1,
     smokeBombs: 2,
     location: "town",
-    townPos: { x: 228, y: 156 },
+    townPos: { ...TOWN_SPAWN },
+    townMapRevision: 2,
     inventory: [],
     store: [],
     archive: [],
