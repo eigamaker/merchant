@@ -68,3 +68,23 @@ export function buildingKitFrame(kit: BuildingKitId, slot: BuildingKitSlotId): F
   const offset = BUILDING_KIT_SLOTS[slot];
   return frame(16, origin.x + offset.x, origin.y + offset.y);
 }
+
+/**
+ * 8×3セル施設用。各エントリは連続した192×72pxの建物を、左・右の4×3セルへ分けたもの。
+ * 左右を別々に生成して継ぎ目を合わせるのではなく、必ず1枚の連続絵から切り出す。
+ */
+export const WIDE_BUILDING_KIT_ORIGINS = {
+  warmInn: { left: frame(16, 0, 0), right: frame(16, 4, 0) },
+  stonePublic: { left: frame(16, 8, 0), right: frame(16, 12, 0) },
+  nobleHouse: { left: frame(16, 0, 3), right: frame(16, 4, 3) },
+  dungeonEntrance: { left: frame(16, 8, 3), right: frame(16, 12, 3) },
+} as const;
+
+export type WideBuildingKitId = keyof typeof WIDE_BUILDING_KIT_ORIGINS;
+export type WideBuildingSide = "left" | "right";
+
+export function wideBuildingKitFrame(kit: WideBuildingKitId, side: WideBuildingSide, slot: BuildingKitSlotId): FrameAddress {
+  const origin = WIDE_BUILDING_KIT_ORIGINS[kit][side];
+  const offset = BUILDING_KIT_SLOTS[slot];
+  return frame(16, origin.x + offset.x, origin.y + offset.y);
+}
