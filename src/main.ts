@@ -1,4 +1,5 @@
 import "./style.css";
+import "@fontsource-variable/noto-sans-jp";
 import Phaser from "phaser";
 import { MerchantScene } from "./scenes/MerchantScene";
 
@@ -6,6 +7,8 @@ const shell = document.querySelector<HTMLElement>("#app");
 if (!shell) throw new Error("#app が見つかりません");
 
 shell.innerHTML = '<div class="game-shell"><div id="game"></div></div>';
+
+await document.fonts.load('12px "Noto Sans JP Variable"');
 
 const game = new Phaser.Game({
   type: Phaser.AUTO,

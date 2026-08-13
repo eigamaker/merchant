@@ -1,4 +1,4 @@
-import type { Customer, ItemDefinition, ItemCategory, Quest } from "./types";
+import type { Customer, GuardDefinition, ItemDefinition, ItemCategory, Quest } from "./types";
 
 const specs: Array<[string, ItemCategory, string, string, string, number, 1 | 2 | 3, string, boolean?, string?]> = [
   ["rusted-sword", "weapon", "古い剣", "古い騎士剣らしい", "王国軍旧式剣", 260, 2, "刃に消えない血痕がある。", false, "duke"],
@@ -58,20 +58,45 @@ export const CUSTOMERS: Customer[] = [
   { id: "jeweler", name: "サフィ", title: "宝石収集家", interests: ["gem", "art"], budget: 4600, relation: 0, knowledge: ["gem", "art"], color: 0xe58eb1 },
 ];
 
+export const GUARD_DEFINITIONS: Record<string, GuardDefinition> = {
+  rolf: {
+    id: "rolf",
+    name: "ロルフ",
+    title: "新人剣士",
+    baseFee: 100,
+    baseMaxHp: 8,
+    damage: 2,
+    trait: "standard",
+    textureKey: "actor.guard.rolf",
+    description: "堅実に主人を守る標準型。落とした剣の持ち主。",
+  },
+  mina: {
+    id: "mina",
+    name: "ミナ",
+    title: "斥候",
+    baseFee: 140,
+    baseMaxHp: 6,
+    damage: 1,
+    trait: "scout",
+    textureKey: "actor.guard.mina",
+    description: "周囲3マスの罠を見抜く探索型。",
+  },
+};
+
 export const INITIAL_QUESTS: Quest[] = [
-  { id: "herb", title: "銀露草の回収", description: "入口付近で薬草を見つけて持ち帰る。", status: "active", targetItemId: "herb", targetFloor: 1 },
-  { id: "lost-sword", title: "落とした剣", description: "冒険者の落とし物を探す。", status: "available", targetItemId: "rusted-sword", targetFloor: 1 },
-  { id: "missing", title: "帰らない冒険者", description: "地下で遺品を探す。", status: "available", targetItemId: "adventurer-badge", targetFloor: 2 },
-  { id: "old-ring", title: "古びた指輪", description: "誰に見せるべきか考える。", status: "available", targetItemId: "old-ring", targetFloor: 2 },
-  { id: "black-sword", title: "黒い長剣の噂", description: "地下深くで、光を吸うような黒い剣が見つかったらしい。", status: "available", targetItemId: "black-sword", targetFloor: 3 },
-  { id: "black-tomb", title: "黒騎士の墓所", description: "呪いの手掛かりを、地下の墓所で探す。", status: "available", targetFloor: 3 },
-  { id: "grimoire", title: "失われた魔導書", description: "星図のある紙片を探す。", status: "available", targetItemId: "torn-grimoire", targetFloor: 3 },
-  { id: "statue", title: "門番像の調査", description: "片目の赤い石像を探す。", status: "available", targetItemId: "stone-statue", targetFloor: 4 },
-  { id: "jewel", title: "深海の涙", description: "青い宝石の出所を知りたい客がいる。", status: "available", targetItemId: "blue-gem", targetFloor: 4 },
-  { id: "delivery", title: "地下の配達", description: "冒険者へ薬草を届ける。", status: "available", targetFloor: 2 },
-  { id: "compass", title: "迷宮測量士の羅針盤", description: "北を指さない羅針盤を探す。", status: "available", targetItemId: "brass-compass", targetFloor: 5 },
-  { id: "silver-wolf", title: "銀狼の剣", description: "公爵が探す儀礼剣の噂を追う。", status: "available", targetItemId: "silver-wolf", targetFloor: 5 },
-  { id: "mask", title: "砂漠王の葬送面", description: "古代の仮面を探す。", status: "available", targetItemId: "bronze-mask", targetFloor: 6 },
-  { id: "crown", title: "潮王女の珊瑚冠", description: "海の伝承に残る冠を探す。", status: "available", targetItemId: "coral-crown", targetFloor: 7 },
-  { id: "deep-map", title: "深層地図の断片", description: "最深部への道を示す紙片を集める。", status: "available", targetItemId: "codex-leaf", targetFloor: 8 },
+  { id: "herb", title: "銀露草の回収", description: "入口付近で薬草を見つけ、ギルドへ報告する。", status: "active", targetItemId: "herb", targetFloor: 1, reward: 80, objective: { kind: "collect", itemId: "herb", floor: 1 } },
+  { id: "lost-sword", title: "落とした剣", description: "ロルフが地下1階で落とした剣を探す。", status: "locked", targetItemId: "rusted-sword", targetFloor: 1, reward: 120, objective: { kind: "collect", itemId: "rusted-sword", floor: 1 } },
+  { id: "missing", title: "帰らない冒険者", description: "地下2階でアロンの行方と遺品を調べる。", status: "locked", targetItemId: "adventurer-badge", targetFloor: 2, reward: 200, objective: { kind: "inspectBody", bodyId: "aron", floor: 2 } },
+  { id: "old-ring", title: "古びた指輪", description: "指輪を学者、宝石商、公爵に見せ、扱いを決める。", status: "locked", targetItemId: "old-ring", targetFloor: 2, objective: { kind: "consult", itemId: "old-ring", customerIds: ["scholar", "jeweler", "duke"] } },
+  { id: "black-sword", title: "黒い長剣の噂", description: "地下深くで、光を吸うような黒い剣が見つかったらしい。", status: "locked", targetItemId: "black-sword", targetFloor: 3, objective: { kind: "collect", itemId: "black-sword", floor: 3 } },
+  { id: "black-tomb", title: "黒騎士の墓所", description: "呪いの手掛かりを、地下の墓所で探す。", status: "locked", targetFloor: 3, objective: { kind: "story" } },
+  { id: "grimoire", title: "失われた魔導書", description: "星図のある紙片を探す。", status: "locked", targetItemId: "torn-grimoire", targetFloor: 3, objective: { kind: "collect", itemId: "torn-grimoire", floor: 3 } },
+  { id: "statue", title: "門番像の調査", description: "片目の赤い石像を探す。", status: "locked", targetItemId: "stone-statue", targetFloor: 4, objective: { kind: "collect", itemId: "stone-statue", floor: 4 } },
+  { id: "jewel", title: "深海の涙", description: "青い宝石の出所を知りたい客がいる。", status: "locked", targetItemId: "blue-gem", targetFloor: 4, objective: { kind: "collect", itemId: "blue-gem", floor: 4 } },
+  { id: "delivery", title: "地下の配達", description: "冒険者へ薬草を届ける。", status: "locked", targetFloor: 2, objective: { kind: "story" } },
+  { id: "compass", title: "迷宮測量士の羅針盤", description: "北を指さない羅針盤を探す。", status: "locked", targetItemId: "brass-compass", targetFloor: 5, objective: { kind: "collect", itemId: "brass-compass", floor: 5 } },
+  { id: "silver-wolf", title: "銀狼の剣", description: "公爵が探す儀礼剣の噂を追う。", status: "locked", targetItemId: "silver-wolf", targetFloor: 5, objective: { kind: "collect", itemId: "silver-wolf", floor: 5 } },
+  { id: "mask", title: "砂漠王の葬送面", description: "古代の仮面を探す。", status: "locked", targetItemId: "bronze-mask", targetFloor: 6, objective: { kind: "collect", itemId: "bronze-mask", floor: 6 } },
+  { id: "crown", title: "潮王女の珊瑚冠", description: "海の伝承に残る冠を探す。", status: "locked", targetItemId: "coral-crown", targetFloor: 7, objective: { kind: "collect", itemId: "coral-crown", floor: 7 } },
+  { id: "deep-map", title: "深層地図の断片", description: "最深部への道を示す紙片を集める。", status: "locked", targetItemId: "codex-leaf", targetFloor: 8, objective: { kind: "collect", itemId: "codex-leaf", floor: 8 } },
 ];

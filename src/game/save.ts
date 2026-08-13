@@ -1,4 +1,5 @@
-import type { GameState } from "./types";
+import { GUARD_DEFINITIONS, INITIAL_QUESTS } from "./content";
+import type { DungeonBody, DungeonChest, Enemy, GameState, ItemInstance, Quest, Vec } from "./types";
 import { safeTownPosition, TOWN_SPAWN } from "./townMap";
 
 export type SaveSlot = "autosave" | "manual-1" | "manual-2" | "manual-3";
@@ -6,29 +7,138 @@ export type SaveSlot = "autosave" | "manual-1" | "manual-2" | "manual-3";
 interface StoredSave {
   slot: SaveSlot;
   savedAt: string;
-  state: GameState;
+  state: GameState | LegacyGameState;
 }
+
+type LegacyGameState = Omit<GameState, "version" | "guildReputation" | "guards" | "story" | "quests" | "run"> & {
+  version: 1;
+  quests: Array<Omit<Quest, "status"> & { status: "available" | "active" | "complete" }>;
+  story: { blackSword: GameState["story"]["blackSword"] };
+  run?: Omit<NonNullable<GameState["run"]>, "chests" | "bodies" | "guard" | "shoveCooldown" | "highestFloor"> & {
+    chests: Vec[];
+    bodies: Vec[];
+    enemies: Array<Omit<Enemy, "staggerTurns">>;
+  };
+};
 
 const DATABASE_NAME = "dungeon-curio-merchant";
 const STORE_NAME = "campaigns";
 
-function migrate(state: GameState): GameState {
+function migrationItem(state: LegacyGameState, definitionId: string, floor: number): ItemInstance {
+  return {
+    uuid: `item-${state.nextItemId++}`,
+    definitionId,
+    discoveredDay: state.day,
+    discoveredFloor: floor,
+    knowledge: "unknown",
+    clues: [],
+    owner: "player",
+    history: [{ day: state.day, type: "found", detail: `地下${floor}階の旧セーブから復元` }],
+  };
+}
+
+export function migrateSaveState(raw: GameState | LegacyGameState): GameState {
+  const legacyVersion = raw.version === 1;
+  const state = raw as unknown as GameState;
   // 追加した任意項目を補い、既存のブラウザ保存を壊さない。
   state.returnStones ??= 1;
   state.smokeBombs ??= 2;
   state.archive ??= [];
+  state.expeditionSerial ??= 0;
+  state.guildReputation ??= 0;
+  state.guards ??= Object.keys(GUARD_DEFINITIONS).map((id) => ({ id, unlocked: false, relation: 0, experience: 0, level: 1 }));
   state.townPos ??= { x: 9, y: 6 };
   // 旧セーブはタイル座標、現在は町だけピクセル座標で保存する。
   if (state.townPos.x <= 21 && state.townPos.y <= 12) {
     state.townPos = { x: state.townPos.x * 24 + 12, y: state.townPos.y * 24 + 12 };
   }
   const legacy = state as GameState & { townMapRevision?: number };
-  if ((legacy.townMapRevision ?? 0) < 2) {
+  if ((legacy.townMapRevision ?? 0) < 3) {
     state.townPos = { ...TOWN_SPAWN };
-    legacy.townMapRevision = 2;
+    legacy.townMapRevision = 3;
   } else {
     state.townPos = safeTownPosition(state.townPos);
   }
+
+  if (legacyVersion) {
+    const legacy = raw as LegacyGameState;
+    const existing = new Map(legacy.quests.map((quest) => [quest.id, quest]));
+    const completed = (id: string): boolean => existing.get(id)?.status === "complete";
+    const stage: GameState["story"]["early"]["stage"] = completed("old-ring")
+      ? "complete"
+      : completed("missing") ? "ring" : completed("lost-sword") ? "missing" : completed("herb") ? "lostSword" : "herb";
+    state.quests = structuredClone(INITIAL_QUESTS).map((template) => {
+      const old = existing.get(template.id);
+      if (old?.status === "complete" || old?.status === "active") return { ...template, status: old.status };
+      return template;
+    });
+    const earlyStatus = (id: string, requiredStage: typeof stage): void => {
+      const quest = state.quests.find((entry) => entry.id === id);
+      if (!quest || quest.status === "active" || quest.status === "complete") return;
+      quest.status = stage === requiredStage ? "available" : "locked";
+    };
+    earlyStatus("lost-sword", "lostSword");
+    earlyStatus("missing", "missing");
+    const ringQuest = state.quests.find((quest) => quest.id === "old-ring");
+    if (ringQuest && stage === "ring" && ringQuest.status !== "complete") ringQuest.status = "active";
+    if (stage === "complete") {
+      const blackSword = state.quests.find((quest) => quest.id === "black-sword");
+      if (blackSword?.status === "locked") blackSword.status = "available";
+    }
+    const guardHiringUnlocked = completed("lost-sword") || completed("missing") || completed("old-ring");
+    state.guards.forEach((guard) => { guard.unlocked = guardHiringUnlocked; });
+    state.story = {
+      blackSword: legacy.story.blackSword,
+      early: {
+        stage,
+        guardHiringUnlocked,
+        missingBodyInspected: completed("missing") || completed("old-ring"),
+        ringConsulted: completed("old-ring") ? ["scholar", "jeweler", "duke"] : [],
+        ringResolution: completed("old-ring") ? "family" : undefined,
+        shoveTutorialSeen: false,
+      },
+    };
+    if (legacy.run) {
+      const floor = legacy.run.floor;
+      const chests: DungeonChest[] = legacy.run.chests.map((pos, index) => ({
+        id: `legacy-chest-${floor}-${index}`,
+        pos: { ...pos },
+        item: migrationItem(legacy, "moon-fungus", floor),
+      }));
+      const bodies: DungeonBody[] = legacy.run.bodies.map((pos, index) => ({
+        id: `legacy-body-${floor}-${index}`,
+        name: "名もなき冒険者",
+        pos: { ...pos },
+        loot: [],
+        inspected: false,
+      }));
+      state.run = {
+        ...legacy.run,
+        enemies: legacy.run.enemies.map((enemy) => ({ ...enemy, staggerTurns: 0 })),
+        chests,
+        bodies,
+        guard: undefined,
+        shoveCooldown: 0,
+        highestFloor: floor,
+      };
+    }
+    state.hiredGuardId = undefined;
+    state.hiredGuardFee = undefined;
+  } else {
+    state.story.early ??= {
+      stage: "herb",
+      guardHiringUnlocked: false,
+      missingBodyInspected: false,
+      ringConsulted: [],
+      shoveTutorialSeen: false,
+    };
+    if (state.run) {
+      state.run.enemies.forEach((enemy) => { enemy.staggerTurns ??= 0; });
+      state.run.shoveCooldown ??= 0;
+      state.run.highestFloor ??= state.run.floor;
+    }
+  }
+  (state as { version: number }).version = 2;
   return state;
 }
 
@@ -57,7 +167,7 @@ export class SaveRepository {
     database.close();
   }
 
-  async load(slot: SaveSlot): Promise<StoredSave | undefined> {
+  async load(slot: SaveSlot): Promise<(Omit<StoredSave, "state"> & { state: GameState }) | undefined> {
     const database = await openDatabase();
     const result = await new Promise<StoredSave | undefined>((resolve, reject) => {
       const request = database.transaction(STORE_NAME, "readonly").objectStore(STORE_NAME).get(slot);
@@ -65,9 +175,9 @@ export class SaveRepository {
       request.onerror = () => reject(request.error);
     });
     database.close();
-    if (!result || result.state.version !== 1) return undefined;
-    result.state = migrate(result.state);
-    return result;
+    if (!result || (result.state.version !== 1 && result.state.version !== 2)) return undefined;
+    result.state = migrateSaveState(result.state);
+    return result as StoredSave & { state: GameState };
   }
 
   async availableSlots(): Promise<SaveSlot[]> {

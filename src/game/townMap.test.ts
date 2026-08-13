@@ -9,6 +9,7 @@ import {
   TOWN_SPAWN,
   TOWN_TILE,
   TOWN_WIDTH,
+  townSurfaceAt,
 } from "./townMap";
 
 function reachableTiles(): Set<string> {
@@ -47,5 +48,10 @@ describe("town map", () => {
     expect(intoShop).toEqual(besideShop);
     expect(safeTownPosition({ x: -20, y: -20 })).toEqual(TOWN_SPAWN);
   });
-});
 
+  it("exposes the generated field and entrance-rock surfaces to the renderer", () => {
+    expect(townSurfaceAt(3, 14)).toBe("field");
+    expect(townSurfaceAt(20, 1)).toBe("rock");
+    expect(townSurfaceAt(8, 29)).toBe("road");
+  });
+});

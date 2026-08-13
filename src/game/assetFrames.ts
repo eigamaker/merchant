@@ -7,6 +7,58 @@ export interface FrameAddress {
 
 const frame = (columns: number, x: number, y: number): FrameAddress => ({ x, y, frame: y * columns + x });
 
+/** 四方向オートタイルの接続マスク。各バンクは1行16フレームで並べる。 */
+export const CARDINAL_MASK_BITS = {
+  north: 1,
+  east: 2,
+  south: 4,
+  west: 8,
+} as const;
+
+/** town_terrain.png（16列×8行）の行契約。 */
+export const TOWN_TERRAIN_BANK_ROWS = {
+  grass: 0,
+  road: 1,
+  plaza: 2,
+  water: 3,
+  dock: 4,
+  field: 5,
+  rock: 6,
+  reserve: 7,
+} as const;
+
+/** dungeon_terrain.png（16列×8行）の行契約。 */
+export const DUNGEON_TERRAIN_BANK_ROWS = {
+  stone: 0,
+  wetStone: 1,
+  ancientPaving: 2,
+  tomb: 3,
+  shallowWater: 4,
+  rubble: 5,
+  ritual: 6,
+  reserve: 7,
+} as const;
+
+/** dungeon_walls.png の通常石壁・墓所石壁バンク。各バンクは12×4セル。 */
+export const DUNGEON_WALL_BANK_ROWS = {
+  normal: 0,
+  tomb: 4,
+} as const;
+
+export type DungeonWallBankId = keyof typeof DUNGEON_WALL_BANK_ROWS;
+
+/** 地下階数を dungeon_terrain.png の8バンクへ対応付ける。 */
+export function dungeonTerrainBankForFloor(floor: number): number {
+  if (!Number.isInteger(floor) || floor < 1) throw new RangeError(`dungeon floor out of range: ${floor}`);
+  return Math.min(7, floor - 1);
+}
+
+export function terrainBankFrame(row: number, mask: number): FrameAddress {
+  if (!Number.isInteger(row) || row < 0 || row >= 8) throw new RangeError(`terrain bank row out of range: ${row}`);
+  if (!Number.isInteger(mask) || mask < 0 || mask > 15) throw new RangeError(`terrain mask out of range: ${mask}`);
+  return frame(16, mask, row);
+}
+
 /**
  * dungeon_walls.png のアクティブ領域は 12×4 セル。
  * 元仕様は「14種」と記載していたが、列挙は15種だったため15スロットへ補正した。
@@ -30,6 +82,11 @@ export const DUNGEON_WALL_FRAMES = {
 } as const;
 
 export type DungeonWallFrameId = keyof typeof DUNGEON_WALL_FRAMES;
+
+export function dungeonWallFrame(bank: DungeonWallBankId, id: DungeonWallFrameId): FrameAddress {
+  const base = DUNGEON_WALL_FRAMES[id];
+  return frame(12, base.x, DUNGEON_WALL_BANK_ROWS[bank] + base.y);
+}
 
 /** town_buildings.png は 16×12 セル。各建物キットは重ならない4×3セル領域。 */
 export const BUILDING_KIT_ORIGINS = {

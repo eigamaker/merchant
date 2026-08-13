@@ -1,0 +1,26 @@
+{
+  "model": "built-in image generation",
+  "processed_at": "2026-08-12",
+  "workflow": "reference-guided direction atlas, chroma-key removal, nearest-neighbor 32px sprites",
+  "sources": [
+    {
+      "output": "player-directions-source.png",
+      "reference": "player-art-reference.png",
+      "grid": "4x1: down,left,right,up",
+      "chroma_key": "#ff00ff"
+    },
+    {
+      "output": "npc-directions-source.png",
+      "reference": "npc-pack-source.png",
+      "grid": "5x4: innkeeper,scout,scholar,mage,trader / down,left,right,up",
+      "chroma_key": "#ff00ff"
+    },
+    {
+      "output": "enemy-directions-source.png",
+      "reference": "enemy-pack-source.png",
+      "grid": "6x4: goblin,bat,golem,necromancer,lizard,ghost / down,left,right,up",
+      "chroma_key": "#00ff00"
+    }
+  ],
+  "constraints": "True side profiles and back views; preserve identity, outfit and palette; no text, shadows, scenery or grid lines."
+}

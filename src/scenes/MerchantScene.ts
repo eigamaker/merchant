@@ -1,19 +1,49 @@
 import Phaser from "phaser";
-import { ASSET_MANIFEST } from "../game/assets";
+import {
+  ACTOR_WALK_FRAMES,
+  ASSET_MANIFEST,
+  ENEMY_ASSET_VARIANTS,
+  NPC_ASSET_VARIANTS,
+  GUARD_ASSET_VARIANTS,
+  TOWN_BUILDING_ASSETS,
+  TOWN_OBJECT_FRAMES,
+  DUNGEON_OBJECT_FRAMES,
+} from "../game/assets";
+import {
+  CARDINAL_MASK_BITS,
+  TOWN_TERRAIN_BANK_ROWS,
+  dungeonTerrainBankForFloor,
+  dungeonWallFrame as dungeonWallFrameAddress,
+  terrainBankFrame,
+  type DungeonWallFrameId,
+} from "../game/assetFrames";
 import {
   DIRECTION,
+  INVENTORY_CAPACITY,
   acceptQuest,
   activeQuestSummary,
   appraiseItem,
   beginExpedition,
+  cancelGuard,
   createNewGame,
   currentBulk,
+  dropItem,
+  guardDefinition,
+  guardFee,
+  hireGuard,
   initialOffer,
+  inspectBody,
+  isQuestItemProtected,
   itemBulk,
   itemName,
+  lootBodyItem,
   movePlayer,
   moveToStore,
-  returnToTown,
+  performDungeonCommand,
+  questProgressText,
+  reportQuest,
+  resolveRing,
+  scoutRevealsTrap,
   sellItem,
   toggleDisplay,
   tryOpenChest,
@@ -33,11 +63,11 @@ import {
   TOWN_WORLD_HEIGHT,
   TOWN_WORLD_WIDTH,
   townSurfaceAt,
-  type TownBuilding,
   type TownPointOfInterest,
   type TownPlot,
+  type TownSurface,
 } from "../game/townMap";
-import type { Customer, GameState, ItemInstance, MenuChoice, Vec } from "../game/types";
+import type { Customer, DungeonCommand, DungeonEvent, GameState, ItemInstance, MenuChoice, Vec } from "../game/types";
 
 const TILE = 24;
 const GRID_W = 21;
@@ -46,11 +76,80 @@ const MAP_W = GRID_W * TILE;
 const MAP_H = GRID_H * TILE;
 const PANEL_X = MAP_W + 8;
 
+type TerrainTileChoice = {
+  frame: number;
+  rotation?: number;
+  flipX?: boolean;
+  flipY?: boolean;
+};
+
+const HALF_TURN = Math.PI;
+const QUARTER_TURN = Math.PI / 2;
+
+/**
+ * The first Asset Forge pass painted every 4×4 bank as a tiny scene rather
+ * than sixteen literal mask positions. These templates use the clearly
+ * readable road/cobble fragments while the generator is corrected. They also
+ * keep a large terrain interior on its material tile instead of frame 15.
+ */
+const ROAD_MASK_TILES: Record<number, TerrainTileChoice> = {
+  0: { frame: 0 },
+  1: { frame: 13 },
+  2: { frame: 13, rotation: QUARTER_TURN },
+  3: { frame: 8, rotation: HALF_TURN },
+  4: { frame: 13, rotation: HALF_TURN },
+  5: { frame: 1 },
+  6: { frame: 8, rotation: -QUARTER_TURN },
+  7: { frame: 7 },
+  8: { frame: 13, rotation: -QUARTER_TURN },
+  9: { frame: 8, rotation: QUARTER_TURN },
+  10: { frame: 1, rotation: QUARTER_TURN },
+  11: { frame: 7, rotation: HALF_TURN },
+  12: { frame: 8 },
+  13: { frame: 7, rotation: QUARTER_TURN },
+  14: { frame: 7, rotation: -QUARTER_TURN },
+  15: { frame: 15 },
+};
+
+function townTerrainChoice(surface: TownSurface, x: number, y: number, mask: number): TerrainTileChoice {
+  if (surface === "road") return ROAD_MASK_TILES[mask]!;
+  // The cobble source was generated as a coherent 4×4 courtyard. Its slot
+  // order is preserved on the map, so all sixteen pieces meet as one scene.
+  if (surface === "plaza") return { frame: (y - 17) * 4 + (x - 22) };
+
+  const frameVariants: Record<Exclude<TownSurface, "road" | "plaza">, readonly number[]> = {
+    // frame 0 is the only all-grass cell in the supplied bank. Mirroring it
+    // preserves seamless edges but avoids a stamped, repeated flower cluster.
+    grass: [0],
+    water: [9],
+    dock: [0],
+    field: [5, 6, 9, 10],
+    rock: [9, 10],
+  };
+  let seed = (Math.imul(x, 374761393) + Math.imul(y, 668265263)) | 0;
+  seed = Math.imul(seed ^ (seed >>> 13), 1274126177) ^ (seed >>> 16);
+  seed >>>= 0;
+  const variants = frameVariants[surface];
+  return {
+    frame: variants[seed % variants.length]!,
+    flipX: (seed & 1) === 1,
+    flipY: (seed & 2) === 2,
+  };
+}
 type Modal = {
   title: string;
   body: string[];
   choices: MenuChoice[];
   index: number;
+};
+
+type RoamingNpc = {
+  sprite: Phaser.GameObjects.Sprite;
+  textureKey: string;
+  center: Vec;
+  radius: Vec;
+  phase: number;
+  facing: "up" | "down" | "left" | "right";
 };
 
 function same(a: Vec, b: Vec): boolean {
@@ -71,10 +170,63 @@ export class MerchantScene extends Phaser.Scene {
   private gameStarted = false;
   private lastAutoSaveAt = Number.NEGATIVE_INFINITY;
   private townWorld?: Phaser.GameObjects.Container;
-  private townPlayer?: Phaser.GameObjects.Image;
+  private townPlayer?: Phaser.GameObjects.Sprite;
+  private townNpcs: RoamingNpc[] = [];
+  private dungeonWalkAnimations = new Map<string, "up" | "down" | "left" | "right">();
+  private playerFacing: "up" | "down" | "left" | "right" = "down";
+  private dungeonWorld?: Phaser.GameObjects.Container;
+  private dungeonMaskShape?: Phaser.GameObjects.Graphics;
 
   constructor() {
     super("merchant");
+  }
+
+  preload(): void {
+    this.load.spritesheet(ASSET_MANIFEST.player.textureKey, ASSET_MANIFEST.player.path, {
+      frameWidth: ASSET_MANIFEST.player.frameWidth,
+      frameHeight: ASSET_MANIFEST.player.frameHeight,
+    });
+    this.load.spritesheet(ASSET_MANIFEST.enemy.textureKey, ASSET_MANIFEST.enemy.path, {
+      frameWidth: ASSET_MANIFEST.enemy.frameWidth,
+      frameHeight: ASSET_MANIFEST.enemy.frameHeight,
+    });
+    this.load.spritesheet(ASSET_MANIFEST.npc.textureKey, ASSET_MANIFEST.npc.path, {
+      frameWidth: ASSET_MANIFEST.npc.frameWidth,
+      frameHeight: ASSET_MANIFEST.npc.frameHeight,
+    });
+    for (const actor of [...NPC_ASSET_VARIANTS, ...ENEMY_ASSET_VARIANTS, ...GUARD_ASSET_VARIANTS]) {
+      this.load.spritesheet(actor.textureKey, actor.path, { frameWidth: 32, frameHeight: 32 });
+    }
+    this.load.spritesheet(ASSET_MANIFEST.item.textureKey, ASSET_MANIFEST.item.path, {
+      frameWidth: ASSET_MANIFEST.item.frameWidth,
+      frameHeight: ASSET_MANIFEST.item.frameHeight,
+    });
+    this.load.spritesheet("object.dungeon", "assets/objects/dungeon_objects.png", { frameWidth: 24, frameHeight: 24 });
+    this.load.spritesheet(ASSET_MANIFEST.townTiles.textureKey, ASSET_MANIFEST.townTiles.path, {
+      frameWidth: ASSET_MANIFEST.townTiles.frameWidth,
+      frameHeight: ASSET_MANIFEST.townTiles.frameHeight,
+    });
+    this.load.spritesheet(ASSET_MANIFEST.dungeonTiles.textureKey, ASSET_MANIFEST.dungeonTiles.path, {
+      frameWidth: ASSET_MANIFEST.dungeonTiles.frameWidth,
+      frameHeight: ASSET_MANIFEST.dungeonTiles.frameHeight,
+    });
+    this.load.spritesheet(ASSET_MANIFEST.dungeonWalls.textureKey, ASSET_MANIFEST.dungeonWalls.path, {
+      frameWidth: ASSET_MANIFEST.dungeonWalls.frameWidth,
+      frameHeight: ASSET_MANIFEST.dungeonWalls.frameHeight,
+    });
+    this.load.spritesheet(ASSET_MANIFEST.townObjects.textureKey, ASSET_MANIFEST.townObjects.path, {
+      frameWidth: ASSET_MANIFEST.townObjects.frameWidth,
+      frameHeight: ASSET_MANIFEST.townObjects.frameHeight,
+    });
+    this.load.spritesheet(ASSET_MANIFEST.townBuildings.textureKey, ASSET_MANIFEST.townBuildings.path, {
+      frameWidth: ASSET_MANIFEST.townBuildings.frameWidth,
+      frameHeight: ASSET_MANIFEST.townBuildings.frameHeight,
+    });
+    this.load.spritesheet(ASSET_MANIFEST.townBuildingExtensions.textureKey, ASSET_MANIFEST.townBuildingExtensions.path, {
+      frameWidth: ASSET_MANIFEST.townBuildingExtensions.frameWidth,
+      frameHeight: ASSET_MANIFEST.townBuildingExtensions.frameHeight,
+    });
+    for (const building of Object.values(TOWN_BUILDING_ASSETS)) this.load.image(building.textureKey, building.path);
   }
 
   create(): void {
@@ -102,13 +254,19 @@ export class MerchantScene extends Phaser.Scene {
       f3: Phaser.Input.Keyboard.KeyCodes.F3,
     }) as Record<string, Phaser.Input.Keyboard.Key>;
     this.createPlaceholderTextures();
+    this.createActorAnimations();
     void this.openTitle();
   }
 
   update(_time: number, delta: number): void {
     if (this.gameStarted && this.just("escape")) {
-      this.modal = undefined;
-      this.render();
+      if (this.modal) {
+        this.modal = undefined;
+        this.render();
+      } else {
+        this.openSystemMenu();
+        this.render();
+      }
       return;
     }
 
@@ -143,6 +301,7 @@ export class MerchantScene extends Phaser.Scene {
 
   private createPlaceholderTextures(): void {
     const texture = (name: string, colors: [number, number]): void => {
+      if (this.textures.exists(name)) return;
       const graphics = this.make.graphics({ x: 0, y: 0 });
       graphics.fillStyle(colors[0], 1).fillRect(2, 3, 20, 19);
       graphics.fillStyle(colors[1], 1).fillRect(5, 1, 14, 7);
@@ -156,16 +315,47 @@ export class MerchantScene extends Phaser.Scene {
     texture(ASSET_MANIFEST.item.textureKey, [0xc9af58, 0xffeb91]);
   }
 
+  private createActorAnimations(): void {
+    this.createActorAnimationSet(ASSET_MANIFEST.player.textureKey, "player");
+    this.createActorAnimationSet(ASSET_MANIFEST.npc.textureKey, ASSET_MANIFEST.npc.textureKey);
+    this.createActorAnimationSet(ASSET_MANIFEST.enemy.textureKey, ASSET_MANIFEST.enemy.textureKey);
+    for (const actor of [...NPC_ASSET_VARIANTS, ...ENEMY_ASSET_VARIANTS, ...GUARD_ASSET_VARIANTS]) this.createActorAnimationSet(actor.textureKey, actor.textureKey);
+  }
+
+  private createActorAnimationSet(textureKey: string, prefix: string): void {
+    if (this.anims.exists(`${prefix}.idle`)) return;
+    const create = (suffix: "idle" | "idle-down" | "idle-left" | "idle-right" | "idle-up" | "walk-down" | "walk-left" | "walk-right" | "walk-up", frames: readonly number[], rate: number): void => {
+      this.anims.create({ key: `${prefix}.${suffix}`, frames: frames.map((frame) => ({ key: textureKey, frame })), frameRate: rate, repeat: -1 });
+    };
+    create("idle", ACTOR_WALK_FRAMES.idle, 1);
+    create("idle-down", ACTOR_WALK_FRAMES.idleDown, 1);
+    create("idle-left", ACTOR_WALK_FRAMES.idleLeft, 1);
+    create("idle-right", ACTOR_WALK_FRAMES.idleRight, 1);
+    create("idle-up", ACTOR_WALK_FRAMES.idleUp, 1);
+    create("walk-down", ACTOR_WALK_FRAMES.walkDown, 7);
+    create("walk-left", ACTOR_WALK_FRAMES.walkLeft, 7);
+    create("walk-right", ACTOR_WALK_FRAMES.walkRight, 7);
+    create("walk-up", ACTOR_WALK_FRAMES.walkUp, 7);
+  }
+
   private updateTown(delta: number): void {
     let moved = false;
-    const horizontal = Number(this.keys.right.isDown || this.keys.d.isDown) - Number(this.keys.left.isDown || this.keys.a.isDown);
-    const vertical = Number(this.keys.down.isDown || this.keys.s.isDown) - Number(this.keys.up.isDown || this.keys.w.isDown);
+    const tapHorizontal = Number(this.just("right") || this.just("d")) - Number(this.just("left") || this.just("a"));
+    const tapVertical = Number(this.just("down") || this.just("s")) - Number(this.just("up") || this.just("w"));
+    const heldHorizontal = Number(this.keys.right.isDown || this.keys.d.isDown) - Number(this.keys.left.isDown || this.keys.a.isDown);
+    const heldVertical = Number(this.keys.down.isDown || this.keys.s.isDown) - Number(this.keys.up.isDown || this.keys.w.isDown);
+    const horizontal = heldHorizontal || tapHorizontal;
+    const vertical = heldVertical || tapVertical;
     if (horizontal !== 0 || vertical !== 0) {
+      this.playerFacing = Math.abs(horizontal) > Math.abs(vertical)
+        ? horizontal < 0 ? "left" : "right"
+        : vertical < 0 ? "up" : "down";
       const length = Math.hypot(horizontal, vertical);
       const speed = 126;
+      const stepSeconds = Math.max(delta / 1000, tapHorizontal !== 0 || tapVertical !== 0 ? 0.05 : 0);
       const next = moveTownPosition(this.state.townPos, {
-        x: (horizontal / length) * speed * (delta / 1000),
-        y: (vertical / length) * speed * (delta / 1000),
+        x: (horizontal / length) * speed * stepSeconds,
+        y: (vertical / length) * speed * stepSeconds,
       });
       moved = next.x !== this.state.townPos.x || next.y !== this.state.townPos.y;
       this.state.townPos = next;
@@ -184,33 +374,71 @@ export class MerchantScene extends Phaser.Scene {
     if (this.just("f2")) void this.saveManual("manual-2");
     if (this.just("f3")) void this.saveManual("manual-3");
     if (moved) {
+      this.playTownPlayerMotion(horizontal, vertical);
       this.updateTownPresentation();
       this.saveAuto();
+    } else if (this.townPlayer && this.townPlayer.anims.currentAnim?.key !== `player.idle-${this.playerFacing}`) {
+      this.townPlayer.play(`player.idle-${this.playerFacing}`, true);
     }
+    this.updateTownNpcs(delta);
     if (interact || inventory || ledger || quest || help) this.render();
   }
 
   private updateDungeon(): void {
     let acted = false;
-    if (this.just("up") || this.just("w")) { movePlayer(this.state, DIRECTION.up); acted = true; }
-    else if (this.just("down") || this.just("s")) { movePlayer(this.state, DIRECTION.down); acted = true; }
-    else if (this.just("left") || this.just("a")) { movePlayer(this.state, DIRECTION.left); acted = true; }
-    else if (this.just("right") || this.just("d")) { movePlayer(this.state, DIRECTION.right); acted = true; }
-    if (this.just("enter") || this.just("space")) { this.interactDungeon(); acted = true; }
+    const events: DungeonEvent[] = [];
+    const beforePlayer = this.state.run ? { ...this.state.run.player } : undefined;
+    const beforeEnemies = new Map(this.state.run?.enemies.map((enemy) => [enemy.id, { ...enemy.pos }]) ?? []);
+    const beforeGuard = this.state.run?.guard ? { id: this.state.run.guard.guardId, pos: { ...this.state.run.guard.pos } } : undefined;
+    if (this.just("up") || this.just("w")) { this.playerFacing = "up"; events.push(...movePlayer(this.state, DIRECTION.up).events); acted = true; }
+    else if (this.just("down") || this.just("s")) { this.playerFacing = "down"; events.push(...movePlayer(this.state, DIRECTION.down).events); acted = true; }
+    else if (this.just("left") || this.just("a")) { this.playerFacing = "left"; events.push(...movePlayer(this.state, DIRECTION.left).events); acted = true; }
+    else if (this.just("right") || this.just("d")) { this.playerFacing = "right"; events.push(...movePlayer(this.state, DIRECTION.right).events); acted = true; }
+    if (this.just("enter")) { this.interactDungeon(); acted = true; }
+    if (this.just("space")) { this.openDungeonActionMenu(); acted = true; }
     if (this.just("r")) {
-      if (this.state.returnStones > 0) {
-        this.state.returnStones -= 1;
-        returnToTown(this.state, false);
-      } else {
-        this.state.message = "帰還石はもうない。入口まで戻ろう。";
-      }
+      events.push(...performDungeonCommand(this.state, { type: "return" }).events);
       acted = true;
     }
-    if (this.just("z")) { useSmokeBomb(this.state); acted = true; }
+    if (this.just("z")) { events.push(...useSmokeBomb(this.state).events); acted = true; }
     if (this.just("i")) this.openInventory();
     if (this.just("l")) this.openLedger();
     if (this.just("h")) this.openHelp();
-    if (acted || this.just("i") || this.just("l") || this.just("h")) this.render();
+    if (acted) this.captureDungeonWalkAnimations(beforePlayer, beforeEnemies, beforeGuard);
+    if (acted || this.just("i") || this.just("l") || this.just("h")) {
+      this.render();
+      this.animateDungeonEvents(events);
+    }
+  }
+
+  private captureDungeonWalkAnimations(
+    beforePlayer: Vec | undefined,
+    beforeEnemies: Map<string, Vec>,
+    beforeGuard?: { id: string; pos: Vec },
+  ): void {
+    const run = this.state.run;
+    if (!run) return;
+    const direction = (from: Vec | undefined, to: Vec): "up" | "down" | "left" | "right" | undefined => {
+      if (!from) return undefined;
+      const dx = to.x - from.x;
+      const dy = to.y - from.y;
+      if (Math.abs(dx) > Math.abs(dy) && dx !== 0) return dx < 0 ? "left" : "right";
+      if (dy !== 0) return dy < 0 ? "up" : "down";
+      return undefined;
+    };
+    const playerDirection = direction(beforePlayer, run.player);
+    if (playerDirection) {
+      this.playerFacing = playerDirection;
+      this.dungeonWalkAnimations.set("player", playerDirection);
+    } else this.dungeonWalkAnimations.set("player", this.playerFacing);
+    for (const enemy of run.enemies) {
+      const enemyDirection = direction(beforeEnemies.get(enemy.id), enemy.pos);
+      if (enemyDirection) this.dungeonWalkAnimations.set(enemy.id, enemyDirection);
+    }
+    if (run.guard) {
+      const guardDirection = direction(beforeGuard?.id === run.guard.guardId ? beforeGuard.pos : undefined, run.guard.pos);
+      if (guardDirection) this.dungeonWalkAnimations.set(run.guard.guardId, guardDirection);
+    }
   }
 
   private interactTown(): void {
@@ -227,7 +455,7 @@ export class MerchantScene extends Phaser.Scene {
         this.openStore();
         return;
       case "guild":
-        this.openQuestBoard();
+        this.openGuildMenu();
         return;
       case "tavern":
         this.openMenu("酒場の噂", ["「地下3階で、光を吸う黒い剣を見た者がいる」", "「深く潜るほど、帰還石は手放せないぞ」"], [{ label: "閉じる", action: () => this.closeMenu() }]);
@@ -241,16 +469,128 @@ export class MerchantScene extends Phaser.Scene {
   private interactDungeon(): void {
     const run = this.state.run;
     if (!run) return;
-    if (run.items.some((entry) => same(entry.pos, run.player))) {
-      tryPickup(this.state);
+    const ground = run.items.find((entry) => same(entry.pos, run.player));
+    if (ground) {
+      if (currentBulk(this.state) + itemBulk(ground.item) <= INVENTORY_CAPACITY) tryPickup(this.state);
+      else this.openSwapMenu(ground.item, (swapOutId) => { tryPickup(this.state, swapOutId); this.closeMenu(); });
       return;
     }
-    if (tryOpenChest(this.state)) return;
+    const chest = run.chests.find((entry) => same(entry.pos, run.player));
+    if (chest) {
+      if (currentBulk(this.state) + itemBulk(chest.item) <= INVENTORY_CAPACITY) tryOpenChest(this.state, chest.id);
+      else this.openSwapMenu(chest.item, (swapOutId) => { tryOpenChest(this.state, chest.id, swapOutId); this.closeMenu(); });
+      return;
+    }
+    const body = run.bodies.find((entry) => same(entry.pos, run.player));
+    if (body) {
+      if (!body.inspected) inspectBody(this.state, body.id);
+      this.openBodyMenu(body.id);
+      return;
+    }
     if (same(run.player, run.map.stairs) || same(run.player, run.map.returnStairs)) {
       tryStairs(this.state);
       return;
     }
     this.state.message = "何も見つからない。";
+  }
+
+  private facingDirection(): Vec {
+    return DIRECTION[this.playerFacing];
+  }
+
+  private executeDungeonCommand(command: DungeonCommand): void {
+    const beforePlayer = this.state.run ? { ...this.state.run.player } : undefined;
+    const beforeEnemies = new Map(this.state.run?.enemies.map((enemy) => [enemy.id, { ...enemy.pos }]) ?? []);
+    const beforeGuard = this.state.run?.guard ? { id: this.state.run.guard.guardId, pos: { ...this.state.run.guard.pos } } : undefined;
+    this.modal = undefined;
+    const result = performDungeonCommand(this.state, command);
+    this.captureDungeonWalkAnimations(beforePlayer, beforeEnemies, beforeGuard);
+    this.render();
+    this.animateDungeonEvents(result.events);
+  }
+
+  private openDungeonActionMenu(): void {
+    const run = this.state.run;
+    if (!run) return;
+    const direction = this.facingDirection();
+    const target = { x: run.player.x + direction.x, y: run.player.y + direction.y };
+    const enemy = run.enemies.find((entry) => same(entry.pos, target));
+    this.openMenu("行動", [
+      `向き: ${this.playerFacing === "up" ? "上" : this.playerFacing === "down" ? "下" : this.playerFacing === "left" ? "左" : "右"}`,
+      `押し返し: ${run.shoveCooldown > 0 ? `あと${run.shoveCooldown}ターン` : enemy ? `${enemy.name}を対象` : "対象なし"}`,
+    ], [
+      {
+        label: "押し返す（ダメージなし）",
+        disabled: !enemy || run.shoveCooldown > 0,
+        action: () => this.executeDungeonCommand({ type: "shove", direction }),
+      },
+      { label: "道具を使う", action: () => this.openDungeonTools() },
+      { label: "待機する", action: () => this.executeDungeonCommand({ type: "wait" }) },
+      { label: "護衛状態", action: () => this.openActiveGuardStatus() },
+      { label: "持ち物", action: () => this.openInventory() },
+      { label: "閉じる", action: () => this.closeMenu() },
+    ]);
+  }
+
+  private openDungeonTools(): void {
+    this.openMenu("探索道具", ["道具の使用は1ターン消費する。"], [
+      { label: `煙玉（残り${this.state.smokeBombs}）`, disabled: this.state.smokeBombs <= 0, action: () => this.executeDungeonCommand({ type: "smoke" }) },
+      { label: `帰還石（残り${this.state.returnStones}）`, disabled: this.state.returnStones <= 0, action: () => this.executeDungeonCommand({ type: "return" }) },
+      { label: "戻る", action: () => this.openDungeonActionMenu() },
+    ]);
+  }
+
+  private openActiveGuardStatus(): void {
+    const active = this.state.run?.guard;
+    if (!active) {
+      this.openMenu("護衛状態", ["この遠征に同行している護衛はいない。", "落とした剣の依頼後、ギルドで雇用できる。"], [
+        { label: "戻る", action: () => this.openDungeonActionMenu() },
+      ]);
+      return;
+    }
+    const definition = guardDefinition(active.guardId);
+    this.openMenu("護衛状態", [
+      `${definition?.name ?? active.guardId} — ${definition?.title ?? "護衛"}`,
+      `HP ${active.hp}/${active.maxHp}　攻撃 ${active.damage}`,
+      definition?.description ?? "主人公を自動で守る。",
+    ], [{ label: "戻る", action: () => this.openDungeonActionMenu() }]);
+  }
+
+  private openBodyMenu(bodyId: string): void {
+    const body = this.state.run?.bodies.find((entry) => entry.id === bodyId);
+    if (!body) return;
+    const lines = body.id === "aron"
+      ? ["認識票には『アロン』と刻まれている。", body.loot.length > 0 ? "残された遺品を選んで回収する。" : "回収できる遺品は残っていない。"]
+      : ["身元不明の古い遺体だ。", "持ち帰れる物は残っていない。"];
+    this.openMenu(body.name, lines, [
+      ...body.loot.map((item) => ({
+        label: `回収: ${itemName(item)} [${itemBulk(item)}]`,
+        action: () => {
+          if (currentBulk(this.state) + itemBulk(item) <= INVENTORY_CAPACITY) {
+            lootBodyItem(this.state, body.id, item.uuid);
+            this.openBodyMenu(body.id);
+          } else {
+            this.openSwapMenu(item, (swapOutId) => { lootBodyItem(this.state, body.id, item.uuid, swapOutId); this.openBodyMenu(body.id); }, () => this.openBodyMenu(body.id));
+          }
+        },
+      })),
+      { label: "閉じる", action: () => this.closeMenu() },
+    ]);
+  }
+
+  private openSwapMenu(incoming: ItemInstance, onSwap: (swapOutId: string) => void, onBack: () => void = () => this.closeMenu()): void {
+    const required = currentBulk(this.state) + itemBulk(incoming) - INVENTORY_CAPACITY;
+    this.openMenu("持ち物を入れ替える", [
+      `${itemName(incoming)} [${itemBulk(incoming)}]を持つには、容量を${required}以上空ける必要がある。`,
+      "置いた品は足元に残る。",
+    ], [
+      ...this.state.inventory.map((item) => ({
+        label: `置く: ${itemName(item)} [${itemBulk(item)}]`,
+        disabled: itemBulk(item) < required,
+        action: () => onSwap(item.uuid),
+      })),
+      { label: "やめる", action: onBack },
+    ]);
   }
 
   private poiPosition(poi: TownPointOfInterest): Vec {
@@ -304,21 +644,37 @@ export class MerchantScene extends Phaser.Scene {
     void this.saves.save("autosave", this.state).catch(() => undefined);
   }
 
+  private openSystemMenu(): void {
+    this.openMenu("メニュー", [
+      this.state.location === "dungeon" ? "探索中はメニューを開いてもターンは進まない。" : `灰灯町 ${this.state.day}日目`,
+      `所持金 ${this.state.gold}G　容量 ${currentBulk(this.state)}/${INVENTORY_CAPACITY}`,
+    ], [
+      { label: "持ち物", action: () => this.openInventory() },
+      { label: "依頼", action: () => this.openQuestBoard() },
+      { label: "商人の記録", action: () => this.openLedger() },
+      { label: "操作", action: () => this.openHelp() },
+      { label: "手動保存 1", action: () => { void this.saveManual("manual-1"); } },
+      { label: "手動保存 2", action: () => { void this.saveManual("manual-2"); } },
+      { label: "手動保存 3", action: () => { void this.saveManual("manual-3"); } },
+      { label: "ゲームへ戻る", action: () => this.closeMenu() },
+    ]);
+  }
+
   private openHelp(): void {
     const controls = this.state.location === "town"
-      ? ["移動: 矢印 / WASD", "決定・会話: Enter / Space", "I: 持ち物  L: 商人の記録", "Q: 依頼  F1〜F3: 手動保存", "H: ヘルプ"]
-      : ["移動・弱攻撃: 矢印 / WASD", "拾う・階段: Enter / Space", "Z: 煙玉  R: 帰還石（町へ戻る）", "I: 持ち物  L: 商人の記録"];
+      ? ["移動: 矢印 / WASD", "決定・会話: Enter / Space", "Esc: メニュー", "I: 持ち物  L: 商人の記録", "Q: 依頼  F1〜F3: 手動保存"]
+      : ["移動・向き変更: 矢印 / WASD", "Enter: 足元を調べる", "Space: 行動（押し返す・道具・待機）", "Z: 煙玉  R: 帰還石", "Esc: メニュー  I: 持ち物"];
     this.openMenu("操作", controls, [{ label: "閉じる", action: () => this.closeMenu() }]);
   }
 
   private openInventory(): void {
     const items = this.state.inventory;
     if (items.length === 0) {
-      this.openMenu("持ち物", ["持ち物は空だ。", `容量 ${currentBulk(this.state)} / 12`], [{ label: "閉じる", action: () => this.closeMenu() }]);
+      this.openMenu("持ち物", ["持ち物は空だ。", `容量 ${currentBulk(this.state)} / ${INVENTORY_CAPACITY}`], [{ label: "閉じる", action: () => this.closeMenu() }]);
       return;
     }
-    this.openMenu("持ち物", [`容量 ${currentBulk(this.state)} / 12`, "品を選ぶと詳細を確認できる。"], [
-      ...items.map((item) => ({ label: `${itemName(item)} [${itemBulk(item)}]`, action: () => this.openItemMenu(item) })),
+    this.openMenu("持ち物", [`容量 ${currentBulk(this.state)} / ${INVENTORY_CAPACITY}`, "品を選ぶと詳細を確認できる。"], [
+      ...items.map((item) => ({ label: `${isQuestItemProtected(this.state, item) ? "◆" : ""}${itemName(item)} [${itemBulk(item)}]`, action: () => this.openItemMenu(item) })),
       { label: "閉じる", action: () => this.closeMenu() },
     ]);
   }
@@ -332,8 +688,10 @@ export class MerchantScene extends Phaser.Scene {
     ];
     const choices: MenuChoice[] = [];
     if (this.state.location === "town") {
-      choices.push({ label: "店へ保管する", action: () => { moveToStore(this.state, item); this.openStore(); } });
-      choices.push({ label: "買い手を探す", action: () => this.openCustomerList(item) });
+      choices.push({ label: "店へ保管する", disabled: isQuestItemProtected(this.state, item), action: () => { moveToStore(this.state, item); this.openStore(); } });
+      choices.push({ label: "買い手を探す", disabled: isQuestItemProtected(this.state, item), action: () => this.openCustomerList(item) });
+    } else {
+      choices.push({ label: "足元に置く", action: () => { dropItem(this.state, item.uuid); this.openInventory(); } });
     }
     choices.push({ label: "戻る", action: () => this.openInventory() });
     this.openMenu("品物の詳細", lines, choices);
@@ -342,7 +700,7 @@ export class MerchantScene extends Phaser.Scene {
   private openStore(): void {
     const lines = [`保管品 ${this.state.store.length}点 / 展示 ${this.state.display.length}点`, "展示品は特別な来客を呼ぶことがある。"];
     const choices: MenuChoice[] = [
-      ...this.state.inventory.map((item) => ({ label: `保管する: ${itemName(item)}`, action: () => { moveToStore(this.state, item); this.openStore(); } })),
+      ...this.state.inventory.map((item) => ({ label: `保管する: ${itemName(item)}`, disabled: isQuestItemProtected(this.state, item), action: () => { moveToStore(this.state, item); this.openStore(); } })),
       ...this.state.store.map((item) => ({ label: `保管品: ${itemName(item)}${this.state.display.includes(item.uuid) ? " ★展示中" : ""}`, action: () => this.openStoredItem(item) })),
       { label: "閉じる", action: () => this.closeMenu() },
     ];
@@ -360,7 +718,7 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private retrieveItem(item: ItemInstance): void {
-    if (currentBulk(this.state) + itemBulk(item) > 12) {
+    if (currentBulk(this.state) + itemBulk(item) > INVENTORY_CAPACITY) {
       this.openMenu("持ち物がいっぱい", ["持ち物の容量を空けてから取り出そう。"], [{ label: "戻る", action: () => this.openStoredItem(item) }]);
       return;
     }
@@ -386,6 +744,14 @@ export class MerchantScene extends Phaser.Scene {
     const choices: MenuChoice[] = [
       ...items.map((item) => ({ label: `品を見せる: ${itemName(item)}`, action: () => this.openOffer(item, customer) })),
     ];
+    const ring = items.find((item) => item.definitionId === "old-ring");
+    if (ring && ["scholar", "jeweler", "duke"].includes(customer.id)) {
+      const consulted = this.state.story.early.ringConsulted.includes(customer.id);
+      choices.unshift({
+        label: `${consulted ? "✓ " : ""}古びた指輪について相談する`,
+        action: () => this.finishAppraisal(ring, customer),
+      });
+    }
     if (customer.id === "scholar" && this.state.story.blackSword === "tomb") {
       choices.unshift({ label: "墓所の碑文を照合する", action: () => this.resolveBlackSword(customer) });
     }
@@ -405,6 +771,13 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private openOffer(item: ItemInstance, customer: Customer): void {
+    if (isQuestItemProtected(this.state, item)) {
+      this.openMenu(`${itemName(item)}を見せる`, ["依頼に関わる品のため、通常売却はできない。"], [
+        { label: "鑑定・相談する", action: () => this.finishAppraisal(item, customer) },
+        { label: "やめる", action: () => this.openCustomer(customer.id) },
+      ]);
+      return;
+    }
     const offer = initialOffer(this.state, item, customer);
     const explain = `${customer.name}の提示額: ${offer}G`;
     this.openMenu(`${itemName(item)}の取引`, [explain, "反提案は一度だけ。高すぎれば関係が悪化する。"], [
@@ -427,15 +800,73 @@ export class MerchantScene extends Phaser.Scene {
     this.openMenu("取引結果", [result, `所持金: ${this.state.gold}G`], [{ label: "閉じる", action: () => this.closeMenu() }]);
   }
 
+  private openGuildMenu(): void {
+    this.openMenu("冒険者ギルド", [
+      `ギルド評判 ${this.state.guildReputation}`,
+      this.state.story.early.guardHiringUnlocked ? "依頼の報告と護衛契約を扱う。" : "まずは序章の依頼を進めよう。",
+    ], [
+      { label: "依頼と報告", action: () => this.openQuestBoard() },
+      { label: "護衛を雇う", disabled: !this.state.story.early.guardHiringUnlocked, action: () => this.openGuardRoster() },
+      { label: "閉じる", action: () => this.closeMenu() },
+    ]);
+  }
+
   private openQuestBoard(): void {
     const active = activeQuestSummary(this.state).split("\n");
-    this.openMenu("冒険者ギルド", ["受注中", ...active, "", "受ける依頼を選ぶ。"], [
-      ...this.state.quests.map((quest) => ({
-        label: `${quest.status === "active" ? "▶" : quest.status === "complete" ? "✓" : "○"} ${quest.title}`,
-        disabled: quest.status !== "available",
-        action: () => { acceptQuest(this.state, quest.id); this.openQuestBoard(); },
+    const visible = this.state.quests.filter((quest) => quest.status !== "locked");
+    this.openMenu("依頼と報告", ["受注中", ...active, "", "完了条件を満たした依頼はここで報告する。"], [
+      ...visible.map((quest) => ({
+        label: `${quest.status === "active" ? "▶" : quest.status === "readyToReport" ? "!" : quest.status === "complete" ? "✓" : "○"} ${quest.title} — ${questProgressText(this.state, quest)}`,
+        disabled: quest.status === "active" || quest.status === "complete",
+        action: () => {
+          if (quest.status === "readyToReport") {
+            if (quest.id === "old-ring") this.openRingResolution();
+            else { reportQuest(this.state, quest.id); this.openQuestBoard(); }
+          } else {
+            acceptQuest(this.state, quest.id);
+            this.openQuestBoard();
+          }
+        },
       })),
+      { label: "ギルドへ戻る", action: () => this.openGuildMenu() },
       { label: "閉じる", action: () => this.closeMenu() },
+    ]);
+  }
+
+  private openRingResolution(): void {
+    this.openMenu("古びた指輪の行方", [
+      "三人から得た情報を踏まえ、取り消せない決断をする。",
+      "選択は報酬、関係、今後の護衛料に影響する。",
+    ], [
+      { label: "遺族へ返す — 250G／ギルド評判+2", action: () => this.finishRingResolution("family") },
+      { label: "学者へ託す — 700G／エリス関係+2", action: () => this.finishRingResolution("scholar") },
+      { label: "宝石商へ売る — 1300G／サフィ関係+2", action: () => this.finishRingResolution("jeweler") },
+      { label: "まだ決めない", action: () => this.openQuestBoard() },
+    ]);
+  }
+
+  private finishRingResolution(resolution: "family" | "scholar" | "jeweler"): void {
+    const result = resolveRing(this.state, resolution);
+    this.openMenu("序章完了", [result, "黒い長剣の噂がギルドに届いた。"], [{ label: "閉じる", action: () => this.closeMenu() }]);
+  }
+
+  private openGuardRoster(): void {
+    const hired = this.state.hiredGuardId ? guardDefinition(this.state.hiredGuardId) : undefined;
+    this.openMenu("護衛契約", [
+      hired ? `契約中: ${hired.name}（${this.state.hiredGuardFee}G支払済）` : "次の遠征1回分を前払いで契約する。",
+      "出発前なら契約変更・取消時に全額返金される。",
+    ], [
+      ...this.state.guards.filter((guard) => guard.unlocked).map((guard) => {
+        const definition = guardDefinition(guard.id)!;
+        const injured = (guard.injuredUntilDay ?? 0) > this.state.day;
+        return {
+          label: `${definition.name} Lv${guard.level} HP${definition.baseMaxHp + guard.level - 1} 攻${definition.damage} — ${injured ? `${guard.injuredUntilDay}日目まで療養` : `${guardFee(this.state, guard.id)}G`}`,
+          disabled: injured || this.state.hiredGuardId === guard.id,
+          action: () => { hireGuard(this.state, guard.id); this.openGuardRoster(); },
+        };
+      }),
+      { label: "契約を取り消す", disabled: !this.state.hiredGuardId, action: () => { cancelGuard(this.state); this.openGuardRoster(); } },
+      { label: "ギルドへ戻る", action: () => this.openGuildMenu() },
     ]);
   }
 
@@ -452,80 +883,192 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private render(): void {
+    this.dungeonMaskShape?.destroy();
+    this.dungeonMaskShape = undefined;
     this.children.removeAll(true);
     if (this.state.location === "town") this.renderTown();
     else this.renderDungeon();
     this.renderHud();
     if (this.modal) this.renderModal();
+    this.polishText();
     this.saveAuto();
+  }
+
+  private polishText(): void {
+    const visit = (child: Phaser.GameObjects.GameObject): void => {
+      if (child instanceof Phaser.GameObjects.Container) {
+        child.list.forEach(visit);
+        return;
+      }
+      if (!(child instanceof Phaser.GameObjects.Text)) return;
+      child.setFontFamily('"Noto Sans JP Variable", "Yu Gothic UI", sans-serif');
+      child.setResolution(2);
+      const currentSize = Number.parseFloat(String(child.style.fontSize));
+      if (Number.isFinite(currentSize) && currentSize < 10) child.setFontSize(10);
+      child.setPadding(1, 1, 1, 1);
+    };
+    this.children.list.forEach(visit);
   }
 
   private renderTown(): void {
     const world = this.add.container(0, 0);
-    const ground = this.add.graphics();
-    const front = this.add.graphics();
-    world.add(ground);
-    this.drawTownGround(ground);
-    this.drawTownPlots(ground, TOWN_PLOTS);
-    for (const building of TOWN_BUILDINGS) this.drawTownBuilding(ground, building);
-    this.drawTownLandmarks(ground);
-    const player = this.add.image(this.state.townPos.x, this.state.townPos.y, ASSET_MANIFEST.player.textureKey);
+    this.townNpcs = [];
+    this.drawTownTerrain(world);
+    this.drawTownPlots(world, TOWN_PLOTS);
+    this.drawTownLandmarks(world);
+    this.drawTownBuildings(world);
+    const player = this.add.sprite(this.state.townPos.x, this.state.townPos.y + 4, ASSET_MANIFEST.player.textureKey, 0).setOrigin(0.5, 0.75);
+    player.play(`player.idle-${this.playerFacing}`);
     world.add(player);
     this.townPlayer = player;
-    world.add(front);
-    for (const building of TOWN_BUILDINGS) this.drawTownRoofFront(front, building);
-    this.drawTownNpcs(front);
+    this.drawTownNpcs(world);
     for (const poi of TOWN_POINTS.filter((entry) => entry.kind !== "customer")) {
       const position = this.poiPosition(poi);
-      const label = this.add.text(position.x, position.y - 12, poi.name, { fontSize: "6px", color: "#fff2d7", stroke: "#251d25", strokeThickness: 2 }).setOrigin(0.5);
+      const label = this.add.text(position.x, position.y - 14, poi.name, { fontSize: "10px", color: "#fff2d7", backgroundColor: "#251d25cc", padding: { x: 2, y: 1 } }).setOrigin(0.5);
       world.add(label);
     }
     this.townWorld = world;
     this.updateTownPresentation(true);
-    this.add.text(8, 8, `灰灯町 — ${this.state.day}日目`, { fontSize: "11px", color: "#fff2d7", stroke: "#1b1620", strokeThickness: 3 });
+    this.add.text(8, 8, `灰灯町 — ${this.state.day}日目`, { fontSize: "12px", color: "#fff2d7", stroke: "#1b1620", strokeThickness: 1 });
   }
 
   private renderDungeon(): void {
     const run = this.state.run;
     if (!run) return;
-    const terrain = this.add.graphics();
+    const world = this.add.container(0, 0);
+    this.dungeonWorld = world;
+    this.renderDungeonAssets(world);
+    this.updateDungeonPresentation();
+  }
+
+  private renderDungeonAssets(world: Phaser.GameObjects.Container): void {
+    const run = this.state.run;
+    if (!run) return;
+    const add = <T extends Phaser.GameObjects.GameObject>(object: T): T => { world.add(object); return object; };
+    const dungeonRow = dungeonTerrainBankForFloor(run.floor);
     for (let y = 0; y < run.map.height; y += 1) {
       for (let x = 0; x < run.map.width; x += 1) {
-        const wall = run.map.tiles[y]![x] === 1;
-        const px = x * TILE;
-        const py = y * TILE;
-        const noise = (run.seed * 31 + x * 17 + y * 43) >>> 0;
-        if (!wall) {
-          terrain.fillStyle(noise % 3 === 0 ? 0x655c55 : 0x71655a, 1).fillRect(px, py, TILE, TILE);
-          terrain.fillStyle(0x4d4745, 0.45).fillRect(px + 4 + (noise % 7), py + 5 + ((noise >> 3) % 8), 2, 1);
-          if (noise % 11 === 0) terrain.fillStyle(0x88906e, 0.7).fillRect(px + 15, py + 17, 3, 2);
-        } else {
-          terrain.fillStyle(0x332d38, 1).fillRect(px, py, TILE, TILE);
-          terrain.fillStyle(noise % 2 === 0 ? 0x4d4551 : 0x443e49, 1).fillRect(px + 2, py + 2, TILE - 4, TILE - 5);
-          terrain.fillStyle(0x27222d, 1).fillRect(px, py + 18, TILE, 6);
-          if (run.map.tiles[y + 1]?.[x] === 0) {
-            terrain.fillStyle(0x211d27, 0.65).fillRect(px, py + 20, TILE, 4);
-            terrain.lineStyle(1, 0x786b75, 0.75).lineBetween(px + 2, py + 18, px + TILE - 3, py + 18);
-          }
-          if (noise % 5 === 0) terrain.lineStyle(1, 0x74636d, 0.6).lineBetween(px + 8, py + 5, px + 11, py + 13);
+        let mask = 0;
+        if (run.map.tiles[y - 1]?.[x] === 0) mask |= CARDINAL_MASK_BITS.north;
+        if (run.map.tiles[y]?.[x + 1] === 0) mask |= CARDINAL_MASK_BITS.east;
+        if (run.map.tiles[y + 1]?.[x] === 0) mask |= CARDINAL_MASK_BITS.south;
+        if (run.map.tiles[y]?.[x - 1] === 0) mask |= CARDINAL_MASK_BITS.west;
+        const terrainFrame = terrainBankFrame(dungeonRow, mask).frame;
+        add(this.add.image(x * TILE + 12, y * TILE + 12, ASSET_MANIFEST.dungeonTiles.textureKey, terrainFrame));
+        if (run.map.tiles[y]![x] === 1) {
+          add(this.add.image(x * TILE + 12, y * TILE + 12, ASSET_MANIFEST.dungeonWalls.textureKey, this.dungeonWallFrame(x, y)));
         }
       }
     }
-    this.add.text(run.map.stairs.x * TILE + 12, run.map.stairs.y * TILE + 11, "▼", { fontSize: "15px", color: "#f6e59c" }).setOrigin(0.5);
-    this.add.text(run.map.returnStairs.x * TILE + 12, run.map.returnStairs.y * TILE + 11, "▲", { fontSize: "15px", color: "#d7edff" }).setOrigin(0.5);
-    if (run.map.specialRoom) this.add.text(run.map.specialRoom.x * TILE + 12, run.map.specialRoom.y * TILE + 10, "†", { fontSize: "15px", color: "#c7a5d7" }).setOrigin(0.5);
-    for (const entry of run.items) this.add.image(entry.pos.x * TILE + 12, entry.pos.y * TILE + 12, ASSET_MANIFEST.item.textureKey).setScale(0.58);
-    for (const chest of run.chests) this.add.rectangle(chest.x * TILE + 12, chest.y * TILE + 14, 15, 11, 0xa66d3f).setStrokeStyle(1, 0xffd27c);
-    for (const trap of run.traps) this.add.text(trap.x * TILE + 12, trap.y * TILE + 11, "^", { fontSize: "16px", color: "#cc7168" }).setOrigin(0.5);
-    for (const body of run.bodies) this.add.text(body.x * TILE + 12, body.y * TILE + 11, "☠", { fontSize: "13px", color: "#d5d1c8" }).setOrigin(0.5);
-    for (const enemy of run.enemies) this.add.image(enemy.pos.x * TILE + 12, enemy.pos.y * TILE + 12, ASSET_MANIFEST.enemy.textureKey);
-    this.add.image(run.player.x * TILE + 12, run.player.y * TILE + 12, ASSET_MANIFEST.player.textureKey);
-    this.add.text(8, 8, `深層ダンジョン 地下${run.floor}階 / ${run.turn}手`, { fontSize: "11px", color: "#fff2d7", stroke: "#1b1620", strokeThickness: 3 });
+    add(this.add.image(run.map.stairs.x * TILE + 12, run.map.stairs.y * TILE + 12, "object.dungeon", DUNGEON_OBJECT_FRAMES.stairs));
+    add(this.add.image(run.map.returnStairs.x * TILE + 12, run.map.returnStairs.y * TILE + 12, "object.dungeon", DUNGEON_OBJECT_FRAMES.returnStairs));
+    if (run.map.specialRoom) add(this.add.image(run.map.specialRoom.x * TILE + 12, run.map.specialRoom.y * TILE + 12, "object.dungeon", DUNGEON_OBJECT_FRAMES.torch));
+    for (const entry of run.items) {
+      const frame = Array.from(entry.item.definitionId).reduce((total, character) => total + character.charCodeAt(0), 0) % 8;
+      add(this.add.image(entry.pos.x * TILE + 12, entry.pos.y * TILE + 12, ASSET_MANIFEST.item.textureKey, frame));
+    }
+    for (const chest of run.chests) add(this.add.image(chest.pos.x * TILE + 12, chest.pos.y * TILE + 12, "object.dungeon", DUNGEON_OBJECT_FRAMES.chest));
+    for (const trap of run.traps) {
+      const revealed = same(trap, run.player) || scoutRevealsTrap(this.state, trap);
+      if (revealed) add(this.add.image(trap.x * TILE + 12, trap.y * TILE + 12, "object.dungeon", DUNGEON_OBJECT_FRAMES.trap).setAlpha(0.72));
+    }
+    for (const body of run.bodies) add(this.add.image(body.pos.x * TILE + 12, body.pos.y * TILE + 12, "object.dungeon", DUNGEON_OBJECT_FRAMES.bones));
+    for (const enemy of run.enemies) {
+      const textureKey = this.enemyTextureKey(enemy.id);
+      const sprite = this.add.sprite(enemy.pos.x * TILE + 12, enemy.pos.y * TILE + 13, textureKey, 0).setOrigin(0.5, 0.75).setName(`actor:${enemy.id}`);
+      const direction = this.dungeonWalkAnimations.get(enemy.id) ?? "down";
+      sprite.play(`${textureKey}.idle-${direction}`);
+      add(sprite);
+    }
+    if (run.guard) {
+      const definition = guardDefinition(run.guard.guardId);
+      const textureKey = definition?.textureKey ?? "actor.npc.scout";
+      const direction = this.dungeonWalkAnimations.get(run.guard.guardId) ?? "down";
+      const sprite = this.add.sprite(run.guard.pos.x * TILE + 12, run.guard.pos.y * TILE + 13, textureKey, 0).setOrigin(0.5, 0.75).setName(`actor:${run.guard.guardId}`);
+      sprite.play(`${textureKey}.idle-${direction}`);
+      add(sprite);
+    }
+    const player = this.add.sprite(run.player.x * TILE + 12, run.player.y * TILE + 13, ASSET_MANIFEST.player.textureKey, 0).setOrigin(0.5, 0.75).setName("actor:player");
+    player.play(`player.idle-${this.playerFacing}`);
+    add(player);
+    this.dungeonMaskShape = this.make.graphics({ x: 0, y: 0 });
+    this.dungeonMaskShape.fillStyle(0xffffff).fillRect(0, 0, MAP_W, MAP_H);
+    world.setMask(this.dungeonMaskShape.createGeometryMask());
+    this.add.text(8, 8, `深層ダンジョン 地下${run.floor}階 / ${run.turn}手 / 押返${run.shoveCooldown === 0 ? "可" : run.shoveCooldown}`, { fontSize: "12px", color: "#fff2d7", stroke: "#1b1620", strokeThickness: 1 });
+  }
+
+  private animateDungeonEvents(events: DungeonEvent[]): void {
+    const world = this.dungeonWorld;
+    if (!world || this.state.location !== "dungeon") return;
+    const actor = (id: string): Phaser.GameObjects.Sprite | undefined => world.getByName(`actor:${id}`) as Phaser.GameObjects.Sprite | undefined;
+    for (const event of events) {
+      if (event.type === "move" || (event.type === "shove" && event.success)) {
+        const sprite = actor(event.type === "move" ? event.actorId : event.enemyId);
+        if (!sprite) continue;
+        const from = event.from;
+        const to = event.to;
+        sprite.setPosition(from.x * TILE + 12, from.y * TILE + 13);
+        this.tweens.add({ targets: sprite, x: to.x * TILE + 12, y: to.y * TILE + 13, duration: event.type === "shove" ? 130 : 90, ease: "Quad.Out" });
+      } else if (event.type === "shove" && !event.success) {
+        const sprite = actor(event.enemyId);
+        if (sprite) this.tweens.add({ targets: sprite, x: sprite.x + 2, duration: 45, yoyo: true, repeat: 1 });
+      } else if (event.type === "attack") {
+        const attacker = actor(event.attackerId);
+        const target = actor(event.targetId);
+        if (!attacker || !target) continue;
+        const dx = Math.sign(target.x - attacker.x) * 5;
+        const dy = Math.sign(target.y - attacker.y) * 5;
+        this.tweens.add({ targets: attacker, x: attacker.x + dx, y: attacker.y + dy, duration: 55, yoyo: true, ease: "Quad.Out" });
+        target.setTintFill(0xffc2c2);
+        this.time.delayedCall(120, () => target.clearTint());
+      }
+    }
+  }
+
+  private updateDungeonPresentation(): void {
+    const run = this.state.run;
+    if (!run || !this.dungeonWorld) return;
+    const worldWidth = run.map.width * TILE;
+    const worldHeight = run.map.height * TILE;
+    const playerX = run.player.x * TILE + TILE / 2;
+    const playerY = run.player.y * TILE + TILE / 2;
+    const targetX = Phaser.Math.Clamp(playerX - MAP_W / 2, 0, Math.max(0, worldWidth - MAP_W));
+    const targetY = Phaser.Math.Clamp(playerY - MAP_H / 2, 0, Math.max(0, worldHeight - MAP_H));
+    this.dungeonWorld.setPosition(-Math.round(targetX), -Math.round(targetY));
+  }
+
+  private dungeonWallFrame(x: number, y: number): number {
+    const map = this.state.run?.map;
+    if (!map) return 0;
+    const solid = (offsetX: number, offsetY: number): boolean => map.tiles[y + offsetY]?.[x + offsetX] === 1;
+    const north = solid(0, -1);
+    const east = solid(1, 0);
+    const south = solid(0, 1);
+    const west = solid(-1, 0);
+    let id: DungeonWallFrameId = "center";
+    if (!north && !east) id = "outerNorthEast";
+    else if (!east && !south) id = "outerSouthEast";
+    else if (!south && !west) id = "outerSouthWest";
+    else if (!west && !north) id = "outerNorthWest";
+    else if (!north) id = "edgeNorth";
+    else if (!east) id = "edgeEast";
+    else if (!south) id = "edgeSouth";
+    else if (!west) id = "edgeWest";
+    else if ((x * 13 + y * 7) % 11 === 0) id = "cracked";
+    const run = this.state.run;
+    const bank = run && (run.floor >= 4 || run.map.specialRoom) ? "tomb" : "normal";
+    return dungeonWallFrameAddress(bank, id).frame;
+  }
+
+  private enemyTextureKey(enemyId: string): string {
+    if (enemyId.startsWith("bat")) return "actor.enemy.bat";
+    if (enemyId.startsWith("crawler")) return "actor.enemy.lizard";
+    return "actor.enemy.goblin";
   }
 
   private updateTownPresentation(immediate = false): void {
     if (!this.townWorld || !this.townPlayer) return;
-    this.townPlayer.setPosition(this.state.townPos.x, this.state.townPos.y);
+    this.townPlayer.setPosition(this.state.townPos.x, this.state.townPos.y + 4);
     const targetX = Phaser.Math.Clamp(this.state.townPos.x - MAP_W / 2, 0, TOWN_WORLD_WIDTH - MAP_W);
     const targetY = Phaser.Math.Clamp(this.state.townPos.y - MAP_H / 2, 0, TOWN_WORLD_HEIGHT - MAP_H);
     const currentX = -this.townWorld.x;
@@ -535,39 +1078,71 @@ export class MerchantScene extends Phaser.Scene {
     this.townWorld.setPosition(-Math.round(nextX), -Math.round(nextY));
   }
 
-  private drawTownGround(graphics: Phaser.GameObjects.Graphics): void {
+  private drawTownTerrain(world: Phaser.GameObjects.Container): void {
     for (let y = 0; y < TOWN_HEIGHT; y += 1) {
       for (let x = 0; x < TOWN_WIDTH; x += 1) {
-        const px = x * TOWN_TILE;
-        const py = y * TOWN_TILE;
         const surface = townSurfaceAt(x, y);
-        const seed = (x * 73856093 ^ y * 19349663) >>> 0;
-        const color = surface === "grass" ? (seed % 3 === 0 ? 0x496b45 : 0x526f49)
-          : surface === "road" ? 0x9b8561
-            : surface === "plaza" ? 0x8a8171
-              : surface === "dock" ? 0x805b3e : 0x26616a;
-        graphics.fillStyle(color, 1).fillRect(px, py, TOWN_TILE, TOWN_TILE);
-        if (surface === "grass") {
-          graphics.fillStyle(seed % 2 ? 0x6f8b58 : 0x3d5d3e, 0.7).fillRect(px + 3 + (seed % 11), py + 4 + ((seed >> 4) % 13), 2, 2);
-          if (seed % 9 === 0) graphics.fillStyle(0xd5bc76, 0.8).fillRect(px + 16, py + 7, 1, 1);
-        } else if (surface === "road" || surface === "plaza") {
-          graphics.fillStyle(surface === "road" ? 0xc0a97a : 0xb3aa97, 0.42).fillRect(px + 3 + (seed % 10), py + 4 + ((seed >> 3) % 12), 3, 2);
-        } else if (surface === "water") {
-          graphics.lineStyle(1, 0x63a4a5, 0.65).lineBetween(px + 3, py + 7 + (seed % 8), px + 14, py + 7 + (seed % 8));
-        } else {
-          graphics.fillStyle(0xae8055, 0.8).fillRect(px + 2, py + 3, TOWN_TILE - 4, 3);
-          graphics.lineStyle(1, 0x4e382d, 0.75).lineBetween(px + 3, py + 12, px + TOWN_TILE - 3, py + 12);
-        }
+        let mask = 0;
+        if (y > 0 && townSurfaceAt(x, y - 1) === surface) mask |= CARDINAL_MASK_BITS.north;
+        if (x + 1 < TOWN_WIDTH && townSurfaceAt(x + 1, y) === surface) mask |= CARDINAL_MASK_BITS.east;
+        if (y + 1 < TOWN_HEIGHT && townSurfaceAt(x, y + 1) === surface) mask |= CARDINAL_MASK_BITS.south;
+        if (x > 0 && townSurfaceAt(x - 1, y) === surface) mask |= CARDINAL_MASK_BITS.west;
+        const choice = townTerrainChoice(surface, x, y, mask);
+        const address = terrainBankFrame(TOWN_TERRAIN_BANK_ROWS[surface], choice.frame);
+        world.add(
+          this.add.image(x * TOWN_TILE + TOWN_TILE / 2, y * TOWN_TILE + TOWN_TILE / 2, ASSET_MANIFEST.townTiles.textureKey, address.frame)
+            .setRotation(choice.rotation ?? 0)
+            .setFlip(choice.flipX ?? false, choice.flipY ?? false),
+        );
       }
     }
   }
 
-  private drawTownPlots(graphics: Phaser.GameObjects.Graphics, plots: TownPlot[]): void {
+  private addTownObject(
+    world: Phaser.GameObjects.Container,
+    x: number,
+    y: number,
+    frame: number,
+    rotation = 0,
+    scale = 1,
+  ): Phaser.GameObjects.Image {
+    const image = this.add.image(x * TOWN_TILE + TOWN_TILE / 2, y * TOWN_TILE + TOWN_TILE / 2, ASSET_MANIFEST.townObjects.textureKey, frame)
+      .setRotation(rotation)
+      .setScale(scale);
+    world.add(image);
+    return image;
+  }
+
+  private drawTownBuildings(world: Phaser.GameObjects.Container): void {
+    for (const building of TOWN_BUILDINGS) {
+      const key = building.id as keyof typeof TOWN_BUILDING_ASSETS;
+      const asset = TOWN_BUILDING_ASSETS[key];
+      const image = this.add.image(
+        building.x * TOWN_TILE + (building.width * TOWN_TILE) / 2,
+        building.y * TOWN_TILE + (building.height * TOWN_TILE) / 2 + 4,
+        asset.textureKey,
+      ).setOrigin(0.5, 0.5);
+      image.setDisplaySize(building.width * TOWN_TILE, building.height * TOWN_TILE);
+      world.add(image);
+    }
+  }
+
+  private playTownPlayerMotion(horizontal: number, vertical: number): void {
+    if (!this.townPlayer) return;
+    const animation = Math.abs(horizontal) > Math.abs(vertical)
+      ? horizontal < 0 ? "player.walk-left" : "player.walk-right"
+      : vertical < 0 ? "player.walk-up" : "player.walk-down";
+    if (this.townPlayer.anims.currentAnim?.key !== animation) this.townPlayer.play(animation, true);
+  }
+
+  private drawTownPlots(world: Phaser.GameObjects.Container, plots: TownPlot[]): void {
+    const graphics = this.add.graphics();
+    world.add(graphics);
     for (const plot of plots) {
       const px = plot.x * TOWN_TILE;
       const py = plot.y * TOWN_TILE;
       if (plot.kind === "farm") {
-        graphics.fillStyle(0x765d3b, 0.8).fillRect(px + TOWN_TILE, py + TOWN_TILE, (plot.width - 2) * TOWN_TILE, (plot.height - 2) * TOWN_TILE);
+        graphics.fillStyle(0x765d3b, 0.12).fillRect(px + TOWN_TILE, py + TOWN_TILE, (plot.width - 2) * TOWN_TILE, (plot.height - 2) * TOWN_TILE);
         for (let y = plot.y + 1; y < plot.y + plot.height - 1; y += 2) for (let x = plot.x + 1; x < plot.x + plot.width - 1; x += 2) {
           graphics.fillStyle(0x6b944d, 1).fillCircle(x * TOWN_TILE + 12, y * TOWN_TILE + 13, 4);
           graphics.fillStyle(0xb6d46e, 0.9).fillRect(x * TOWN_TILE + 11, y * TOWN_TILE + 7, 2, 5);
@@ -578,124 +1153,129 @@ export class MerchantScene extends Phaser.Scene {
       } else {
         graphics.fillStyle(0x6d7a50, 0.45).fillRect(px + TOWN_TILE, py + TOWN_TILE, (plot.width - 2) * TOWN_TILE, (plot.height - 2) * TOWN_TILE);
       }
-      this.drawFence(graphics, plot);
+      this.drawFence(world, plot);
     }
   }
 
-  private drawFence(graphics: Phaser.GameObjects.Graphics, plot: TownPlot): void {
+  private drawFence(world: Phaser.GameObjects.Container, plot: TownPlot): void {
     const gates = new Set(plot.gates.map((gate) => `${gate.x},${gate.y}`));
-    graphics.lineStyle(2, 0x4d3529, 1);
     for (let x = plot.x; x < plot.x + plot.width; x += 1) {
-      if (!gates.has(`${x},${plot.y}`)) graphics.lineBetween(x * TOWN_TILE, plot.y * TOWN_TILE + 4, (x + 1) * TOWN_TILE, plot.y * TOWN_TILE + 4);
+      const topGate = gates.has(`${x},${plot.y}`);
+      this.addTownObject(world, x, plot.y, topGate ? TOWN_OBJECT_FRAMES.gate : TOWN_OBJECT_FRAMES.fence, 0, 0.9);
       const bottom = plot.y + plot.height - 1;
-      if (!gates.has(`${x},${bottom}`)) graphics.lineBetween(x * TOWN_TILE, (bottom + 1) * TOWN_TILE - 4, (x + 1) * TOWN_TILE, (bottom + 1) * TOWN_TILE - 4);
+      const bottomGate = gates.has(`${x},${bottom}`);
+      this.addTownObject(world, x, bottom, bottomGate ? TOWN_OBJECT_FRAMES.gate : TOWN_OBJECT_FRAMES.fence, Math.PI, 0.9);
     }
     for (let y = plot.y; y < plot.y + plot.height; y += 1) {
-      if (!gates.has(`${plot.x},${y}`)) graphics.lineBetween(plot.x * TOWN_TILE + 4, y * TOWN_TILE, plot.x * TOWN_TILE + 4, (y + 1) * TOWN_TILE);
+      const leftGate = gates.has(`${plot.x},${y}`);
+      this.addTownObject(world, plot.x, y, leftGate ? TOWN_OBJECT_FRAMES.gate : TOWN_OBJECT_FRAMES.fence, -Math.PI / 2, 0.9);
       const right = plot.x + plot.width - 1;
-      if (!gates.has(`${right},${y}`)) graphics.lineBetween((right + 1) * TOWN_TILE - 4, y * TOWN_TILE, (right + 1) * TOWN_TILE - 4, (y + 1) * TOWN_TILE);
-    }
-    graphics.fillStyle(0x8e6542, 1);
-    for (let x = plot.x; x <= plot.x + plot.width; x += 1) {
-      graphics.fillRect(x * TOWN_TILE + 2, plot.y * TOWN_TILE, 4, 7);
-      graphics.fillRect(x * TOWN_TILE + 2, (plot.y + plot.height) * TOWN_TILE - 7, 4, 7);
+      const rightGate = gates.has(`${right},${y}`);
+      this.addTownObject(world, right, y, rightGate ? TOWN_OBJECT_FRAMES.gate : TOWN_OBJECT_FRAMES.fence, Math.PI / 2, 0.9);
     }
   }
 
-  private drawTownBuilding(graphics: Phaser.GameObjects.Graphics, building: TownBuilding): void {
-    const px = building.x * TOWN_TILE;
-    const py = building.y * TOWN_TILE;
-    const width = building.width * TOWN_TILE;
-    const height = building.height * TOWN_TILE;
-    graphics.fillStyle(0x1e2021, 0.28).fillRect(px + 5, py + 8, width, height);
-    graphics.fillStyle(building.wall, 1).fillRect(px + 3, py + 18, width - 6, height - 21);
-    graphics.fillStyle(0x573e32, 1);
-    for (let x = px + 8; x < px + width - 5; x += 18) graphics.fillRect(x, py + 18, 3, height - 21);
-    graphics.fillStyle(building.roof, 1).fillTriangle(px, py + 24, px + width / 2, py - 8, px + width, py + 24);
-    graphics.fillStyle(0xd1b173, 0.5);
-    for (let offset = 6; offset < width - 4; offset += 10) graphics.fillRect(px + offset, py + 8 + Math.abs(width / 2 - offset) * 0.2, 7, 2);
-    const doorX = building.entrance.x * TOWN_TILE + 5;
-    graphics.fillStyle(0x453126, 1).fillRect(doorX, py + height - 14, 14, 14);
-    graphics.fillStyle(building.accent, 1).fillRect(doorX + 10, py + height - 7, 2, 2);
-    for (let window = px + 18; window < px + width - 18; window += 28) {
-      graphics.fillStyle(0x3d5b68, 1).fillRect(window, py + height - 20, 8, 7);
-      graphics.lineStyle(1, 0xe9d59d, 0.75).strokeRect(window, py + height - 20, 8, 7);
-    }
-    graphics.fillStyle(building.accent, 1).fillRect(px + width / 2 - 7, py + height - 28, 14, 6);
-  }
-
-  private drawTownRoofFront(graphics: Phaser.GameObjects.Graphics, building: TownBuilding): void {
-    const px = building.x * TOWN_TILE;
-    const py = building.y * TOWN_TILE;
-    const width = building.width * TOWN_TILE;
-    const bottom = py + 24;
-    graphics.fillStyle(0x201c25, 0.32).fillRect(px + 2, bottom - 2, width - 4, 5);
-    graphics.lineStyle(2, 0x32272a, 0.9).lineBetween(px + 2, bottom, px + width - 2, bottom);
-  }
-
-  private drawTownLandmarks(graphics: Phaser.GameObjects.Graphics): void {
+  private drawTownLandmarks(world: Phaser.GameObjects.Container): void {
     const trees: Array<[number, number]> = [[2, 3], [4, 3], [14, 4], [31, 3], [45, 4], [2, 27], [12, 33], [46, 25], [30, 30], [15, 2], [45, 30], [28, 34]];
-    for (const [x, y] of trees) {
-      const px = x * TOWN_TILE + 12;
-      const py = y * TOWN_TILE + 13;
-      graphics.fillStyle(0x2c4539, 1).fillCircle(px + 2, py + 4, 11);
-      graphics.fillStyle(0x416742, 1).fillCircle(px - 3, py, 10).fillCircle(px + 6, py - 3, 9);
-      graphics.fillStyle(0x6f8c54, 0.75).fillCircle(px - 5, py - 5, 4);
-      graphics.fillStyle(0x5c4030, 1).fillRect(px - 2, py + 7, 5, 11);
-    }
-    // 市場のテントと井戸は、単一セルの施設ではなく広場の景観小物として扱う。
-    graphics.fillStyle(0x6f7378, 1).fillCircle(24 * TOWN_TILE + 12, 18 * TOWN_TILE + 12, 12);
-    graphics.lineStyle(2, 0xc1c7c7, 0.8).strokeCircle(24 * TOWN_TILE + 12, 18 * TOWN_TILE + 12, 8);
-    for (const [x, color] of [[15, 0xbf6456], [30, 0x507bb0]] as Array<[number, number]>) {
-      graphics.fillStyle(color, 1).fillTriangle(x * TOWN_TILE, 20 * TOWN_TILE, x * TOWN_TILE + 24, 20 * TOWN_TILE, x * TOWN_TILE + 12, 20 * TOWN_TILE - 15);
-      graphics.fillStyle(0x6e4b34, 1).fillRect(x * TOWN_TILE + 3, 20 * TOWN_TILE, 18, 12);
-    }
+    trees.forEach(([x, y], index) => this.addTownObject(world, x, y, index % 3 === 1 ? TOWN_OBJECT_FRAMES.pine : TOWN_OBJECT_FRAMES.oak, 0, 1.35));
+    for (const [x, y] of [[16, 19], [30, 19]] as Array<[number, number]>) this.addTownObject(world, x, y, TOWN_OBJECT_FRAMES.marketStall, 0, 1.08);
+    for (const [x, y] of [[13, 12], [33, 11], [18, 27], [27, 26]] as Array<[number, number]>) this.addTownObject(world, x, y, TOWN_OBJECT_FRAMES.shrub, 0, 0.85);
+    for (const [x, y] of [[11, 10], [33, 10], [9, 26], [37, 20]] as Array<[number, number]>) this.addTownObject(world, x, y, TOWN_OBJECT_FRAMES.barrel, 0, 0.8);
+    this.addTownObject(world, 40, 31, TOWN_OBJECT_FRAMES.boat, 0, 1.1);
   }
 
-  private drawTownNpcs(graphics: Phaser.GameObjects.Graphics): void {
-    for (const poi of TOWN_POINTS) {
-      const position = this.poiPosition(poi);
-      const y = position.y + (poi.kind === "customer" ? 0 : 14);
-      graphics.fillStyle(0x261f28, 0.5).fillEllipse(position.x, y + 9, 12, 4);
-      graphics.fillStyle(poi.color, 1).fillRect(position.x - 4, y - 3, 8, 10);
-      graphics.fillStyle(0xf0c8a2, 1).fillCircle(position.x, y - 7, 4);
-      graphics.fillStyle(0x2d2630, 1).fillRect(position.x - 4, y - 11, 8, 4);
+  private drawTownNpcs(world: Phaser.GameObjects.Container): void {
+    TOWN_POINTS.forEach((poi, index) => {
+      const center = this.poiPosition(poi);
+      const actor = NPC_ASSET_VARIANTS[index % NPC_ASSET_VARIANTS.length]!;
+      const sprite = this.add.sprite(center.x, center.y + 6, actor.textureKey, 0).setOrigin(0.5, 0.75);
+      sprite.play(`${actor.textureKey}.idle-down`);
+      world.add(sprite);
+      const staticResident = poi.kind === "customer" || poi.kind === "entrance";
+      this.townNpcs.push({
+        sprite,
+        textureKey: actor.textureKey,
+        center: { x: center.x, y: center.y + 6 },
+        radius: staticResident ? { x: 6, y: 4 } : { x: 18, y: 11 },
+        phase: index * 1.71,
+        facing: "down",
+      });
+    });
+  }
+
+  private updateTownNpcs(delta: number): void {
+    const seconds = this.time.now / 1000;
+    for (const npc of this.townNpcs) {
+      const targetX = npc.center.x + Math.sin(seconds * 0.7 + npc.phase) * npc.radius.x;
+      const targetY = npc.center.y + Math.cos(seconds * 0.53 + npc.phase) * npc.radius.y;
+      const previousX = npc.sprite.x;
+      const previousY = npc.sprite.y;
+      npc.sprite.x = Phaser.Math.Linear(previousX, targetX, Math.min(1, delta / 850));
+      npc.sprite.y = Phaser.Math.Linear(previousY, targetY, Math.min(1, delta / 850));
+      const horizontal = npc.sprite.x - previousX;
+      const vertical = npc.sprite.y - previousY;
+      const animation = Math.abs(horizontal) > Math.abs(vertical)
+        ? horizontal < 0 ? "walk-left" : "walk-right"
+        : vertical < 0 ? "walk-up" : "walk-down";
+      if (Math.abs(horizontal) + Math.abs(vertical) < 0.03) npc.sprite.play(`${npc.textureKey}.idle-${npc.facing}`, true);
+      else {
+        npc.facing = animation.replace("walk-", "") as RoamingNpc["facing"];
+        if (npc.sprite.anims.currentAnim?.key !== `${npc.textureKey}.${animation}`) npc.sprite.play(`${npc.textureKey}.${animation}`, true);
+      }
     }
   }
 
   private renderHud(): void {
-    this.add.rectangle(PANEL_X + 62, MAP_H / 2, 128, MAP_H, 0x201a2a).setStrokeStyle(1, 0x9f855b);
+    this.add.rectangle(PANEL_X + 62, 180, 128, 360, 0x201a2a).setStrokeStyle(1, 0x9f855b);
     const hpWidth = Math.max(0, Math.floor((this.state.hp / this.state.maxHp) * 96));
     this.add.text(PANEL_X + 8, 14, "珍品商", { fontSize: "12px", color: "#ffe4a0" });
     this.add.text(PANEL_X + 8, 34, `HP ${this.state.hp}/${this.state.maxHp}`, { fontSize: "10px", color: "#f5ddd6" });
     this.add.rectangle(PANEL_X + 56, 50, 98, 7, 0x4c3741).setOrigin(0.5);
     this.add.rectangle(PANEL_X + 7 + hpWidth / 2, 50, hpWidth, 5, 0xbc5866).setOrigin(0.5);
     this.add.text(PANEL_X + 8, 65, `${this.state.gold}G`, { fontSize: "12px", color: "#f7cf75" });
-    this.add.text(PANEL_X + 8, 84, `所持 ${currentBulk(this.state)}/12`, { fontSize: "10px", color: "#cdd8df" });
-    this.add.text(PANEL_X + 8, 98, `帰還石 ${this.state.returnStones}`, { fontSize: "9px", color: "#b7d8e8" });
-    this.add.text(PANEL_X + 8, 108, `煙玉 ${this.state.smokeBombs}`, { fontSize: "9px", color: "#d2b5e8" });
-    this.add.text(PANEL_X + 8, 124, "受注中", { fontSize: "9px", color: "#bca7d8" });
-    const quests = this.state.quests.filter((quest) => quest.status === "active").slice(0, 3);
-    quests.forEach((quest, index) => this.add.text(PANEL_X + 8, 139 + index * 16, quest.title, { fontSize: "7px", color: "#eee5d1", wordWrap: { width: 110 } }));
+    this.add.text(PANEL_X + 8, 84, `所持 ${currentBulk(this.state)}/${INVENTORY_CAPACITY}`, { fontSize: "10px", color: "#cdd8df" });
+    this.add.text(PANEL_X + 8, 100, `帰還石 ${this.state.returnStones}`, { fontSize: "10px", color: "#b7d8e8" });
+    this.add.text(PANEL_X + 8, 114, `煙玉 ${this.state.smokeBombs}`, { fontSize: "10px", color: "#d2b5e8" });
+    this.add.text(PANEL_X + 8, 134, "受注中", { fontSize: "10px", color: "#bca7d8" });
+    const quests = this.state.quests.filter((quest) => quest.status === "active" || quest.status === "readyToReport").slice(0, 3);
+    quests.forEach((quest, index) => this.add.text(PANEL_X + 8, 151 + index * 24, quest.title, { fontSize: "10px", color: "#eee5d1", wordWrap: { width: 110 } }));
     this.add.rectangle(MAP_W / 2, 323, MAP_W, 72, 0x17131e).setStrokeStyle(1, 0x78624b);
-    this.add.text(10, 301, this.state.message, { fontSize: "9px", color: "#f6ecd5", wordWrap: { width: 485, useAdvancedWrap: true } });
-    const hint = this.state.location === "town" ? "Enter: 話す  I:持ち物  Q:依頼  H:操作" : "Enter: 拾う/階段  Z:煙玉  R:帰還  I:持ち物";
-    this.add.text(10, 342, hint, { fontSize: "8px", color: "#ad9eb1" });
+    this.add.text(10, 299, this.state.message, { fontSize: "11px", color: "#f6ecd5", lineSpacing: 2, wordWrap: { width: 485, useAdvancedWrap: true } });
+    const hint = this.state.location === "town" ? "Enter: 話す  Esc:メニュー  Q:依頼  H:操作" : "Enter: 調べる  Space:行動  Z:煙玉  R:帰還  Esc:メニュー";
+    this.add.text(10, 340, hint, { fontSize: "10px", color: "#ad9eb1" });
   }
 
   private renderModal(): void {
     const modal = this.modal;
     if (!modal) return;
-    this.add.rectangle(320, 180, 530, 276, 0x0c0a11, 0.88).setStrokeStyle(2, 0xd4af72);
-    this.add.text(71, 56, modal.title, { fontSize: "15px", color: "#ffe8ab" });
-    modal.body.forEach((line, index) => this.add.text(71, 82 + index * 15, line, { fontSize: "9px", color: "#e8e0d1", wordWrap: { width: 490 } }));
-    const choiceStart = Math.max(154, 88 + modal.body.length * 15 + 12);
-    modal.choices.slice(0, 9).forEach((choice, index) => {
-      const selected = index === modal.index;
+    this.add.rectangle(320, 180, 560, 320, 0x0c0a11, 0.92).setStrokeStyle(2, 0xd4af72);
+    this.add.text(52, 34, modal.title, { fontSize: "16px", color: "#ffe8ab" });
+    modal.body.forEach((line, index) => this.add.text(52, 62 + index * 18, line, { fontSize: "11px", color: "#e8e0d1", lineSpacing: 2, wordWrap: { width: 536 } }));
+    const choiceStart = Math.max(142, 72 + modal.body.length * 18 + 10);
+    const visibleCount = Math.max(1, Math.min(8, Math.floor((318 - choiceStart) / 20)));
+    const firstChoice = Phaser.Math.Clamp(modal.index - visibleCount + 1, 0, Math.max(0, modal.choices.length - visibleCount));
+    modal.choices.slice(firstChoice, firstChoice + visibleCount).forEach((choice, index) => {
+      const choiceIndex = firstChoice + index;
+      const selected = choiceIndex === modal.index;
       const color = choice.disabled ? "#71697a" : selected ? "#16121b" : "#e7ddc9";
-      if (selected) this.add.rectangle(315, choiceStart + index * 16, 470, 14, 0xb07a50);
-      this.add.text(82, choiceStart - 5 + index * 16, `${selected ? "▶" : "　"}${choice.label}`, { fontSize: "9px", color });
+      const hit = this.add.rectangle(318, choiceStart + index * 20 + 7, 526, 18, selected ? 0xb07a50 : 0x0c0a11, selected ? 1 : 0.001)
+        .setInteractive({ useHandCursor: !choice.disabled });
+      const choiceText = this.add.text(58, choiceStart + index * 20, `${selected ? "▶" : "　"}${choice.label}`, { fontSize: "11px", color });
+      hit.on("pointerover", () => {
+        if (this.modal && !choice.disabled) {
+          this.modal.index = choiceIndex;
+          hit.setFillStyle(0xb07a50, 1);
+          choiceText.setColor("#16121b");
+        }
+      });
+      hit.on("pointerout", () => {
+        hit.setFillStyle(0x0c0a11, 0.001);
+        choiceText.setColor(choice.disabled ? "#71697a" : "#e7ddc9");
+      });
+      hit.on("pointerdown", () => {
+        if (this.modal && !choice.disabled) choice.action();
+      });
     });
-    this.add.text(71, 302, "↑↓ 選択　Enter 決定　Esc 戻る", { fontSize: "8px", color: "#a89cad" });
+    this.add.text(52, 326, "↑↓ / マウス 選択　Enter / クリック 決定　Esc 戻る", { fontSize: "10px", color: "#a89cad" });
   }
 }

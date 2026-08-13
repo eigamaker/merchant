@@ -1,0 +1,41 @@
+{
+  "source_project": "dungeon_curio_merchant-0813_environment_v001",
+  "source_root": "C:/development/2d-asset-forge/2d-asset-forge/projects/dungeon_curio_merchant-0813_environment_v001",
+  "approved_generations": {
+    "town_terrain": {
+      "grass": "g0020",
+      "dirt_path": "g0002",
+      "cobble": "g0003",
+      "shallow_water": "g0005",
+      "wood_floor": "g0004",
+      "flower_bed": "g0006",
+      "entrance_rock": "g0007",
+      "seasonal_reserve": "g0008"
+    },
+    "dungeon_terrain": {
+      "dungeon_bank_0": "g0009",
+      "dungeon_bank_1": "g0010",
+      "dungeon_bank_2": "g0018",
+      "dungeon_bank_3": "g0017",
+      "dungeon_bank_4": "g0016",
+      "dungeon_bank_5": "g0022",
+      "dungeon_bank_6": "g0014",
+      "dungeon_bank_7": "g0013"
+    },
+    "dungeon_walls": {
+      "normal_stone": "g0023",
+      "tomb_stone": "g0024"
+    },
+    "town_buildings": {
+      "wood_shop": "g0025"
+    }
+  },
+  "processing": {
+    "cell_size": "24x24",
+    "terrain_order": "mask 0 through 15, N=1 E=2 S=4 W=8",
+    "wall_order": "center, edgeNorth, edgeEast, edgeSouth, edgeWest, outerNE, outerSE, outerSW, outerNW, innerNE, innerSE, innerSW, innerNW, pillar, cracked",
+    "chroma_key": "#FF00FF",
+    "edge_guide_cleanup": true,
+    "wall_ground_preview_cleanup": true
+  }
+}

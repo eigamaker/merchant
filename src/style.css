@@ -1,5 +1,5 @@
 :root {
-  font-family: "Noto Sans JP", "Yu Gothic UI", system-ui, sans-serif;
+  font-family: "Noto Sans JP Variable", "Noto Sans JP", "Yu Gothic UI", system-ui, sans-serif;
   color: #f4ecd6;
   background: #0d0c13;
   font-synthesis: none;
@@ -24,20 +24,31 @@ body {
 }
 
 .game-shell {
-  width: min(100%, 1120px);
+  width: 640px;
+  max-width: 100%;
   filter: drop-shadow(0 20px 36px rgba(0, 0, 0, .45));
+}
+
+@media (min-width: 1280px) and (min-height: 720px) {
+  #app { padding: 0; }
+  .game-shell { width: 1280px; }
 }
 
 #game {
   width: 100%;
   aspect-ratio: 16 / 9;
   overflow: hidden;
-  border: 3px solid #b8945a;
+  outline: 3px solid #b8945a;
   background: #151320;
   image-rendering: pixelated;
 }
 
-#game canvas { width: 100% !important; height: 100% !important; image-rendering: pixelated; }
+#game canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  image-rendering: pixelated;
+}
 
 @media (max-width: 650px) {
   #app { padding: 0; }

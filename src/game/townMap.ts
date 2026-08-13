@@ -7,7 +7,7 @@ export const TOWN_WORLD_WIDTH = TOWN_WIDTH * TOWN_TILE;
 export const TOWN_WORLD_HEIGHT = TOWN_HEIGHT * TOWN_TILE;
 
 export type TownPoiKind = "shop" | "guild" | "tavern" | "entrance" | "customer";
-export type TownSurface = "grass" | "road" | "plaza" | "water" | "dock";
+export type TownSurface = "grass" | "road" | "plaza" | "water" | "dock" | "field" | "rock";
 
 export interface TownBuilding {
   id: string;
@@ -51,6 +51,7 @@ export const TOWN_BUILDINGS: TownBuilding[] = [
   { id: "entrance", name: "ダンジョン入口", kind: "entrance", x: 21, y: 2, width: 8, height: 3, entrance: tile(25, 5), roof: 0x58606b, wall: 0x7b7065, accent: 0xe6b758 },
   { id: "tavern", name: "酒場", kind: "tavern", x: 5, y: 6, width: 8, height: 3, entrance: tile(9, 9), roof: 0xa75d46, wall: 0xc49a6e, accent: 0xf3c969 },
   { id: "guild", name: "冒険者ギルド", kind: "guild", x: 34, y: 5, width: 8, height: 3, entrance: tile(38, 8), roof: 0x466b86, wall: 0xc6b593, accent: 0xaed9ec },
+  { id: "marketHall", name: "中央珍品市場", kind: "shop", x: 15, y: 17, width: 4, height: 3, entrance: tile(17, 20), roof: 0x9b6346, wall: 0xd9c18b, accent: 0xf3c969 },
   { id: "shop", name: "珍品店", kind: "shop", x: 6, y: 22, width: 4, height: 3, entrance: tile(8, 25), roof: 0x8a563d, wall: 0xd1ad75, accent: 0xf1c36b },
   { id: "duke", name: "ローゼン公爵邸", kind: "customer", customerId: "duke", x: 36, y: 22, width: 8, height: 3, entrance: tile(40, 25), roof: 0x704d68, wall: 0xd7c0a2, accent: 0xd9a8ea },
   { id: "scholar", name: "古代史研究室", kind: "customer", customerId: "scholar", x: 4, y: 29, width: 4, height: 3, entrance: tile(6, 32), roof: 0x6d6d70, wall: 0xb6af9a, accent: 0xe7ca78 },
@@ -82,36 +83,50 @@ const roads = new Set<string>();
 const plazas = new Set<string>();
 const water = new Set<string>();
 const docks = new Set<string>();
+const fields = new Set<string>();
+const rocks = new Set<string>();
 
 function fill(set: Set<string>, x: number, y: number, width: number, height: number): void {
   for (let yy = y; yy < y + height; yy += 1) for (let xx = x; xx < x + width; xx += 1) set.add(key(xx, yy));
 }
 
-function roadLine(from: Vec, to: Vec): void {
-  const paint = (x: number, y: number): void => {
-    for (let oy = -1; oy <= 0; oy += 1) for (let ox = -1; ox <= 0; ox += 1) roads.add(key(x + ox, y + oy));
-  };
-  let x = from.x;
-  let y = from.y;
-  paint(x, y);
-  while (x !== to.x) { x += Math.sign(to.x - x); paint(x, y); }
-  while (y !== to.y) { y += Math.sign(to.y - y); paint(x, y); }
+function roadPath(...waypoints: Vec[]): void {
+  for (let index = 0; index < waypoints.length - 1; index += 1) {
+    const from = waypoints[index]!;
+    const to = waypoints[index + 1]!;
+    let x = from.x;
+    let y = from.y;
+    roads.add(key(x, y));
+    while (x !== to.x || y !== to.y) {
+      const horizontal = Math.abs(to.x - x);
+      const vertical = Math.abs(to.y - y);
+      // Alternate steps while moving diagonally. It produces a narrow, walked
+      // path with gentle bends instead of a pair of town-block straight lines.
+      const stepHorizontal = horizontal > 0 && (vertical === 0 || horizontal > vertical || ((x + y + index) & 1) === 0);
+      if (stepHorizontal) x += Math.sign(to.x - x);
+      else y += Math.sign(to.y - y);
+      roads.add(key(x, y));
+    }
+  }
 }
 
-fill(plazas, 19, 14, 11, 9);
+// The supplied cobble cells form one coherent 4×4 courtyard composition.
+// Keep that composition intact instead of repeating its centre fragment across
+// a large rectangle.
+fill(plazas, 22, 17, 4, 4);
 fill(water, 31, 32, 17, 4);
 fill(docks, 39, 29, 4, 7);
-roadLine(tile(25, 5), tile(24, 18));
-roadLine(tile(3, 18), tile(44, 18));
-roadLine(tile(9, 9), tile(9, 18));
-roadLine(tile(38, 8), tile(38, 18));
-roadLine(tile(8, 25), tile(8, 18));
-roadLine(tile(6, 32), tile(8, 25));
-roadLine(tile(19, 31), tile(24, 22));
-roadLine(tile(28, 31), tile(24, 22));
-roadLine(tile(40, 25), tile(34, 25));
-roadLine(tile(34, 25), tile(29, 22));
-roadLine(tile(24, 22), tile(40, 31));
+fill(fields, 3, 14, 11, 6);
+fill(rocks, 20, 1, 10, 6);
+roadPath(tile(25, 5), tile(26, 8), tile(24, 12), tile(25, 15));
+roadPath(tile(9, 9), tile(11, 11), tile(13, 14), tile(19, 17));
+roadPath(tile(38, 8), tile(36, 11), tile(33, 14), tile(29, 17));
+roadPath(tile(17, 20), tile(20, 20));
+roadPath(tile(8, 25), tile(11, 23), tile(16, 21), tile(20, 20));
+roadPath(tile(6, 32), tile(8, 29), tile(8, 26), tile(11, 23));
+roadPath(tile(19, 31), tile(20, 27), tile(22, 24), tile(23, 22));
+roadPath(tile(28, 31), tile(29, 27), tile(28, 23), tile(27, 22));
+roadPath(tile(40, 25), tile(37, 24), tile(33, 22), tile(29, 21));
 
 const collision = Array.from({ length: TOWN_HEIGHT }, () => Array.from({ length: TOWN_WIDTH }, () => false));
 
@@ -150,6 +165,8 @@ export function townSurfaceAt(x: number, y: number): TownSurface {
   if (water.has(key(x, y))) return "water";
   if (plazas.has(key(x, y))) return "plaza";
   if (roads.has(key(x, y))) return "road";
+  if (fields.has(key(x, y))) return "field";
+  if (rocks.has(key(x, y))) return "rock";
   return "grass";
 }
 
@@ -188,4 +205,3 @@ export function moveTownPosition(current: Vec, delta: Vec, radius = 10): Vec {
 export function safeTownPosition(position: Vec): Vec {
   return isTownPositionWalkable(position) ? position : { ...TOWN_SPAWN };
 }
-
