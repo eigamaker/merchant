@@ -1,6 +1,6 @@
 export type ItemCategory = "weapon" | "arcane" | "relic" | "gem" | "book" | "art" | "material";
 export type KnowledgeLevel = "unknown" | "suspected" | "identified";
-export type Location = "town" | "dungeon";
+export type Location = "town" | "interior" | "dungeon";
 export type QuestStatus = "locked" | "available" | "active" | "readyToReport" | "complete";
 export type Facing = "up" | "down" | "left" | "right";
 
@@ -101,14 +101,79 @@ export interface ActiveGuard {
   damage: number;
 }
 
+/** A dungeon has three authored elevation bands.  Movement between bands is
+ * only possible through an explicit traversal link. */
+export type DungeonHeight = 0 | 1 | 2;
+export type EdgeDirection = "east" | "south";
+
+/**
+ * Edges are stored once, never once for each adjacent cell.  `east` means the
+ * border between (x,y) and (x+1,y); `south` means the border below (x,y).
+ */
+export interface CanonicalEdge {
+  x: number;
+  y: number;
+  direction: EdgeDirection;
+}
+
+export interface MapPoint3D extends Vec {
+  height: DungeonHeight;
+}
+
+/** A local connector, distinct from `stairs` which changes dungeon floors. */
+export interface TraversalLink {
+  id: string;
+  kind: "stairs" | "slope" | "door";
+  from: MapPoint3D;
+  to: MapPoint3D;
+  bidirectional: boolean;
+  footprint: Vec[];
+}
+
+export type DungeonRenderLayer = "ground" | "structure" | "decoration" | "overhead" | "light";
+
+/** A rendered Craftpix stamp.  It contains no gameplay rule: gameplay stays
+ * in tiles/heights/edges/traversalLinks. */
+export interface RenderPlacement {
+  assetId: string;
+  /** Optional Tiled animation clip; assetId remains the representative frame. */
+  animationId?: string;
+  x: number;
+  y: number;
+  layer: DungeonRenderLayer;
+  flipX?: boolean;
+  flipY?: boolean;
+  rotation?: 0 | 90 | 180 | 270;
+  offsetX?: number;
+  offsetY?: number;
+}
+
+export interface DungeonGenerationMetadata {
+  algorithm: "craftpix-hybrid-v1" | "craftpix-ports-v2";
+  seed: number;
+  floor: number;
+  templateLibraryVersion: number;
+  catalogVersion: number;
+  fallbackReason?: string;
+  blueprintSummary: { roomCount: number; branchCount: number; loopCount: number };
+}
+
 export interface DungeonMap {
   width: number;
   height: number;
   /** Rendering unit for this map; legacy generated maps omit it and use 24px. */
   tileSize?: number;
   /** Optional art theme; omitted maps use the existing generated tile renderer. */
-  visualTheme?: "craftpix-showcase";
+  visualTheme?: "craftpix-showcase" | "craftpix-procedural" | "craftpix-manual";
   tiles: number[][];
+  /** v2 adds explicit traversal semantics while preserving legacy `tiles`. */
+  formatVersion?: 2;
+  heights?: DungeonHeight[][];
+  hardEdges?: CanonicalEdge[];
+  ledgeEdges?: CanonicalEdge[];
+  traversalLinks?: TraversalLink[];
+  renderLayers?: Partial<Record<DungeonRenderLayer, RenderPlacement[]>>;
+  generation?: DungeonGenerationMetadata;
   entrance: Vec;
   stairs: Vec;
   returnStairs: Vec;
@@ -164,7 +229,7 @@ export interface TimedEvent {
 }
 
 export interface GameState {
-  version: 2;
+  version: 3;
   day: number;
   gold: number;
   hp: number;
@@ -173,6 +238,8 @@ export interface GameState {
   smokeBombs: number;
   location: Location;
   townPos: Vec;
+  /** Authored free-movement map currently shown in town/interior mode. */
+  worldMapId?: string;
   /** 固定町マップの配置版。旧セーブを安全な初期位置へ移行するために使う。 */
   townMapRevision: number;
   /** Number of expeditions started. Persisted so a new visit never reuses the previous seed. */

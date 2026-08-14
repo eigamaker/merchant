@@ -3,6 +3,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import shutil
 import xml.etree.ElementTree as ET
 from collections import defaultdict, deque
 from pathlib import Path
@@ -41,6 +42,188 @@ DRY_FLOOR_LAYERS = {
 }
 DOORS_FIRST_GID = 5429
 DOORS_LAST_GID = 5578
+
+CATALOG_ASSETS = {
+    "decorative_cracks_walls.png": ("craftpix/decorative_cracks_walls.png", "cracks-wall"),
+    "decorative_cracks_floor.png": ("craftpix/decorative_cracks_floor.png", "cracks-floor"),
+    "walls_floor.png": ("craftpix/walls_floor.png", "walls-floor"),
+    "Water_coasts_animation.png": ("craftpix/Water_coasts_animation.png", "water-coasts"),
+    "water_details_animation.png": ("craftpix/water_details_animation.png", "water-details"),
+    "decorative_cracks_coasts_animation.png": ("craftpix/decorative_cracks_coasts_animation.png", "cracks-coasts"),
+    "fire_animation.png": ("craftpix/fire_animation.png", "fire"),
+    "fire_animation2.png": ("craftpix/fire_animation2.png", "fire-alt"),
+    "doors_lever_chest_animation.png": ("craftpix/doors_lever_chest_animation.png", "doors"),
+    "Objects.png": ("craftpix/Objects.png", "objects"),
+    "trap_animation.png": ("craftpix/trap_animation.png", "traps"),
+}
+
+MANUAL_LAYER_SOURCES = {
+    "ground": BASE_LAYERS,
+    "structure": {"walls_under_water"},
+    "decoration": {"traps", "Objects", "Objects2"},
+    "overhead": {"Objects_under_wall", "Walls", "Windows"},
+    "light": {"Lights"},
+}
+
+MANUAL_WIDTH = 48
+MANUAL_HEIGHT = 36
+MANUAL_OFFSET = ((MANUAL_WIDTH - 38) // 2, (MANUAL_HEIGHT - 28) // 2)
+
+
+def write_runtime_assets() -> None:
+    """Copy only source sheets referenced by the runtime catalog.
+
+    The generated maps never infer rules from these pixels: this makes the
+    asset boundary explicit while keeping the vendor originals untouched.
+    """
+    sheets = {}
+    for source_name, (relative_output, sheet_id) in CATALOG_ASSETS.items():
+        destination = OUTPUT / relative_output
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(SOURCE / source_name, destination)
+        image = Image.open(SOURCE / source_name)
+        columns = image.width // 16
+        sheets[sheet_id] = {"path": f"assets/dungeons/{relative_output}", "columns": columns, "frames": (image.width // 16) * (image.height // 16)}
+    catalog = {
+        "version": 1,
+        "tile": 16,
+        "sheets": sheets,
+        "roles": {
+            "floor": {"sheet": "walls-floor", "frame": 138},
+            "floor-alt": {"sheet": "walls-floor", "frame": 139},
+            "wall-center": {"sheet": "walls-floor", "frame": 36},
+            "wall-north": {"sheet": "walls-floor", "frame": 19},
+            "wall-east": {"sheet": "walls-floor", "frame": 26},
+            "wall-south": {"sheet": "walls-floor", "frame": 53},
+            "wall-west": {"sheet": "walls-floor", "frame": 70},
+            "wall-corner": {"sheet": "walls-floor", "frame": 64},
+            "wall-inner": {"sheet": "walls-floor", "frame": 87},
+            "stairs-up": {"sheet": "walls-floor", "frame": 324},
+            "stairs-down": {"sheet": "walls-floor", "frame": 326},
+            "torch": {"sheet": "objects", "frame": 174},
+            "tomb": {"sheet": "objects", "frame": 198},
+            "chest": {"sheet": "doors", "frame": 18},
+            "crack": {"sheet": "cracks", "frame": 0},
+        },
+    }
+    (OUTPUT / "craftpix-tile-catalog.json").write_text(json.dumps(catalog, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def write_animation_catalog() -> None:
+    """Export Tiled's authoritative animation frames for every animated sheet."""
+    root = ET.parse(SOURCE / "Dungeon1.tmx").getroot()
+    by_filename = {name: sheet_id for name, (_, sheet_id) in CATALOG_ASSETS.items()}
+    clips: list[dict[str, object]] = []
+    for tileset in root.findall("tileset"):
+        image = tileset.find("image")
+        sheet_id = by_filename.get(image.attrib.get("source", "")) if image is not None else None
+        if not sheet_id:
+            continue
+        for tile in tileset.findall("tile"):
+            animation = tile.find("animation")
+            if animation is None:
+                continue
+            frames = [
+                {"frame": int(frame.attrib["tileid"]), "duration": int(frame.attrib.get("duration", "150"))}
+                for frame in animation.findall("frame")
+            ]
+            if not frames:
+                continue
+            clips.append({
+                "id": f"{sheet_id}:{tile.attrib['id']}",
+                "sheet": sheet_id,
+                "representative": frames[0]["frame"],
+                "frames": frames,
+                "loop": True,
+            })
+    payload = {"version": 1, "tile": 16, "clips": clips}
+    (OUTPUT / "craftpix-animation-catalog.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def tile_sources() -> list[tuple[int, int, str]]:
+    root = ET.parse(SOURCE / "Dungeon1.tmx").getroot()
+    sources: list[tuple[int, int, str]] = []
+    by_filename = {name: sheet_id for name, (_, sheet_id) in CATALOG_ASSETS.items()}
+    for tileset in root.findall("tileset"):
+        image = tileset.find("image")
+        if image is None or "source" not in image.attrib:
+            continue
+        sheet_id = by_filename.get(image.attrib["source"])
+        if sheet_id:
+            sources.append((int(tileset.attrib["firstgid"]), int(tileset.attrib["columns"]), sheet_id))
+    return sources
+
+
+def tile_animation_lookup() -> dict[int, str]:
+    root = ET.parse(SOURCE / "Dungeon1.tmx").getroot()
+    by_filename = {name: sheet_id for name, (_, sheet_id) in CATALOG_ASSETS.items()}
+    lookup: dict[int, str] = {}
+    for tileset in root.findall("tileset"):
+        image = tileset.find("image")
+        sheet_id = by_filename.get(image.attrib.get("source", "")) if image is not None else None
+        if not sheet_id:
+            continue
+        first_gid = int(tileset.attrib["firstgid"])
+        for tile in tileset.findall("tile"):
+            if tile.find("animation") is not None:
+                lookup[first_gid + int(tile.attrib["id"])] = f"{sheet_id}:{tile.attrib['id']}"
+    return lookup
+
+
+def write_manual_sample(
+    layers: dict[str, dict[tuple[int, int], int]],
+    min_x: int,
+    min_y: int,
+    collision: list[str],
+) -> None:
+    source_tiles = tile_sources()
+    animation_lookup = tile_animation_lookup()
+    visual_layers: dict[str, list[dict[str, object]]] = {name: [] for name in MANUAL_LAYER_SOURCES}
+    for target_layer, source_layer_names in MANUAL_LAYER_SOURCES.items():
+        for source_layer_name, entries in layers.items():
+            if source_layer_name not in source_layer_names:
+                continue
+            for (x, y), raw in entries.items():
+                gid, flip_x, flip_y, diagonal = decode_tile(raw)
+                first_gid, columns, sheet_id = max((source for source in source_tiles if source[0] <= gid), key=lambda source: source[0])
+                placement: dict[str, object] = {
+                    "x": x - min_x + MANUAL_OFFSET[0],
+                    "y": y - min_y + MANUAL_OFFSET[1],
+                    "sheet": sheet_id,
+                    "frame": gid - first_gid,
+                }
+                if gid in animation_lookup:
+                    placement["animationId"] = animation_lookup[gid]
+                if flip_x:
+                    placement["flipX"] = True
+                if flip_y:
+                    placement["flipY"] = True
+                if diagonal:
+                    placement["rotation"] = 90
+                visual_layers[target_layer].append(placement)
+
+    manual_collision = [1] * (MANUAL_WIDTH * MANUAL_HEIGHT)
+    for y, row in enumerate(collision):
+        for x, value in enumerate(row):
+            manual_collision[(y + MANUAL_OFFSET[1]) * MANUAL_WIDTH + x + MANUAL_OFFSET[0]] = 0 if value == "." else 1
+    payload = {
+        "version": 1,
+        "id": "legacy-showcase",
+        "name": "旧固定マップ（編集見本）",
+        "width": MANUAL_WIDTH,
+        "height": MANUAL_HEIGHT,
+        "tileSize": 16,
+        "layers": visual_layers,
+        "collision": manual_collision,
+        "collisionLocked": [False] * (MANUAL_WIDTH * MANUAL_HEIGHT),
+        "hardEdges": [],
+        "entrance": {"x": ENTRY[0] + MANUAL_OFFSET[0], "y": ENTRY[1] + MANUAL_OFFSET[1]},
+        "stairs": {"x": STAIRS[0] + MANUAL_OFFSET[0], "y": STAIRS[1] + MANUAL_OFFSET[1]},
+        "createdAt": "2026-01-01T00:00:00.000Z",
+        "updatedAt": "2026-01-01T00:00:00.000Z",
+        "legacyReference": True,
+    }
+    (OUTPUT / "manual-showcase-v1.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
 
 def decode_tile(raw: int) -> tuple[int, bool, bool, bool]:
@@ -182,6 +365,8 @@ def main() -> None:
     foreground = render_group(FOREGROUND_LAYERS, layers, tilesets, min_x, min_y, width, height, tile_width)
     collision = build_collision(layers, min_x, min_y, width, height)
     OUTPUT.mkdir(parents=True, exist_ok=True)
+    write_runtime_assets()
+    write_animation_catalog()
     base.save(OUTPUT / "craftpix-showcase-base.png")
     foreground.save(OUTPUT / "craftpix-showcase-foreground.png")
     (OUTPUT / "craftpix-showcase.json").write_text(json.dumps({
@@ -195,6 +380,7 @@ def main() -> None:
         "stairs": {"x": STAIRS[0], "y": STAIRS[1]},
         "collision": collision,
     }, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    write_manual_sample(layers, min_x, min_y, collision)
     write_collision_preview(base, foreground, collision)
     print(f"generated {width}x{height} Craftpix dungeon at {OUTPUT}")
 

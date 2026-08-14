@@ -45,6 +45,8 @@ const requiredPngs: RequiredPng[] = [
   ["public/assets/buildings/dungeon-gate.png", 192, 72],
   ["public/assets/dungeons/craftpix-showcase-base.png", 608, 448],
   ["public/assets/dungeons/craftpix-showcase-foreground.png", 608, 448],
+  ["public/assets/dungeons/craftpix/walls_floor.png", 272, 464],
+  ["public/assets/dungeons/craftpix/Objects.png", 384, 144],
 ];
 
 function pngHeader(path: string): { width: number; height: number; colorType: number } {
@@ -164,5 +166,43 @@ describe("runtime pixel-art assets", () => {
     expect(manifest.collision.every((row) => row.length === manifest.width)).toBe(true);
     expect(manifest.collision[manifest.entry.y]![manifest.entry.x]).toBe(".");
     expect(manifest.collision[manifest.stairs.y]![manifest.stairs.x]).toBe(".");
+  });
+
+  it("ships the full manual-editor sheet catalog and its 48x36 editable sample", () => {
+    const catalogPath = resolve(process.cwd(), "public/assets/dungeons/craftpix-tile-catalog.json");
+    const samplePath = resolve(process.cwd(), "public/assets/dungeons/manual-showcase-v1.json");
+    const catalog = JSON.parse(readFileSync(catalogPath, "utf8")) as { sheets: Record<string, { path: string; frames: number }> };
+    const sample = JSON.parse(readFileSync(samplePath, "utf8")) as { width: number; height: number; collision: number[]; layers: Record<string, unknown[]> };
+    expect(Object.keys(catalog.sheets)).toHaveLength(11);
+    for (const sheet of Object.values(catalog.sheets)) {
+      expect(existsSync(resolve(process.cwd(), "public", sheet.path)), sheet.path).toBe(true);
+      expect(sheet.frames).toBeGreaterThan(0);
+    }
+    expect(sample.width).toBe(48);
+    expect(sample.height).toBe(36);
+    expect(sample.collision).toHaveLength(48 * 36);
+    expect(Object.keys(sample.layers)).toEqual(["ground", "structure", "decoration", "overhead", "light"]);
+  });
+
+  it("ships Tiled animation clips with per-frame durations", () => {
+    const catalogPath = resolve(process.cwd(), "public/assets/dungeons/craftpix-animation-catalog.json");
+    const catalog = JSON.parse(readFileSync(catalogPath, "utf8")) as { clips: Array<{ id: string; frames: Array<{ frame: number; duration: number }> }> };
+    expect(catalog.clips.length).toBeGreaterThan(200);
+    expect(catalog.clips.some((clip) => clip.id.startsWith("water-details:"))).toBe(true);
+    expect(catalog.clips.every((clip) => clip.frames.every((frame) => frame.duration > 0))).toBe(true);
+  });
+
+  it("ships the imported Craftpix runtime manifest, actors, UI, and environment sheets", () => {
+    const manifestPath = resolve(process.cwd(), "public/assets/craftpix/runtime-manifest.json");
+    expect(existsSync(manifestPath)).toBe(true);
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8")) as {
+      assets: Array<{ path: string }>;
+      actors: Array<{ path: string }>;
+      ui: Array<{ path: string }>;
+    };
+    expect(manifest.assets.length).toBeGreaterThan(700);
+    expect(manifest.actors.length).toBeGreaterThanOrEqual(78);
+    expect(manifest.ui.length).toBeGreaterThanOrEqual(15);
+    for (const entry of [...manifest.assets, ...manifest.actors, ...manifest.ui]) expect(existsSync(resolve(process.cwd(), "public", entry.path)), entry.path).toBe(true);
   });
 });

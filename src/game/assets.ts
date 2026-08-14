@@ -1,3 +1,7 @@
+import { CRAFTPIX_ACTORS, CRAFTPIX_PLAYER_ACTOR, CRAFTPIX_ENEMY_ACTORS } from "./craftpixActors";
+import { CRAFTPIX_UI } from "./craftpixUi";
+import { CRAFTPIX_ENVIRONMENT_SHEETS } from "./craftpixEnvironment";
+
 /**
  * 本番アート差し替え用の唯一の参照先。
  * 実装中は同じ textureKey をコード生成テクスチャに割り当て、納品時は path の PNG
@@ -22,12 +26,31 @@ export const ASSET_MANIFEST = {
     basePath: "assets/dungeons/craftpix-showcase-base.png",
     foregroundTextureKey: "dungeon.craftpix.foreground",
     foregroundPath: "assets/dungeons/craftpix-showcase-foreground.png",
+    wallsFloorTextureKey: "dungeon.craftpix.walls-floor",
+    wallsFloorPath: "assets/dungeons/craftpix/walls_floor.png",
+    doorsTextureKey: "dungeon.craftpix.doors",
+    doorsPath: "assets/dungeons/craftpix/doors_lever_chest_animation.png",
+    objectsTextureKey: "dungeon.craftpix.objects",
+    objectsPath: "assets/dungeons/craftpix/Objects.png",
+    cracksTextureKey: "dungeon.craftpix.cracks",
+    cracksPath: "assets/dungeons/craftpix/decorative_cracks_floor.png",
   },
   /**
    * 町の地面は1枚絵。Phaser が読み込み時に 24px セルへ切り出し、
    * `TOWN_TILE_INDICES` の恒等インデックスでタイルマップとして並べ直す。
    */
   townMap: { textureKey: "tile.town-map", path: "assets/tiles/town_map.png", frameWidth: 24, frameHeight: 24 },
+} as const;
+
+/** New source-pack assets are kept beside the legacy manifest until every
+ * scene has migrated.  This makes the transition reversible and lets the
+ * editor/game share one canonical actor and UI catalog. */
+export const CRAFTPIX_RUNTIME_ASSETS = {
+  actors: CRAFTPIX_ACTORS,
+  player: CRAFTPIX_PLAYER_ACTOR,
+  enemies: CRAFTPIX_ENEMY_ACTORS,
+  ui: CRAFTPIX_UI,
+  environmentSheets: CRAFTPIX_ENVIRONMENT_SHEETS,
 } as const;
 
 /** Every NPC source uses the same 4 columns × 4 rows walking-sheet contract. */

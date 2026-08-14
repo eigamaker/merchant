@@ -1,5 +1,9 @@
 import { CUSTOMERS, GUARD_DEFINITIONS, INITIAL_QUESTS, ITEM_DEFINITIONS } from "./content";
 import { createCraftpixDungeonMap } from "./craftpixDungeon";
+import { createCraftpixProceduralDungeon } from "./craftpixProcedural";
+import { DUNGEON_ROOM_TEMPLATES, DUNGEON_TEMPLATE_STORAGE_KEY, validateTemplateLibrary, type DungeonRoomTemplate } from "./dungeonTemplates";
+import { createManualTrialDungeon } from "./manualDungeon";
+import { canTraverse, isWalkableCell, samePosition } from "./dungeonRules";
 import { Rng } from "./rng";
 import { TOWN_SPAWN } from "./townMap";
 import type {
@@ -29,6 +33,34 @@ export const INVENTORY_CAPACITY = 12;
 const FLOOR = 0;
 const WALL = 1;
 
+export type DungeonGenerationMode = "fixed" | "procedural" | "manual";
+
+/** The authored fixed map is the stable normal route.  Procedural remains an
+ * explicit development comparison and manual is reserved for editor trials. */
+export function dungeonGenerationMode(): DungeonGenerationMode {
+  if (typeof window === "undefined") return "fixed";
+  const mode = new URLSearchParams(window.location.search).get("dungeon");
+  return mode === "manual" || mode === "procedural" ? mode : "fixed";
+}
+
+export function createDungeonMap(mode: DungeonGenerationMode, seed: number, floor: number, requiresTomb = false): DungeonMap {
+  if (mode === "manual") return createManualTrialDungeon(requiresTomb) ?? createCraftpixDungeonMap(requiresTomb);
+  if (mode === "procedural") return createCraftpixProceduralDungeon(seed, floor, requiresTomb, runtimeTemplateLibrary());
+  return createCraftpixDungeonMap(requiresTomb);
+}
+
+function runtimeTemplateLibrary(): DungeonRoomTemplate[] {
+  if (typeof window === "undefined") return DUNGEON_ROOM_TEMPLATES;
+  try {
+    const saved = window.localStorage.getItem(DUNGEON_TEMPLATE_STORAGE_KEY);
+    if (!saved) return DUNGEON_ROOM_TEMPLATES;
+    const parsed = JSON.parse(saved) as DungeonRoomTemplate[];
+    return Array.isArray(parsed) && validateTemplateLibrary(parsed).length === 0 ? parsed : DUNGEON_ROOM_TEMPLATES;
+  } catch {
+    return DUNGEON_ROOM_TEMPLATES;
+  }
+}
+
 const clone = <T>(value: T): T => structuredClone(value);
 const emptyResult = (): TurnResult => ({ consumedTurn: false, events: [] });
 
@@ -41,7 +73,7 @@ export const DIRECTION: Record<"up" | "down" | "left" | "right", Vec> = {
 
 export function createNewGame(): GameState {
   return {
-    version: 2,
+    version: 3,
     day: 1,
     gold: 300,
     hp: 12,
@@ -50,6 +82,7 @@ export function createNewGame(): GameState {
     smokeBombs: 2,
     location: "town",
     townPos: { ...TOWN_SPAWN },
+    worldMapId: "town-main",
     townMapRevision: 3,
     expeditionSerial: 0,
     guildReputation: 0,
@@ -202,10 +235,10 @@ function connectRooms(tiles: number[][], rooms: Room[], rng: Rng): void {
 function freeFloor(map: DungeonMap, rng: Rng, occupied: Vec[]): Vec {
   for (let attempt = 0; attempt < 400; attempt += 1) {
     const candidate = { x: rng.int(1, map.width - 2), y: rng.int(1, map.height - 2) };
-    if (map.tiles[candidate.y]![candidate.x] === FLOOR && !occupied.some((pos) => samePosition(pos, candidate))) return candidate;
+    if (isWalkableCell(map, candidate) && !occupied.some((pos) => samePosition(pos, candidate))) return candidate;
   }
   const fallback = map.tiles.flatMap((row, y) => row.map((tile, x) => ({ tile, pos: { x, y } })))
-    .find(({ tile, pos }) => tile === FLOOR && !occupied.some((entry) => samePosition(entry, pos)));
+    .find(({ pos }) => isWalkableCell(map, pos) && !occupied.some((entry) => samePosition(entry, pos)));
   return fallback ? fallback.pos : { ...map.entrance };
 }
 
@@ -224,19 +257,16 @@ export function generateDungeon(seed: number, floor: number, requiresTomb = fals
     width: DUNGEON_WIDTH,
     height: DUNGEON_HEIGHT,
     tiles,
+    formatVersion: 2,
+    heights: Array.from({ length: DUNGEON_HEIGHT }, () => Array<0 | 1 | 2>(DUNGEON_WIDTH).fill(0)),
+    hardEdges: [],
+    ledgeEdges: [],
+    traversalLinks: [],
     entrance,
     stairs,
     returnStairs: entrance,
     specialRoom: requiresTomb && specialCandidate ? { ...specialCandidate.center } : undefined,
   };
-}
-
-function isWalkable(map: DungeonMap, pos: Vec): boolean {
-  return pos.x >= 0 && pos.y >= 0 && pos.x < map.width && pos.y < map.height && map.tiles[pos.y]![pos.x] === FLOOR;
-}
-
-function samePosition(a: Vec, b: Vec): boolean {
-  return a.x === b.x && a.y === b.y;
 }
 
 function distance(a: Vec, b: Vec): number {
@@ -294,7 +324,7 @@ function initialGuard(state: GameState, map: DungeonMap, occupied: Vec[]): Activ
   const definition = GUARD_DEFINITIONS[state.hiredGuardId];
   if (!record || !definition || (record.injuredUntilDay ?? 0) > state.day) return undefined;
   const candidates = Object.values(DIRECTION).map((direction) => ({ x: map.entrance.x + direction.x, y: map.entrance.y + direction.y }));
-  const pos = candidates.find((candidate) => isWalkable(map, candidate) && !occupied.some((entry) => samePosition(entry, candidate)))
+  const pos = candidates.find((candidate) => canTraverse(map, map.entrance, candidate) && !occupied.some((entry) => samePosition(entry, candidate)))
     ?? freeFloor(map, new Rng(state.expeditionSerial + state.day), occupied);
   occupied.push(pos);
   const maxHp = guardMaxHp(record, definition);
@@ -310,9 +340,9 @@ function shouldPlaceAronBody(state: GameState, floor: number): boolean {
     || (ring?.status === "active" && !ownsDefinition(state, "old-ring"));
 }
 
-function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: ActiveGuard | null, highestFloor = floor): DungeonRun {
-  const needsTomb = state.story.blackSword === "incident" && floor === 3;
-  const map = createCraftpixDungeonMap(needsTomb);
+function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: ActiveGuard | null, highestFloor = floor, forceTomb = false): DungeonRun {
+  const needsTomb = forceTomb || (state.story.blackSword === "incident" && floor === 3);
+  const map = createDungeonMap(dungeonGenerationMode(), seed, floor, needsTomb);
   const rng = new Rng(seed + floor * 997);
   const occupied: Vec[] = [map.entrance, map.stairs];
   const items: GroundItem[] = [];
@@ -337,7 +367,7 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
   if (guard && carriedGuard) {
     const candidate = Object.values(DIRECTION)
       .map((direction) => ({ x: map.entrance.x + direction.x, y: map.entrance.y + direction.y }))
-      .find((pos) => isWalkable(map, pos) && !occupied.some((entry) => samePosition(entry, pos)));
+      .find((pos) => canTraverse(map, map.entrance, pos) && !occupied.some((entry) => samePosition(entry, pos)));
     guard.pos = candidate ?? freeFloor(map, rng, occupied);
     occupied.push(guard.pos);
   }
@@ -393,11 +423,18 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
 
 export function beginExpedition(state: GameState): void {
   state.expeditionSerial += 1;
-  const seed = Math.imul(state.day, 104729) ^ Math.imul(state.expeditionSerial, 0x9e3779b1);
+  const params = typeof window === "undefined" ? undefined : new URLSearchParams(window.location.search);
+  const querySeed = Number.parseInt(params?.get("dungeonSeed") ?? "", 10);
+  const queryFloor = Number.parseInt(params?.get("dungeonFloor") ?? "", 10);
+  const seed = Number.isFinite(querySeed) && querySeed > 0
+    ? querySeed
+    : Math.imul(state.day, 104729) ^ Math.imul(state.expeditionSerial, 0x9e3779b1);
+  const floor = Number.isFinite(queryFloor) ? Math.min(8, Math.max(1, queryFloor)) : 1;
+  const forceTomb = params?.get("dungeonTomb") === "1";
   state.location = "dungeon";
   state.returnStones = 1;
   state.smokeBombs = 2;
-  state.run = buildRun(state, 1, seed);
+  state.run = buildRun(state, floor, seed, undefined, floor, forceTomb);
   state.message = state.run.guard
     ? `${guardDefinition(state.run.guard.guardId)?.name ?? "護衛"}とダンジョンへ入った。主人公の後に護衛、敵の順で動く。`
     : "ダンジョンへ入った。敵は倒せない。Spaceの「押し返す」で退路を作ろう。";
@@ -418,7 +455,7 @@ export function descend(state: GameState): void {
 function nearestGuardTarget(run: DungeonRun): Vec[] {
   return Object.values(DIRECTION)
     .map((direction) => ({ x: run.player.x + direction.x, y: run.player.y + direction.y }))
-    .filter((pos) => isWalkable(run.map, pos) && !run.enemies.some((enemy) => samePosition(enemy.pos, pos)));
+    .filter((pos) => canTraverse(run.map, run.player, pos) && !run.enemies.some((enemy) => samePosition(enemy.pos, pos)));
 }
 
 function nextPathStep(run: DungeonRun, start: Vec, goals: Vec[], blocked: Vec[]): Vec | undefined {
@@ -431,7 +468,7 @@ function nextPathStep(run: DungeonRun, start: Vec, goals: Vec[], blocked: Vec[])
     for (const direction of Object.values(DIRECTION)) {
       const next = { x: current.pos.x + direction.x, y: current.pos.y + direction.y };
       const key = `${next.x},${next.y}`;
-      if (visited.has(key) || !isWalkable(run.map, next) || blocked.some((entry) => samePosition(entry, next))) continue;
+      if (visited.has(key) || !canTraverse(run.map, current.pos, next) || blocked.some((entry) => samePosition(entry, next))) continue;
       const first = current.first ?? next;
       if (goalKeys.has(key)) return first;
       visited.add(key);
@@ -490,7 +527,7 @@ function moveEnemy(enemy: Enemy, run: DungeonRun, rng: Rng): void {
     if (direction.x === 0 && direction.y === 0) continue;
     const next = { x: enemy.pos.x + direction.x, y: enemy.pos.y + direction.y };
     const collision = run.enemies.some((other) => other.id !== enemy.id && samePosition(other.pos, next));
-    if (isWalkable(run.map, next)
+    if (canTraverse(run.map, enemy.pos, next)
       && !collision
       && !samePosition(next, run.player)
       && (!run.guard || !samePosition(next, run.guard.pos))) {
@@ -565,7 +602,7 @@ function performMove(state: GameState, direction: Vec): TurnResult {
     state.message = "護衛がいる。別の方向へ進もう。";
     return emptyResult();
   }
-  if (!isWalkable(run.map, next)) {
+  if (!canTraverse(run.map, run.player, next)) {
     state.message = "壁が行く手を阻んでいる。";
     return emptyResult();
   }
@@ -607,7 +644,7 @@ function performShove(state: GameState, direction: Vec): TurnResult {
   }
   const from = { ...enemy.pos };
   const destination = { x: enemy.pos.x + direction.x, y: enemy.pos.y + direction.y };
-  const blocked = !isWalkable(run.map, destination)
+  const blocked = !canTraverse(run.map, enemy.pos, destination)
     || run.enemies.some((candidate) => candidate.id !== enemy.id && samePosition(candidate.pos, destination))
     || samePosition(run.player, destination)
     || Boolean(run.guard && samePosition(run.guard.pos, destination));

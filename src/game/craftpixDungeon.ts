@@ -1,5 +1,5 @@
 import layout from "./craftpixDungeonLayout.json";
-import type { DungeonMap } from "./types";
+import type { DungeonHeight, DungeonMap } from "./types";
 
 export const CRAFTPIX_DUNGEON_TILE = layout.tile;
 export const CRAFTPIX_DUNGEON_WIDTH = layout.width;
@@ -20,6 +20,11 @@ export function createCraftpixDungeonMap(requiresTomb = false): DungeonMap {
     tileSize: CRAFTPIX_DUNGEON_TILE,
     visualTheme: "craftpix-showcase",
     tiles,
+    formatVersion: 2,
+    heights: Array.from({ length: CRAFTPIX_DUNGEON_HEIGHT }, () => Array<DungeonHeight>(CRAFTPIX_DUNGEON_WIDTH).fill(0)),
+    hardEdges: [],
+    ledgeEdges: [],
+    traversalLinks: [],
     entrance: { ...CRAFTPIX_DUNGEON_ENTRY },
     stairs: { ...CRAFTPIX_DUNGEON_STAIRS },
     returnStairs: { ...CRAFTPIX_DUNGEON_ENTRY },

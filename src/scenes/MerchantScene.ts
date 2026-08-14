@@ -14,6 +14,12 @@ import {
   terrainBankFrame,
   type DungeonWallFrameId,
 } from "../game/assetFrames";
+import { CRAFTPIX_SHEETS, craftpixAsset } from "../game/craftpixCatalog";
+import type { CraftpixAnimationCatalog } from "../game/craftpixAnimations";
+import { CRAFTPIX_ACTORS, CRAFTPIX_ENEMY_ACTORS, CRAFTPIX_PLAYER_ACTOR, actorFrame, type ActorAction, type ActorDirection, type CraftpixActorDefinition } from "../game/craftpixActors";
+import { CRAFTPIX_UI } from "../game/craftpixUi";
+import { canTraverse } from "../game/dungeonRules";
+import { loadManualTrialMap, manualMapToDungeonMap } from "../review/manualMapModel";
 import {
   DIRECTION,
   INVENTORY_CAPACITY,
@@ -109,6 +115,9 @@ export class MerchantScene extends Phaser.Scene {
   private playerFacing: "up" | "down" | "left" | "right" = "down";
   private dungeonWorld?: Phaser.GameObjects.Container;
   private dungeonMaskShape?: Phaser.GameObjects.Graphics;
+  private manualWorldMap?: import("../game/types").DungeonMap;
+  private manualWorld?: Phaser.GameObjects.Container;
+  private manualWorldPlayer?: Phaser.GameObjects.Sprite;
 
   constructor() {
     super("merchant");
@@ -130,14 +139,24 @@ export class MerchantScene extends Phaser.Scene {
     for (const actor of [...NPC_ASSET_VARIANTS, ...ENEMY_ASSET_VARIANTS, ...GUARD_ASSET_VARIANTS]) {
       this.load.spritesheet(actor.textureKey, actor.path, { frameWidth: 32, frameHeight: 32 });
     }
+    for (const actor of Object.values(CRAFTPIX_ACTORS)) {
+      for (const [action, clip] of Object.entries(actor.clips)) {
+        if (!clip) continue;
+        this.load.spritesheet(`craftpix.actor.${actor.id}.${action}`, clip.path, { frameWidth: clip.frameWidth, frameHeight: clip.frameHeight });
+      }
+    }
     this.load.spritesheet(ASSET_MANIFEST.item.textureKey, ASSET_MANIFEST.item.path, {
       frameWidth: ASSET_MANIFEST.item.frameWidth,
       frameHeight: ASSET_MANIFEST.item.frameHeight,
     });
     this.load.spritesheet("object.dungeon", "assets/objects/dungeon_objects.png", { frameWidth: 24, frameHeight: 24 });
     this.load.image(ASSET_MANIFEST.townMap.textureKey, ASSET_MANIFEST.townMap.path);
+    this.load.json("craftpix.animation.catalog", "assets/dungeons/craftpix-animation-catalog.json");
     this.load.image(ASSET_MANIFEST.craftpixDungeon.baseTextureKey, ASSET_MANIFEST.craftpixDungeon.basePath);
     this.load.image(ASSET_MANIFEST.craftpixDungeon.foregroundTextureKey, ASSET_MANIFEST.craftpixDungeon.foregroundPath);
+    for (const sheet of Object.values(CRAFTPIX_SHEETS)) {
+      this.load.spritesheet(sheet.textureKey, sheet.path, { frameWidth: 16, frameHeight: 16 });
+    }
     this.load.spritesheet(ASSET_MANIFEST.dungeonTiles.textureKey, ASSET_MANIFEST.dungeonTiles.path, {
       frameWidth: ASSET_MANIFEST.dungeonTiles.frameWidth,
       frameHeight: ASSET_MANIFEST.dungeonTiles.frameHeight,
@@ -146,6 +165,10 @@ export class MerchantScene extends Phaser.Scene {
       frameWidth: ASSET_MANIFEST.dungeonWalls.frameWidth,
       frameHeight: ASSET_MANIFEST.dungeonWalls.frameHeight,
     });
+    this.load.image("ui.craftpix.panel", CRAFTPIX_UI.panel.path);
+    this.load.spritesheet("ui.craftpix.buttons", CRAFTPIX_UI.buttons.path, { frameWidth: CRAFTPIX_UI.buttons.frameWidth, frameHeight: CRAFTPIX_UI.buttons.frameHeight });
+    this.load.spritesheet("ui.craftpix.icons", CRAFTPIX_UI.icons.path, { frameWidth: CRAFTPIX_UI.icons.frameWidth, frameHeight: CRAFTPIX_UI.icons.frameHeight });
+    this.load.image("ui.craftpix.character-panel", CRAFTPIX_UI.characterPanel.path);
   }
 
   create(): void {
@@ -174,6 +197,38 @@ export class MerchantScene extends Phaser.Scene {
     }) as Record<string, Phaser.Input.Keyboard.Key>;
     this.createPlaceholderTextures();
     this.createActorAnimations();
+    this.createCraftpixTileAnimations();
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("autostart") === "world") {
+      const authored = loadManualTrialMap();
+      if (authored) {
+        this.state = createNewGame();
+        this.manualWorldMap = manualMapToDungeonMap(authored);
+        this.state.worldMapId = authored.id;
+        if (authored.kind === "dungeon") {
+          const entrance = this.manualWorldMap.entrance;
+          this.state.location = "dungeon";
+          this.state.run = {
+            seed: Date.now(), floor: 1, map: this.manualWorldMap,
+            player: { ...entrance }, enemies: [], items: [], chests: [], traps: [], bodies: [],
+            shoveCooldown: 0, highestFloor: 1, turn: 0,
+          };
+        } else {
+          this.state.location = "interior";
+          this.state.townPos = { x: this.manualWorldMap.entrance.x * 16 + 8, y: this.manualWorldMap.entrance.y * 16 + 8 };
+        }
+        this.gameStarted = true;
+        this.render();
+        return;
+      }
+    }
+    if (params.get("autostart") === "dungeon") {
+      this.state = createNewGame();
+      beginExpedition(this.state);
+      this.gameStarted = true;
+      this.render();
+      return;
+    }
     void this.openTitle();
   }
 
@@ -211,6 +266,7 @@ export class MerchantScene extends Phaser.Scene {
     if (!this.gameStarted) return;
 
     if (this.state.location === "town") this.updateTown(delta);
+    else if (this.state.location === "interior") this.updateManualWorld();
     else this.updateDungeon();
   }
 
@@ -239,6 +295,60 @@ export class MerchantScene extends Phaser.Scene {
     this.createActorAnimationSet(ASSET_MANIFEST.npc.textureKey, ASSET_MANIFEST.npc.textureKey);
     this.createActorAnimationSet(ASSET_MANIFEST.enemy.textureKey, ASSET_MANIFEST.enemy.textureKey);
     for (const actor of [...NPC_ASSET_VARIANTS, ...ENEMY_ASSET_VARIANTS, ...GUARD_ASSET_VARIANTS]) this.createActorAnimationSet(actor.textureKey, actor.textureKey);
+    this.createCraftpixActorAnimations();
+  }
+
+  private createCraftpixActorAnimations(): void {
+    for (const actor of Object.values(CRAFTPIX_ACTORS)) {
+      for (const [actionName, clip] of Object.entries(actor.clips) as [ActorAction, NonNullable<CraftpixActorDefinition["clips"][ActorAction]>][]) {
+        if (!clip || !this.textures.exists(`craftpix.actor.${actor.id}.${actionName}`)) continue;
+        for (const direction of clip.directions) {
+          const key = this.craftpixAnimationKey(actor.id, actionName, direction);
+          if (this.anims.exists(key)) continue;
+          const frames = Array.from({ length: clip.columns }, (_, index) => ({
+            key: `craftpix.actor.${actor.id}.${actionName}`,
+            frame: actorFrame(clip, direction, index),
+          }));
+          this.anims.create({ key, frames, frameRate: clip.frameRate, repeat: clip.repeat });
+        }
+      }
+    }
+  }
+
+  private createCraftpixTileAnimations(): void {
+    const catalog = this.cache.json.get("craftpix.animation.catalog") as CraftpixAnimationCatalog | undefined;
+    for (const clip of catalog?.clips ?? []) {
+      const sheet = CRAFTPIX_SHEETS[clip.sheet as keyof typeof CRAFTPIX_SHEETS];
+      if (!sheet || !this.textures.exists(sheet.textureKey) || this.anims.exists(`craftpix.tile.${clip.id}`)) continue;
+      this.anims.create({
+        key: `craftpix.tile.${clip.id}`,
+        frames: clip.frames.map((frame) => ({ key: sheet.textureKey, frame: frame.frame, duration: frame.duration })),
+        repeat: clip.loop ? -1 : 0,
+      });
+    }
+  }
+
+  private craftpixAnimationKey(actorId: string, action: ActorAction, direction: ActorDirection): string {
+    return `craftpix.${actorId}.${action}-${direction}`;
+  }
+
+  private craftpixActorTexture(actor: CraftpixActorDefinition, action: ActorAction = "idle"): string | undefined {
+    const clip = actor.clips[action] ?? actor.clips.idle;
+    if (!clip) return undefined;
+    const key = `craftpix.actor.${actor.id}.${clip.action}`;
+    return this.textures.exists(key) ? key : undefined;
+  }
+
+  private playCraftpixActor(sprite: Phaser.GameObjects.Sprite, actor: CraftpixActorDefinition, action: ActorAction, direction: ActorDirection, ignoreIfPlaying = true): boolean {
+    const clip = actor.clips[action] ?? actor.clips.idle;
+    if (!clip) return false;
+    const textureKey = this.craftpixActorTexture(actor, action);
+    const key = this.craftpixAnimationKey(actor.id, clip.action, direction);
+    if (!textureKey || !this.anims.exists(key)) return false;
+    if (!sprite.texture.key.startsWith("craftpix.actor.")) sprite.setTexture(textureKey, actorFrame(clip, direction, 0));
+    sprite.setOrigin(actor.origin.x, actor.origin.y).setScale(actor.scale);
+    sprite.play(key, ignoreIfPlaying);
+    return true;
   }
 
   private createActorAnimationSet(textureKey: string, prefix: string): void {
@@ -296,8 +406,8 @@ export class MerchantScene extends Phaser.Scene {
       this.playTownPlayerMotion(horizontal, vertical);
       this.updateTownPresentation();
       this.saveAuto();
-    } else if (this.townPlayer && this.townPlayer.anims.currentAnim?.key !== `player.idle-${this.playerFacing}`) {
-      this.townPlayer.play(`player.idle-${this.playerFacing}`, true);
+    } else if (this.townPlayer) {
+      if (!this.playCraftpixActor(this.townPlayer, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing)) this.townPlayer.play(`player.idle-${this.playerFacing}`, true);
     }
     this.updateTownNpcs(delta);
     if (interact || inventory || ledger || quest || help) this.render();
@@ -808,7 +918,12 @@ export class MerchantScene extends Phaser.Scene {
     this.children.removeAll(true);
     // removeAll(true) destroys the backdrop layer; drop the stale handle too.
     this.townBackdrop = undefined;
+    this.townWorld = undefined;
+    this.townPlayer = undefined;
+    this.manualWorld = undefined;
+    this.manualWorldPlayer = undefined;
     if (this.state.location === "town") this.renderTown();
+    else if (this.state.location === "interior") this.renderManualWorld();
     else this.renderDungeon();
     this.renderHud();
     if (this.modal) this.renderModal();
@@ -836,8 +951,9 @@ export class MerchantScene extends Phaser.Scene {
     this.drawTownBackdrop();
     const world = this.add.container(0, 0);
     this.townNpcs = [];
-    const player = this.add.sprite(this.state.townPos.x, this.state.townPos.y + 4, ASSET_MANIFEST.player.textureKey, 0).setOrigin(0.5, 0.75);
-    player.play(`player.idle-${this.playerFacing}`);
+    const playerTexture = this.craftpixActorTexture(CRAFTPIX_PLAYER_ACTOR) ?? ASSET_MANIFEST.player.textureKey;
+    const player = this.add.sprite(this.state.townPos.x, this.state.townPos.y + 4, playerTexture, 0).setOrigin(0.5, 0.75);
+    if (!this.playCraftpixActor(player, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing)) player.play(`player.idle-${this.playerFacing}`);
     world.add(player);
     this.townPlayer = player;
     this.drawTownNpcs(world);
@@ -849,6 +965,55 @@ export class MerchantScene extends Phaser.Scene {
     this.townWorld = world;
     this.updateTownPresentation(true);
     this.add.text(8, 8, `灰灯町 — ${this.state.day}日目`, { fontSize: "12px", color: "#fff2d7", stroke: "#1b1620", strokeThickness: 1 });
+  }
+
+  private renderManualWorld(): void {
+    const map = this.manualWorldMap;
+    if (!map) return;
+    const tile = map.tileSize ?? 16;
+    const center = tile / 2;
+    const world = this.add.container(0, 0);
+    this.manualWorld = world;
+    type Placement = import("../game/types").RenderPlacement;
+    const addPlacement = (entry: Placement): void => {
+      const asset = craftpixAsset(entry.assetId);
+      if (!asset) return;
+      const x = entry.x * tile + center + (entry.offsetX ?? 0);
+      const y = entry.y * tile + center + (entry.offsetY ?? 0);
+      const animated = Boolean(entry.animationId && this.anims.exists(`craftpix.tile.${entry.animationId}`));
+      const object = animated ? this.add.sprite(x, y, asset.textureKey, asset.frame) : this.add.image(x, y, asset.textureKey, asset.frame);
+      object.setDisplaySize(tile, tile).setFlip(Boolean(entry.flipX), Boolean(entry.flipY)).setAngle(entry.rotation ?? 0);
+      if (animated) (object as Phaser.GameObjects.Sprite).play(`craftpix.tile.${entry.animationId}`);
+      world.add(object);
+    };
+    for (const layer of ["ground", "structure", "decoration"] as const) for (const entry of map.renderLayers?.[layer] ?? []) addPlacement(entry);
+    if (map.entrance) world.add(this.add.rectangle(map.entrance.x * tile + center, map.entrance.y * tile + center, tile - 4, tile - 4, 0x62d7a5, 0.36).setStrokeStyle(1, 0xb8ffe2));
+    if (map.stairs) world.add(this.add.rectangle(map.stairs.x * tile + center, map.stairs.y * tile + center, tile - 4, tile - 4, 0xd7a95d, 0.4).setStrokeStyle(1, 0xffe7a6));
+    const playerTexture = this.craftpixActorTexture(CRAFTPIX_PLAYER_ACTOR) ?? ASSET_MANIFEST.player.textureKey;
+    const player = this.add.sprite(this.state.townPos.x, this.state.townPos.y + 4, playerTexture, 0).setOrigin(0.5, 0.84).setName("manual-player");
+    if (!this.playCraftpixActor(player, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing)) player.play(`player.idle-${this.playerFacing}`);
+    world.add(player);
+    this.manualWorldPlayer = player;
+    for (const layer of ["overhead", "light"] as const) for (const entry of map.renderLayers?.[layer] ?? []) addPlacement(entry);
+    this.updateManualWorldPresentation(true);
+    this.add.text(8, 8, `手作りマップ / ${map.width}×${map.height}`, { fontSize: "12px", color: "#fff2d7", stroke: "#1b1620", strokeThickness: 1 });
+  }
+
+  private updateManualWorldPresentation(immediate = false): void {
+    const map = this.manualWorldMap;
+    if (!map || !this.manualWorld) return;
+    const tile = map.tileSize ?? 16;
+    this.manualWorldPlayer?.setPosition(this.state.townPos.x, this.state.townPos.y + 4);
+    const worldWidth = map.width * tile;
+    const worldHeight = map.height * tile;
+    const targetX = Phaser.Math.Clamp(this.state.townPos.x - MAP_W / 2, 0, Math.max(0, worldWidth - MAP_W));
+    const targetY = Phaser.Math.Clamp(this.state.townPos.y - MAP_H / 2, 0, Math.max(0, worldHeight - MAP_H));
+    const currentX = -this.manualWorld.x;
+    const currentY = -this.manualWorld.y;
+    this.manualWorld.setPosition(
+      -Math.round(immediate ? targetX : Phaser.Math.Linear(currentX, targetX, 0.18)),
+      -Math.round(immediate ? targetY : Phaser.Math.Linear(currentY, targetY, 0.18)),
+    );
   }
 
   private renderDungeon(): void {
@@ -871,10 +1036,36 @@ export class MerchantScene extends Phaser.Scene {
       const image = this.add.image(x * tile + center, y * tile + center, texture, frame).setDisplaySize(tile, tile).setAlpha(alpha);
       return add(image);
     };
+    const placeCraftpix = (assetId: string, x: number, y: number, alpha = 1, offsetX = 0, offsetY = 0, animationId?: string): Phaser.GameObjects.Image | Phaser.GameObjects.Sprite | undefined => {
+      const asset = craftpixAsset(assetId);
+      if (!asset) return undefined;
+      if (animationId && this.anims.exists(`craftpix.tile.${animationId}`)) {
+        const sprite = this.add.sprite(x * tile + center + offsetX, y * tile + center + offsetY, asset.textureKey, asset.frame)
+          .setDisplaySize(tile, tile)
+          .setAlpha(alpha);
+        sprite.play(`craftpix.tile.${animationId}`);
+        return add(sprite);
+      }
+      const image = this.add.image(x * tile + center + offsetX, y * tile + center + offsetY, asset.textureKey, asset.frame)
+        .setDisplaySize(tile, tile)
+        .setAlpha(alpha);
+      return add(image);
+    };
+    const renderCraftpixLayer = (layer: "ground" | "structure" | "decoration" | "overhead" | "light"): void => {
+      for (const entry of run.map.renderLayers?.[layer] ?? []) {
+        const image = placeCraftpix(entry.assetId, entry.x, entry.y, 1, entry.offsetX, entry.offsetY, entry.animationId);
+        if (!image) continue;
+        image.setFlip(Boolean(entry.flipX), Boolean(entry.flipY));
+        image.setAngle(entry.rotation ?? 0);
+      }
+    };
 
     if (run.map.visualTheme === "craftpix-showcase") {
       add(this.add.image(run.map.width * center, run.map.height * center, ASSET_MANIFEST.craftpixDungeon.baseTextureKey).setOrigin(0.5));
-      add(this.add.image(run.map.width * center, run.map.height * center, ASSET_MANIFEST.craftpixDungeon.foregroundTextureKey).setOrigin(0.5));
+    } else if (run.map.visualTheme === "craftpix-procedural" || run.map.visualTheme === "craftpix-manual") {
+      renderCraftpixLayer("ground");
+      renderCraftpixLayer("structure");
+      renderCraftpixLayer("decoration");
     } else {
       const dungeonRow = dungeonTerrainBankForFloor(run.floor);
       for (let y = 0; y < run.map.height; y += 1) {
@@ -891,24 +1082,34 @@ export class MerchantScene extends Phaser.Scene {
       }
     }
 
-    place(run.map.stairs.x, run.map.stairs.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.stairs);
-    place(run.map.returnStairs.x, run.map.returnStairs.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.returnStairs);
-    if (run.map.specialRoom) place(run.map.specialRoom.x, run.map.specialRoom.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.torch);
+    if (run.map.visualTheme !== "craftpix-procedural" && run.map.visualTheme !== "craftpix-manual") {
+      place(run.map.stairs.x, run.map.stairs.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.stairs);
+      place(run.map.returnStairs.x, run.map.returnStairs.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.returnStairs);
+      if (run.map.specialRoom) place(run.map.specialRoom.x, run.map.specialRoom.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.torch);
+    }
     for (const entry of run.items) {
       const frame = Array.from(entry.item.definitionId).reduce((total, character) => total + character.charCodeAt(0), 0) % 8;
       place(entry.pos.x, entry.pos.y, ASSET_MANIFEST.item.textureKey, frame);
     }
-    for (const chest of run.chests) place(chest.pos.x, chest.pos.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.chest);
+    for (const chest of run.chests) {
+      if (run.map.visualTheme === "craftpix-procedural" || run.map.visualTheme === "craftpix-manual") placeCraftpix("chest", chest.pos.x, chest.pos.y);
+      else place(chest.pos.x, chest.pos.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.chest);
+    }
     for (const trap of run.traps) {
       const revealed = same(trap, run.player) || scoutRevealsTrap(this.state, trap);
-      if (revealed) place(trap.x, trap.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.trap, 0.72);
+      if (revealed && (run.map.visualTheme === "craftpix-procedural" || run.map.visualTheme === "craftpix-manual")) placeCraftpix("crack", trap.x, trap.y, 0.72);
+      else if (revealed) place(trap.x, trap.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.trap, 0.72);
     }
-    for (const body of run.bodies) place(body.pos.x, body.pos.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.bones);
+    for (const body of run.bodies) {
+      if (run.map.visualTheme === "craftpix-procedural" || run.map.visualTheme === "craftpix-manual") placeCraftpix("crack", body.pos.x, body.pos.y, 0.85);
+      else place(body.pos.x, body.pos.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.bones);
+    }
     for (const enemy of run.enemies) {
-      const textureKey = this.enemyTextureKey(enemy.id);
+      const actorDefinition = this.craftpixEnemyActor(enemy.id);
+      const textureKey = actorDefinition ? (this.craftpixActorTexture(actorDefinition) ?? this.enemyTextureKey(enemy.id)) : this.enemyTextureKey(enemy.id);
       const sprite = this.add.sprite(enemy.pos.x * tile + center, enemy.pos.y * tile + actorY, textureKey, 0).setOrigin(0.5, 0.75).setName(`actor:${enemy.id}`);
       const direction = this.dungeonWalkAnimations.get(enemy.id) ?? "down";
-      sprite.play(`${textureKey}.idle-${direction}`);
+      if (!actorDefinition || !this.playCraftpixActor(sprite, actorDefinition, "idle", direction)) sprite.play(`${textureKey}.idle-${direction}`);
       add(sprite);
     }
     if (run.guard) {
@@ -919,9 +1120,16 @@ export class MerchantScene extends Phaser.Scene {
       sprite.play(`${textureKey}.idle-${direction}`);
       add(sprite);
     }
-    const player = this.add.sprite(run.player.x * tile + center, run.player.y * tile + actorY, ASSET_MANIFEST.player.textureKey, 0).setOrigin(0.5, 0.75).setName("actor:player");
-    player.play(`player.idle-${this.playerFacing}`);
+    const playerTexture = this.craftpixActorTexture(CRAFTPIX_PLAYER_ACTOR) ?? ASSET_MANIFEST.player.textureKey;
+    const player = this.add.sprite(run.player.x * tile + center, run.player.y * tile + actorY, playerTexture, 0).setOrigin(0.5, 0.75).setName("actor:player");
+    if (!this.playCraftpixActor(player, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing)) player.play(`player.idle-${this.playerFacing}`);
     add(player);
+    if (run.map.visualTheme === "craftpix-showcase") {
+      add(this.add.image(run.map.width * center, run.map.height * center, ASSET_MANIFEST.craftpixDungeon.foregroundTextureKey).setOrigin(0.5));
+    } else if (run.map.visualTheme === "craftpix-procedural" || run.map.visualTheme === "craftpix-manual") {
+      renderCraftpixLayer("overhead");
+      renderCraftpixLayer("light");
+    }
     this.dungeonMaskShape = this.make.graphics({ x: 0, y: 0 });
     this.dungeonMaskShape.fillStyle(0xffffff).fillRect(0, 0, MAP_W, MAP_H);
     world.setMask(this.dungeonMaskShape.createGeometryMask());
@@ -950,11 +1158,20 @@ export class MerchantScene extends Phaser.Scene {
         const attacker = actor(event.attackerId);
         const target = actor(event.targetId);
         if (!attacker || !target) continue;
+        const attackerDefinition = event.attackerId === "player" ? CRAFTPIX_PLAYER_ACTOR : this.craftpixEnemyActor(event.attackerId);
+        const targetDefinition = event.targetId === "player" ? CRAFTPIX_PLAYER_ACTOR : this.craftpixEnemyActor(event.targetId);
+        const attackerDirection = this.dungeonWalkAnimations.get(event.attackerId) ?? this.playerFacing;
+        const targetDirection = this.dungeonWalkAnimations.get(event.targetId) ?? "down";
+        if (attackerDefinition) this.playCraftpixActor(attacker, attackerDefinition, "attack", attackerDirection, false);
+        if (targetDefinition) this.playCraftpixActor(target, targetDefinition, "hurt", targetDirection, false);
         const dx = Math.sign(target.x - attacker.x) * 5;
         const dy = Math.sign(target.y - attacker.y) * 5;
         this.tweens.add({ targets: attacker, x: attacker.x + dx, y: attacker.y + dy, duration: 55, yoyo: true, ease: "Quad.Out" });
         target.setTintFill(0xffc2c2);
-        this.time.delayedCall(120, () => target.clearTint());
+        this.time.delayedCall(220, () => {
+          target.clearTint();
+          if (targetDefinition) this.playCraftpixActor(target, targetDefinition, "idle", targetDirection, false);
+        });
       }
     }
   }
@@ -1001,6 +1218,13 @@ export class MerchantScene extends Phaser.Scene {
     return "actor.enemy.goblin";
   }
 
+  private craftpixEnemyActor(enemyId: string): CraftpixActorDefinition | undefined {
+    const ids = Object.keys(CRAFTPIX_ENEMY_ACTORS) as (keyof typeof CRAFTPIX_ENEMY_ACTORS)[];
+    const hash = Array.from(enemyId).reduce((total, character) => total + character.charCodeAt(0), 0);
+    const actor = CRAFTPIX_ENEMY_ACTORS[ids[hash % ids.length]!];
+    return actor;
+  }
+
   private updateTownPresentation(immediate = false): void {
     if (!this.townWorld || !this.townPlayer) return;
     this.townPlayer.setPosition(this.state.townPos.x, this.state.townPos.y + 4);
@@ -1032,10 +1256,68 @@ export class MerchantScene extends Phaser.Scene {
 
   private playTownPlayerMotion(horizontal: number, vertical: number): void {
     if (!this.townPlayer) return;
-    const animation = Math.abs(horizontal) > Math.abs(vertical)
+    const direction = (Math.abs(horizontal) > Math.abs(vertical)
       ? horizontal < 0 ? "player.walk-left" : "player.walk-right"
-      : vertical < 0 ? "player.walk-up" : "player.walk-down";
-    if (this.townPlayer.anims.currentAnim?.key !== animation) this.townPlayer.play(animation, true);
+      : vertical < 0 ? "player.walk-up" : "player.walk-down");
+    const facing = direction.endsWith("left") ? "left" : direction.endsWith("right") ? "right" : direction.endsWith("up") ? "up" : "down";
+    if (!this.playCraftpixActor(this.townPlayer, CRAFTPIX_PLAYER_ACTOR, "walk", facing)) {
+      if (this.townPlayer.anims.currentAnim?.key !== direction) this.townPlayer.play(direction, true);
+    }
+  }
+
+  /** Free movement for a town/interior draft. The collision grid and hard
+   * edges are authoritative; the artwork is only a visual layer. */
+  private updateManualWorld(): void {
+    const map = this.manualWorldMap;
+    if (!map) return;
+    const tile = map.tileSize ?? 16;
+    const horizontal = Number(this.keys.right.isDown || this.keys.d.isDown) - Number(this.keys.left.isDown || this.keys.a.isDown);
+    const vertical = Number(this.keys.down.isDown || this.keys.s.isDown) - Number(this.keys.up.isDown || this.keys.w.isDown);
+    let moved = false;
+    if (horizontal !== 0 || vertical !== 0) {
+      const length = Math.hypot(horizontal, vertical);
+      const step = 2.4;
+      const candidate = {
+        x: this.state.townPos.x + (horizontal / length) * step,
+        y: this.state.townPos.y + (vertical / length) * step,
+      };
+      const currentCell = { x: Math.floor(this.state.townPos.x / tile), y: Math.floor(this.state.townPos.y / tile) };
+      const nextCell = { x: Math.floor(candidate.x / tile), y: Math.floor(candidate.y / tile) };
+      const legal = nextCell.x === currentCell.x && nextCell.y === currentCell.y
+        ? true
+        : canTraverse(map, currentCell, nextCell);
+      if (legal) {
+        this.state.townPos = {
+          x: Phaser.Math.Clamp(candidate.x, tile / 2, map.width * tile - tile / 2),
+          y: Phaser.Math.Clamp(candidate.y, tile / 2, map.height * tile - tile / 2),
+        };
+        moved = true;
+      }
+      this.playerFacing = Math.abs(horizontal) > Math.abs(vertical)
+        ? horizontal < 0 ? "left" : "right"
+        : vertical < 0 ? "up" : "down";
+    }
+    const interact = this.just("enter") || this.just("space");
+    if (interact) {
+      /*
+      if (same(cell, map.stairs)) this.state.message = "荳九ｊ髫取ｮｵ縺ｮ菴咲ｽｮ縺ｧ縺吶・;
+      else if (same(cell, map.entrance)) this.state.message = "蜈･蜿｣縺ｮ菴咲ｽｮ縺ｧ縺吶・;
+      else this.state.message = "縺薙・蝨ｰ逕ｺ縺ｮ邱上ｒ豕慕ｴ九〒縺阪∪縺吶・;
+    }
+      */
+      this.state.message = "You can explore this authored map.";
+    }
+    if (this.just("i")) this.openInventory();
+    if (this.just("l")) this.openLedger();
+    if (this.just("h")) this.openHelp();
+    if (moved) {
+      if (this.manualWorldPlayer) this.playCraftpixActor(this.manualWorldPlayer, CRAFTPIX_PLAYER_ACTOR, "walk", this.playerFacing);
+      this.updateManualWorldPresentation();
+      this.saveAuto();
+    } else if (this.manualWorldPlayer) {
+      this.playCraftpixActor(this.manualWorldPlayer, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing);
+    }
+    if (interact || this.just("i") || this.just("l") || this.just("h")) this.render();
   }
 
   private drawTownNpcs(world: Phaser.GameObjects.Container): void {
@@ -1080,7 +1362,7 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private renderHud(): void {
-    this.add.rectangle(PANEL_X + 62, 180, 128, 360, 0x201a2a).setStrokeStyle(1, 0x9f855b);
+    this.addUiPanel(PANEL_X + 62, 180, 128, 360, 0x201a2a);
     const hpWidth = Math.max(0, Math.floor((this.state.hp / this.state.maxHp) * 96));
     this.add.text(PANEL_X + 8, 14, "珍品商", { fontSize: "12px", color: "#ffe4a0" });
     this.add.text(PANEL_X + 8, 34, `HP ${this.state.hp}/${this.state.maxHp}`, { fontSize: "10px", color: "#f5ddd6" });
@@ -1099,10 +1381,22 @@ export class MerchantScene extends Phaser.Scene {
     this.add.text(10, 340, hint, { fontSize: "10px", color: "#ad9eb1" });
   }
 
+  private addUiPanel(x: number, y: number, width: number, height: number, fallbackColor: number, alpha = 1): void {
+    if (this.textures.exists("ui.craftpix.panel")) {
+      // Main_tiles is an atlas. Crop one neutral brown panel tile before
+      // stretching it; drawing the entire atlas makes the UI look like a
+      // bookshelf instead of a window.
+      this.add.image(x, y, "ui.craftpix.panel").setCrop(0, 0, 96, 96).setDisplaySize(width, height).setAlpha(alpha).setOrigin(0.5);
+      this.add.rectangle(x, y, width, height, 0x0c0a11, 0.12).setStrokeStyle(2, 0xd4af72);
+      return;
+    }
+    this.add.rectangle(x, y, width, height, fallbackColor, alpha).setStrokeStyle(2, 0xd4af72);
+  }
+
   private renderModal(): void {
     const modal = this.modal;
     if (!modal) return;
-    this.add.rectangle(320, 180, 560, 320, 0x0c0a11, 0.92).setStrokeStyle(2, 0xd4af72);
+    this.addUiPanel(320, 180, 560, 320, 0x0c0a11, 0.92);
     this.add.text(52, 34, modal.title, { fontSize: "16px", color: "#ffe8ab" });
     modal.body.forEach((line, index) => this.add.text(52, 62 + index * 18, line, { fontSize: "11px", color: "#e8e0d1", lineSpacing: 2, wordWrap: { width: 536 } }));
     const choiceStart = Math.max(142, 72 + modal.body.length * 18 + 10);

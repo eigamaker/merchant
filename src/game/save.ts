@@ -1,5 +1,5 @@
 import { GUARD_DEFINITIONS, INITIAL_QUESTS } from "./content";
-import type { DungeonBody, DungeonChest, Enemy, GameState, ItemInstance, Quest, Vec } from "./types";
+import type { DungeonBody, DungeonChest, DungeonHeight, DungeonMap, Enemy, GameState, ItemInstance, Quest, Vec } from "./types";
 import { safeTownPosition, TOWN_SPAWN } from "./townMap";
 
 export type SaveSlot = "autosave" | "manual-1" | "manual-2" | "manual-3";
@@ -7,7 +7,7 @@ export type SaveSlot = "autosave" | "manual-1" | "manual-2" | "manual-3";
 interface StoredSave {
   slot: SaveSlot;
   savedAt: string;
-  state: GameState | LegacyGameState;
+  state: GameState | LegacyGameState | VersionTwoGameState;
 }
 
 type LegacyGameState = Omit<GameState, "version" | "guildReputation" | "guards" | "story" | "quests" | "run"> & {
@@ -20,6 +20,10 @@ type LegacyGameState = Omit<GameState, "version" | "guildReputation" | "guards" 
     enemies: Array<Omit<Enemy, "staggerTurns">>;
   };
 };
+
+/** Version 2 used the same campaign fields but did not persist dungeon
+ * traversal semantics.  Preserve its active map rather than regenerating it. */
+type VersionTwoGameState = Omit<GameState, "version"> & { version: 2 };
 
 const DATABASE_NAME = "dungeon-curio-merchant";
 const STORE_NAME = "campaigns";
@@ -37,7 +41,15 @@ function migrationItem(state: LegacyGameState, definitionId: string, floor: numb
   };
 }
 
-export function migrateSaveState(raw: GameState | LegacyGameState): GameState {
+function migrateDungeonMap(map: DungeonMap): void {
+  map.formatVersion ??= 2;
+  map.heights ??= Array.from({ length: map.height }, () => Array<DungeonHeight>(map.width).fill(0));
+  map.hardEdges ??= [];
+  map.ledgeEdges ??= [];
+  map.traversalLinks ??= [];
+}
+
+export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGameState): GameState {
   const legacyVersion = raw.version === 1;
   const state = raw as unknown as GameState;
   // 追加した任意項目を補い、既存のブラウザ保存を壊さない。
@@ -48,6 +60,7 @@ export function migrateSaveState(raw: GameState | LegacyGameState): GameState {
   state.guildReputation ??= 0;
   state.guards ??= Object.keys(GUARD_DEFINITIONS).map((id) => ({ id, unlocked: false, relation: 0, experience: 0, level: 1 }));
   state.townPos ??= { x: 9, y: 6 };
+  state.worldMapId ??= "town-main";
   // 旧セーブはタイル座標、現在は町だけピクセル座標で保存する。
   if (state.townPos.x <= 21 && state.townPos.y <= 12) {
     state.townPos = { x: state.townPos.x * 24 + 12, y: state.townPos.y * 24 + 12 };
@@ -136,9 +149,11 @@ export function migrateSaveState(raw: GameState | LegacyGameState): GameState {
       state.run.enemies.forEach((enemy) => { enemy.staggerTurns ??= 0; });
       state.run.shoveCooldown ??= 0;
       state.run.highestFloor ??= state.run.floor;
+      migrateDungeonMap(state.run.map);
     }
   }
-  (state as { version: number }).version = 2;
+  if (state.run) migrateDungeonMap(state.run.map);
+  (state as { version: number }).version = 3;
   return state;
 }
 
@@ -175,7 +190,7 @@ export class SaveRepository {
       request.onerror = () => reject(request.error);
     });
     database.close();
-    if (!result || (result.state.version !== 1 && result.state.version !== 2)) return undefined;
+    if (!result || (result.state.version !== 1 && result.state.version !== 2 && result.state.version !== 3)) return undefined;
     result.state = migrateSaveState(result.state);
     return result as StoredSave & { state: GameState };
   }

@@ -440,7 +440,7 @@ describe("save migration", () => {
 
     const migrated = migrateSaveState(legacy as never);
 
-    expect(migrated.version).toBe(2);
+    expect(migrated.version).toBe(3);
     expect(migrated.guildReputation).toBe(0);
     expect(migrated.guards).toHaveLength(2);
     expect(migrated.story.early.stage).toBe("lostSword");
