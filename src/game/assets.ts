@@ -16,10 +16,18 @@ export const ASSET_MANIFEST = {
   item: { textureKey: "object.item", path: "assets/objects/items.png", frameWidth: 24, frameHeight: 24 },
   dungeonTiles: { textureKey: "tile.dungeon", path: "assets/tiles/dungeon_terrain.png", frameWidth: 24, frameHeight: 24 },
   dungeonWalls: { textureKey: "tile.dungeon-wall", path: "assets/tiles/dungeon_walls.png", frameWidth: 24, frameHeight: 24 },
-  townTiles: { textureKey: "tile.town", path: "assets/tiles/town_terrain.png", frameWidth: 24, frameHeight: 24 },
-  townBuildings: { textureKey: "tile.town-building", path: "assets/tiles/town_buildings.png", frameWidth: 24, frameHeight: 24 },
-  townBuildingExtensions: { textureKey: "tile.town-building-wide", path: "assets/tiles/town_building_extensions.png", frameWidth: 24, frameHeight: 24 },
-  townObjects: { textureKey: "tile.town-object", path: "assets/tiles/town_objects.png", frameWidth: 24, frameHeight: 24 },
+  craftpixDungeon: {
+    tileSize: 16,
+    baseTextureKey: "dungeon.craftpix.base",
+    basePath: "assets/dungeons/craftpix-showcase-base.png",
+    foregroundTextureKey: "dungeon.craftpix.foreground",
+    foregroundPath: "assets/dungeons/craftpix-showcase-foreground.png",
+  },
+  /**
+   * 町の地面は1枚絵。Phaser が読み込み時に 24px セルへ切り出し、
+   * `TOWN_TILE_INDICES` の恒等インデックスでタイルマップとして並べ直す。
+   */
+  townMap: { textureKey: "tile.town-map", path: "assets/tiles/town_map.png", frameWidth: 24, frameHeight: 24 },
 } as const;
 
 /** Every NPC source uses the same 4 columns × 4 rows walking-sheet contract. */
@@ -47,19 +55,6 @@ export const ENEMY_ASSET_VARIANTS = [
   { textureKey: "actor.enemy.ghost", path: "assets/actors/enemy-ghost.png" },
 ] as const;
 
-/** Building images are whole multi-cell façades; widths are expressed in tiles. */
-export const TOWN_BUILDING_ASSETS = {
-  tavern: { textureKey: "building.tavern", path: "assets/buildings/tavern.png", width: 8 },
-  guild: { textureKey: "building.guild", path: "assets/buildings/guild.png", width: 8 },
-  marketHall: { textureKey: "building.curio-shop", path: "assets/buildings/curio-shop.png", width: 4 },
-  shop: { textureKey: "building.curio-shop", path: "assets/buildings/curio-shop.png", width: 4 },
-  scholar: { textureKey: "building.scholar-house", path: "assets/buildings/scholar-house.png", width: 4 },
-  mage: { textureKey: "building.arcane-shop", path: "assets/buildings/arcane-shop.png", width: 4 },
-  jeweler: { textureKey: "building.curio-shop", path: "assets/buildings/curio-shop.png", width: 4 },
-  duke: { textureKey: "building.noble-house", path: "assets/buildings/noble-house.png", width: 8 },
-  entrance: { textureKey: "building.dungeon-gate", path: "assets/buildings/dungeon-gate.png", width: 8 },
-} as const;
-
 export const ACTOR_WALK_FRAMES = {
   idle: [0],
   idleDown: [0],
@@ -70,22 +65,6 @@ export const ACTOR_WALK_FRAMES = {
   walkLeft: [4, 5, 6, 7],
   walkRight: [8, 9, 10, 11],
   walkUp: [12, 13, 14, 15],
-} as const;
-
-/** town_objects.png の現在使用中の先頭12フレーム。 */
-export const TOWN_OBJECT_FRAMES = {
-  fence: 0,
-  fenceCorner: 1,
-  gate: 2,
-  oak: 3,
-  pine: 4,
-  shrub: 5,
-  barrel: 6,
-  crates: 7,
-  marketStall: 8,
-  sign: 9,
-  wheat: 10,
-  boat: 11,
 } as const;
 
 /** dungeon_objects.png の現在使用中の先頭8フレーム。 */

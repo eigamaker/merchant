@@ -27,7 +27,7 @@ npm run dev
 
 ## 現在実装されているMVP
 
-- 48×36タイルの町、複数セル建物、柵付き敷地、顧客と施設
+- 60×45タイルの町。1枚の俯瞰イラストを24pxタイルへ切り出して敷き、9施設と顧客を配置
 - 入場ごとに変化する48×36タイルのダンジョン、ターン制の敵、宝箱、罠、遺体、容量制の持ち物
 - 銀露草、落とした剣、帰らない冒険者、古びた指輪までの序章依頼
 - ダメージを与えない押し返しと、ロルフ／ミナの自動護衛
@@ -35,7 +35,7 @@ npm run dev
 - 黒い長剣の発見、売却、売却後イベント、墓所調査、真名判明のストーリー
 - 商品履歴、IndexedDBの自動保存1枠・手動保存3枠
 
-ピクセルアートは `public/assets/` から読み込みます。論理ID、フレーム寸法、セル座標は `src/game/assets.ts` と `src/game/assetFrames.ts` が正です。
+ピクセルアートは `public/assets/` から読み込みます。論理ID、フレーム寸法、セル座標は `src/game/assets.ts` と `src/game/assetFrames.ts` が正です。町の当たり判定・施設配置・入口は `src/game/townLayout.json` が正で、`public/assets/preview/town-map-collision.png` で目視確認できます。
 
 ドキュメントの入口は [`docs/README.md`](docs/README.md) です。固定アセット契約、生成AI向け指示、現行パイプラインを用途別に分けています。
 

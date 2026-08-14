@@ -8,20 +8,23 @@
 
 ```text
 assets-src/                 生成原画、参照画像、クロマキー除去済み中間素材
+assets-src/town-map-source.png 町マップの原画1枚（1448×1086）
 assets-src/environment-v001/ Asset Forge承認済みの24×24セルと来歴マニフェスト
 public/assets/actors/       128×128pxの方向別キャラクターシート
 public/assets/buildings/    4×3または8×3セルの連続建物PNG
 public/assets/tiles/        24px地形、壁、町小物、建物アトラス
 public/assets/objects/      アイテムとダンジョン小物
-public/assets/preview/      レビュー用一覧画像
+public/assets/preview/      レビュー用一覧画像、町マップの格子・当たり判定オーバーレイ
 scripts/build_game_assets.py  原画から実行用PNGを作る決定的変換
+scripts/build_town_map.py     町マップ原画の切り出しとレビュー画像生成
 ```
 
 ゲーム側の参照先は次の3ファイルです。
 
 - `src/game/assets.ts`: パス、フレーム寸法、アニメーション、小物フレーム
 - `src/game/assetFrames.ts`: 地形バンク、壁15種、建物キット座標
-- `src/game/townMap.ts`: 建物・敷地・入口・衝突の配置
+- `src/game/townLayout.json`: 町の当たり判定マスク、施設footprint、入口、スポーン
+- `src/game/townMap.ts`: 上記JSONの読み出しと移動判定
 
 ## 2. 再生成
 
@@ -29,9 +32,17 @@ Pillowが使えるPython環境で実行します。
 
 ```powershell
 python scripts/build_game_assets.py
+python scripts/build_town_map.py
 npm test
 npm run build
 ```
+
+`build_town_map.py` は `town-map-source.png` を左右4px・上下3pxだけ切り落として1440×1080にし、256色へ量子化して `public/assets/tiles/town_map.png` を出力します。拡大縮小もリサンプルもしないので、絵は原画のままです。同時に2枚のレビュー画像を出力します。
+
+- `public/assets/preview/town-map-grid.png` — 24px格子と座標ラベル。当たり判定を絵から読み取るための作業用
+- `public/assets/preview/town-map-collision.png` — `townLayout.json` の判定を重ねたもの。赤が侵入不可、緑が通行可、黄枠が建物footprint、青枠が入口、白丸がスポーン
+
+町の当たり判定を触ったら、ゲームを起動する前にこのオーバーレイで確認してください。
 
 `build_game_assets.py` は最近傍補間を使用し、透過済み原画をセル内へ収めます。`assets-src/environment-v001/` の地形はマスク順を保ったままタウン8種・ダンジョン8種のバンクへ配置し、壁は通常石／墓石の2バンクへ配置します。壁セルに残る生成時の緑地プレビューは、ダンジョン地形へ重ねても矩形が見えないよう透明化します。キャラクターについては、クロマキー除去後にセル外周へ残った微小な色を縮尺判定へ含めないよう、外周を除外してから不透明領域を測ります。
 
@@ -44,8 +55,9 @@ npm run build
 | 敵 | `enemy-directions-alpha.png` | 6×4 |
 | ロルフ | `guard-rolf-directions-alpha.png` | 4×1 |
 | ミナ | `guard-mina-directions-alpha.png` | 4×1 |
-| 建物 | `town-buildings-alpha.png` | 3×2 |
-| 町小物 | `town-props-alpha.png` | 4×3 |
+| 建物（未使用） | `town-buildings-alpha.png` | 3×2 |
+| 町小物（未使用） | `town-props-alpha.png` | 4×3 |
+| 町マップ | `town-map-source.png` | 切り出し前の1枚絵 |
 | ダンジョン | `dungeon-environment-alpha.png` | 4×3 |
 
 元のクロマキー画像は同名の `*-source.png` として保持します。方向生成の来歴は `assets-src/direction-generation-metadata.json` にあります。
@@ -56,14 +68,14 @@ npm run build
 | --- | --- | --- |
 | 主人公・NPC・護衛 | 組み込み済み | 4方向、4歩行フレーム |
 | 敵 | 組み込み済み | 表示中はゴブリン、コウモリ、リザードを主に使用 |
-| 町地形 | 組み込み済み | 1行16マスクの契約。描画側もN/E/S/Wマスクを使用 |
+| 町マップ | 組み込み済み | 1枚絵を24pxで切り出し、恒等インデックスのタイルマップ1層として描画 |
+| 町地形バンク | 未使用 | `town_terrain.png`。町の刷新で描画から外れたがバンク契約は維持 |
 | ダンジョン地形 | 組み込み済み | Asset Forgeの8バンク×16マスク。階層1〜8をバンク0〜7へ対応 |
 | ダンジョン壁 | 組み込み済み | 通常石はシート行0〜3、墓石は行4〜7。15種を接続状態から選択 |
-| 建物単体PNG | 組み込み済み | 現在の町描画で使用する主契約 |
-| 建物アトラス | 生成・読込済み | wood_shopの4×3セルを先頭キットと小型curio-shopへ統合。幅広い建物は既存原画を継続使用 |
-| 町小物 | 一部組み込み済み | frame 0〜11を使用 |
-| 農地・家畜区画 | 一部組み込み済み | fieldバンクを農地、rockバンクを入口周辺へ配置。作物・家畜はコード描画 |
-| 柵接続 | 仮実装あり | 現在は単一柵を回転。16接続アトラスは未統合 |
+| 建物単体PNG | 未使用 | 町の刷新で描画から外れた。ファイルは維持 |
+| 建物アトラス | 未使用 | 同上。キット座標契約は `assetFrames.ts` に維持 |
+| 町小物 | 未使用 | 柵・木・樽・露店は町マップの絵に含まれる |
+| 農地・家畜区画 | 廃止 | 新しい町の絵には該当区画がない |
 | アイテム | 仮実装あり | 先頭8フレームを品IDから選択。重要品専用絵は未追加 |
 | ダンジョン小物 | 組み込み済み | 宝箱、階段、帰還、松明、瓦礫、骨、罠、壁小物 |
 
@@ -73,10 +85,19 @@ npm run build
 
 `src/game/assetFiles.test.ts` は次を検査します。
 
-- 必須PNGの存在
+- 必須PNGの存在（`town_map.png` は1440×1080・パレット形式）
 - PNG形式、RGBA、キャンバス寸法
 - キャラクターの4方向が別画像であること
 - 主人公の4方向の不透明領域高が一致すること
+
+`src/game/townLayout.test.ts` は次を検査します。
+
+- 当たり判定が60×45文字で、`#`と`.`だけであること
+- 外周が閉じていること
+- 施設9件と旅商人のidが揃い重複しないこと
+- 全footprintがグリッド内で、入口とスポーンが通行可であること
+
+`src/game/townMap.test.ts` は、スポーンから全POIへ幅優先探索で到達できること、入口が建物矩形の外周1セル以内にあることを検査します。
 
 `src/game/assetFrames.test.ts` は次を検査します。
 
@@ -97,9 +118,8 @@ npm run build
 
 ## 7. 次にアセット化する優先項目
 
-1. 農地・家畜区画のコード描画部分
-2. 16接続の柵と開閉門
-3. 依頼品、認識票、古びた指輪などの専用アイテム画像
-4. 墓所、湿地、古代床など階層別ダンジョンバンク
+1. 依頼品、認識票、古びた指輪などの専用アイテム画像
+2. 墓所、湿地、古代床など階層別ダンジョンバンク
+3. 町の前景レイヤー（木の梢や屋根の手前をプレイヤーより上に描く2層目）
 
 これらは画像生成だけでは完了せず、フレーム参照とマップ配置も同時に実装する必要があります。

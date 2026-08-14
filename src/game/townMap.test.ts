@@ -8,8 +8,8 @@ import {
   TOWN_POINTS,
   TOWN_SPAWN,
   TOWN_TILE,
+  TOWN_TILE_INDICES,
   TOWN_WIDTH,
-  townSurfaceAt,
 } from "./townMap";
 
 function reachableTiles(): Set<string> {
@@ -31,27 +31,43 @@ function reachableTiles(): Set<string> {
 }
 
 describe("town map", () => {
-  it("uses multi-cell buildings and gives every facility a reachable entrance", () => {
-    expect(TOWN_BUILDINGS.every((building) => building.width >= 4 && building.height >= 3)).toBe(true);
+  it("gives every facility a footprint inside the illustration and a reachable entrance", () => {
     const reached = reachableTiles();
+    for (const building of TOWN_BUILDINGS) {
+      expect(building.x, building.id).toBeGreaterThanOrEqual(0);
+      expect(building.y, building.id).toBeGreaterThanOrEqual(0);
+      expect(building.x + building.width, building.id).toBeLessThanOrEqual(TOWN_WIDTH);
+      expect(building.y + building.height, building.id).toBeLessThanOrEqual(TOWN_HEIGHT);
+    }
     for (const poi of TOWN_POINTS) {
-      expect(isTownTileBlocked(poi.pos.x, poi.pos.y)).toBe(false);
-      expect(reached.has(`${poi.pos.x},${poi.pos.y}`)).toBe(true);
+      expect(isTownTileBlocked(poi.pos.x, poi.pos.y), poi.id).toBe(false);
+      expect(reached.has(`${poi.pos.x},${poi.pos.y}`), poi.id).toBe(true);
     }
   });
 
-  it("blocks continuous movement through a building while retaining a safe fallback", () => {
+  it("keeps every entrance next to the building it opens", () => {
+    for (const building of TOWN_BUILDINGS) {
+      const dx = Math.max(building.x - building.entrance.x, 0, building.entrance.x - (building.x + building.width - 1));
+      const dy = Math.max(building.y - building.entrance.y, 0, building.entrance.y - (building.y + building.height - 1));
+      expect(Math.max(dx, dy), building.id).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it("blocks continuous movement into a building while retaining a safe fallback", () => {
     const shop = TOWN_BUILDINGS.find((building) => building.id === "shop");
     if (!shop) throw new Error("shop fixture missing");
-    const besideShop = { x: shop.x * TOWN_TILE - 12, y: (shop.y + 1) * TOWN_TILE + 12 };
-    const intoShop = moveTownPosition(besideShop, { x: 40, y: 0 });
-    expect(intoShop).toEqual(besideShop);
+    const wallY = shop.y + shop.height - 1;
+    const outside = { x: (shop.x - 1) * TOWN_TILE + TOWN_TILE / 2, y: wallY * TOWN_TILE + TOWN_TILE / 2 };
+    expect(isTownTileBlocked(shop.x, wallY)).toBe(true);
+    expect(moveTownPosition(outside, { x: 40, y: 0 }).x).toBeLessThan(shop.x * TOWN_TILE);
     expect(safeTownPosition({ x: -20, y: -20 })).toEqual(TOWN_SPAWN);
   });
 
-  it("exposes the generated field and entrance-rock surfaces to the renderer", () => {
-    expect(townSurfaceAt(3, 14)).toBe("field");
-    expect(townSurfaceAt(20, 1)).toBe("rock");
-    expect(townSurfaceAt(8, 29)).toBe("road");
+  it("addresses every 24px cell of the town illustration exactly once", () => {
+    const frames = TOWN_TILE_INDICES.flat();
+    expect(frames).toHaveLength(TOWN_WIDTH * TOWN_HEIGHT);
+    expect(new Set(frames).size).toBe(TOWN_WIDTH * TOWN_HEIGHT);
+    expect(Math.min(...frames)).toBe(0);
+    expect(Math.max(...frames)).toBe(TOWN_WIDTH * TOWN_HEIGHT - 1);
   });
 });

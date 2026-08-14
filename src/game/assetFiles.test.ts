@@ -6,7 +6,14 @@ import { createHash } from "node:crypto";
 
 type RequiredPng = readonly [path: string, width: number, height: number];
 
+/**
+ * 町マップは1枚絵を256色パレットへ量子化して出力するため colorType は 3。
+ * 他のシートはRGBA（colorType 6）契約のまま。
+ */
+const TOWN_MAP_PNG = "public/assets/tiles/town_map.png";
+
 const requiredPngs: RequiredPng[] = [
+  [TOWN_MAP_PNG, 1440, 1080],
   ["public/assets/actors/player.png", 128, 128],
   ["public/assets/actors/npc-innkeeper.png", 128, 128],
   ["public/assets/actors/npc-scout.png", 128, 128],
@@ -36,6 +43,8 @@ const requiredPngs: RequiredPng[] = [
   ["public/assets/buildings/arcane-shop.png", 96, 72],
   ["public/assets/buildings/noble-house.png", 192, 72],
   ["public/assets/buildings/dungeon-gate.png", 192, 72],
+  ["public/assets/dungeons/craftpix-showcase-base.png", 608, 448],
+  ["public/assets/dungeons/craftpix-showcase-foreground.png", 608, 448],
 ];
 
 function pngHeader(path: string): { width: number; height: number; colorType: number } {
@@ -86,7 +95,7 @@ describe("runtime pixel-art assets", () => {
       const header = pngHeader(path);
       expect(header.width, path).toBe(width);
       expect(header.height, path).toBe(height);
-      expect(header.colorType, path).toBe(6);
+      expect(header.colorType, path).toBe(path === TOWN_MAP_PNG ? 3 : 6);
     }
   });
 
@@ -133,5 +142,27 @@ describe("runtime pixel-art assets", () => {
       const image = PNG.sync.read(readFileSync(resolve(process.cwd(), path)));
       expect(alphaBounds(image, 0, 0, image.width, image.height).width, path).toBeGreaterThanOrEqual(184);
     }
+  });
+
+  it("ships the Craftpix collision manifest beside the rendered layers", () => {
+    const path = resolve(process.cwd(), "public/assets/dungeons/craftpix-showcase.json");
+    expect(existsSync(path)).toBe(true);
+    const manifest = JSON.parse(readFileSync(path, "utf8")) as {
+      tile: number;
+      width: number;
+      height: number;
+      entry: { x: number; y: number };
+      stairs: { x: number; y: number };
+      collision: string[];
+    };
+    expect(manifest.tile).toBe(16);
+    expect(manifest.width).toBe(38);
+    expect(manifest.height).toBe(28);
+    expect(manifest.entry).toEqual({ x: 14, y: 24 });
+    expect(manifest.stairs).toEqual({ x: 20, y: 4 });
+    expect(manifest.collision).toHaveLength(manifest.height);
+    expect(manifest.collision.every((row) => row.length === manifest.width)).toBe(true);
+    expect(manifest.collision[manifest.entry.y]![manifest.entry.x]).toBe(".");
+    expect(manifest.collision[manifest.stairs.y]![manifest.stairs.x]).toBe(".");
   });
 });

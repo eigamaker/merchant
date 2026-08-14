@@ -1,4 +1,5 @@
 import { CUSTOMERS, GUARD_DEFINITIONS, INITIAL_QUESTS, ITEM_DEFINITIONS } from "./content";
+import { createCraftpixDungeonMap } from "./craftpixDungeon";
 import { Rng } from "./rng";
 import { TOWN_SPAWN } from "./townMap";
 import type {
@@ -311,7 +312,7 @@ function shouldPlaceAronBody(state: GameState, floor: number): boolean {
 
 function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: ActiveGuard | null, highestFloor = floor): DungeonRun {
   const needsTomb = state.story.blackSword === "incident" && floor === 3;
-  const map = generateDungeon(seed, floor, needsTomb);
+  const map = createCraftpixDungeonMap(needsTomb);
   const rng = new Rng(seed + floor * 997);
   const occupied: Vec[] = [map.entrance, map.stairs];
   const items: GroundItem[] = [];

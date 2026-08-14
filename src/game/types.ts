@@ -104,6 +104,10 @@ export interface ActiveGuard {
 export interface DungeonMap {
   width: number;
   height: number;
+  /** Rendering unit for this map; legacy generated maps omit it and use 24px. */
+  tileSize?: number;
+  /** Optional art theme; omitted maps use the existing generated tile renderer. */
+  visualTheme?: "craftpix-showcase";
   tiles: number[][];
   entrance: Vec;
   stairs: Vec;
