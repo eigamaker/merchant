@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &2857331063985830757
+--- !u!1 &6182224005673076980
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,10 +8,10 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 1848241386422631870}
-  - component: {fileID: 4459691882446724521}
-  - component: {fileID: 6291005547534461932}
-  - component: {fileID: 4694262970067849620}
+  - component: {fileID: 7449137318621028219}
+  - component: {fileID: 549405113600395237}
+  - component: {fileID: 6618833443112707381}
+  - component: {fileID: 3772426630292169481}
   m_Layer: 0
   m_Name: Orc3
   m_TagString: Untagged
@@ -19,13 +19,13 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &1848241386422631870
+--- !u!4 &7449137318621028219
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2857331063985830757}
+  m_GameObject: {fileID: 6182224005673076980}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -34,14 +34,14 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!212 &4459691882446724521
+--- !u!212 &549405113600395237
 SpriteRenderer:
   serializedVersion: 2
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2857331063985830757}
+  m_GameObject: {fileID: 6182224005673076980}
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
@@ -93,14 +93,14 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
---- !u!95 &6291005547534461932
+--- !u!95 &6618833443112707381
 Animator:
   serializedVersion: 7
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2857331063985830757}
+  m_GameObject: {fileID: 6182224005673076980}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
   m_Controller: {fileID: 9100000, guid: 15e1cfbf458921f489ca141e7439a045, type: 2}
@@ -115,17 +115,17 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!114 &4694262970067849620
+--- !u!114 &3772426630292169481
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2857331063985830757}
+  m_GameObject: {fileID: 6182224005673076980}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c9ce162e20bd9ec4e8619952ef5028df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Merchan.Unity.EnemyActorAnimator
-  animator: {fileID: 6291005547534461932}
+  animator: {fileID: 6618833443112707381}
   defaultState: idle-down
