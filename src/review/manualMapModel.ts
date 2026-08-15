@@ -3,11 +3,11 @@ import { CRAFTPIX_SHEETS } from "../game/craftpixCatalog";
 import { reachableCells } from "../game/dungeonRules";
 import type { CanonicalEdge, DungeonMap, Vec } from "../game/types";
 
-export const MANUAL_MAP_VERSION = 1 as const;
+export const MANUAL_MAP_VERSION = 2 as const;
 export const MANUAL_MAP_WIDTH = 48;
 export const MANUAL_MAP_HEIGHT = 36;
 export const MANUAL_MAP_TILE = 16;
-export const MANUAL_TRIAL_STORAGE_KEY = "dungeon-manual-map-trial:v1";
+export const MANUAL_TRIAL_STORAGE_KEY = "dungeon-manual-map-trial:v2";
 
 export type ManualMapKind = "town" | "interior" | "dungeon";
 export const MANUAL_MAP_PRESETS: Record<ManualMapKind, { width: number; height: number; label: string }> = {
@@ -30,11 +30,24 @@ export interface ManualTilePlacement {
   rotation?: 0 | 90 | 180 | 270;
 }
 
+/** An entrance placed on a town map and connected to an interior map. */
+export interface ManualBuildingLink {
+  id: string;
+  name: string;
+  entrance: Vec;
+  interiorMapId: string;
+}
+
 export interface ManualDungeonMap {
   version: typeof MANUAL_MAP_VERSION;
   id: string;
   name: string;
   kind: ManualMapKind;
+  /** Display/order value used by the map editor (1 = first floor). */
+  floor: number;
+  /** World-space position of local cell (0,0). The editor may grow in any
+   * direction without discarding a source map's original coordinate space. */
+  origin: Vec;
   width: number;
   height: number;
   tileSize: typeof MANUAL_MAP_TILE;
@@ -44,6 +57,8 @@ export interface ManualDungeonMap {
   /** A manually-painted collision cell ignores later palette suggestions. */
   collisionLocked: boolean[];
   hardEdges: string[];
+  /** Town-only building entrances and the authored interiors they open. */
+  buildingLinks: ManualBuildingLink[];
   entrance?: Vec;
   stairs?: Vec;
   createdAt: string;
@@ -54,6 +69,18 @@ export interface ManualDungeonMap {
 export interface ManualDungeonMapPack {
   version: typeof MANUAL_MAP_VERSION;
   maps: ManualDungeonMap[];
+}
+
+/** A portable rectangular selection from a manual map, stored with its top-left at 0,0. */
+export interface ManualMapFragment {
+  width: number;
+  height: number;
+  layers: Record<ManualVisualLayer, ManualTilePlacement[]>;
+  collision: number[];
+  collisionLocked: boolean[];
+  hardEdges: string[];
+  entrance?: Vec;
+  stairs?: Vec;
 }
 
 export interface MapValidationIssue {
@@ -98,6 +125,8 @@ export function createBlankManualMap(name = "新しいダンジョン", kind: Ma
     id: mapId(),
     name,
     kind,
+    floor: 1,
+    origin: { x: 0, y: 0 },
     width: dimensions.width,
     height: dimensions.height,
     tileSize: MANUAL_MAP_TILE,
@@ -105,6 +134,7 @@ export function createBlankManualMap(name = "新しいダンジョン", kind: Ma
     collision: Array(dimensions.width * dimensions.height).fill(1),
     collisionLocked: Array(dimensions.width * dimensions.height).fill(false),
     hardEdges: [],
+    buildingLinks: [],
     createdAt: now,
     updatedAt: now,
   };
@@ -113,13 +143,65 @@ export function createBlankManualMap(name = "新しいダンジョン", kind: Ma
 export function cloneManualMap(map: ManualDungeonMap): ManualDungeonMap {
   return {
     ...map,
+    origin: { ...(map.origin ?? { x: 0, y: 0 }) },
     entrance: map.entrance ? { ...map.entrance } : undefined,
     stairs: map.stairs ? { ...map.stairs } : undefined,
+    buildingLinks: (map.buildingLinks ?? []).map((link) => {
+      if (!link || typeof link !== "object") return link as ManualBuildingLink;
+      const value = link as ManualBuildingLink;
+      return { ...value, entrance: value.entrance ? { ...value.entrance } : { x: Number.NaN, y: Number.NaN } };
+    }),
     layers: Object.fromEntries(MANUAL_LAYERS.map((layer) => [layer, map.layers[layer].map((placement) => ({ ...placement }))])) as Record<ManualVisualLayer, ManualTilePlacement[]>,
     collision: [...map.collision],
     collisionLocked: [...map.collisionLocked],
     hardEdges: [...map.hardEdges],
   };
+}
+
+/**
+ * Keep a one-cell empty margin around authored content.  This turns the old
+ * fixed canvas into a grow-on-demand canvas while retaining its compact array
+ * storage and existing editor operations.
+ */
+export function ensureManualMapPadding(map: ManualDungeonMap, padding = 1): void {
+  const points: Vec[] = [
+    ...MANUAL_LAYERS.flatMap((layer) => map.layers[layer].map(({ x, y }) => ({ x, y }))),
+    ...(map.entrance ? [map.entrance] : []),
+    ...(map.stairs ? [map.stairs] : []),
+    ...(map.buildingLinks ?? []).map((link) => link.entrance),
+  ];
+  if (points.length === 0) return;
+  const minX = Math.min(...points.map((point) => point.x));
+  const maxX = Math.max(...points.map((point) => point.x));
+  const minY = Math.min(...points.map((point) => point.y));
+  const maxY = Math.max(...points.map((point) => point.y));
+  const left = Math.max(0, padding - minX);
+  const top = Math.max(0, padding - minY);
+  const right = Math.max(0, maxX + padding - (map.width - 1));
+  const bottom = Math.max(0, maxY + padding - (map.height - 1));
+  if (left === 0 && top === 0 && right === 0 && bottom === 0) return;
+  const nextWidth = map.width + left + right;
+  const nextHeight = map.height + top + bottom;
+  if (nextWidth > 256 || nextHeight > 256) throw new RangeError("マップは256×256セルを超えられません。");
+  const collision = Array(nextWidth * nextHeight).fill(1);
+  const collisionLocked = Array(nextWidth * nextHeight).fill(false);
+  for (let y = 0; y < map.height; y += 1) for (let x = 0; x < map.width; x += 1) {
+    const source = manualCellIndex(map, x, y);
+    const target = (y + top) * nextWidth + x + left;
+    collision[target] = map.collision[source] ?? 1;
+    collisionLocked[target] = map.collisionLocked[source] ?? false;
+  }
+  const shift = <T extends Vec>(point: T): T => ({ ...point, x: point.x + left, y: point.y + top });
+  for (const layer of MANUAL_LAYERS) map.layers[layer] = map.layers[layer].map((placement) => shift(placement));
+  map.entrance = map.entrance && shift(map.entrance);
+  map.stairs = map.stairs && shift(map.stairs);
+  map.buildingLinks = (map.buildingLinks ?? []).map((link) => ({ ...link, entrance: shift(link.entrance) }));
+  map.hardEdges = map.hardEdges.map(parseManualEdge).flatMap((edge) => edge ? [manualEdgeKey(edge.x + left, edge.y + top, edge.direction)] : []);
+  map.width = nextWidth;
+  map.height = nextHeight;
+  map.collision = collision;
+  map.collisionLocked = collisionLocked;
+  map.origin = { x: (map.origin?.x ?? 0) - left, y: (map.origin?.y ?? 0) - top };
 }
 
 function inBounds(map: Pick<ManualDungeonMap, "width" | "height">, point: Vec): boolean {
@@ -129,6 +211,16 @@ function inBounds(map: Pick<ManualDungeonMap, "width" | "height">, point: Vec): 
 function validPlacement(map: Pick<ManualDungeonMap, "width" | "height">, placement: ManualTilePlacement): boolean {
   const sheet = CRAFTPIX_SHEETS[placement.sheet];
   return Boolean(sheet && inBounds(map, placement) && Number.isInteger(placement.frame) && placement.frame >= 0 && placement.frame < sheet.frames);
+}
+
+function validBuildingLink(map: Pick<ManualDungeonMap, "width" | "height">, link: unknown): link is ManualBuildingLink {
+  if (!link || typeof link !== "object") return false;
+  const value = link as Partial<ManualBuildingLink>;
+  if (!value.entrance) return false;
+  return typeof value.id === "string" && value.id.trim().length > 0
+    && typeof value.name === "string" && value.name.trim().length > 0
+    && typeof value.interiorMapId === "string" && value.interiorMapId.trim().length > 0
+    && inBounds(map, value.entrance);
 }
 
 export function topPlacement(map: ManualDungeonMap, layer: ManualVisualLayer, x: number, y: number): ManualTilePlacement | undefined {
@@ -158,6 +250,104 @@ export function placeManualTile(map: ManualDungeonMap, layer: ManualVisualLayer,
   const index = manualCellIndex(map, placement.x, placement.y);
   const suggestion = collisionSuggestion(layer, placement);
   if (options.applySuggestion !== false && suggestion !== undefined && !map.collisionLocked[index]) map.collision[index] = suggestion;
+}
+
+function pointInRect(point: Vec, x: number, y: number, width: number, height: number): boolean {
+  return point.x >= x && point.y >= y && point.x < x + width && point.y < y + height;
+}
+
+function edgeIsInsideRect(edge: CanonicalEdge, x: number, y: number, width: number, height: number): boolean {
+  const other = edge.direction === "east" ? { x: edge.x + 1, y: edge.y } : { x: edge.x, y: edge.y + 1 };
+  return pointInRect(edge, x, y, width, height) && pointInRect(other, x, y, width, height);
+}
+
+/** Copies every editable property in a rectangular map selection. */
+export function copyManualMapFragment(map: ManualDungeonMap, start: Vec, end: Vec): ManualMapFragment {
+  const minX = Math.max(0, Math.min(start.x, end.x));
+  const maxX = Math.min(map.width - 1, Math.max(start.x, end.x));
+  const minY = Math.max(0, Math.min(start.y, end.y));
+  const maxY = Math.min(map.height - 1, Math.max(start.y, end.y));
+  const width = maxX - minX + 1;
+  const height = maxY - minY + 1;
+  const layers = Object.fromEntries(MANUAL_LAYERS.map((layer) => [layer, map.layers[layer]
+    .filter((placement) => pointInRect(placement, minX, minY, width, height))
+    .map((placement) => ({ ...placement, x: placement.x - minX, y: placement.y - minY }))
+  ])) as Record<ManualVisualLayer, ManualTilePlacement[]>;
+  const collision: number[] = [];
+  const collisionLocked: boolean[] = [];
+  for (let y = 0; y < height; y += 1) for (let x = 0; x < width; x += 1) {
+    const index = manualCellIndex(map, minX + x, minY + y);
+    collision.push(map.collision[index] ?? 1);
+    collisionLocked.push(map.collisionLocked[index] ?? false);
+  }
+  const hardEdges = map.hardEdges
+    .map(parseManualEdge)
+    .filter((edge): edge is CanonicalEdge => {
+      if (!edge) return false;
+      return edgeIsInsideRect(edge, minX, minY, width, height);
+    })
+    .map((edge) => manualEdgeKey(edge.x - minX, edge.y - minY, edge.direction));
+  const relativeMarker = (marker: Vec | undefined): Vec | undefined => marker && pointInRect(marker, minX, minY, width, height)
+    ? { x: marker.x - minX, y: marker.y - minY }
+    : undefined;
+  return { width, height, layers, collision, collisionLocked, hardEdges, entrance: relativeMarker(map.entrance), stairs: relativeMarker(map.stairs) };
+}
+
+/**
+ * Pastes a copied selection at its top-left anchor. Cells outside the destination are ignored.
+ * The destination cells are overwritten, including empty layer cells and map markers.
+ */
+export function pasteManualMapFragment(map: ManualDungeonMap, fragment: ManualMapFragment, anchor: Vec): boolean {
+  let pasted = false;
+  const targetCells: Vec[] = [];
+  for (let y = 0; y < fragment.height; y += 1) for (let x = 0; x < fragment.width; x += 1) {
+    const target = { x: anchor.x + x, y: anchor.y + y };
+    if (!inBounds(map, target)) continue;
+    targetCells.push(target);
+    const sourceIndex = y * fragment.width + x;
+    const targetIndex = manualCellIndex(map, target.x, target.y);
+    map.collision[targetIndex] = fragment.collision[sourceIndex] ?? 1;
+    map.collisionLocked[targetIndex] = fragment.collisionLocked[sourceIndex] ?? false;
+    pasted = true;
+  }
+  if (!pasted) return false;
+
+  for (const layer of MANUAL_LAYERS) {
+    map.layers[layer] = map.layers[layer].filter((placement) => !targetCells.some((cell) => cell.x === placement.x && cell.y === placement.y));
+    for (const placement of fragment.layers[layer]) {
+      const target = { x: anchor.x + placement.x, y: anchor.y + placement.y };
+      if (inBounds(map, target)) map.layers[layer].push({ ...placement, ...target });
+    }
+  }
+
+  const targetCellKeys = new Set(targetCells.map((cell) => `${cell.x},${cell.y}`));
+  const edgeWithinPastedCells = (edge: CanonicalEdge): boolean => {
+    const other = edge.direction === "east" ? { x: edge.x + 1, y: edge.y } : { x: edge.x, y: edge.y + 1 };
+    return targetCellKeys.has(`${edge.x},${edge.y}`) && targetCellKeys.has(`${other.x},${other.y}`);
+  };
+  map.hardEdges = map.hardEdges.filter((key) => {
+    const edge = parseManualEdge(key);
+    return !edge || !edgeWithinPastedCells(edge);
+  });
+  for (const key of fragment.hardEdges) {
+    const edge = parseManualEdge(key);
+    if (!edge) continue;
+    const target = { x: anchor.x + edge.x, y: anchor.y + edge.y };
+    if (edgeIsInsideRect({ ...edge, ...target }, 0, 0, map.width, map.height)) map.hardEdges.push(manualEdgeKey(target.x, target.y, edge.direction));
+  }
+
+  if (map.entrance && targetCellKeys.has(`${map.entrance.x},${map.entrance.y}`)) map.entrance = undefined;
+  if (map.stairs && targetCellKeys.has(`${map.stairs.x},${map.stairs.y}`)) map.stairs = undefined;
+  const pasteMarker = (marker: Vec | undefined): Vec | undefined => {
+    if (!marker) return undefined;
+    const target = { x: anchor.x + marker.x, y: anchor.y + marker.y };
+    return inBounds(map, target) ? target : undefined;
+  };
+  const entrance = pasteMarker(fragment.entrance);
+  const stairs = pasteMarker(fragment.stairs);
+  if (entrance) map.entrance = entrance;
+  if (stairs) map.stairs = stairs;
+  return true;
 }
 
 export function manualMapToDungeonMap(map: ManualDungeonMap, specialRoom?: Vec): DungeonMap {
@@ -194,7 +384,7 @@ export function manualMapToDungeonMap(map: ManualDungeonMap, specialRoom?: Vec):
 export function validateManualMap(map: ManualDungeonMap): MapValidationIssue[] {
   const issues: MapValidationIssue[] = [];
   const expectedLength = map.width * map.height;
-  if (map.version !== MANUAL_MAP_VERSION || !MANUAL_MAP_PRESETS[map.kind] || map.width < 16 || map.width > 128 || map.height < 12 || map.height > 96 || map.tileSize !== MANUAL_MAP_TILE) {
+  if (map.version !== MANUAL_MAP_VERSION || !MANUAL_MAP_PRESETS[map.kind] || !Number.isInteger(map.floor) || map.floor < 1 || !map.origin || !Number.isInteger(map.origin.x) || !Number.isInteger(map.origin.y) || map.width < 1 || map.width > 256 || map.height < 1 || map.height > 256 || map.tileSize !== MANUAL_MAP_TILE) {
     issues.push({ severity: "error", code: "dimensions", message: "マップ種類、サイズ、16pxグリッドを確認してください。" });
   }
   if (map.collision.length !== expectedLength || map.collision.some((value) => value !== 0 && value !== 1) || map.collisionLocked.length !== expectedLength) {
@@ -202,15 +392,21 @@ export function validateManualMap(map: ManualDungeonMap): MapValidationIssue[] {
   }
   const invalidTiles = MANUAL_LAYERS.flatMap((layer) => map.layers[layer].filter((placement) => !validPlacement(map, placement)).map((placement) => ({ ...placement, layer })));
   if (invalidTiles.length) issues.push({ severity: "error", code: "tile", message: `無効な素材配置が${invalidTiles.length}件あります。`, cells: invalidTiles.map(({ x, y }) => ({ x, y })) });
-  if (!map.entrance || !inBounds(map, map.entrance)) issues.push({ severity: "error", code: "entrance", message: "入口を1つ配置してください。" });
-  if (!map.stairs || !inBounds(map, map.stairs)) issues.push({ severity: "error", code: "stairs", message: "下り階段を1つ配置してください。" });
+  const buildingLinks = map.buildingLinks ?? [];
+  if (map.kind !== "town" && buildingLinks.length) issues.push({ severity: "warning", code: "building-link-kind", message: "建物リンクは街マップでのみ使用されます。" });
+  const invalidBuildingLinks = buildingLinks.filter((link) => !validBuildingLink(map, link));
+  if (invalidBuildingLinks.length) issues.push({ severity: "error", code: "building-link", message: `無効な建物リンクが${invalidBuildingLinks.length}件あります。` });
+  const validLinkIds = buildingLinks.filter((link): link is ManualBuildingLink => validBuildingLink(map, link)).map((link) => link.id);
+  if (new Set(validLinkIds).size !== validLinkIds.length) issues.push({ severity: "error", code: "building-link-id", message: "建物IDが重複しています。" });
+  if (map.kind !== "town" && (!map.entrance || !inBounds(map, map.entrance))) issues.push({ severity: "error", code: "entrance", message: "入口を1つ配置してください。" });
+  if (map.kind === "dungeon" && (!map.stairs || !inBounds(map, map.stairs))) issues.push({ severity: "error", code: "stairs", message: "下り階段を1つ配置してください。" });
   const invalidEdges = map.hardEdges.filter((key) => {
     const edge = parseManualEdge(key);
     return !edge || edge.x < 0 || edge.y < 0 || (edge.direction === "east" && edge.x >= map.width - 1) || (edge.direction === "south" && edge.y >= map.height - 1);
   });
   if (invalidEdges.length) issues.push({ severity: "error", code: "edges", message: `無効な境界ブロックが${invalidEdges.length}件あります。` });
 
-  if (issues.some((issue) => issue.severity === "error") || !map.entrance || !map.stairs) return issues;
+  if (issues.some((issue) => issue.severity === "error") || map.kind !== "dungeon" || !map.entrance || !map.stairs) return issues;
   const dungeon = manualMapToDungeonMap(map);
   const reached = reachableCells(dungeon, map.entrance);
   const entryKey = `${map.entrance.x},${map.entrance.y}`;
@@ -236,12 +432,15 @@ function validMap(value: unknown): value is ManualDungeonMap {
   return map.version === MANUAL_MAP_VERSION && typeof map.id === "string" && typeof map.name === "string"
     && (map.kind === undefined || Boolean(MANUAL_MAP_PRESETS[map.kind])) && typeof map.width === "number" && typeof map.height === "number" && map.tileSize === MANUAL_MAP_TILE
     && Array.isArray(map.collision) && Array.isArray(map.collisionLocked) && Array.isArray(map.hardEdges)
+    && (map.floor === undefined || (typeof map.floor === "number" && Number.isInteger(map.floor) && map.floor >= 1))
+    && (map.origin === undefined || (typeof map.origin.x === "number" && typeof map.origin.y === "number"))
+    && (map.buildingLinks === undefined || Array.isArray(map.buildingLinks))
     && Boolean(map.layers) && MANUAL_LAYERS.every((layer) => Array.isArray(map.layers?.[layer]));
 }
 
 export function normalizeManualMap(value: unknown): ManualDungeonMap | undefined {
   if (!validMap(value)) return undefined;
-  const copy = cloneManualMap({ ...value, kind: value.kind ?? "dungeon" } as ManualDungeonMap);
+  const copy = cloneManualMap({ ...value, kind: value.kind ?? "dungeon", floor: value.floor ?? 1, origin: value.origin ?? { x: 0, y: 0 }, buildingLinks: value.buildingLinks ?? [] } as ManualDungeonMap);
   const errors = validateManualMap(copy).filter((issue) => issue.code === "dimensions" || issue.code === "collision" || issue.code === "tile" || issue.code === "edges");
   if (errors.length) return undefined;
   return copy;
@@ -272,9 +471,12 @@ const STORE_NAME = "maps";
 
 function openManualDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DATABASE_NAME, 1);
+    const request = indexedDB.open(DATABASE_NAME, 2);
     request.onupgradeneeded = () => {
-      if (!request.result.objectStoreNames.contains(STORE_NAME)) request.result.createObjectStore(STORE_NAME, { keyPath: "id" });
+      // v1 referenced non-canonical PNG frame numbers.  Resetting the editor
+      // store is intentional: those maps cannot be faithfully migrated.
+      if (request.result.objectStoreNames.contains(STORE_NAME)) request.result.deleteObjectStore(STORE_NAME);
+      request.result.createObjectStore(STORE_NAME, { keyPath: "id" });
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);

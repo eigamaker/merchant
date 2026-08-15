@@ -1,5 +1,5 @@
 import type { DungeonRenderLayer, RenderPlacement } from "./types";
-import { CRAFTPIX_ENVIRONMENT_SHEETS } from "./craftpixEnvironment";
+import { TILED_MAP_SHEETS } from "./tiledMapSheets.generated";
 
 /**
  * Curated references into Craftpix's 16px source sheets.  The ids are stable
@@ -27,9 +27,25 @@ const LEGACY_CRAFTPIX_SHEETS = {
   traps: { textureKey: "dungeon.craftpix.traps", path: "assets/dungeons/craftpix/trap_animation.png", columns: 13, frames: 403, label: "罠" },
 } as const;
 
-export const CRAFTPIX_SHEETS = { ...LEGACY_CRAFTPIX_SHEETS, ...CRAFTPIX_ENVIRONMENT_SHEETS } as const;
+/**
+ * The runtime used to mix files from the vendor's PNG folder with frame
+ * numbers from its Tiled_files folder.  Generated Tiled sheets deliberately
+ * retain the latter pairing, so their indices always match the TMX source.
+ */
+const TILED_CRAFTPIX_SHEETS = Object.fromEntries(TILED_MAP_SHEETS.map((sheet) => [sheet.id, {
+  textureKey: `tiled.map.${sheet.id}`,
+  path: sheet.path,
+  columns: sheet.columns,
+  frames: sheet.frames,
+  label: sheet.label,
+}]));
 
-export type CraftpixSheetId = keyof typeof CRAFTPIX_SHEETS;
+export const CRAFTPIX_SHEETS: Record<string, { textureKey: string; path: string; columns: number; frames: number; label: string }> = {
+  ...LEGACY_CRAFTPIX_SHEETS,
+  ...TILED_CRAFTPIX_SHEETS,
+};
+
+export type CraftpixSheetId = string;
 
 export interface CraftpixTileRef {
   sheet: CraftpixSheetId;
@@ -65,7 +81,7 @@ export const CRAFTPIX_TILE_CATALOG: Record<string, CraftpixAssetRef> = {
   "overhead-wall": wallsFloor(36, "overhead"),
 };
 
-export function craftpixSheet(sheet: CraftpixSheetId): (typeof CRAFTPIX_SHEETS)[CraftpixSheetId] {
+export function craftpixSheet(sheet: CraftpixSheetId): (typeof CRAFTPIX_SHEETS)[string] {
   return CRAFTPIX_SHEETS[sheet];
 }
 

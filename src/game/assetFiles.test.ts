@@ -192,6 +192,61 @@ describe("runtime pixel-art assets", () => {
     expect(catalog.clips.every((clip) => clip.frames.every((frame) => frame.duration > 0))).toBe(true);
   });
 
+  it("ships source-faithful Tiled sheets, animations, and editable map samples", () => {
+    const catalogPath = resolve(process.cwd(), "public/assets/craftpix/tiled-map-catalog.json");
+    const catalog = JSON.parse(readFileSync(catalogPath, "utf8")) as {
+      version: number;
+      tileSize: number;
+      sheets: Array<{ id: string; path: string; columns: number; frames: number; animationMode: "none" | "tile" | "composite"; usageMode: "tile" | "metatile" }>;
+      animations: Array<{ frames: Array<{ frame: number; duration: number }> }>;
+      prefabs: Array<{ sheet: string; width: number; height: number; placements: unknown[] }>;
+      audit: Array<{ sheet: string; animationMode: "none" | "tile" | "composite"; usageMode: "tile" | "metatile"; tileAnimationCount: number; integratedPrefabCount: number; sourcePlacementCount: number; prefabPlacementCount: number; coverageBasis: "tile" | "source-map" | "png-alpha"; definitionPlacementCount: number; definitionCoverage: boolean; rule: string }>;
+      sourceMaps: Array<{ id: string; bounds: { width: number; height: number }; layers: unknown[] }>;
+    };
+    expect(catalog.version).toBe(2);
+    expect(catalog.tileSize).toBe(16);
+    expect(catalog.sheets).toHaveLength(62);
+    for (const sheet of catalog.sheets) {
+      expect(existsSync(resolve(process.cwd(), "public", sheet.path)), sheet.path).toBe(true);
+      expect(sheet.columns).toBeGreaterThan(0);
+      expect(sheet.frames).toBeGreaterThan(0);
+    }
+    expect(catalog.animations.length).toBeGreaterThan(1200);
+    expect(catalog.animations.every((clip) => clip.frames.every((frame) => frame.duration > 0))).toBe(true);
+    expect(catalog.sheets.find((sheet) => sheet.id === "guild-hall-mage3")?.animationMode).toBe("composite");
+    expect(catalog.sheets.find((sheet) => sheet.id === "guild-hall-flags-animation")?.animationMode).toBe("composite");
+    expect(catalog.prefabs.find((prefab) => prefab.sheet === "guild-hall-mage3")).toMatchObject({ width: 4, height: 3, placements: expect.any(Array) });
+    expect(catalog.prefabs.find((prefab) => prefab.sheet === "guild-hall-flags-animation")).toMatchObject({ width: 6, height: 3, placements: expect.any(Array) });
+    expect(catalog.sheets.find((sheet) => sheet.id === "dungeon-base-walls-floor")?.usageMode).toBe("metatile");
+    const wallPrefabs = catalog.prefabs.filter((prefab) => prefab.sheet === "dungeon-base-walls-floor");
+    expect(wallPrefabs).toHaveLength(30);
+    expect(wallPrefabs.reduce((total, prefab) => total + prefab.placements.length, 0)).toBe(280);
+    expect(catalog.audit.find((entry) => entry.sheet === "dungeon-base-walls-floor")).toMatchObject({
+      coverageBasis: "png-alpha",
+      definitionCoverage: true,
+    });
+    const doorPrefabs = catalog.prefabs.filter((prefab) => prefab.sheet === "dungeon-base-doors-lever-chest-animation");
+    expect(doorPrefabs).toHaveLength(14);
+    expect(doorPrefabs.reduce((total, prefab) => total + prefab.placements.length, 0)).toBe(48);
+    expect(doorPrefabs).toEqual(expect.arrayContaining([
+      expect.objectContaining({ width: 2, height: 2 }),
+      expect.objectContaining({ width: 2, height: 3 }),
+    ]));
+    for (const sheet of ["dungeon-objects-other-objects", "dungeon-objects-pedestals", "dungeon-objects-supplies-objects"]) {
+      expect(catalog.audit.find((entry) => entry.sheet === sheet)).toMatchObject({
+        usageMode: "metatile",
+        coverageBasis: "png-alpha",
+        definitionCoverage: true,
+      });
+    }
+    expect(catalog.audit).toHaveLength(catalog.sheets.length);
+    expect(catalog.audit.every((entry) => entry.usageMode !== "metatile" || entry.integratedPrefabCount > 0 && entry.rule === "metatile-only")).toBe(true);
+    expect(catalog.audit.every((entry) => entry.usageMode !== "metatile" || entry.definitionCoverage && entry.prefabPlacementCount === entry.definitionPlacementCount)).toBe(true);
+    expect(catalog.audit.every((entry) => entry.tileAnimationCount === 0 || entry.animationMode === "tile" || entry.animationMode === "composite")).toBe(true);
+    expect(catalog.sourceMaps.map((map) => map.id)).toEqual(expect.arrayContaining(["Dungeon1", "home-exterior", "home-interior"]));
+    expect(catalog.sourceMaps.every((map) => map.bounds.width > 0 && map.bounds.height > 0 && map.layers.length > 0)).toBe(true);
+  });
+
   it("ships the imported Craftpix runtime manifest, actors, UI, and environment sheets", () => {
     const manifestPath = resolve(process.cwd(), "public/assets/craftpix/runtime-manifest.json");
     expect(existsSync(manifestPath)).toBe(true);

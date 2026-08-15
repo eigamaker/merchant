@@ -12,7 +12,9 @@ from PIL import Image, ImageDraw
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "assets-src" / "vendor" / "craftpix-dungeon" / "Tiled_files"
+# The canonical vendor pack is the same set consumed by the TMX catalog.  The
+# older craftpix-dungeon copy is retained only as an imported legacy artifact.
+SOURCE = ROOT / "assets-src" / "vendor" / "craftpix" / "dungeon-base" / "Tiled_files"
 OUTPUT = ROOT / "public" / "assets" / "dungeons"
 PREVIEW = ROOT / "public" / "assets" / "preview"
 ENTRY = (14, 24)

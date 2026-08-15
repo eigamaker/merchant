@@ -68,6 +68,8 @@ import type { Customer, DungeonCommand, DungeonEvent, GameState, ItemInstance, M
 
 const TOWN_RENDER_TILE = 24;
 const DUNGEON_LEGACY_TILE = 24;
+const LEGACY_ACTOR_SCALE = 0.9;
+const LEGACY_ACTOR_ORIGIN_Y = 0.94;
 const GRID_W = 21;
 const GRID_H = 12;
 const MAP_W = GRID_W * TOWN_RENDER_TILE;
@@ -152,6 +154,7 @@ export class MerchantScene extends Phaser.Scene {
     this.load.spritesheet("object.dungeon", "assets/objects/dungeon_objects.png", { frameWidth: 24, frameHeight: 24 });
     this.load.image(ASSET_MANIFEST.townMap.textureKey, ASSET_MANIFEST.townMap.path);
     this.load.json("craftpix.animation.catalog", "assets/dungeons/craftpix-animation-catalog.json");
+    this.load.json("tiled.map.catalog", "assets/craftpix/tiled-map-catalog.json");
     this.load.image(ASSET_MANIFEST.craftpixDungeon.baseTextureKey, ASSET_MANIFEST.craftpixDungeon.basePath);
     this.load.image(ASSET_MANIFEST.craftpixDungeon.foregroundTextureKey, ASSET_MANIFEST.craftpixDungeon.foregroundPath);
     for (const sheet of Object.values(CRAFTPIX_SHEETS)) {
@@ -317,7 +320,8 @@ export class MerchantScene extends Phaser.Scene {
 
   private createCraftpixTileAnimations(): void {
     const catalog = this.cache.json.get("craftpix.animation.catalog") as CraftpixAnimationCatalog | undefined;
-    for (const clip of catalog?.clips ?? []) {
+    const tiled = this.cache.json.get("tiled.map.catalog") as { animations?: CraftpixAnimationCatalog["clips"] } | undefined;
+    for (const clip of [...(catalog?.clips ?? []), ...(tiled?.animations ?? [])]) {
       const sheet = CRAFTPIX_SHEETS[clip.sheet as keyof typeof CRAFTPIX_SHEETS];
       if (!sheet || !this.textures.exists(sheet.textureKey) || this.anims.exists(`craftpix.tile.${clip.id}`)) continue;
       this.anims.create({
@@ -952,8 +956,8 @@ export class MerchantScene extends Phaser.Scene {
     const world = this.add.container(0, 0);
     this.townNpcs = [];
     const playerTexture = this.craftpixActorTexture(CRAFTPIX_PLAYER_ACTOR) ?? ASSET_MANIFEST.player.textureKey;
-    const player = this.add.sprite(this.state.townPos.x, this.state.townPos.y + 4, playerTexture, 0).setOrigin(0.5, 0.75);
-    if (!this.playCraftpixActor(player, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing)) player.play(`player.idle-${this.playerFacing}`);
+    const player = this.add.sprite(this.state.townPos.x, this.state.townPos.y + TOWN_RENDER_TILE / 2, playerTexture, 0);
+    if (!this.playCraftpixActor(player, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing)) player.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE).play(`player.idle-${this.playerFacing}`);
     world.add(player);
     this.townPlayer = player;
     this.drawTownNpcs(world);
@@ -990,8 +994,8 @@ export class MerchantScene extends Phaser.Scene {
     if (map.entrance) world.add(this.add.rectangle(map.entrance.x * tile + center, map.entrance.y * tile + center, tile - 4, tile - 4, 0x62d7a5, 0.36).setStrokeStyle(1, 0xb8ffe2));
     if (map.stairs) world.add(this.add.rectangle(map.stairs.x * tile + center, map.stairs.y * tile + center, tile - 4, tile - 4, 0xd7a95d, 0.4).setStrokeStyle(1, 0xffe7a6));
     const playerTexture = this.craftpixActorTexture(CRAFTPIX_PLAYER_ACTOR) ?? ASSET_MANIFEST.player.textureKey;
-    const player = this.add.sprite(this.state.townPos.x, this.state.townPos.y + 4, playerTexture, 0).setOrigin(0.5, 0.84).setName("manual-player");
-    if (!this.playCraftpixActor(player, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing)) player.play(`player.idle-${this.playerFacing}`);
+    const player = this.add.sprite(this.state.townPos.x, this.state.townPos.y + tile / 2, playerTexture, 0).setName("manual-player");
+    if (!this.playCraftpixActor(player, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing)) player.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE).play(`player.idle-${this.playerFacing}`);
     world.add(player);
     this.manualWorldPlayer = player;
     for (const layer of ["overhead", "light"] as const) for (const entry of map.renderLayers?.[layer] ?? []) addPlacement(entry);
@@ -1003,7 +1007,7 @@ export class MerchantScene extends Phaser.Scene {
     const map = this.manualWorldMap;
     if (!map || !this.manualWorld) return;
     const tile = map.tileSize ?? 16;
-    this.manualWorldPlayer?.setPosition(this.state.townPos.x, this.state.townPos.y + 4);
+    this.manualWorldPlayer?.setPosition(this.state.townPos.x, this.state.townPos.y + tile / 2);
     const worldWidth = map.width * tile;
     const worldHeight = map.height * tile;
     const targetX = Phaser.Math.Clamp(this.state.townPos.x - MAP_W / 2, 0, Math.max(0, worldWidth - MAP_W));
@@ -1031,7 +1035,6 @@ export class MerchantScene extends Phaser.Scene {
     const add = <T extends Phaser.GameObjects.GameObject>(object: T): T => { world.add(object); return object; };
     const tile = run.map.tileSize ?? DUNGEON_LEGACY_TILE;
     const center = tile / 2;
-    const actorY = tile === ASSET_MANIFEST.craftpixDungeon.tileSize ? 9 : 13;
     const place = (x: number, y: number, texture: string, frame: number, alpha = 1): Phaser.GameObjects.Image => {
       const image = this.add.image(x * tile + center, y * tile + center, texture, frame).setDisplaySize(tile, tile).setAlpha(alpha);
       return add(image);
@@ -1107,22 +1110,22 @@ export class MerchantScene extends Phaser.Scene {
     for (const enemy of run.enemies) {
       const actorDefinition = this.craftpixEnemyActor(enemy.id);
       const textureKey = actorDefinition ? (this.craftpixActorTexture(actorDefinition) ?? this.enemyTextureKey(enemy.id)) : this.enemyTextureKey(enemy.id);
-      const sprite = this.add.sprite(enemy.pos.x * tile + center, enemy.pos.y * tile + actorY, textureKey, 0).setOrigin(0.5, 0.75).setName(`actor:${enemy.id}`);
+      const sprite = this.add.sprite(enemy.pos.x * tile + center, enemy.pos.y * tile + tile, textureKey, 0).setName(`actor:${enemy.id}`);
       const direction = this.dungeonWalkAnimations.get(enemy.id) ?? "down";
-      if (!actorDefinition || !this.playCraftpixActor(sprite, actorDefinition, "idle", direction)) sprite.play(`${textureKey}.idle-${direction}`);
+      if (!actorDefinition || !this.playCraftpixActor(sprite, actorDefinition, "idle", direction)) sprite.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE).play(`${textureKey}.idle-${direction}`);
       add(sprite);
     }
     if (run.guard) {
       const definition = guardDefinition(run.guard.guardId);
       const textureKey = definition?.textureKey ?? "actor.npc.scout";
       const direction = this.dungeonWalkAnimations.get(run.guard.guardId) ?? "down";
-      const sprite = this.add.sprite(run.guard.pos.x * tile + center, run.guard.pos.y * tile + actorY, textureKey, 0).setOrigin(0.5, 0.75).setName(`actor:${run.guard.guardId}`);
+      const sprite = this.add.sprite(run.guard.pos.x * tile + center, run.guard.pos.y * tile + tile, textureKey, 0).setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE).setName(`actor:${run.guard.guardId}`);
       sprite.play(`${textureKey}.idle-${direction}`);
       add(sprite);
     }
     const playerTexture = this.craftpixActorTexture(CRAFTPIX_PLAYER_ACTOR) ?? ASSET_MANIFEST.player.textureKey;
-    const player = this.add.sprite(run.player.x * tile + center, run.player.y * tile + actorY, playerTexture, 0).setOrigin(0.5, 0.75).setName("actor:player");
-    if (!this.playCraftpixActor(player, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing)) player.play(`player.idle-${this.playerFacing}`);
+    const player = this.add.sprite(run.player.x * tile + center, run.player.y * tile + tile, playerTexture, 0).setName("actor:player");
+    if (!this.playCraftpixActor(player, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing)) player.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE).play(`player.idle-${this.playerFacing}`);
     add(player);
     if (run.map.visualTheme === "craftpix-showcase") {
       add(this.add.image(run.map.width * center, run.map.height * center, ASSET_MANIFEST.craftpixDungeon.foregroundTextureKey).setOrigin(0.5));
@@ -1148,9 +1151,8 @@ export class MerchantScene extends Phaser.Scene {
         const to = event.to;
         const tile = this.state.run?.map.tileSize ?? DUNGEON_LEGACY_TILE;
         const center = tile / 2;
-        const actorY = tile === ASSET_MANIFEST.craftpixDungeon.tileSize ? 9 : 13;
-        sprite.setPosition(from.x * tile + center, from.y * tile + actorY);
-        this.tweens.add({ targets: sprite, x: to.x * tile + center, y: to.y * tile + actorY, duration: event.type === "shove" ? 130 : 90, ease: "Quad.Out" });
+        sprite.setPosition(from.x * tile + center, from.y * tile + tile);
+        this.tweens.add({ targets: sprite, x: to.x * tile + center, y: to.y * tile + tile, duration: event.type === "shove" ? 130 : 90, ease: "Quad.Out" });
       } else if (event.type === "shove" && !event.success) {
         const sprite = actor(event.enemyId);
         if (sprite) this.tweens.add({ targets: sprite, x: sprite.x + 2, duration: 45, yoyo: true, repeat: 1 });
@@ -1227,7 +1229,7 @@ export class MerchantScene extends Phaser.Scene {
 
   private updateTownPresentation(immediate = false): void {
     if (!this.townWorld || !this.townPlayer) return;
-    this.townPlayer.setPosition(this.state.townPos.x, this.state.townPos.y + 4);
+    this.townPlayer.setPosition(this.state.townPos.x, this.state.townPos.y + TOWN_RENDER_TILE / 2);
     const targetX = Phaser.Math.Clamp(this.state.townPos.x - MAP_W / 2, 0, TOWN_WORLD_WIDTH - MAP_W);
     const targetY = Phaser.Math.Clamp(this.state.townPos.y - MAP_H / 2, 0, TOWN_WORLD_HEIGHT - MAP_H);
     const currentX = -this.townWorld.x;
@@ -1324,14 +1326,14 @@ export class MerchantScene extends Phaser.Scene {
     TOWN_POINTS.forEach((poi, index) => {
       const center = this.poiPosition(poi);
       const actor = NPC_ASSET_VARIANTS[index % NPC_ASSET_VARIANTS.length]!;
-      const sprite = this.add.sprite(center.x, center.y + 6, actor.textureKey, 0).setOrigin(0.5, 0.75);
+      const sprite = this.add.sprite(center.x, center.y + TOWN_RENDER_TILE / 2, actor.textureKey, 0).setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE);
       sprite.play(`${actor.textureKey}.idle-down`);
       world.add(sprite);
       const staticResident = poi.kind === "customer" || poi.kind === "entrance";
       this.townNpcs.push({
         sprite,
         textureKey: actor.textureKey,
-        center: { x: center.x, y: center.y + 6 },
+        center: { x: center.x, y: center.y + TOWN_RENDER_TILE / 2 },
         radius: staticResident ? { x: 6, y: 4 } : { x: 18, y: 11 },
         phase: index * 1.71,
         facing: "down",

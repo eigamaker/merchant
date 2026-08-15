@@ -53,13 +53,13 @@ describe("town map", () => {
     }
   });
 
-  it("blocks continuous movement into a building while retaining a safe fallback", () => {
+  it("allows free-roam movement through authored collision while retaining map bounds", () => {
     const shop = TOWN_BUILDINGS.find((building) => building.id === "shop");
     if (!shop) throw new Error("shop fixture missing");
     const wallY = shop.y + shop.height - 1;
     const outside = { x: (shop.x - 1) * TOWN_TILE + TOWN_TILE / 2, y: wallY * TOWN_TILE + TOWN_TILE / 2 };
     expect(isTownTileBlocked(shop.x, wallY)).toBe(true);
-    expect(moveTownPosition(outside, { x: 40, y: 0 }).x).toBeLessThan(shop.x * TOWN_TILE);
+    expect(moveTownPosition(outside, { x: 40, y: 0 }).x).toBe(outside.x + 40);
     expect(safeTownPosition({ x: -20, y: -20 })).toEqual(TOWN_SPAWN);
   });
 

@@ -2,9 +2,8 @@
  * Runtime-neutral actor definitions for the supplied Craftpix character packs.
  *
  * Each action sheet is kept separate because the source packs use a different
- * number of frames per action.  The importer records the exact dimensions and
- * the renderer creates the animation from this manifest instead of assuming
- * the old 4x4, 32px actor contract.
+ * number of frames per action. The importer records the exact dimensions and
+ * the renderer creates the animation from this manifest.
  */
 
 export type ActorAction = "idle" | "walk" | "run" | "attack" | "walkAttack" | "runAttack" | "hurt" | "death";
@@ -13,8 +12,8 @@ export type ActorDirection = "down" | "left" | "right" | "up";
 export interface CraftpixActorClip {
   action: ActorAction;
   path: string;
-  frameWidth: 64;
-  frameHeight: 64;
+  frameWidth: number;
+  frameHeight: number;
   columns: number;
   rows: 4;
   /** The source sheets are four directional rows; this is explicit metadata. */
@@ -29,15 +28,15 @@ export interface CraftpixActorDefinition {
   sourcePack: string;
   clips: Partial<Record<ActorAction, CraftpixActorClip>>;
   scale: number;
-  origin: { x: 0.5; y: 0.84 };
+  origin: { x: 0.5; y: number };
 }
 
 const directions = ["down", "left", "right", "up"] as const;
-const clip = (action: ActorAction, path: string, columns: number, frameRate: number, repeat = -1): CraftpixActorClip => ({
+const clip = (action: ActorAction, path: string, columns: number, frameRate: number, repeat = -1, frameWidth = 64, frameHeight = 64): CraftpixActorClip => ({
   action,
   path,
-  frameWidth: 64,
-  frameHeight: 64,
+  frameWidth,
+  frameHeight,
   columns,
   rows: 4,
   directions,
@@ -45,37 +44,70 @@ const clip = (action: ActorAction, path: string, columns: number, frameRate: num
   repeat,
 });
 
-type ActorColumns = Partial<Record<"idle" | "walk" | "run" | "attack" | "hurt" | "death", number>>;
+type ActorColumns = Partial<Record<"idle" | "walk" | "run" | "attack" | "walkAttack" | "runAttack" | "hurt" | "death", number>>;
 
 function characterSet(prefix: string, folder: string, sourcePack: string, columns: ActorColumns): CraftpixActorDefinition {
   const uppercaseActions = prefix.startsWith("Swordsman") || prefix.startsWith("Slime") || prefix.startsWith("Plant") || prefix.startsWith("Vampires");
   const file = (action: string): string => {
     const names: Record<string, string> = uppercaseActions
-      ? { idle: "Idle", walk: "Walk", run: "Run", attack: "Attack", hurt: "Hurt", death: "Death" }
+      ? { idle: "Idle", walk: "Walk", run: "Run", attack: "Attack", walkAttack: "Walk_Attack", runAttack: "Run_Attack", hurt: "Hurt", death: "Death" }
       : { idle: "idle", walk: "walk", run: "run", attack: "attack", hurt: "hurt", death: "death" };
     const actionName = prefix.startsWith("Swordsman") && action === "attack" ? "attack" : (names[action] ?? action);
     return `assets/actors/craftpix/${folder}/${prefix}_${actionName}_with_shadow.png`;
   };
+
+  const clips: Partial<Record<ActorAction, CraftpixActorClip>> = {
+    idle: clip("idle", file("idle"), columns.idle ?? 4, 5),
+    walk: clip("walk", file("walk"), columns.walk ?? 6, 8),
+    run: clip("run", file("run"), columns.run ?? 8, 10),
+    attack: clip("attack", file("attack"), columns.attack ?? 8, 12, 0),
+    hurt: clip("hurt", file("hurt"), columns.hurt ?? 5, 8, 0),
+    death: clip("death", file("death"), columns.death ?? 7, 8, 0),
+  };
+  if (prefix.startsWith("Swordsman")) {
+    clips.walkAttack = clip("walkAttack", file("walkAttack"), columns.walkAttack ?? 6, 12, 0);
+    clips.runAttack = clip("runAttack", file("runAttack"), columns.runAttack ?? 8, 12, 0);
+  }
+
   return {
     id: folder.toLowerCase(),
     label: folder,
     sourcePack,
-    clips: {
-      idle: clip("idle", file("idle"), columns.idle ?? 4, 5),
-      walk: clip("walk", file("walk"), columns.walk ?? 6, 8),
-      run: clip("run", file("run"), columns.run ?? 8, 10),
-      attack: clip("attack", file("attack"), columns.attack ?? 8, 12, 0),
-      hurt: clip("hurt", file("hurt"), columns.hurt ?? 5, 8, 0),
-      death: clip("death", file("death"), columns.death ?? 7, 8, 0),
-    },
-    // Source sprites are 64px cells while the map is 16px; half scale keeps
-    // the supplied characters readable without swallowing a whole room.
-    scale: 0.5,
-    origin: { x: 0.5, y: 0.84 },
+    clips,
+    // The visible character occupies roughly 20–27px inside a 64px source
+    // cell. Render at native scale and anchor the feet to the shadow.
+    scale: 1,
+    origin: { x: 0.5, y: 0.72 },
   };
 }
 
-export const CRAFTPIX_PLAYER_ACTOR = characterSet("Swordsman_lvl1", "Swordsman_lvl1", "swordsman", { idle: 12, walk: 6, run: 8, attack: 8, hurt: 5, death: 7 });
+function merchantProtagonistSet(): CraftpixActorDefinition {
+  const idlePath = "assets/actors/craftpix/MerchantProtagonist/MerchantProtagonist_Idle_with_shadow.png";
+  const walkPath = "assets/actors/craftpix/MerchantProtagonist/MerchantProtagonist_Walk_with_shadow.png";
+  return {
+    id: "merchant-protagonist",
+    label: "MerchantProtagonist",
+    sourcePack: "provided-character",
+    clips: {
+      // The supplied sheet has three authored frames per direction. Use the
+      // first frame for idle and retain all three for walking.
+      idle: clip("idle", idlePath, 1, 5, -1, 32, 32),
+      walk: clip("walk", walkPath, 3, 8, -1, 32, 32),
+    },
+    scale: 1,
+    origin: { x: 0.5, y: 0.72 },
+  };
+}
+
+export const CRAFTPIX_PLAYER_ACTOR = merchantProtagonistSet();
+
+/** The level 2/3 Swordsman sheets are human NPC variants, not enemies. */
+export const CRAFTPIX_NPC_ACTORS = {
+  swordsman_lvl2: characterSet("Swordsman_lvl2", "Swordsman_lvl2", "swordsman", { idle: 12, walk: 6, run: 8, attack: 8, walkAttack: 6, runAttack: 8, hurt: 5, death: 7 }),
+  swordsman_lvl3: characterSet("Swordsman_lvl3", "Swordsman_lvl3", "swordsman", { idle: 12, walk: 6, run: 8, attack: 8, walkAttack: 6, runAttack: 8, hurt: 5, death: 7 }),
+} as const;
+
+export type CraftpixNpcActorId = keyof typeof CRAFTPIX_NPC_ACTORS;
 
 export const CRAFTPIX_ENEMY_ACTORS = {
   slime1: characterSet("Slime1", "Slime1", "slimes", { idle: 6, walk: 8, run: 8, attack: 10, hurt: 5, death: 10 }),
@@ -103,6 +135,7 @@ export const CRAFTPIX_ENEMY_POOLS = {
 
 export const CRAFTPIX_ACTORS = {
   player: CRAFTPIX_PLAYER_ACTOR,
+  ...CRAFTPIX_NPC_ACTORS,
   ...CRAFTPIX_ENEMY_ACTORS,
 } as const;
 

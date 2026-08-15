@@ -1,8 +1,8 @@
 """Build the runtime pixel-art sheets from project-bound generated source packs.
 
-The generated source images deliberately have generous chroma-key gutters.  This
-script turns their isolated art into the 24px tile and 32px actor contracts used
-by Phaser.  It is deterministic and can be re-run whenever a source pack is
+The source images deliberately have generous chroma-key gutters.  This script
+turns their isolated art into the 24px tile and 32px actor contracts used by
+Phaser.  It is deterministic and can be re-run whenever a source pack is
 replaced.
 """
 
@@ -14,7 +14,6 @@ from PIL import Image, ImageEnhance
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "assets-src"
-GENERATED = SOURCE / "environment-v001"
 PUBLIC = ROOT / "public" / "assets"
 TILE = 24
 ACTOR = 32
@@ -28,99 +27,6 @@ def output(path: str) -> Path:
 
 def rgba(path: str) -> Image.Image:
     return Image.open(SOURCE / path).convert("RGBA")
-
-
-def generated_cell(path: Path, *, remove_ground_green: bool = False) -> Image.Image:
-    """Load one approved Asset Forge cell and remove export-only artefacts."""
-    image = Image.open(path).convert("RGBA")
-    if image.size != (TILE, TILE):
-        raise ValueError(f"generated cell must be {TILE}x{TILE}: {path} ({image.size})")
-
-    pixels = image.load()
-    for y in range(TILE):
-        for x in range(TILE):
-            red, green, blue, alpha = pixels[x, y]
-            if red >= 245 and green <= 40 and blue >= 245:
-                pixels[x, y] = (red, green, blue, 0)
-            elif remove_ground_green and alpha and green >= red + 12 and green >= blue + 12 and green >= 45:
-                # The wall exports include a green ground preview around the
-                # stone.  Walls are composited over dungeon terrain at runtime,
-                # so keep the stone pixels and make only that preview transparent.
-                pixels[x, y] = (red, green, blue, 0)
-
-    # A few approved exports retain a one-pixel white guide line on the cell
-    # perimeter. Replace only perimeter whites with the adjacent artwork pixel;
-    # interior highlights remain untouched.
-    for y in range(TILE):
-        for x in range(TILE):
-            if x not in {0, TILE - 1} and y not in {0, TILE - 1}:
-                continue
-            red, green, blue, alpha = pixels[x, y]
-            if alpha == 0 or red < 245 or green < 245 or blue < 245:
-                continue
-            inward_x = min(TILE - 2, max(1, x))
-            inward_y = min(TILE - 2, max(1, y))
-            if x == 0:
-                inward_x = 1
-            elif x == TILE - 1:
-                inward_x = TILE - 2
-            if y == 0:
-                inward_y = 1
-            elif y == TILE - 1:
-                inward_y = TILE - 2
-            pixels[x, y] = pixels[inward_x, inward_y]
-    return image
-
-
-def generated_terrain_bank(kind: str, frame: int) -> Image.Image:
-    return generated_cell(GENERATED / "town" / kind / f"{frame}.png")
-
-
-def generated_dungeon_bank(kind: str, frame: int) -> Image.Image:
-    return generated_cell(GENERATED / "dungeon" / kind / f"{frame}.png")
-
-
-WALL_CELL_NAMES = (
-    "center",
-    "edgeNorth",
-    "edgeEast",
-    "edgeSouth",
-    "edgeWest",
-    "outerNorthEast",
-    "outerSouthEast",
-    "outerSouthWest",
-    "outerNorthWest",
-    "innerNorthEast",
-    "innerSouthEast",
-    "innerSouthWest",
-    "innerNorthWest",
-    "pillar",
-    "cracked",
-)
-
-
-BUILDING_CELL_COORDS = {
-    "roofLeft": (0, 0),
-    "roofMidLeft": (1, 0),
-    "roofMidRight": (2, 0),
-    "roofRight": (3, 0),
-    "facadeLeft": (0, 1),
-    "featureLeft": (1, 1),
-    "featureRight": (2, 1),
-    "facadeRight": (3, 1),
-    "baseLeft": (0, 2),
-    "entrance": (1, 2),
-    "thresholdOrProp": (2, 2),
-    "baseRight": (3, 2),
-}
-
-
-def generated_building_module(kind: str) -> Image.Image:
-    module = Image.new("RGBA", (TILE * 4, TILE * 3))
-    for cell_name, (x, y) in BUILDING_CELL_COORDS.items():
-        cell = generated_cell(GENERATED / "buildings" / kind / f"{cell_name}.png")
-        module.alpha_composite(cell, (x * TILE, y * TILE))
-    return module
 
 
 def alpha_box(image: Image.Image) -> tuple[int, int, int, int] | None:
@@ -182,43 +88,6 @@ def paste_tile(sheet: Image.Image, frame: int, image: Image.Image) -> None:
     x = (frame % (sheet.width // TILE)) * TILE
     y = (frame // (sheet.width // TILE)) * TILE
     sheet.alpha_composite(image.convert("RGBA"), (x, y))
-
-
-def build_terrain() -> None:
-    town = tile_sheet()
-    town_groups = (
-        "grass",
-        "dirt_path",
-        "cobble",
-        "shallow_water",
-        "wood_floor",
-        "flower_bed",
-        "entrance_rock",
-        "seasonal_reserve",
-    )
-    for row, kind in enumerate(town_groups):
-        for mask in range(16):
-            paste_tile(town, row * 16 + mask, generated_terrain_bank(kind, mask))
-    town.save(output("tiles/town_terrain.png"))
-
-    dungeon = tile_sheet()
-    dungeon_groups = tuple(f"dungeon_bank_{row}" for row in range(8))
-    for row, kind in enumerate(dungeon_groups):
-        for mask in range(16):
-            paste_tile(dungeon, row * 16 + mask, generated_dungeon_bank(kind, mask))
-    dungeon.save(output("tiles/dungeon_terrain.png"))
-
-    walls = tile_sheet(12, 8)
-    for bank_row, kind in ((0, "normal_stone"), (4, "tomb_stone")):
-        for slot, cell_name in enumerate(WALL_CELL_NAMES):
-            x = slot % 12
-            y = bank_row + slot // 12
-            cell = generated_cell(
-                GENERATED / "walls" / kind / f"{cell_name}.png",
-                remove_ground_green=True,
-            )
-            paste_tile(walls, y * 12 + x, cell)
-    walls.save(output("tiles/dungeon_walls.png"))
 
 
 def animated_sheet(directional_images: list[Image.Image]) -> Image.Image:
@@ -319,10 +188,6 @@ def build_buildings() -> None:
     outputs = [192, 192, 96, 96, 96, 192]
     for index, (name, width) in enumerate(zip(names, outputs)):
         wide_from_grid(source, index, width).save(output(f"buildings/{name}.png"))
-    # The approved Asset Forge wood_shop is the first 4x3 modular kit and the
-    # town's current reusable small-shop façade.
-    wood_shop = generated_building_module("wood_shop")
-    wood_shop.save(output("buildings/curio-shop.png"))
     # A noble residence reuses the stone house silhouette with a warm tint in
     # the game; it still gets its own stable runtime file.
     noble = ImageEnhance.Color(wide_from_grid(source, 3, 192)).enhance(0.78)
@@ -343,10 +208,7 @@ def build_buildings() -> None:
         (12, 3, 4, True, 0.7),  # sharedProps
     )
     for cell_x, cell_y, source_index, mirror, saturation in primary_kits:
-        if cell_x == 0 and cell_y == 0:
-            module = wood_shop
-        else:
-            module = building_from_grid(source, source_index, TILE * 4, mirror=mirror, saturation=saturation)
+        module = building_from_grid(source, source_index, TILE * 4, mirror=mirror, saturation=saturation)
         primary.alpha_composite(module, (cell_x * TILE, cell_y * TILE))
     primary.save(output("tiles/town_buildings.png"))
 
@@ -387,7 +249,6 @@ def build_preview() -> None:
 
 
 def main() -> None:
-    build_terrain()
     build_actors()
     build_objects()
     build_buildings()

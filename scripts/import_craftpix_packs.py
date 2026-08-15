@@ -29,27 +29,27 @@ DEFAULT_OUTPUT = ROOT / "assets-src" / "vendor" / "craftpix"
 class PackSpec:
     pack_id: str
     archive_name: str
-    # Keep all PNG/TMX files for the pack's useful art folders, but never PSDs
-    # or the vendor's preview/coupon metadata.
+    # Keep PNG/TMX files and original Aseprite animation definitions for
+    # character packs, but never PSDs or preview/coupon metadata.
     include_prefixes: tuple[str, ...]
 
 
 PACKS = (
     PackSpec("dungeon-base", "craftpix-net-169442-free-2d-top-down-pixel-dungeon-asset-pack.zip", ("PNG/", "Tiled_files/")),
     PackSpec("rpg-ui", "craftpix-net-255216-free-basic-pixel-art-ui-for-rpg.zip", ("PNG/",)),
-    PackSpec("predator-plants", "craftpix-net-284465-free-predator-plant-mobs-pixel-art-pack.zip", ("PNG/", "Tiled_files/")),
-    PackSpec("orcs", "craftpix-net-363992-free-top-down-orc-game-character-pixel-art.zip", ("PNG/", "Tiled_files/")),
-    PackSpec("glassblower-workshop", "craftpix-net-692491-free-glassblowers-workshop-top-down-pixel-art-asset.zip", ("PNG/", "Tiled_files/")),
-    PackSpec("swordsman", "craftpix-net-180537-free-swordsman-1-3-level-pixel-top-down-sprite-character.zip", ("PNG/", "Tiled_files/")),
+    PackSpec("predator-plants", "craftpix-net-284465-free-predator-plant-mobs-pixel-art-pack.zip", ("PNG/", "Tiled_files/", "ASEPRITE/")),
+    PackSpec("orcs", "craftpix-net-363992-free-top-down-orc-game-character-pixel-art.zip", ("PNG/", "Tiled_files/", "ASEPRITE/")),
+    PackSpec("glassblower-workshop", "craftpix-net-692491-free-glassblowers-workshop-top-down-pixel-art-asset.zip", ("PNG/", "Tiled_files/", "ASEPRITE/")),
+    PackSpec("swordsman", "craftpix-net-180537-free-swordsman-1-3-level-pixel-top-down-sprite-character.zip", ("PNG/", "Tiled_files/", "ASEPRITE/")),
     PackSpec("main-home", "craftpix-net-654184-main-characters-home-free-top-down-pixel-art-asset.zip", ("PNG/", "Tiled_files/")),
     PackSpec("dungeon-objects", "craftpix-net-218281-free-pixel-art-dungeon-objects-asset-pack.zip", ("PNG/", "Tiled_files/")),
-    PackSpec("vampires", "craftpix-net-208004-free-vampire-4-direction-pixel-character-sprite-pack.zip", ("PNG/", "Tiled/")),
-    PackSpec("slimes", "craftpix-net-788364-free-slime-mobs-pixel-art-top-down-sprite-pack.zip", ("PNG/", "Tiled_files/")),
+    PackSpec("vampires", "craftpix-net-208004-free-vampire-4-direction-pixel-character-sprite-pack.zip", ("PNG/", "Tiled/", "ASEPRITE/")),
+    PackSpec("slimes", "craftpix-net-788364-free-slime-mobs-pixel-art-top-down-sprite-pack.zip", ("PNG/", "Tiled_files/", "ASEPRITE/")),
     PackSpec("guild-hall", "craftpix-net-189780-free-top-down-pixel-art-guild-hall-asset-pack.zip", ("PNG/", "Tiled_files/")),
 )
 
 
-ALLOWED_EXTENSIONS = {".png", ".tmx", ".tsx", ".txt"}
+ALLOWED_EXTENSIONS = {".png", ".tmx", ".tsx", ".txt", ".aseprite"}
 SKIP_PARTS = {"__MACOSX", "PSD"}
 
 

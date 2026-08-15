@@ -1,4 +1,4 @@
-import { CRAFTPIX_ACTORS, CRAFTPIX_PLAYER_ACTOR, CRAFTPIX_ENEMY_ACTORS } from "./craftpixActors";
+import { CRAFTPIX_ACTORS, CRAFTPIX_PLAYER_ACTOR, CRAFTPIX_ENEMY_ACTORS, CRAFTPIX_NPC_ACTORS } from "./craftpixActors";
 import { CRAFTPIX_UI } from "./craftpixUi";
 import { CRAFTPIX_ENVIRONMENT_SHEETS } from "./craftpixEnvironment";
 
@@ -48,6 +48,7 @@ export const ASSET_MANIFEST = {
 export const CRAFTPIX_RUNTIME_ASSETS = {
   actors: CRAFTPIX_ACTORS,
   player: CRAFTPIX_PLAYER_ACTOR,
+  npcs: CRAFTPIX_NPC_ACTORS,
   enemies: CRAFTPIX_ENEMY_ACTORS,
   ui: CRAFTPIX_UI,
   environmentSheets: CRAFTPIX_ENVIRONMENT_SHEETS,

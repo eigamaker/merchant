@@ -334,6 +334,366 @@
       "license": "predator-plants/license.txt",
       "files": [
         {
+          "path": "ASEPRITE/Plant1/Attack/Plant1_Attack_back.aseprite",
+          "bytes": 6783,
+          "sha256": "18c473c1f4a6f2bee77482718b64320bc92d2f0087aa2a899d078ebe83cfb224"
+        },
+        {
+          "path": "ASEPRITE/Plant1/Attack/Plant1_Attack_front.aseprite",
+          "bytes": 6327,
+          "sha256": "f0b0a218884725da5c5d2842eefeb62c39987fab067b52d7f43e3708cc25ba24"
+        },
+        {
+          "path": "ASEPRITE/Plant1/Attack/Plant1_Attack_left.aseprite",
+          "bytes": 6819,
+          "sha256": "be0100da552e12875ae4ec1c7f902b3db65466c6af9e7a0b9f8cc25bd32c3e70"
+        },
+        {
+          "path": "ASEPRITE/Plant1/Attack/Plant1_Attack_right.aseprite",
+          "bytes": 6829,
+          "sha256": "c077f7812bbed22780d46f14d69cee6b7e9478c7cc39a89dd1ccb7a3f6a06a68"
+        },
+        {
+          "path": "ASEPRITE/Plant1/Death/Plant1_Death_back.aseprite",
+          "bytes": 6446,
+          "sha256": "a81530c13abfc0b0ef94f8dd01a811ccc0329bd8b2cb4c88a8e369502ee672d5"
+        },
+        {
+          "path": "ASEPRITE/Plant1/Death/Plant1_Death_front.aseprite",
+          "bytes": 6283,
+          "sha256": "01a77599ca4cf206690823464714ab2c1a9af7f0dc447bebcc3f36ea6291b06a"
+        },
+        {
+          "path": "ASEPRITE/Plant1/Death/Plant1_Death_left.aseprite",
+          "bytes": 6625,
+          "sha256": "575640fc1cf9d561025b0d5992188457ddae1908d48bfcedc8acbd4dfbd88da3"
+        },
+        {
+          "path": "ASEPRITE/Plant1/Death/Plant1_Death_right.aseprite",
+          "bytes": 6679,
+          "sha256": "e602e19245b0635446caf4951efc72410f96c9bb03e67b4116a582d4b5b5f861"
+        },
+        {
+          "path": "ASEPRITE/Plant1/Hurt/Plant1_Hurt_back.aseprite",
+          "bytes": 5137,
+          "sha256": "7c1654492b7e57a01ac50d33227490753e67267681b76aa20381f499767944c4"
+        },
+        {
+          "path": "ASEPRITE/Plant1/Hurt/Plant1_Hurt_front.aseprite",
+          "bytes": 4845,
+          "sha256": "9336c31ec0efaeed2980328f8b0b4a0d2fb1a9fbe43758478019317b6a1badfd"
+        },
+        {
+          "path": "ASEPRITE/Plant1/Hurt/Plant1_Hurt_left.aseprite",
+          "bytes": 5182,
+          "sha256": "02795e3a35c2a51160da978c83cab1c6bc9b846c3e3ed7e977fb94a02ba9287f"
+        },
+        {
+          "path": "ASEPRITE/Plant1/Hurt/Plant1_Hurt_right.aseprite",
+          "bytes": 5172,
+          "sha256": "8e8efd986e5de326133e5dd9c5af947703c62ca085b84b550690e2931f6e36c6"
+        },
+        {
+          "path": "ASEPRITE/Plant1/Idle/Plant1_Idle_back.aseprite",
+          "bytes": 3840,
+          "sha256": "b018405f002d2f3b49dc6ef841bb6f336054264c0cd300b5e4dac53e54f8736a"
+        },
+        {
+          "path": "ASEPRITE/Plant1/Idle/Plant1_Idle_front.aseprite",
+          "bytes": 3603,
+          "sha256": "2cb540eeef404d40d9878b468a421bfd4d2ba285fc817fbd5b0dcbe3eccde47f"
+        },
+        {
+          "path": "ASEPRITE/Plant1/Idle/Plant1_Idle_left.aseprite",
+          "bytes": 3822,
+          "sha256": "e6fe66dcabd29dbacc806787f9297310f8f7bbba5297e8f6fef936945710f931"
+        },
+        {
+          "path": "ASEPRITE/Plant1/Idle/Plant1_Idle_right.aseprite",
+          "bytes": 3845,
+          "sha256": "b7913c22d76504a2fd8af6b9c8d35b7c1d5459b5e8d111f0e294c2bebf5a730e"
+        },
+        {
+          "path": "ASEPRITE/Plant1/Run/Plant1_Run_back.aseprite",
+          "bytes": 7415,
+          "sha256": "c32052716938c0ffb0605f14144ecf0dcb03a81b0f07f6a185c7020453508f04"
+        },
+        {
+          "path": "ASEPRITE/Plant1/Run/Plant1_Run_front.aseprite",
+          "bytes": 6911,
+          "sha256": "3a030ea23e67a65a4a1c9568cb6091bbfb10152802f4a00e184285f0309f0e3e"
+        },
+        {
+          "path": "ASEPRITE/Plant1/Run/Plant1_Run_left.aseprite",
+          "bytes": 7397,
+          "sha256": "b2319e52ead0608d1daa41e29e3e8ea55725c9659d24157a933730eb6b7cf3a2"
+        },
+        {
+          "path": "ASEPRITE/Plant1/Run/Plant1_Run_right.aseprite",
+          "bytes": 7429,
+          "sha256": "ea0712a7c4e9c96eb8539cd9ba729eb7c8e49c9591da012d56ce5c2e60ba1b08"
+        },
+        {
+          "path": "ASEPRITE/Plant1/Walk/Plant1_Walk_back.aseprite",
+          "bytes": 5629,
+          "sha256": "e0b6e6b1f06e887a31da99ae6af87b77fe48306ea30a394b6ad253d5f6eee84e"
+        },
+        {
+          "path": "ASEPRITE/Plant1/Walk/Plant1_Walk_front.aseprite",
+          "bytes": 5249,
+          "sha256": "f246735ab4eb962b3eb6328dba906755bf4c7bb1674d15efee48ff507fc1b7df"
+        },
+        {
+          "path": "ASEPRITE/Plant1/Walk/Plant1_Walk_left.aseprite",
+          "bytes": 5342,
+          "sha256": "e4d1e4cac48e4872281868f221c96bb73fa6b271fc72e5d5aae204c5a10dd35a"
+        },
+        {
+          "path": "ASEPRITE/Plant1/Walk/Plant1_Walk_right.aseprite",
+          "bytes": 5392,
+          "sha256": "0a9d04eabdcdb9a702ae3c491b193c530277ac39fa18e68780764d506e921ec6"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Attack/Plant2_Attack_back.aseprite",
+          "bytes": 6587,
+          "sha256": "a0fd9b28e0bc20fe7031f553132918b068c1d51c5448f5e2b46b38a6cff304ff"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Attack/Plant2_Attack_front.aseprite",
+          "bytes": 6065,
+          "sha256": "16d9fc0f26e6b2d332348a3590087e0b9c4588a08d877fcbc0db6c6acb789443"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Attack/Plant2_Attack_left.aseprite",
+          "bytes": 7361,
+          "sha256": "5ccb1d0aa8fd63fe4b71ea2c96d65384e0677ce7dd4991908166dfe16a451c39"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Attack/Plant2_Attack_right.aseprite",
+          "bytes": 7361,
+          "sha256": "39cfb0d4ffb09e7d1e35ccf64542caef6bb7e1fb8556e35e93f0b32318e18870"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Death/Plant2_Death_back.aseprite",
+          "bytes": 6538,
+          "sha256": "3ad86a3829dbd1fa27389c15370f89f62d8a8b2d89b3b65ce193b4d180686e20"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Death/Plant2_Death_front.aseprite",
+          "bytes": 6492,
+          "sha256": "0a1f916fc355481143bfae108ed64e18fc34bbfedff94060000d435bc2261d0c"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Death/Plant2_Death_left.aseprite",
+          "bytes": 7071,
+          "sha256": "3c89bc16e9fe8cbe6600b6f3f8d6db3bc683337ab781a6c1eef8cb54b73db9a6"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Death/Plant2_Death_right.aseprite",
+          "bytes": 7089,
+          "sha256": "3fb3c09f879a044558acc5cb35b73024e99c85f91cd8723e02cb2226219e36f6"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Hurt/Plant2_Hurt_back.aseprite",
+          "bytes": 5087,
+          "sha256": "d9a1ca50af00e287bb4cc456e18c82c8188bfde8ed9b2cca0e8333b7fc5ec3f6"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Hurt/Plant2_Hurt_front.aseprite",
+          "bytes": 4944,
+          "sha256": "a04d55a17645b1dab7c72f80be8fd57e341462418aaaa9c11c7f86d7db0a00b9"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Hurt/Plant2_Hurt_left.aseprite",
+          "bytes": 5627,
+          "sha256": "38c1cc54368c0fa341b704660635661ce1e9cadd7f86cfa126fa7d305c606eac"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Hurt/Plant2_Hurt_right.aseprite",
+          "bytes": 5591,
+          "sha256": "807bd37319dc03c685740a4c5af572a140d9549fb5b6ad21b80660f720a71760"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Idle/Plant2_Idle_back.aseprite",
+          "bytes": 3836,
+          "sha256": "b96416cc1b8ee8b9ed4e98574ec4a531d0b751fd18f1c3b1a6ed8996b4d93777"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Idle/Plant2_Idle_front.aseprite",
+          "bytes": 3745,
+          "sha256": "66b4f5f36e221aa43197b8dccd4f5e2e18ee0166b6d572ab4ea6214e34805252"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Idle/Plant2_Idle_left.aseprite",
+          "bytes": 4166,
+          "sha256": "cb799bd936e380a20093235ad1f939f6ccc911425aa03864d747e149517eab42"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Idle/Plant2_Idle_right.aseprite",
+          "bytes": 4130,
+          "sha256": "4a2379795c3c79dde3955b210eee0597e6ef05e5ed9e2c9b4aa351a4f70df21b"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Run/Plant2_Run_back.aseprite",
+          "bytes": 6986,
+          "sha256": "d4f412324415e8d5705e00211cb33bd3c9289b2dd5d8f16412716beaa667273c"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Run/Plant2_Run_front.aseprite",
+          "bytes": 6836,
+          "sha256": "b6884ffe713e3224a4fe1bc87eda917404a2603ebe284dcdb8a07e809d18ede9"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Run/Plant2_Run_left.aseprite",
+          "bytes": 7685,
+          "sha256": "cb84118bade1d252034fd9e6678b272b2a392fbbb66a8a3d7778afd60aa42d68"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Run/Plant2_Run_right.aseprite",
+          "bytes": 7633,
+          "sha256": "adbdf22d32dc8f5a7f8dc95023ea192b94b2e4d57115aea09dabd10d55aa15a2"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Walk/Plant2_Walk_back.aseprite",
+          "bytes": 5511,
+          "sha256": "992eea58b2b5d68b1b89457bcd2e91b44a308767847687717cfc1fe1dd8d1a90"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Walk/Plant2_Walk_front.aseprite",
+          "bytes": 5236,
+          "sha256": "64ca90fd7208088465d1d51b8a4217dd2096112267141cd6376282fe49b9948a"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Walk/Plant2_Walk_left.aseprite",
+          "bytes": 5633,
+          "sha256": "ebc927f5568a8749b619121d521b1fb6e54dcbb79cd6f882ba9df5e71fc44115"
+        },
+        {
+          "path": "ASEPRITE/Plant2/Walk/Plant2_Walk_right.aseprite",
+          "bytes": 5606,
+          "sha256": "3bc5398cd61ea6e53f963af0939ed9582a3d613491838abe98fd7efbb68ff16c"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Attack/Plant3_Attack_back.aseprite",
+          "bytes": 6971,
+          "sha256": "a84660eb4d4d379d9149bef9a5641e70d3bf222a0eb2d61bac060e3f7c2d422b"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Attack/Plant3_Attack_front.aseprite",
+          "bytes": 6544,
+          "sha256": "b84f1713f4ece416b95117daec39941745a3b2eea1f028323db3ba0c929cc7e5"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Attack/Plant3_Attack_left.aseprite",
+          "bytes": 7393,
+          "sha256": "c25953c0c95d963330caf9148363b83110f5c003a2483c9e3eafd14a48a0aab9"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Attack/Plant3_Attack_right.aseprite",
+          "bytes": 7692,
+          "sha256": "499bf89749404daa8ade83c9768c902ecb0ff3dee8409b9d7ab5992b0707dce0"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Death/Plant3_Death_back.aseprite",
+          "bytes": 6452,
+          "sha256": "e30520a4c9303be934f3e1b5c697b1f44bd1d0005cba2c4a7aba3e412c709e42"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Death/Plant3_Death_front.aseprite",
+          "bytes": 6264,
+          "sha256": "b8ec44b3f0c3d8b726bf1a1cce51ce30f2f3e295f5b1ed026fe5fe58c44457ff"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Death/Plant3_Death_left.aseprite",
+          "bytes": 6695,
+          "sha256": "4d0b392ae2e6ad18afe114e3f9e978a66bbd0985b6109062145e4231536fac5a"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Death/Plant3_Death_right.aseprite",
+          "bytes": 6732,
+          "sha256": "c9a17cf0e70deda83a5b1f5b2fffb7a42b7becaf2f3f1b997ebcc628ef9a9a61"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Hurt/Plant3_Hurt_back.aseprite",
+          "bytes": 5250,
+          "sha256": "718a93ef09931118e3eda4ab779b9ff09bd57265d61500c27037b03af81501c7"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Hurt/Plant3_Hurt_front.aseprite",
+          "bytes": 4981,
+          "sha256": "bd7f29124533580e60fb8bd11c4e4cf918cac446d902ce15fe0121ced9f021e6"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Hurt/Plant3_Hurt_left.aseprite",
+          "bytes": 5593,
+          "sha256": "518df74f545a472812eab6e87758efa09a27c19c12b49bf2683ff0ca52a75065"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Hurt/Plant3_Hurt_right.aseprite",
+          "bytes": 5637,
+          "sha256": "949e8b7df9f6a05c41ea4cae013a37ef776a01c359cf1db7239f2659980b44d9"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Idle/Plant3_Idle_back.aseprite",
+          "bytes": 3935,
+          "sha256": "295b5d1b895e2d7bb313e7a354684f29fbdc777e01ebc6da98e9b98362bc9aeb"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Idle/Plant3_Idle_front.aseprite",
+          "bytes": 3800,
+          "sha256": "cecf75a73640e2b70b1f57e786961b1e3dbdda0a8acafc7427026fdeeb2eaa61"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Idle/Plant3_Idle_left.aseprite",
+          "bytes": 4116,
+          "sha256": "6ff84214e89ecd556c7a24fd5da2c1cc9f9f132f180dc9865f73a326a5324785"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Idle/Plant3_Idle_right.aseprite",
+          "bytes": 4353,
+          "sha256": "ef03ca06e41515689e76cc8a3f0f6a73ff37d247b8c363a3c8f9fe9a7697fe91"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Run/Plant3_Run_back.aseprite",
+          "bytes": 7414,
+          "sha256": "8538e5fc8bdf3d47a4edf68f74455b5db641b81d0bf47fbf9a112adcec02a533"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Run/Plant3_Run_front.aseprite",
+          "bytes": 7268,
+          "sha256": "99454f6a47d5b55d2de9020c3706731bb1169162ae7ba568a7791088ec23e1f1"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Run/Plant3_Run_left.aseprite",
+          "bytes": 7843,
+          "sha256": "497bc902d5163698d93addadae02c68cb76622f966c186f5c214876475128361"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Run/Plant3_Run_right.aseprite",
+          "bytes": 8083,
+          "sha256": "23fe43aa8ecb8f69705346f4385175288eb56803ed7b2504c635a15903586a0c"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Walk/Plant3_Walk_back.aseprite",
+          "bytes": 5630,
+          "sha256": "db81db75f88e8844dbb30166df81a7890f1e00b8c7b0ea9ec147a8e8e57a9335"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Walk/Plant3_Walk_front.aseprite",
+          "bytes": 5672,
+          "sha256": "6c34de642cdf1a688a5c77a1c9a136a32e94b48dfb75202522ca5ac234155fe6"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Walk/Plant3_Walk_left.aseprite",
+          "bytes": 5807,
+          "sha256": "c5c8e02959e117a13d21dbb9aa667df9e6d6baf27aeda6386de7fbbec2264d04"
+        },
+        {
+          "path": "ASEPRITE/Plant3/Walk/Plant3_Walk_right.aseprite",
+          "bytes": 6083,
+          "sha256": "37bf1cecd13163cfe4497bf7b8dd51938d4b6dce67865cc5675f2e41e95aa094"
+        },
+        {
           "path": "License.txt",
           "bytes": 35,
           "sha256": "0c0f673571adbb935c734ac17fbc6e51fb4368a225b915aa25031712b03960d4"
@@ -1681,6 +2041,486 @@
       "archive": "craftpix-net-363992-free-top-down-orc-game-character-pixel-art.zip",
       "license": "orcs/license.txt",
       "files": [
+        {
+          "path": "ASEPRITE/Orc1/Orc1_attack/orc1_back_attack.aseprite",
+          "bytes": 66631,
+          "sha256": "d3849710ec1d0a24a9aaa41f380a1e655eb63ff3651e179ac8dda66c51709423"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_attack/orc1_front_attack.aseprite",
+          "bytes": 46348,
+          "sha256": "2cda8d4d61fb5a02e6679bf970febffcbf5ae71b64b04950d945697befe8412e"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_attack/orc1_left_attack.aseprite",
+          "bytes": 17497,
+          "sha256": "1f9125e6fc221784ce90b438dfec7cded007fd4c9afe59f5ecf704ec6d38296c"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_attack/orc1_right_attack.aseprite",
+          "bytes": 10710,
+          "sha256": "144cf1b49182c5c3f8bdcb4a0514c93f8776744e81e9b25237ab5fafd5e7ca91"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_death/orc1_back_death.aseprite",
+          "bytes": 21730,
+          "sha256": "53f146725007c039bc5cbe198ea7a2cbc13d9f33d2fc6ba5571b15d132642217"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_death/orc1_front_death.aseprite",
+          "bytes": 69007,
+          "sha256": "77b029c42b9c07c78bcfdd9cb941061da45bd6077e7c42aad182470a89325a55"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_death/orc1_left_death.aseprite",
+          "bytes": 69179,
+          "sha256": "7b04f693bf5e66b59792d80708fb19957da047eab4ddbf9460709aafcc873ccc"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_death/orc1_right_death.aseprite",
+          "bytes": 68816,
+          "sha256": "be18f45bc471a8f16906a3594bd58f43425ac5f2dba3af47d5c881fb58326b67"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_hurt/orc1_back_hurt.aseprite",
+          "bytes": 16571,
+          "sha256": "36a009f73276f07721287d14504819acf88f4704e7d94cfa036748c951268c53"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_hurt/orc1_front_hurt.aseprite",
+          "bytes": 50592,
+          "sha256": "ebf1440e8428960d223714e8f891b84c57fad5beffafcd702d707fcf6b0c0c0a"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_hurt/orc1_left_hurt.aseprite",
+          "bytes": 14669,
+          "sha256": "6e43e3190eb8321865421de6a98bb1f96422b095bf0faf65b05d6dbf99d73eae"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_hurt/orc1_right_hurt.aseprite",
+          "bytes": 14478,
+          "sha256": "9b11671fcfc65ecdbd779cf756cccaded38c403b93bbe7b194ce6764da142143"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_idle/orc1_back_idle.aseprite",
+          "bytes": 32959,
+          "sha256": "b9ae2de1c2c0a902f85b1e66b5872cf813aedbbc3ae09f34c6499a16bf36d697"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_idle/orc1_front_idle.aseprite",
+          "bytes": 33053,
+          "sha256": "7e8cc2fdd4a679043da733d8d91640dfccb1039a7d717c20aa73fd7fcb293c5d"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_idle/orc1_left_idle.aseprite",
+          "bytes": 33132,
+          "sha256": "dd289e8c603cbdebc6233600403e5b5150dbb947bfe6e5c0401fd1a94c3eeb22"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_idle/orc1_right_idle.aseprite",
+          "bytes": 33344,
+          "sha256": "655c3c394148fdc31dd6de446233bc5f12f43eb44832c50966205065ee98c2f4"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_run/orc1_back_run.aseprite",
+          "bytes": 63963,
+          "sha256": "256726b3ade2949d033cece18028e0b2aacd1fa547e5bf583a63b41a93a91760"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_run/orc1_front_run.aseprite",
+          "bytes": 64779,
+          "sha256": "b701bcfae1d7efe40992bdfcd35f35182a6edf5f372e02b26a7386990313ed3a"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_run/orc1_left_run.aseprite",
+          "bytes": 14430,
+          "sha256": "f1505a98ff52e1099204e8b67fcaee9ab5a9713aa082a0217ed2a7d617115ca3"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_run/orc1_right_run.aseprite",
+          "bytes": 41289,
+          "sha256": "bfa5911ebd4fa2c937c95caa24c04f3fa82cd4e2b3256e2b4daaf77dd83fd94e"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_run_attack/orc1_back_run_attack.aseprite",
+          "bytes": 36746,
+          "sha256": "3cbf41485692fd22f0f4a67caa65324a659a55da6f8e97d5e05b5ad18436ddd7"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_run_attack/orc1_front_run_attack.aseprite",
+          "bytes": 72925,
+          "sha256": "283b065f6b9c6c98c3cc805ca48acda0cbfaf49ee55e70607475b4ee8f1a07a2"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_run_attack/orc1_left_run_attack.aseprite",
+          "bytes": 14952,
+          "sha256": "90aa35f08dc3a6e764394181330bb03c923f571c08743b9a46c095c4e7a780ce"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_run_attack/orc1_right_run_attack.aseprite",
+          "bytes": 13905,
+          "sha256": "82fa332adb3dff42dd00b64d635bf513941b59caf1b9899c50b81fbb07add27e"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_walk/orc1_back_walk.aseprite",
+          "bytes": 31375,
+          "sha256": "d65b5284f03b038abe9406efc148db6fbe349ff38da1c539a1c4dde06575fcae"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_walk/orc1_front_walk.aseprite",
+          "bytes": 31444,
+          "sha256": "86b6f15f2a0869148a3b0d5256fa754e5242f030947f17593b9bec54e7358b3e"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_walk/orc1_left_walk.aseprite",
+          "bytes": 31007,
+          "sha256": "580eab4eca2037bab0e225f1e91dee8a1c66eb9008ec2b2afbe0758bb94a77ad"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_walk/orc1_right_walk.aseprite",
+          "bytes": 50603,
+          "sha256": "646cda9531d14ba8c963fa51a1a4a6373a18dc24eae3ab0ab2b82066bac1d8e6"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_walk_attack/orc1_back_walk_attack.aseprite",
+          "bytes": 42609,
+          "sha256": "c25aa4dcdd25867dade612a8b9dfa33f671c002da8298fb31c213002d227d472"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_walk_attack/orc1_front_walk_attack.aseprite",
+          "bytes": 31656,
+          "sha256": "ffb9bb8e120c6c915dd044107fc9126caadf06a1b5f39dc1f9591dc6807a4ef5"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_walk_attack/orc1_left_walk_attack.aseprite",
+          "bytes": 7910,
+          "sha256": "81938af0673d08ea612bc63898cd3f069c65e93860bcf33391fc924019b5b930"
+        },
+        {
+          "path": "ASEPRITE/Orc1/Orc1_walk_attack/orc1_right_walk_attack.aseprite",
+          "bytes": 27853,
+          "sha256": "ddbe2022967f27d370134aa379a1e8f82269292409ba4a7c14a395dfe1d0ad8f"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_attack/orc2_back_attack.aseprite",
+          "bytes": 39191,
+          "sha256": "c94bb6e004d5d6cd1b2139dac0157aed2569c72549d9cbccfde3d0ae10a54048"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_attack/orc2_front_attack.aseprite",
+          "bytes": 12081,
+          "sha256": "dc3eef7fae596346bbcf54b04e4ce0d9968291290e2f648716490f56461cba5a"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_attack/orc2_left_attack.aseprite",
+          "bytes": 14690,
+          "sha256": "8261f1bf4a1cffd1b588ee22f9139cc6fd2338864d90e61a0f9ee926dda5751b"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_attack/orc2_right_attack.aseprite",
+          "bytes": 12131,
+          "sha256": "e7bee7f60cbff89e50bf07cefc8eb312d4f2e4c1b4b25c5a0d7572c856726047"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_death/orc2_back_death.aseprite",
+          "bytes": 14435,
+          "sha256": "2ed3e6bc4c1127530cd32010809df5cbae2cee4ef33091f4b1b2b76eb72e7c29"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_death/orc2_front_death.aseprite",
+          "bytes": 39400,
+          "sha256": "a347d634765bf6db3be7a9eaa7b9bcbc0add774154fed2fbf2f77376203d23a2"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_death/orc2_left_death.aseprite",
+          "bytes": 37998,
+          "sha256": "346f5a050bb09fc9bd2b107707fdcd0fab821e3bc7799d9f27e45a38955f00b3"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_death/orc2_right_death.aseprite",
+          "bytes": 38636,
+          "sha256": "9d2ad05a097a30739a11a798a61f6373bb8fb58350522f816c87c78c97cf3c76"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_hurt/orc2_back_hurt.aseprite",
+          "bytes": 12480,
+          "sha256": "00cab1f5777be9126f19444d643f407049e6da1cb4fc7e621a42e4e74d4072fe"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_hurt/orc2_front_hurt.aseprite",
+          "bytes": 30073,
+          "sha256": "61e97d9c679576187fce8a46153a7d8ab392a5c7f9e3c0c9a026c690b5ab5c46"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_hurt/orc2_left_hurt.aseprite",
+          "bytes": 11607,
+          "sha256": "961ec055bd05b33de593a57e9e05e1f2f7e317776c164b8cb5415be595684a64"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_hurt/orc2_right_hurt.aseprite",
+          "bytes": 12279,
+          "sha256": "3dda1a0a65ee6ca06e1ada2cc0398bc9c09bc8744c61e65f4cfab8d49ffd17cd"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_idle/orc2_back_idle.aseprite",
+          "bytes": 18973,
+          "sha256": "0e1b4e4be4cad66732567cf9ec1bd2dbdc17299cdb453ed576a424f6b22d8c07"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_idle/orc2_front_idle.aseprite",
+          "bytes": 19230,
+          "sha256": "398d4546839e84b785fc74c6eff2c0b4e26ebce88e60c9387e835dba99e11b94"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_idle/orc2_left_idle.aseprite",
+          "bytes": 18411,
+          "sha256": "cf8294a8cd4e0ca38f95edf693f4da54b11cef69290713c97d4476537b00d7ef"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_idle/orc2_right_idle.aseprite",
+          "bytes": 19313,
+          "sha256": "372d6e9e4cd7768401bd78c61899472244d7075bc9c4f9e0bf0d508b56c2dd8b"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_run/orc2_back_run.aseprite",
+          "bytes": 38775,
+          "sha256": "c17e59abb46bba449f9260120cce6dfea947fc204a5526d4ad3685e01e0bae51"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_run/orc2_front_run.aseprite",
+          "bytes": 39056,
+          "sha256": "9d0af424e4b225584dbef7f3521807f607036cb20c7301305238b765fe7207b1"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_run/orc2_left_run.aseprite",
+          "bytes": 10319,
+          "sha256": "d53fcbf304b928ce468f15ca51b870e6000d246efe1a4fd1324d7dfd05234799"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_run/orc2_right_run.aseprite",
+          "bytes": 38728,
+          "sha256": "d8ce3dbb59ca29a0da7e22576d2240764bbb7873f96428236fa9607a4a2cde59"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_run_attack/orc2_back_run_attack.aseprite",
+          "bytes": 11703,
+          "sha256": "fb748ceb64af4e9045acf6780e0e04578d2e4a14c907748153f617160f617caa"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_run_attack/orc2_front_run_attack.aseprite",
+          "bytes": 39405,
+          "sha256": "a8c65748a5f0bc7dd21c8e1d76262e8d1fb24608e87c440d4d7ba9b85d434066"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_run_attack/orc2_left_run_attack.aseprite",
+          "bytes": 11312,
+          "sha256": "10d376792df8f4ef9e2270230d4797c12afd8ac3700730a2e4095a852748d40f"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_run_attack/orc2_right_run_attack.aseprite",
+          "bytes": 12113,
+          "sha256": "67c8dd84acc31071948952e503ca346200f5ac9bd0a601f994598e4dafa2ca5e"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_walk/orc2_back_walk.aseprite",
+          "bytes": 8573,
+          "sha256": "044de18704454d64a3f5766ac6f5b263d3457f5d3cb847abd42b1934e3be8b12"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_walk/orc2_front_walk.aseprite",
+          "bytes": 9006,
+          "sha256": "e4a94cba79b0480a73df84de66094775d77d66b0ad28ba166b2efddb4945075c"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_walk/orc2_left_walk.aseprite",
+          "bytes": 7813,
+          "sha256": "9460d36cda69132914fcd4c68c0fa790137824fe835daba3548139271bf9b219"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_walk/orc2_right_walk.aseprite",
+          "bytes": 28833,
+          "sha256": "00ab99f04b80b2289886fcd4fb480b184c260d4419191bcc019b223b28ad72d9"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_walk_attack/orc2_back_walk_attack.aseprite",
+          "bytes": 22636,
+          "sha256": "5cb091e4d419bd9189f55eb88af754ba58f3e7d9b395a5111d18bdc3a978900f"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_walk_attack/orc2_front_walk_attack.aseprite",
+          "bytes": 9080,
+          "sha256": "7bac7f8bf8d176f29cdfc66e85623beb6a92d89accdd275f9a5cb5c3c054ebcf"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_walk_attack/orc2_left_walk_attack.aseprite",
+          "bytes": 8621,
+          "sha256": "9bfd9753f6ee469bffd77de3411d0c2edc92f8fe14d9d3a99ce1c7b3c34f78ec"
+        },
+        {
+          "path": "ASEPRITE/Orc2/Orc2_walk_attack/orc2_right_walk_attack.aseprite",
+          "bytes": 29778,
+          "sha256": "c821788dfe0c688bb12ab30f26d232ea117939d5cbf1a35e7167585020f6e103"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_attack/orc3_back_attack.aseprite",
+          "bytes": 41316,
+          "sha256": "1d434dd811aef70d63bf6b9b984f9229bf0981f10e28ec983aa32e33f51df378"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_attack/orc3_front_attack.aseprite",
+          "bytes": 14549,
+          "sha256": "3099648cab9c1de5cd171418fc1e17509388c7c8cbec6601c76252bfcc4a553d"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_attack/orc3_left_attack.aseprite",
+          "bytes": 17046,
+          "sha256": "f0714e62391bd50e1d1402154b8be6016ecc2e1f69e7dae611412438f49efcad"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_attack/orc3_right_attack.aseprite",
+          "bytes": 13582,
+          "sha256": "8d912773dcd6e6431fdd66d856d786cace90811eb5d7ea49837c59a0029e64d1"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_death/orc3_back_death.aseprite",
+          "bytes": 17272,
+          "sha256": "06b7736ea8e8c7c576b6f63e1c47a8cc7a375f4da3d3b97f34bd56cf8b9b099a"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_death/orc3_front_death.aseprite",
+          "bytes": 41563,
+          "sha256": "82ba8fc70251b57a109677aab272afe6c70cd2a644c9088d4e81814c0dba95c4"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_death/orc3_left_death.aseprite",
+          "bytes": 45449,
+          "sha256": "644dafab0c5b334376113c5cb11195490bd52cbdf5d512765e10ae6e71cbcccf"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_death/orc3_right_death.aseprite",
+          "bytes": 40247,
+          "sha256": "a3e23a58ab5da675d7d4b042f412ee6073266fafce18f6bff039f9c081e4cb99"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_hurt/orc3_back_hurt.aseprite",
+          "bytes": 15040,
+          "sha256": "17cd183edc4fd73a75dc40ac2a526f579790bd29bd14ef77c1685bc6f7c20780"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_hurt/orc3_front_hurt.aseprite",
+          "bytes": 31748,
+          "sha256": "e8f8ea8667b4fdff6a0e41a2c1e0dcb0a0d01d94bd83b302ac5f8a08029c9b5b"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_hurt/orc3_left_hurt.aseprite",
+          "bytes": 17856,
+          "sha256": "3438561f380f29c13e463338dcda391400a1eb4bfbc3e89c8529ce5dad6b494f"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_hurt/orc3_right_hurt.aseprite",
+          "bytes": 13510,
+          "sha256": "4be0470967f46dbdf1dafba1be9b2699f49312da46bab3586f8ac0d6dcf61ee8"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_idle/orc3_back_idle.aseprite",
+          "bytes": 20757,
+          "sha256": "6b0355b3a9cda21d143f09d6b3e1773ab50a6deb8e750a443afeb660906a3dd3"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_idle/orc3_front_idle.aseprite",
+          "bytes": 20334,
+          "sha256": "c99cd5d3157c419bb0b14d5fd8900915ca3611e0ace0c1e9afd1a69d439433a5"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_idle/orc3_left_idle.aseprite",
+          "bytes": 21708,
+          "sha256": "4ef77f5a6cc1e187422923f59e8cc5a7c4472279b2027585a6a1cafb6df827fc"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_idle/orc3_right_idle.aseprite",
+          "bytes": 20052,
+          "sha256": "84ec74668513c98a295eee68861d9450a1f97778b7f064678ef45a2960b0cb53"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_run/orc3_back_run.aseprite",
+          "bytes": 42037,
+          "sha256": "16d35914184fb4d1814ea54064fdaafda77b1e78fda405eb5b84799d2ce2ba88"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_run/orc3_front_run.aseprite",
+          "bytes": 42420,
+          "sha256": "dd2e42e3067d6fabf84f9ece7970686884bb7d7595132f90514cfbda7e1e4825"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_run/orc3_left_run.aseprite",
+          "bytes": 13648,
+          "sha256": "495c552efeb88eb424ceeab1d23f126a733ae7f80982bc600533dbbe52353d42"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_run/orc3_right_run.aseprite",
+          "bytes": 40490,
+          "sha256": "4c20a6d255f382aa96335edf57da37c48ea584c688bdf493b61cfaacd6c82f05"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_run_attack/orc3_back_run_attack.aseprite",
+          "bytes": 13838,
+          "sha256": "ab9769965cdbfeb0cd9e9b1afaa31205e1a9687a09b059dd805edb41b81defa3"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_run_attack/orc3_front_run_attack.aseprite",
+          "bytes": 41760,
+          "sha256": "e23bdb1c7fe0af8bf6a0cb6a84762df5c29e54c0aaa91fd0b66f061883996047"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_run_attack/orc3_left_run_attack.aseprite",
+          "bytes": 13761,
+          "sha256": "b9bdb036471d3c2d281609167c54ff1f89072c49b7043c78c36a8cb4c5c89ecb"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_run_attack/orc3_right_run_attack.aseprite",
+          "bytes": 13567,
+          "sha256": "0bedf15ac16948154547d7b73412eeee177832ee2cc3ec59924ea6827c318533"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_walk/orc3_back_walk.aseprite",
+          "bytes": 10971,
+          "sha256": "700130ca886ee40c84e0c04baff4257dbd080667bc0d3f56cbffe72581c23916"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_walk/orc3_front_walk.aseprite",
+          "bytes": 11237,
+          "sha256": "61ad9c5330815b8e6f9e4ab84e1a4dc7af89bf3446c2f88718a83f48b0b6bf58"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_walk/orc3_left_walk.aseprite",
+          "bytes": 12509,
+          "sha256": "fd88eedf906065511be06b71c2907fa9c4c83754e070a1ce6e3bf7de6df57259"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_walk/orc3_right_walk.aseprite",
+          "bytes": 30084,
+          "sha256": "6fa22353f8e1cef04f69de4f892408fc279f843a099337642fefc3987b61fd7a"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_walk_attack/orc3_back_walk_attack.aseprite",
+          "bytes": 24338,
+          "sha256": "817ef3332c4d5126ca876cf76b2fc6586f82231d80d1984fb6a0762653df45dc"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_walk_attack/orc3_front_walk_attack.aseprite",
+          "bytes": 11925,
+          "sha256": "9236776d54b3bc6dcf1e4b0dbb863a6f4dbd6608f8a4c745439baab3abbe58a9"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_walk_attack/orc3_left_walk_attack.aseprite",
+          "bytes": 10476,
+          "sha256": "56ea474734e53d446e736665f3b080347ecfbe7ea005a6869020e7b2c223d6a6"
+        },
+        {
+          "path": "ASEPRITE/Orc3/Orc3_walk_attack/orc3_right_walk_attack.aseprite",
+          "bytes": 30892,
+          "sha256": "58eb20108c5247e4b18ce9740b1a02ba891e9b57fa8c275dffb495ea2b7ddf52"
+        },
         {
           "path": "License.txt",
           "bytes": 35,
@@ -4059,6 +4899,41 @@
       "license": "glassblower-workshop/license.txt",
       "files": [
         {
+          "path": "ASEPRITE/Customer.aseprite",
+          "bytes": 10044,
+          "sha256": "655fe56c0f52be52538702fdab38831fc9228997aec3520c83988a06c30e35e1"
+        },
+        {
+          "path": "ASEPRITE/Doors_windows.aseprite",
+          "bytes": 36938,
+          "sha256": "703db662fc9c283a0d699a7cbc0818be96ccc342ad0535f3d0ad7fd35db2374f"
+        },
+        {
+          "path": "ASEPRITE/Forge.aseprite",
+          "bytes": 11200,
+          "sha256": "26695679681689edb6507251d9732a66ec4fdb4251664888057257e0f85e7da8"
+        },
+        {
+          "path": "ASEPRITE/Light_animation.aseprite",
+          "bytes": 1453,
+          "sha256": "505c311a7ed7763ba915460834f4134891a98cd0541bca540abd1b8417724ea3"
+        },
+        {
+          "path": "ASEPRITE/Master.aseprite",
+          "bytes": 51907,
+          "sha256": "e9ce381306429f3b7b4a7bf531766ca6e2fba8acea1d28961cf0d9981cc3e948"
+        },
+        {
+          "path": "ASEPRITE/Master_Idle.aseprite",
+          "bytes": 18990,
+          "sha256": "0331072b89510f41d04ebfe26abc09c23fd8b4d90af2f492600c65a6a77a1c55"
+        },
+        {
+          "path": "ASEPRITE/Seller.aseprite",
+          "bytes": 5453,
+          "sha256": "5140b374362a29980c499be4c0ad6b42322118fa5e277b36e202a60b3a74f26c"
+        },
+        {
           "path": "License.txt",
           "bytes": 35,
           "sha256": "0c0f673571adbb935c734ac17fbc6e51fb4368a225b915aa25031712b03960d4"
@@ -4405,6 +5280,486 @@
       "archive": "craftpix-net-180537-free-swordsman-1-3-level-pixel-top-down-sprite-character.zip",
       "license": "swordsman/license.txt",
       "files": [
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Attack/Swordsman_lvl1_attack_back.aseprite",
+          "bytes": 6650,
+          "sha256": "d708075cd057ae89a4860e9e7ce786c20e391f714a541751a001aaa18edd22a1"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Attack/Swordsman_lvl1_attack_front.aseprite",
+          "bytes": 6737,
+          "sha256": "a57abbb45d99763bcfee1f79dd78e032fbbd54da183e03ad6a754756c55dc355"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Attack/Swordsman_lvl1_attack_side_left.aseprite",
+          "bytes": 7545,
+          "sha256": "8ae61de7091d03cd6744e01c77ff2db45c62bd3e30002ba90a5b2ac49b58d5aa"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Attack/Swordsman_lvl1_attack_side_right.aseprite",
+          "bytes": 7637,
+          "sha256": "c97a521b8191fd5d4869932c315acff8d64b58eb1cac92af4392ac8848c8cfa9"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Death/Swordsman_lvl1_Death_back.aseprite",
+          "bytes": 5826,
+          "sha256": "07f61b3e9c69015ddb42398e34274b313cff0ff98fed60b70198c3836437a173"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Death/Swordsman_lvl1_Death_front.aseprite",
+          "bytes": 5099,
+          "sha256": "b836ff7c43f7210e8d0884c2d8612064fc4cb99460438b7b8e48857bb004a220"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Death/Swordsman_lvl1_Death_side_left.aseprite",
+          "bytes": 5658,
+          "sha256": "f469086fcdb19c6046bf992defd0d08aa9175e925b348a7071ac3e07e9548ba9"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Death/Swordsman_lvl1_Death_side_right.aseprite",
+          "bytes": 5760,
+          "sha256": "7ec5922c1c7e35cf2ff2a76c3db51afa319f4568ef9357c44eb377e771d8deb4"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Hurt/Swordsman_lvl1_Hurt_back.aseprite",
+          "bytes": 4574,
+          "sha256": "a8277999a9ec8784e16deb58126e78abb5dd184b0f47783d08f0d258926a8647"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Hurt/Swordsman_lvl1_Hurt_front.aseprite",
+          "bytes": 4526,
+          "sha256": "d06b0fb3b40e07f966b8447cb99e23f1fcdfc544ab2611a1d0f9643b78f44764"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Hurt/Swordsman_lvl1_Hurt_side_left.aseprite",
+          "bytes": 4515,
+          "sha256": "97bc87c9e739b0d81851e0cf0b34ea87966e705d0efd2078c102aad936b85438"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Hurt/Swordsman_lvl1_Hurt_side_right.aseprite",
+          "bytes": 4562,
+          "sha256": "40c246ed3aeafef52022965bbadab1fd9cfbc8621192222a0bc05fefe36b9684"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Idle/Swordsman_lvl1_Idle_back.aseprite",
+          "bytes": 3417,
+          "sha256": "6d65c4f939d9e678344f7def7b7341f21efba98ac3efff2a5cef5760208d30f4"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Idle/Swordsman_lvl1_Idle_front.aseprite",
+          "bytes": 9326,
+          "sha256": "202437842a988f6b3be617284cb5f8d753eef96fa99de32fe35d71f7a1eb7ba4"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Idle/Swordsman_lvl1_Idle_side_left.aseprite",
+          "bytes": 9214,
+          "sha256": "8c4c87c1b4042c536e60fe7aef217100028f9d5a1c13617de9da454a1f2d694a"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Idle/Swordsman_lvl1_Idle_side_right.aseprite",
+          "bytes": 9416,
+          "sha256": "ce8e2c512ecbf7d5fcfbcf6c48a1fcb9353646071625ecb2a8ebb2742b25d4e5"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Run/Swordsman_lvl1_Run_back.aseprite",
+          "bytes": 19374,
+          "sha256": "7b0dd9ff9e1cde9004068a0e6770656aa782ff36de6aaaa0549e04c41a2ff6ac"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Run/Swordsman_lvl1_Run_front.aseprite",
+          "bytes": 6977,
+          "sha256": "909aa64cb78139ab74aac625b9dc3d34d973860c117fcfab230bd13db6ddf596"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Run/Swordsman_lvl1_Run_side_left.aseprite",
+          "bytes": 7559,
+          "sha256": "7a4c029d19794a1538b12465d97e6a25f1818566e1d3fbf3ccad4e5c63b663b0"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Run/Swordsman_lvl1_Run_side_right.aseprite",
+          "bytes": 7586,
+          "sha256": "3e6b23837cd3fbaa633b058461f719f1a8032cf559f443b3441ada676e546435"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Run_attack/Swordsman_lvl1_Run_Attack_back.aseprite",
+          "bytes": 6627,
+          "sha256": "1405594e051f707c743af0ff4c74d097d32aa093281aa5e8420c368bad29e705"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Run_attack/Swordsman_lvl1_Run_Attack_front.aseprite",
+          "bytes": 6720,
+          "sha256": "7463c8d8437ed41ef2bcf15f9afe89019a632284627c4724346bb4ad888f42eb"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Run_attack/Swordsman_lvl1_Run_Attack_side_left.aseprite",
+          "bytes": 6697,
+          "sha256": "084e17b29c592742d197fe5257bed6eede11f9d2c4fc909c99ec9cddabcbd3bd"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Run_attack/Swordsman_lvl1_Run_Attack_side_right.aseprite",
+          "bytes": 6832,
+          "sha256": "e3aea3848cb365f656bdda0bf5eb99484e93c8ec060c06ad7250754addff268e"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Walk/Swordsman_lvl1_Walk_back.aseprite",
+          "bytes": 4794,
+          "sha256": "d0f05bcca7dcfc4984c8269f1635dc36e1d02f3ebe6a28df35cc95a371db391c"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Walk/Swordsman_lvl1_Walk_front.aseprite",
+          "bytes": 4830,
+          "sha256": "5a0aacdc9cc42a36482932b3a995018c561409cd8e51bc5b7a94e608f1d70e3a"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Walk/Swordsman_lvl1_Walk_side_left.aseprite",
+          "bytes": 4798,
+          "sha256": "fc8488f6bf9454b14be7546626727f1d6fa38f465c2ad857961d54457bb2500c"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Walk/Swordsman_lvl1_Walk_side_right.aseprite",
+          "bytes": 4899,
+          "sha256": "938ecd534ff3ed145ad83c80c6e24d818996b87ea13792f0324f74246015633e"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Walk_attack/Swordsman_lvl1_Walk_Attack_back.aseprite",
+          "bytes": 5186,
+          "sha256": "1f94eb370dc989af18434e4e12cb497b9876d68119baa8c8e2160cca52de3917"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Walk_attack/Swordsman_lvl1_Walk_Attack_front.aseprite",
+          "bytes": 5187,
+          "sha256": "210b35d69a48bac6bb7fb2c6649190b581661c0213e7df7ac6aa01cb24157c79"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Walk_attack/Swordsman_lvl1_Walk_Attack_side_left.aseprite",
+          "bytes": 5672,
+          "sha256": "c8fbb5fe7ad96dd3f41bef2238e31215167cf9638c4f5bd8a26479a2d421f0f5"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl1/Swordsman_lvl1_Walk_attack/Swordsman_lvl1_Walk_Attack_side_right.aseprite",
+          "bytes": 5281,
+          "sha256": "331af5a1b2074276880c4d89ac95ca8e4302562a1c184581880ca38268a8a829"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Attack/Swordsman_lvl2_attack_back.aseprite",
+          "bytes": 7967,
+          "sha256": "a108cd3d6e6532e6afb37b3c61f7b0e54e528715de9f6dd549f0c3015632ca0d"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Attack/Swordsman_lvl2_attack_front.aseprite",
+          "bytes": 7994,
+          "sha256": "6eadaab0c11a853c9488ca4eb082accd3d6de390829bc4822b5c806969b4c692"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Attack/Swordsman_lvl2_attack_side_left.aseprite",
+          "bytes": 8837,
+          "sha256": "2ded1c9e50f9b4fc0e965fccc077edf945414800fd6aa38e40a109805bfd4371"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Attack/Swordsman_lvl2_attack_side_right.aseprite",
+          "bytes": 8988,
+          "sha256": "aa3978b48a7aafb357def7837644de09e87c93b4ad8660cfaebf22654f148fba"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Death/Swordsman_lvl2_Death_back.aseprite",
+          "bytes": 6618,
+          "sha256": "520f0b29d50edb49a8798f958568e237a69a1b37d3769b0f2dfcef44d39cf024"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Death/Swordsman_lvl2_Death_front.aseprite",
+          "bytes": 5928,
+          "sha256": "1ed9ea211b09e4d5cd8433ff32a5cf42023a7bdc28a3a9929ccad357a27e72f2"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Death/Swordsman_lvl2_Death_side_left.aseprite",
+          "bytes": 6135,
+          "sha256": "f040bc5ce78dd4375ec8b944adb5d4ce1c944b61ecd19d5ce53a3a32f1a90dfc"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Death/Swordsman_lvl2_Death_side_right.aseprite",
+          "bytes": 6716,
+          "sha256": "49138cee8526740bca3a0f7cb30be6c8becd7b160f0e31bcf8563056abd6326c"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Hurt/Swordsman_lvl2_Hurt_back.aseprite",
+          "bytes": 5354,
+          "sha256": "47f4cd38e05789088bdadec3a2ba2630f9317bffefc0618856a20c42a98a53f3"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Hurt/Swordsman_lvl2_Hurt_front.aseprite",
+          "bytes": 5352,
+          "sha256": "b82d2af51137c79f80c4e4de1e960e272153e549d1754acbd3e9a82a4b697131"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Hurt/Swordsman_lvl2_Hurt_side_left.aseprite",
+          "bytes": 5198,
+          "sha256": "02760eb92819806320d5a6743a25e7852998d30df3566a35a2afe755f7df541a"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Hurt/Swordsman_lvl2_Hurt_side_right.aseprite",
+          "bytes": 5302,
+          "sha256": "b088f341111036203fdcdf943d6b01cf4d4e537ca84a3fcfbeb7b140ce6aaf44"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Idle/Swordsman_lvl2_Idle_back.aseprite",
+          "bytes": 4046,
+          "sha256": "f1f273c6ce673d96a72f5dd46b7530ab137a25a66508f351336918775d7c5c22"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Idle/Swordsman_lvl2_Idle_front.aseprite",
+          "bytes": 11219,
+          "sha256": "bafcd55ed4cebf61ddcbf4fcb61804aec5416c7c6be83ee12660909c38084a36"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Idle/Swordsman_lvl2_Idle_side_left.aseprite",
+          "bytes": 11001,
+          "sha256": "f5dd9a91e01116123f67109f0176b30a2467580df541bc25536295249dca1e8f"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Idle/Swordsman_lvl2_Idle_side_right.aseprite",
+          "bytes": 11256,
+          "sha256": "e38edc175075d53f226cdedb3f5551009fc6285803faca48a976425e25f612d4"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Run/Swordsman_lvl2_Run_back.aseprite",
+          "bytes": 20559,
+          "sha256": "7ba6016641690663052bbc2b33042fc99fcbe45d6cb6fc3124c17ba3b359130d"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Run/Swordsman_lvl2_Run_front.aseprite",
+          "bytes": 8242,
+          "sha256": "1c1e7f8d97e9988c20606ecd1e862973149e11c7afda915b1f6b07f26618cf55"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Run/Swordsman_lvl2_Run_side_left.aseprite",
+          "bytes": 10276,
+          "sha256": "8616da414e21ff2a6033ed821f57d0b7f675dec91282074db136ce44f7f34fe6"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Run/Swordsman_lvl2_Run_side_right.aseprite",
+          "bytes": 10534,
+          "sha256": "05449d8a9405d046a14939c771aec4f1328dcaece3eee1dc48ac7f8037854ede"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Run_attack/Swordsman_lvl2_Run_Attack_back.aseprite",
+          "bytes": 7919,
+          "sha256": "b3f223090d6c5eea8a5efb6c52212030da4db25231512bb0e88efe4781caa93d"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Run_attack/Swordsman_lvl2_Run_Attack_front.aseprite",
+          "bytes": 7975,
+          "sha256": "83303befb151b34c9514ae2e763d5d297b7447f3f5148378f425bbd0b8d473a0"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Run_attack/Swordsman_lvl2_Run_Attack_side_left.aseprite",
+          "bytes": 7866,
+          "sha256": "d65521e9b489914fb1a7e383731c944ae8c3818830019a23f4b862071c2e2744"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Run_attack/Swordsman_lvl2_Run_Attack_side_right.aseprite",
+          "bytes": 8264,
+          "sha256": "557f0531a232b48f71690ce645e38b4d79095cc9163edda42e6c41c4dcf77776"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Walk/Swordsman_lvl2_Walk_back.aseprite",
+          "bytes": 5724,
+          "sha256": "4c42e5cf2c76c77402ab1080ab03423e8eea69b2096c7609730b6a6298504fb7"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Walk/Swordsman_lvl2_Walk_front.aseprite",
+          "bytes": 5828,
+          "sha256": "1c41b54801947573b72db53791041bc657c8ee9ea58e82786b6ea055535ce1e4"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Walk/Swordsman_lvl2_Walk_side_left.aseprite",
+          "bytes": 5421,
+          "sha256": "f72fe370bb7a232ccc2f8a0c951bd75ae144b29500baa839e4551b26cdb310b1"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Walk/Swordsman_lvl2_Walk_side_right.aseprite",
+          "bytes": 5803,
+          "sha256": "a8889c7e7195858bc96b75519b68ea528f7e11bf8f876f5123a058b3cd8ebffb"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Walk_attack/Swordsman_lvl2_Walk_Attack_back.aseprite",
+          "bytes": 6144,
+          "sha256": "de57b8b1f71bf4864572033b6c58724bd7bb9846d005f55d828851a48563f004"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Walk_attack/Swordsman_lvl2_Walk_Attack_front.aseprite",
+          "bytes": 6071,
+          "sha256": "8cbda2ad83330410385f0edaa15d4d8596ad458b3abf2faa26b54cdcceeebe7b"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Walk_attack/Swordsman_lvl2_Walk_Attack_side_left.aseprite",
+          "bytes": 6597,
+          "sha256": "cbbaf67628f7418d4e6462e5c058de34f32f673c4d08bc354bf627f951a2659c"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl2/Swordsman_lvl2_Walk_attack/Swordsman_lvl2_Walk_Attack_side_right.aseprite",
+          "bytes": 6316,
+          "sha256": "9dd94b511fba126d09de9b753ed7f07f887e7488b9b13affd932b0b73747a36e"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Attack/Swordsman_lvl3_attack_back.aseprite",
+          "bytes": 8108,
+          "sha256": "81ca675527b4950c6847bd541bbe7dba64a8ecb3177b3368e309e2e2782fbffa"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Attack/Swordsman_lvl3_attack_front.aseprite",
+          "bytes": 8023,
+          "sha256": "b0c60507eaae192108db1f4b37970d4831adff59cf30e635f085850a41375c3e"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Attack/Swordsman_lvl3_attack_side_left.aseprite",
+          "bytes": 23956,
+          "sha256": "7856e463fb7172ef81bbe4d7b7c60111e924a04766e58733424e081761546ab1"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Attack/Swordsman_lvl3_attack_side_right.aseprite",
+          "bytes": 23773,
+          "sha256": "99579377341f6e89716bbd8fa93b3e5ba463cbbff586717ab4ad7f798ddac1bd"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Death/Swordsman_lvl3_Death_back.aseprite",
+          "bytes": 6666,
+          "sha256": "fa30d341d4f166d4962b474f7726bd6e0e84a5af1b60a1504460271c6833c4c9"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Death/Swordsman_lvl3_Death_front.aseprite",
+          "bytes": 6219,
+          "sha256": "fcf661035dd05d817833759a3f7a85fc6e7c3fafba2b385913863debb6406ee2"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Death/Swordsman_lvl3_Death_side_left.aseprite",
+          "bytes": 7027,
+          "sha256": "6ff984177522b5c87e3673615793670e52564dbe3357bb01d3615e9055a5b7de"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Death/Swordsman_lvl3_Death_side_right.aseprite",
+          "bytes": 7076,
+          "sha256": "df796442dc9d896bc489826a22c9580eae7449220e475ec5492a6b173524b3fc"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Hurt/Swordsman_lvl3_Hurt_back.aseprite",
+          "bytes": 5388,
+          "sha256": "c70cf3aa44cd46d20b049c8c933cc02c9535ea0d93a9865a45e67549b09f65c3"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Hurt/Swordsman_lvl3_Hurt_front.aseprite",
+          "bytes": 5488,
+          "sha256": "2de5ccb2c0b028d278d78d6101ee226e579349b63fb3b1ea68c4ab9eb94ab6b0"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Hurt/Swordsman_lvl3_Hurt_side_left.aseprite",
+          "bytes": 5743,
+          "sha256": "b14a83330c667fe8477882e202773e5e94a6cf217992d593c01a12613aa86a9f"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Hurt/Swordsman_lvl3_Hurt_side_right.aseprite",
+          "bytes": 5684,
+          "sha256": "89a751aae0023f1702b98b653ef00bbe0082be8d88df090f3840bf9d2c29f749"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Idle/Swordsman_lvl3_Idle_back.aseprite",
+          "bytes": 4067,
+          "sha256": "f14db0c273aec9c7744f4a16d637a3676c17c70c97b3e505548bed4bfd13785a"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Idle/Swordsman_lvl3_Idle_front.aseprite",
+          "bytes": 11290,
+          "sha256": "20549b74073acaf2c06917699639fb9b4767a0860208b554c25cd5affa7f95ba"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Idle/Swordsman_lvl3_Idle_side_left.aseprite",
+          "bytes": 12286,
+          "sha256": "6ec50b73e6c78ba8bdf3fa71f6cf1de9e92320212d2b1fee428e436fdeb5f6c5"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Idle/Swordsman_lvl3_Idle_side_right.aseprite",
+          "bytes": 12369,
+          "sha256": "4bd39e6a97d7641424cee91d82111ac02661a7df29c4934181e3839b2cdb670b"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Run/Swordsman_lvl3_Run_back.aseprite",
+          "bytes": 20770,
+          "sha256": "19cc868c96d1b16a457d3e91e87eeff07326a4bbb28caf58f0202ebbb4553c46"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Run/Swordsman_lvl3_Run_front.aseprite",
+          "bytes": 8504,
+          "sha256": "9cd8c9c54baa5bb5cc8b7328e6ac6d99dfaba96786822c243948d1998b0cf001"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Run/Swordsman_lvl3_Run_side_left.aseprite",
+          "bytes": 11268,
+          "sha256": "3b147154fc7dd9a53ce3c1a32cfd79b1471ad810f832a237bca4519ce8c4c3f0"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Run/Swordsman_lvl3_Run_side_right.aseprite",
+          "bytes": 11024,
+          "sha256": "d1f7152962a789500c6658b735a003420c6e262c99164523e9c0aa44519928e1"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Run_attack/Swordsman_lvl3_Run_Attack_back.aseprite",
+          "bytes": 8132,
+          "sha256": "eb8529b024175d27fe01cfdc88705e24583906877430106d4bebdd74fc71b259"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Run_attack/Swordsman_lvl3_Run_Attack_front.aseprite",
+          "bytes": 8139,
+          "sha256": "0598f11ea6f641960249d9fd864410ab40dcda90cd2820df071a7d6fb5a9fc02"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Run_attack/Swordsman_lvl3_Run_Attack_side_left.aseprite",
+          "bytes": 23010,
+          "sha256": "feed787a50a38c55a8882c13c86ecf9b85334bc7bfec82bd34d845cfbabdef20"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Run_attack/Swordsman_lvl3_Run_Attack_side_right.aseprite",
+          "bytes": 8911,
+          "sha256": "7d169c270583de83eababd68110ea7afd6234b9f053ea3c00b2efdde74c366e8"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Walk/Swordsman_lvl3_Walk_back.aseprite",
+          "bytes": 5862,
+          "sha256": "94fe066718a629c0f348640c534787e0fcc43264055015928599a93655d18912"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Walk/Swordsman_lvl3_Walk_front.aseprite",
+          "bytes": 5932,
+          "sha256": "27eb6a89817fe75808580cb79a75d7eed4682ea3f8681854f52edbba59f2ce59"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Walk/Swordsman_lvl3_Walk_side_left.aseprite",
+          "bytes": 5982,
+          "sha256": "d337d6a57d15a81ad6e81d25bed08a2e94f7f4325c8adc922794ea089c496133"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Walk/Swordsman_lvl3_Walk_side_right.aseprite",
+          "bytes": 6210,
+          "sha256": "8cc8c2209e4701062a83eb94d1cf39331b70f0f60bab41f68be50d44ea00a330"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Walk_attack/Swordsman_lvl3_Walk_Attack_back.aseprite",
+          "bytes": 6285,
+          "sha256": "a5d484c717d593fdc220a86a9e293d7508dd647e4e374dec9123560db4abe130"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Walk_attack/Swordsman_lvl3_Walk_Attack_front.aseprite",
+          "bytes": 6159,
+          "sha256": "9482e211a3eac34e536dffd9cb8fbb1a2c5f7e459e29cef29cbe2826e994ce54"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Walk_attack/Swordsman_lvl3_Walk_Attack_side_left.aseprite",
+          "bytes": 7271,
+          "sha256": "fd6e1c94ca55297f53bc7267bceaeabe543cf4e7eedb5b5872ccbcc2f795fa07"
+        },
+        {
+          "path": "ASEPRITE/Swordsman_lvl3/Swordsman_lvl3_Walk_attack/Swordsman_lvl3_Walk_Attack_side_right.aseprite",
+          "bytes": 6878,
+          "sha256": "3d14c146de5166b9f48673595ca7f4875ff58c6eb344c2ad99e9a24fb2c677fd"
+        },
         {
           "path": "License.txt",
           "bytes": 35,
@@ -7261,6 +8616,366 @@
       "license": "vampires/license.txt",
       "files": [
         {
+          "path": "ASEPRITE/Vampires1/Attack/Vampires1_Attack_back.aseprite",
+          "bytes": 10407,
+          "sha256": "4e916a6d66d3ffa9e7bc0068eea4efbe317c320e6dfdbbfbf28bad82ca99a1f8"
+        },
+        {
+          "path": "ASEPRITE/Vampires1/Attack/Vampires1_Attack_front.aseprite",
+          "bytes": 12253,
+          "sha256": "ed7c3914546489fa10df6d81619845bc39604ce96e57f602e037cccd6d4c82aa"
+        },
+        {
+          "path": "ASEPRITE/Vampires1/Attack/Vampires1_Attack_left.aseprite",
+          "bytes": 10479,
+          "sha256": "d7d15c9c97969ab34c8695fd3fa06ba3a54037a97a759a2de097ddeca52096a3"
+        },
+        {
+          "path": "ASEPRITE/Vampires1/Attack/Vampires1_Attack_right.aseprite",
+          "bytes": 10495,
+          "sha256": "18942374239abdb0cc4e814c0a2594e6a6bc045625d03fc4f4e075f4d659626c"
+        },
+        {
+          "path": "ASEPRITE/Vampires1/Death/Vampires1_Death_back.aseprite",
+          "bytes": 7673,
+          "sha256": "5fb1acd37e2ad656592cb8347608747ccbb67c897649f383a413f913f7a03996"
+        },
+        {
+          "path": "ASEPRITE/Vampires1/Death/Vampires1_Death_front.aseprite",
+          "bytes": 8426,
+          "sha256": "fc979f7778bbb6961bb193d98b998d87408e74e4c5f7caa8a0733c937da5536b"
+        },
+        {
+          "path": "ASEPRITE/Vampires1/Death/Vampires1_Death_left.aseprite",
+          "bytes": 7502,
+          "sha256": "d7dd6fb200fac93720a4ddddd6d27d448c50286b1ba85a824d1725b39297a25c"
+        },
+        {
+          "path": "ASEPRITE/Vampires1/Death/Vampires1_Death_right.aseprite",
+          "bytes": 7487,
+          "sha256": "765408182ea96f5bef132907cbeeb1810eb905771f98384c985555329ac4ee57"
+        },
+        {
+          "path": "ASEPRITE/Vampires1/Hurt/Vampires1_Hurt_back.aseprite",
+          "bytes": 3571,
+          "sha256": "7b3011b2c533816d2b0f2a870ef1949d159b36b39f9d6014d2e7697fecefb25b"
+        },
+        {
+          "path": "ASEPRITE/Vampires1/Hurt/Vampires1_Hurt_front.aseprite",
+          "bytes": 4009,
+          "sha256": "19d8227637be86a1a80d90c9e19ac5e6a9b4b1177a8144ed21f3e9f7fa7090b1"
+        },
+        {
+          "path": "ASEPRITE/Vampires1/Hurt/Vampires1_Hurt_left.aseprite",
+          "bytes": 3333,
+          "sha256": "0e22422e6ac5e527a3adc38e6990fb6028d1591593942443995bb678b33fd69a"
+        },
+        {
+          "path": "ASEPRITE/Vampires1/Hurt/Vampires1_Hurt_right.aseprite",
+          "bytes": 3327,
+          "sha256": "0614492ade9be64144b5af2c66ddca328913a74505c7ebd6a7a9e6fdb26afe5b"
+        },
+        {
+          "path": "ASEPRITE/Vampires1/Idle/Vampires1_Idle_back.aseprite",
+          "bytes": 2948,
+          "sha256": "a9ffac6aee84b3d4c29bd832b112c9cacb6505252756620e4a7b41c59a33b8f2"
+        },
+        {
+          "path": "ASEPRITE/Vampires1/Idle/Vampires1_Idle_front.aseprite",
+          "bytes": 3354,
+          "sha256": "db12acc836bfa54152c67fa2607ea481bd9cd8e70065d67f1e78bcb264b9c91d"
+        },
+        {
+          "path": "ASEPRITE/Vampires1/Idle/Vampires1_Idle_left.aseprite",
+          "bytes": 2750,
+          "sha256": "785932a51733eff1ea629ea5bb4741b62d8bec31de033c83d0d90e28001e3969"
+        },
+        {
+          "path": "ASEPRITE/Vampires1/Idle/Vampires1_Idle_right.aseprite",
+          "bytes": 2747,
+          "sha256": "96151336ec7e9db597d97f38f7934821ab9da8c6450cc52afff0796ca0b3f0bb"
+        },
+        {
+          "path": "ASEPRITE/Vampires1/Run/Vampires1_Run_back.aseprite",
+          "bytes": 5721,
+          "sha256": "9cff5cb6d16b7d46fbba3fce5e9cbd5eb92de6dc95bbc082bb0c7e509e83441e"
+        },
+        {
+          "path": "ASEPRITE/Vampires1/Run/Vampires1_Run_front.aseprite",
+          "bytes": 6555,
+          "sha256": "0908f969e2229ce355f95541cc5d3b8452a2911033f3c8c8c1a92e17b485365a"
+        },
+        {
+          "path": "ASEPRITE/Vampires1/Run/Vampires1_Run_left.aseprite",
+          "bytes": 5474,
+          "sha256": "e70e93e67c159b6dd554bee14edff217194b8ac6d3616d71652e2d142a48501e"
+        },
+        {
+          "path": "ASEPRITE/Vampires1/Run/Vampires1_Run_right.aseprite",
+          "bytes": 5469,
+          "sha256": "23c8dcd2c844c5f394ad283d1bacf3c37983c39e07cb19dd7ec826ceda0c5591"
+        },
+        {
+          "path": "ASEPRITE/Vampires1/Walk/Vampires1_Walk_back.aseprite",
+          "bytes": 4286,
+          "sha256": "08528e89419f0e3fbd8ea7ca703284b87ccd0289614e3005d245d0ab948f5590"
+        },
+        {
+          "path": "ASEPRITE/Vampires1/Walk/Vampires1_Walk_front.aseprite",
+          "bytes": 4921,
+          "sha256": "9036eb63b1380865ed526a4f7c2a67a11b933d8867d0b5970d8fd72a6df895fb"
+        },
+        {
+          "path": "ASEPRITE/Vampires1/Walk/Vampires1_Walk_left.aseprite",
+          "bytes": 4131,
+          "sha256": "180fce7dc3960bdc06f9db4905571629f8a42f2113f5087e7f78bcd8a0506ff6"
+        },
+        {
+          "path": "ASEPRITE/Vampires1/Walk/Vampires1_Walk_right.aseprite",
+          "bytes": 4104,
+          "sha256": "bae9a57d58c99aec6b3989de02e426f9abc8ab3b95111ff35785cd6f129c4a30"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Attack/Vampires2_Attack_back.aseprite",
+          "bytes": 14617,
+          "sha256": "6821fe040bed1cc24337ff7fa5dae82c6bfc2cbc685243d8390eedb42b5e2bb6"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Attack/Vampires2_Attack_front.aseprite",
+          "bytes": 16311,
+          "sha256": "f47ae2f7fe17725c95075637a493c2df7e6d306c1f3ba256f35396a7061b4d0e"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Attack/Vampires2_Attack_left.aseprite",
+          "bytes": 13574,
+          "sha256": "7e362cb424686679b1b7ae9d5213a8d1b56faf8a8392652e269db35cf645e52b"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Attack/Vampires2_Attack_right.aseprite",
+          "bytes": 13670,
+          "sha256": "b0a0dce67e7caa2124201f30c76efcb1410bf5214f2950dbe5a623f63dbb89f6"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Death/Vampires2_Death_back.aseprite",
+          "bytes": 10218,
+          "sha256": "2041a6777304f0817e71fa6ef3c4c2e7c6270c1fb918964e500d56e32a731c37"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Death/Vampires2_Death_front.aseprite",
+          "bytes": 10747,
+          "sha256": "bed9e8151be7a171517036fdd9cd8a267a5bec4dbd16ec14275dd74c7f4a1736"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Death/Vampires2_Death_left.aseprite",
+          "bytes": 9234,
+          "sha256": "b0ad0bbb564c42729a3919050a22fb17f820438503d3d502439a7fb385db3e59"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Death/Vampires2_Death_right.aseprite",
+          "bytes": 9256,
+          "sha256": "674bc3e129b82eff495af2a95be37b16fd52b0da1980ec6e0b262266af215f41"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Hurt/Vampires2_Hurt_back.aseprite",
+          "bytes": 5076,
+          "sha256": "a89d86f617017930b312221a0395fc5cd4228fb9ea8459c6d82b968b738d05c9"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Hurt/Vampires2_Hurt_front.aseprite",
+          "bytes": 5379,
+          "sha256": "68aaf7d039dd18c0a74859db093a341837176b043f340162b454e8846171ef28"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Hurt/Vampires2_Hurt_left.aseprite",
+          "bytes": 4334,
+          "sha256": "c3f4399d12f2574ae943e068f56bcf70d9c7cf84589486bef3321a5d457577ba"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Hurt/Vampires2_Hurt_right.aseprite",
+          "bytes": 4364,
+          "sha256": "9792c177f06de33208e15c2c31a1ab226f7378cbe6022dc1db22dd3135878073"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Idle/Vampires2_Idle_back.aseprite",
+          "bytes": 4419,
+          "sha256": "0a38cfec090cd1e0b00c441a45aa1515a5849da6c5629d2479bcadad25ae0706"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Idle/Vampires2_Idle_front.aseprite",
+          "bytes": 4749,
+          "sha256": "e6e73d9c4194740c80ddc603e140edc7ead5a65ba5e2c300bd59087c36cebc9d"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Idle/Vampires2_Idle_left.aseprite",
+          "bytes": 3866,
+          "sha256": "6726c19ffc7c544b48c9d44919ff03188a5a9bd0e91c007f624b246be22074f4"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Idle/Vampires2_Idle_right.aseprite",
+          "bytes": 3880,
+          "sha256": "19321821d50800a4920e4468316db385cc80520f042bdd493fb5f95da37d53f7"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Run/Vampires2_Run_back.aseprite",
+          "bytes": 8651,
+          "sha256": "f35dbd3c5c2c172313c4cb717203da74100216b0c48942605e106d263734d02c"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Run/Vampires2_Run_front.aseprite",
+          "bytes": 9337,
+          "sha256": "d19ae282c4d580a685e1cf368b27963c19bff8da9b130e32a0fabdf831039ba5"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Run/Vampires2_Run_left.aseprite",
+          "bytes": 7695,
+          "sha256": "6bc79e929f217c476af50dd5a598d7d13c093e184f1c1f8204faaa90210cd305"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Run/Vampires2_Run_right.aseprite",
+          "bytes": 7711,
+          "sha256": "e078aac4221177382e906fa6c4a8033276cbd7a83a9a0084f3da97d1c0c27781"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Walk/Vampires2_Walk_back.aseprite",
+          "bytes": 6453,
+          "sha256": "b38da180bc487265ff6d4e1523af1ec5fe93b37d3fae4b9dd8147cccfa0db8aa"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Walk/Vampires2_Walk_front.aseprite",
+          "bytes": 6963,
+          "sha256": "4b3402fd772c07cd85f5fad843bf9d56d959be41eb94f7c7ade175501c427bbb"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Walk/Vampires2_Walk_left.aseprite",
+          "bytes": 5703,
+          "sha256": "cde4253fb87f2b25e97969a95f192807bdd3e09e9bcddc0906327fa77f36d206"
+        },
+        {
+          "path": "ASEPRITE/Vampires2/Walk/Vampires2_Walk_right.aseprite",
+          "bytes": 5711,
+          "sha256": "b808dbff321c4b8cca79fbf86c1caa1bd05c47b4a6e384b1e0b2abd1dadb64d4"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Attack/Vampires3_Attack_back.aseprite",
+          "bytes": 16533,
+          "sha256": "570f31292df482556c3b6a6babdba56841efe7b7718bb3e1295abeea0a03744b"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Attack/Vampires3_Attack_front.aseprite",
+          "bytes": 18894,
+          "sha256": "f7f839fc0361f744af86139b29fbb9b7ed8a6107be46c01dc66e9ba0a4084bf2"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Attack/Vampires3_Attack_left.aseprite",
+          "bytes": 15840,
+          "sha256": "0d8f1f7c731805dccdc96663861357b813afe76558772597b59bf5576cd71457"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Attack/Vampires3_Attack_right.aseprite",
+          "bytes": 15900,
+          "sha256": "8347b55a53d2f5530c8273d2f489db081fdfa1600cf7e5dc8850ee49186c3060"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Death/Vampires3_Death_back.aseprite",
+          "bytes": 11623,
+          "sha256": "de0cb2d324481085dc4066abf67771e457d5bf8254cdbab139923738f4917e32"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Death/Vampires3_Death_front.aseprite",
+          "bytes": 12446,
+          "sha256": "6a9a53b2df172b180e2032d0aa91aab9ac67340d2866f1ee06df4daacd833ce2"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Death/Vampires3_Death_left.aseprite",
+          "bytes": 10456,
+          "sha256": "c2b7b2fbd2b4e9e63221253495149e7f56659d87063d3dfdb21705aa56385eb0"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Death/Vampires3_Death_right.aseprite",
+          "bytes": 10476,
+          "sha256": "9a5b8d28e2fbaabcc62747c59d5b63cb25c14e0bdf6b431f1b34283e447e8920"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Hurt/Vampires3_Hurt_back.aseprite",
+          "bytes": 5890,
+          "sha256": "296a459283fae0abcc72351a88860c4586192e4574d41c9098d58c484aba3290"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Hurt/Vampires3_Hurt_front.aseprite",
+          "bytes": 6397,
+          "sha256": "7e5ce5a89d1e9c8be08a7768ce73dac09e460a3c69e35f9828d7a125f8ffae67"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Hurt/Vampires3_Hurt_left.aseprite",
+          "bytes": 5268,
+          "sha256": "b5cd799fa5e1bafa1a1cd956cd4b86cfa37c23863f4214c295795aadeaa59dc6"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Hurt/Vampires3_Hurt_right.aseprite",
+          "bytes": 5274,
+          "sha256": "ce0ac770052a3779ee151312f887de6a87acf5bb30c96f0bf4d8888e3a67f6b6"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Idle/Vampires3_Idle_back.aseprite",
+          "bytes": 5100,
+          "sha256": "9bf465d45af749aa628dd76a64a8e71e91348ae6ff7236471e7808e13a0623f6"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Idle/Vampires3_Idle_front.aseprite",
+          "bytes": 5697,
+          "sha256": "527ba0a092fd5cb658177b3ade046b627d129473507724370f74bc547860d598"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Idle/Vampires3_Idle_left.aseprite",
+          "bytes": 4676,
+          "sha256": "fd6cb1f9aba7d93d6231e58fc93c0599229e2090d6ec2a8ed3d0900e25206a06"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Idle/Vampires3_Idle_right.aseprite",
+          "bytes": 4709,
+          "sha256": "377458fb3ac074dc2c939acdc82eba603b719316787c22cacfbdf03a71ba30ee"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Run/Vampires3_Run_back.aseprite",
+          "bytes": 10025,
+          "sha256": "ca59d8d267d618a63ce09ed2266b3ccc010afa9d331423be0c60b8fd2bfac9f0"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Run/Vampires3_Run_front.aseprite",
+          "bytes": 11161,
+          "sha256": "a00ac566e9238d9304e6f8756869e10f077dd174a4bce0c69869bb92bc960c8e"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Run/Vampires3_Run_left.aseprite",
+          "bytes": 9560,
+          "sha256": "f0d36d4c23214e9cfab8bf9e65fde4046311178ed73d531f5031e309c5f44ae1"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Run/Vampires3_Run_right.aseprite",
+          "bytes": 9062,
+          "sha256": "debdcd84b4a4818cca32341fc9088a66c282f35cfe31d40c38c2a7feb966f068"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Walk/Vampires3_Walk_back.aseprite",
+          "bytes": 7578,
+          "sha256": "002e6d1a374452897ed1b1fd7221008a483b6fe16977fcd25a0448a1b058cb52"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Walk/Vampires3_Walk_front.aseprite",
+          "bytes": 8396,
+          "sha256": "51b0f0aa7fda55c6678f38fe6554f829b9b23f4ab033f8466946b7e5b887d583"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Walk/Vampires3_Walk_left.aseprite",
+          "bytes": 6817,
+          "sha256": "a61141814ecbac46f9fcf45ffba8b7a2b57dd484415e2c6e9885ad41deb42f93"
+        },
+        {
+          "path": "ASEPRITE/Vampires3/Walk/Vampires3_Walk_right.aseprite",
+          "bytes": 6883,
+          "sha256": "2197fb401332232449ad25179258b68d978592a231c555e365bb37bc12b467ed"
+        },
+        {
           "path": "License.txt",
           "bytes": 35,
           "sha256": "0c0f673571adbb935c734ac17fbc6e51fb4368a225b915aa25031712b03960d4"
@@ -8650,6 +10365,366 @@
       "archive": "craftpix-net-788364-free-slime-mobs-pixel-art-top-down-sprite-pack.zip",
       "license": "slimes/license.txt",
       "files": [
+        {
+          "path": "ASEPRITE/Slime1/Attack/Slime1_Attack_back.aseprite",
+          "bytes": 4475,
+          "sha256": "8a933ed968c0bedba9c92fc5a2271ba0812998b157a97a9eed9881312efdefc0"
+        },
+        {
+          "path": "ASEPRITE/Slime1/Attack/Slime1_Attack_front.aseprite",
+          "bytes": 5161,
+          "sha256": "56432ea5c0f3b3de8fea502f282827ea61571635296003b22af02ce5842468ae"
+        },
+        {
+          "path": "ASEPRITE/Slime1/Attack/Slime1_Attack_left.aseprite",
+          "bytes": 5062,
+          "sha256": "7ea17e772eddaec72794b3c4458a20ca773721cc9ff14ba235c3cc5a002f5344"
+        },
+        {
+          "path": "ASEPRITE/Slime1/Attack/Slime1_Attack_right.aseprite",
+          "bytes": 5064,
+          "sha256": "06ceb5bc1ec012934658162991c0b3ec03c048d305c5454fe8ded999d1d221ff"
+        },
+        {
+          "path": "ASEPRITE/Slime1/Death/Slime1_Death_back.aseprite",
+          "bytes": 4376,
+          "sha256": "0f7c16cc9346219c56f3263157dbc9bb572e8172e130b8908dcceaecef1a0fb0"
+        },
+        {
+          "path": "ASEPRITE/Slime1/Death/Slime1_Death_front.aseprite",
+          "bytes": 4646,
+          "sha256": "0dc36a13e44d5221c6cb8d1e2ccb4ceccbc41aae8b6caf4b5d536e86dec38f34"
+        },
+        {
+          "path": "ASEPRITE/Slime1/Death/Slime1_Death_left.aseprite",
+          "bytes": 4646,
+          "sha256": "2eff6bcb77dffc36ae8e06f410b0715d009b47a2cd001c77a038b51dab284f43"
+        },
+        {
+          "path": "ASEPRITE/Slime1/Death/Slime1_Death_right.aseprite",
+          "bytes": 4677,
+          "sha256": "66885bb07df7f7a0cd681cbda72ddb1f044d8efe573b87bb2f0297ab75f4d70f"
+        },
+        {
+          "path": "ASEPRITE/Slime1/Hurt/Slime1_Hurt_back.aseprite",
+          "bytes": 2886,
+          "sha256": "6e6757f50ff96c363d9e48eb89c4bbc302711eafb2bd570187be86212c23e7dc"
+        },
+        {
+          "path": "ASEPRITE/Slime1/Hurt/Slime1_Hurt_front.aseprite",
+          "bytes": 3271,
+          "sha256": "b7d6c45cf83c11c4f979e78db654351f7176d64b0b962b44124b9f02c7c3096c"
+        },
+        {
+          "path": "ASEPRITE/Slime1/Hurt/Slime1_Hurt_left.aseprite",
+          "bytes": 3199,
+          "sha256": "f883b7f58309fa65eed0c3a785fd3b61a51e1df06ccd3f28a3f6fb4bafb47396"
+        },
+        {
+          "path": "ASEPRITE/Slime1/Hurt/Slime1_Hurt_right.aseprite",
+          "bytes": 3185,
+          "sha256": "3202b149680a990c22d3c4243ff68f63b72cfc125c39ac09296c540a90515546"
+        },
+        {
+          "path": "ASEPRITE/Slime1/Idle/Slime1_Idle_back.aseprite",
+          "bytes": 2771,
+          "sha256": "d8ed839ee650aa391f0126356def78a5decc698f1c2f9a33f97f3c97a9daeac9"
+        },
+        {
+          "path": "ASEPRITE/Slime1/Idle/Slime1_Idle_front.aseprite",
+          "bytes": 3335,
+          "sha256": "f3018a25114f26745070461162aa52ed90afd608f130002696f1ef6473e100aa"
+        },
+        {
+          "path": "ASEPRITE/Slime1/Idle/Slime1_Idle_left.aseprite",
+          "bytes": 3253,
+          "sha256": "6b9110fc815b5edc6d38a58c6013a170c6e416e5dd8e077f7ab083edb1f50536"
+        },
+        {
+          "path": "ASEPRITE/Slime1/Idle/Slime1_Idle_right.aseprite",
+          "bytes": 3275,
+          "sha256": "3688cba24962c4f1355f6182f846a80a1c71ec4301fe5b8e1c2722cd0d6e1da9"
+        },
+        {
+          "path": "ASEPRITE/Slime1/Run/Slime1_Run_back.aseprite",
+          "bytes": 3313,
+          "sha256": "807d4b39572922f37788d1bc0b332fe8326aec47c3ca3c08f5ca534325c5fe05"
+        },
+        {
+          "path": "ASEPRITE/Slime1/Run/Slime1_Run_front.aseprite",
+          "bytes": 3991,
+          "sha256": "ce11da7309fcb2a2ccbcff43044decc3921fc6f6e058054e5f1a3ffc1b7e2625"
+        },
+        {
+          "path": "ASEPRITE/Slime1/Run/Slime1_Run_left.aseprite",
+          "bytes": 3959,
+          "sha256": "5663251e3576f36049a9559ecc17309fa62b1ee9e7f68fa46a39af63e20931b3"
+        },
+        {
+          "path": "ASEPRITE/Slime1/Run/Slime1_Run_right.aseprite",
+          "bytes": 3962,
+          "sha256": "a2644acc91ec402ed55847e072b58d523ed067cc79e8c431ff2ebcc08c1fe98c"
+        },
+        {
+          "path": "ASEPRITE/Slime1/Walk/Slime1_Walk_back.aseprite",
+          "bytes": 3321,
+          "sha256": "d5979c967855f2e6456ebc451e80eb63e41d9c29921d7c7d0c17765a958a9195"
+        },
+        {
+          "path": "ASEPRITE/Slime1/Walk/Slime1_Walk_front.aseprite",
+          "bytes": 4065,
+          "sha256": "be20c93274747b530b00d1f663aeb21ae73c32750826c4182d7eb38e6392e53f"
+        },
+        {
+          "path": "ASEPRITE/Slime1/Walk/Slime1_Walk_left.aseprite",
+          "bytes": 3844,
+          "sha256": "e2aabd0a1ac3facdb420d14a26e966dc9387b70e8ce16777fe1f8d0b5964d2cc"
+        },
+        {
+          "path": "ASEPRITE/Slime1/Walk/Slime1_Walk_right.aseprite",
+          "bytes": 3862,
+          "sha256": "8600838a4239c128c1e2faac09c94973bc5955c6fc95c93eab3708bf7382746c"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Attack/Slime2_Attack_back.aseprite",
+          "bytes": 6402,
+          "sha256": "1b3e8daf496290803fb4fe6668c3852424d8329ca655babd0e5a276b85a83edc"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Attack/Slime2_Attack_front.aseprite",
+          "bytes": 7109,
+          "sha256": "7817e4803724fd90e8267690c6d9bd2f3788fbe70f34ec01c590adf53913fa97"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Attack/Slime2_Attack_left.aseprite",
+          "bytes": 6817,
+          "sha256": "fb5e1ae7afcbb70c04135f0eea5183d77b95eec2ca66fcca8d079c5d56e34ab3"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Attack/Slime2_Attack_right.aseprite",
+          "bytes": 6819,
+          "sha256": "5b5886e7063e76ebb54b59bf70b97bb2f90eb539ed3feccec60e111787fe7a36"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Death/Slime2_Death_back.aseprite",
+          "bytes": 5981,
+          "sha256": "afa53f7eda8112ee1e23a6f3ed574f2ec43a93be43035957543ab7c67a702ee2"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Death/Slime2_Death_front.aseprite",
+          "bytes": 7062,
+          "sha256": "4c6c7071a3a9e4963b2e86b91737c5899c151919f11c249f178ca945fee0b6f2"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Death/Slime2_Death_left.aseprite",
+          "bytes": 6964,
+          "sha256": "a4261935c745c41f272979b8f9c8d299cbb23f2a48e64d6a39cc8748e84c5e31"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Death/Slime2_Death_right.aseprite",
+          "bytes": 7027,
+          "sha256": "58c37edcff5ad4fdc91e1db6cccee48c73d219d78f6c8b04942ae1189adb3ef0"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Hurt/Slime2_Hurt_back.aseprite",
+          "bytes": 3795,
+          "sha256": "2a12aecc95512a9149cca9a77afbf162af1d4e93cee108901c96910c6ace5c51"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Hurt/Slime2_Hurt_front.aseprite",
+          "bytes": 4717,
+          "sha256": "10446f6a3103b25bffea52fc139caf2c40e8186777c68c272ed9d5f5bf6989de"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Hurt/Slime2_Hurt_left.aseprite",
+          "bytes": 4474,
+          "sha256": "1485377c9a47fcc260ea1cc78766703de127efb0da84cfecfe5ac998110281b7"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Hurt/Slime2_Hurt_right.aseprite",
+          "bytes": 4529,
+          "sha256": "a85020c5a6d9f2de19d48bbd48708b39b871e76b0bde5bdf8e5b92d686cb9d7a"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Idle/Slime2_Idle_back.aseprite",
+          "bytes": 3587,
+          "sha256": "2a6dc3215d287ba06c033187534152324838fbaf7246e946d2a328328fb0a8e7"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Idle/Slime2_Idle_front.aseprite",
+          "bytes": 4738,
+          "sha256": "701f184ea19165cb23dcb811ade36d496124ab5d6ecb5cbec3b7d2eb18886aba"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Idle/Slime2_Idle_left.aseprite",
+          "bytes": 4494,
+          "sha256": "4d1bf1e5b6a6efc1d4feff56bd10ab5c62139dea16d72b58c7cd3d936fff3344"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Idle/Slime2_Idle_right.aseprite",
+          "bytes": 4577,
+          "sha256": "46d6beec7af5a4ce634c1bd27c0039cf8b77d624dc133b679d8b1b21ae7daed7"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Run/Slime2_Run_back.aseprite",
+          "bytes": 4429,
+          "sha256": "24b3a3e3df77f0053af27b2b2139d3c65e01b56c26ffdc5f347a014b216bb9f6"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Run/Slime2_Run_front.aseprite",
+          "bytes": 5952,
+          "sha256": "096c7cc9a642203dab0e052c7aae6e7fa6d91d21c87dc4f462dfdf5715c24bd8"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Run/Slime2_Run_left.aseprite",
+          "bytes": 5736,
+          "sha256": "03c9f077fa71e508bb9d877a4b19ac79070f4a54e1a817f64657e510284585c0"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Run/Slime2_Run_right.aseprite",
+          "bytes": 5821,
+          "sha256": "4affb14c14ffd3f6862592ed22716074ddc62f1e888c2e9f4a54f1cadb7a0472"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Walk/Slime2_Walk_back.aseprite",
+          "bytes": 4538,
+          "sha256": "23f54c7abda55d9a1d5239077425aba38cef8c7fd83eb94dd01a1da85f50b117"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Walk/Slime2_Walk_front.aseprite",
+          "bytes": 6089,
+          "sha256": "2bf4cc24fd848d8502d96c495ed31201eb3c5f32f110f869bead8332fc70a86b"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Walk/Slime2_Walk_left.aseprite",
+          "bytes": 5606,
+          "sha256": "941e0bebc712ceb23dfeb4a1ba8e484ee9953c63c767a92dd1b8a846b5efb627"
+        },
+        {
+          "path": "ASEPRITE/Slime2/Walk/Slime2_Walk_right.aseprite",
+          "bytes": 5687,
+          "sha256": "765b2fb44ab3818f364634632d4d3478be316f260dc3aaf234eca21a67e6757b"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Attack/Slime3_Attack_back.aseprite",
+          "bytes": 9678,
+          "sha256": "2aea39be0b09dfa1e453d94aebd50ad9a20eae54121930d1a2cddf61c4fd4d04"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Attack/Slime3_Attack_front.aseprite",
+          "bytes": 10394,
+          "sha256": "bb628945a378b186b3e0d6b90e390ee8a2374a310a60548db03dce9d94047084"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Attack/Slime3_Attack_left.aseprite",
+          "bytes": 10021,
+          "sha256": "d32ad8981ff61377793ae848aa2beeaa7e5224b7726bc7b2ea0a63597e98b632"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Attack/Slime3_Attack_right.aseprite",
+          "bytes": 10041,
+          "sha256": "903524f97cfa5f9c7d0e8f631ccadcf8c51aa92a16d8409de3de7f423db1afac"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Death/Slime3_Death_back.aseprite",
+          "bytes": 7756,
+          "sha256": "3530397520d977e87ff0cb71d8e9af24f023d657d03f49e2c778a79895461f21"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Death/Slime3_Death_front.aseprite",
+          "bytes": 7983,
+          "sha256": "8feaef9951bf02f83f042bc124540959b55a035b0a0221454fddf6d1772d5d1d"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Death/Slime3_Death_left.aseprite",
+          "bytes": 7909,
+          "sha256": "20689f09ff66ef6efb65648dd64d6351fde6fccedc5fc58c849c34c646fdbc8c"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Death/Slime3_Death_right.aseprite",
+          "bytes": 7947,
+          "sha256": "c002cd5e61ff5bd01af20c58f0bdb68d4f450568a15517ba2b84d547f1442b09"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Hurt/Slime3_Hurt_back.aseprite",
+          "bytes": 4236,
+          "sha256": "78d4434bfdc2ed2ee93de5488a7feed3a6204b812b2977ed4b1eed2a3b221774"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Hurt/Slime3_Hurt_front.aseprite",
+          "bytes": 4614,
+          "sha256": "ef942bb5100468b6fbcf495dc30bc1467ee4726be8eda44d5c7346b8cffba8e3"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Hurt/Slime3_Hurt_left.aseprite",
+          "bytes": 4537,
+          "sha256": "07489a139b232c166b59654230340d4d0718946f66023a283d049bdafb19cb33"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Hurt/Slime3_Hurt_right.aseprite",
+          "bytes": 4475,
+          "sha256": "5914717fcedb7cd23754772b24133228c70232bde180184453cf40e688672f5b"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Idle/Slime3_Idle_back.aseprite",
+          "bytes": 4205,
+          "sha256": "8aa7604dc82b1e5b7e38410b002afc43b6ebb983b7d6aab96205f1f7ecc8aa75"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Idle/Slime3_Idle_front.aseprite",
+          "bytes": 4610,
+          "sha256": "71a3d6c95bbcd93a5d30a89257fcf4d435c779388d7be50f817e7b74015e015e"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Idle/Slime3_Idle_left.aseprite",
+          "bytes": 4559,
+          "sha256": "0c7357305169c002da6ecd2781993f44f50947b12e90e373e4aff2f7e23b6ad4"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Idle/Slime3_Idle_right.aseprite",
+          "bytes": 4586,
+          "sha256": "6670ff544479214dfaea3680ab003fa1fa9877eb2d6bb63bf5dfa7249ae99072"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Run/Slime3_Run_back.aseprite",
+          "bytes": 5279,
+          "sha256": "e4e6d0cf7a453eace66239c7a46622c5dea2f873914a21b5f0d81df6a996c42f"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Run/Slime3_Run_front.aseprite",
+          "bytes": 5833,
+          "sha256": "c034bb12002397fe02d5914aeef53d67995f31051282d889e494a84b85ab7ade"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Run/Slime3_Run_left.aseprite",
+          "bytes": 5896,
+          "sha256": "a379fbd76de09216623d5f0d3a4c8cef71b34a97d0204b74da850767a3e2979b"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Run/Slime3_Run_right.aseprite",
+          "bytes": 5921,
+          "sha256": "c13fa21177e770dc55c1e6535319cc9ff596e1b46264ae601dcdc847aef7143d"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Walk/Slime3_Walk_back.aseprite",
+          "bytes": 5363,
+          "sha256": "c7fc45790fef097ed08c47281208a7c007aeb898388345834e0996782af6a4cc"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Walk/Slime3_Walk_front.aseprite",
+          "bytes": 5878,
+          "sha256": "84838bab433d137d07bdd4e67ac2cf78cd261e67914a302456a5ca363cd64c93"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Walk/Slime3_Walk_left.aseprite",
+          "bytes": 5534,
+          "sha256": "ec8e74c3c88a3898461e73fccb70ac0d75313e81e1e88006cbb45ababf8622c5"
+        },
+        {
+          "path": "ASEPRITE/Slime3/Walk/Slime3_Walk_right.aseprite",
+          "bytes": 5538,
+          "sha256": "823eff56e4983297567a5b2aa4eb910f63ebe8c01689afb6e7a642b151af8e17"
+        },
         {
           "path": "License.txt",
           "bytes": 35,

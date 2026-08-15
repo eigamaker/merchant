@@ -6,6 +6,8 @@ export const TOWN_WIDTH = layout.width;
 export const TOWN_HEIGHT = layout.height;
 export const TOWN_WORLD_WIDTH = TOWN_WIDTH * TOWN_TILE;
 export const TOWN_WORLD_HEIGHT = TOWN_HEIGHT * TOWN_TILE;
+/** Temporary map-review mode; keep collision data authored but allow free exploration. */
+export const TOWN_FREE_ROAM = true;
 
 export type TownPoiKind = "shop" | "guild" | "tavern" | "entrance" | "customer";
 
@@ -98,6 +100,7 @@ function circleHitsCell(position: Vec, radius: number, cellX: number, cellY: num
 
 export function isTownPositionWalkable(position: Vec, radius = 10): boolean {
   if (position.x - radius < 0 || position.y - radius < 0 || position.x + radius > TOWN_WORLD_WIDTH || position.y + radius > TOWN_WORLD_HEIGHT) return false;
+  if (TOWN_FREE_ROAM) return true;
   const minX = Math.floor((position.x - radius) / TOWN_TILE);
   const maxX = Math.floor((position.x + radius) / TOWN_TILE);
   const minY = Math.floor((position.y - radius) / TOWN_TILE);

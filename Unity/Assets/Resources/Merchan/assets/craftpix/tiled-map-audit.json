@@ -1,0 +1,5731 @@
+{
+  "version": 1,
+  "scope": [
+    "dungeon-base/Tiled_files/Dungeon1.tmx",
+    "main-home/Tiled_files/Exterior.tmx",
+    "main-home/Tiled_files/Interior1.tmx",
+    "guild-hall/Tiled_files/Exterior.tmx",
+    "guild-hall/Tiled_files/Interior_1st_floor.tmx",
+    "guild-hall/Tiled_files/Interior_2nd_floor.tmx",
+    "glassblower-workshop/Tiled_files/Exterior.tmx",
+    "glassblower-workshop/Tiled_files/Interior.tmx",
+    "dungeon-objects/Tiled_files/Dungeon1_objects.tmx"
+  ],
+  "sheets": [
+    {
+      "sheet": "dungeon-base-decorative-cracks-walls",
+      "source": "assets-src/vendor/craftpix/dungeon-base/Tiled_files/decorative_cracks_walls.png",
+      "animationMode": "none",
+      "usageMode": "tile",
+      "tileAnimationCount": 0,
+      "integratedPrefabCount": 0,
+      "sourcePlacementCount": 163,
+      "prefabPlacementCount": 0,
+      "coverageBasis": "tile",
+      "definitionPlacementCount": 163,
+      "definitionCoverage": true,
+      "footprints": [],
+      "rule": "single-cell-tile"
+    },
+    {
+      "sheet": "dungeon-base-decorative-cracks-floor",
+      "source": "assets-src/vendor/craftpix/dungeon-base/Tiled_files/decorative_cracks_floor.png",
+      "animationMode": "none",
+      "usageMode": "tile",
+      "tileAnimationCount": 0,
+      "integratedPrefabCount": 0,
+      "sourcePlacementCount": 58,
+      "prefabPlacementCount": 0,
+      "coverageBasis": "tile",
+      "definitionPlacementCount": 58,
+      "definitionCoverage": true,
+      "footprints": [],
+      "rule": "single-cell-tile"
+    },
+    {
+      "sheet": "dungeon-base-walls-floor",
+      "source": "assets-src/vendor/craftpix/dungeon-base/Tiled_files/walls_floor.png",
+      "animationMode": "none",
+      "usageMode": "metatile",
+      "tileAnimationCount": 0,
+      "integratedPrefabCount": 30,
+      "sourcePlacementCount": 1575,
+      "prefabPlacementCount": 280,
+      "coverageBasis": "png-alpha",
+      "definitionPlacementCount": 280,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 3,
+          "height": 5,
+          "placements": 15
+        },
+        {
+          "width": 3,
+          "height": 5,
+          "placements": 14
+        },
+        {
+          "width": 7,
+          "height": 4,
+          "placements": 26
+        },
+        {
+          "width": 7,
+          "height": 3,
+          "placements": 19
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 12
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 11
+        },
+        {
+          "width": 6,
+          "height": 3,
+          "placements": 14
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 3,
+          "placements": 3
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 3,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 4,
+          "height": 2,
+          "placements": 8
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 1,
+          "height": 3,
+          "placements": 3
+        },
+        {
+          "width": 5,
+          "height": 9,
+          "placements": 21
+        },
+        {
+          "width": 1,
+          "height": 3,
+          "placements": 3
+        },
+        {
+          "width": 2,
+          "height": 6,
+          "placements": 12
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 8,
+          "placements": 11
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 12
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 1,
+          "height": 3,
+          "placements": 3
+        },
+        {
+          "width": 1,
+          "height": 3,
+          "placements": 3
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 12,
+          "height": 3,
+          "placements": 30
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "dungeon-base-water-coasts-animation",
+      "source": "assets-src/vendor/craftpix/dungeon-base/Tiled_files/Water_coasts_animation.png",
+      "animationMode": "tile",
+      "usageMode": "tile",
+      "tileAnimationCount": 57,
+      "integratedPrefabCount": 0,
+      "sourcePlacementCount": 586,
+      "prefabPlacementCount": 0,
+      "coverageBasis": "tile",
+      "definitionPlacementCount": 586,
+      "definitionCoverage": true,
+      "footprints": [],
+      "rule": "single-cell-tile"
+    },
+    {
+      "sheet": "dungeon-base-water-details-animation",
+      "source": "assets-src/vendor/craftpix/dungeon-base/Tiled_files/water_details_animation.png",
+      "animationMode": "tile",
+      "usageMode": "tile",
+      "tileAnimationCount": 192,
+      "integratedPrefabCount": 0,
+      "sourcePlacementCount": 163,
+      "prefabPlacementCount": 0,
+      "coverageBasis": "tile",
+      "definitionPlacementCount": 163,
+      "definitionCoverage": true,
+      "footprints": [],
+      "rule": "single-cell-tile"
+    },
+    {
+      "sheet": "dungeon-base-decorative-cracks-coasts-animation",
+      "source": "assets-src/vendor/craftpix/dungeon-base/Tiled_files/decorative_cracks_coasts_animation.png",
+      "animationMode": "tile",
+      "usageMode": "tile",
+      "tileAnimationCount": 56,
+      "integratedPrefabCount": 0,
+      "sourcePlacementCount": 3,
+      "prefabPlacementCount": 0,
+      "coverageBasis": "tile",
+      "definitionPlacementCount": 3,
+      "definitionCoverage": true,
+      "footprints": [],
+      "rule": "single-cell-tile"
+    },
+    {
+      "sheet": "dungeon-base-fire-animation",
+      "source": "assets-src/vendor/craftpix/dungeon-base/Tiled_files/fire_animation.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 33,
+      "integratedPrefabCount": 8,
+      "sourcePlacementCount": 75,
+      "prefabPlacementCount": 75,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 75,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 4,
+          "height": 3,
+          "placements": 12
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 4,
+          "height": 6,
+          "placements": 18
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "dungeon-base-fire-animation2",
+      "source": "assets-src/vendor/craftpix/dungeon-base/Tiled_files/fire_animation2.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 24,
+      "integratedPrefabCount": 5,
+      "sourcePlacementCount": 20,
+      "prefabPlacementCount": 20,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 20,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "dungeon-base-doors-lever-chest-animation",
+      "source": "assets-src/vendor/craftpix/dungeon-base/Tiled_files/doors_lever_chest_animation.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 23,
+      "integratedPrefabCount": 14,
+      "sourcePlacementCount": 48,
+      "prefabPlacementCount": 48,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 48,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 3
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "dungeon-base-objects",
+      "source": "assets-src/vendor/craftpix/dungeon-base/Tiled_files/Objects.png",
+      "animationMode": "none",
+      "usageMode": "metatile",
+      "tileAnimationCount": 0,
+      "integratedPrefabCount": 43,
+      "sourcePlacementCount": 148,
+      "prefabPlacementCount": 140,
+      "coverageBasis": "png-alpha",
+      "definitionPlacementCount": 140,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 9
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 9
+        },
+        {
+          "width": 1,
+          "height": 4,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 4,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 4,
+          "placements": 6
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 5
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 3
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "dungeon-base-trap-animation",
+      "source": "assets-src/vendor/craftpix/dungeon-base/Tiled_files/trap_animation.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 40,
+      "integratedPrefabCount": 8,
+      "sourcePlacementCount": 37,
+      "prefabPlacementCount": 37,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 37,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 8
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "main-home-ground-grass-details",
+      "source": "assets-src/vendor/craftpix/main-home/Tiled_files/ground_grass_details.png",
+      "animationMode": "none",
+      "usageMode": "metatile",
+      "tileAnimationCount": 0,
+      "integratedPrefabCount": 136,
+      "sourcePlacementCount": 340,
+      "prefabPlacementCount": 338,
+      "coverageBasis": "png-alpha",
+      "definitionPlacementCount": 338,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 3
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 3
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 3
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 3
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 7
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 5
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 5
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 3
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 3
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 5
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 2,
+          "placements": 5
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 3
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 3
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 3
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 2,
+          "placements": 5
+        },
+        {
+          "width": 3,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 2,
+          "placements": 5
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 3
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "main-home-exterior",
+      "source": "assets-src/vendor/craftpix/main-home/Tiled_files/exterior.png",
+      "animationMode": "none",
+      "usageMode": "metatile",
+      "tileAnimationCount": 0,
+      "integratedPrefabCount": 110,
+      "sourcePlacementCount": 1157,
+      "prefabPlacementCount": 667,
+      "coverageBasis": "png-alpha",
+      "definitionPlacementCount": 667,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 10,
+          "height": 8,
+          "placements": 67
+        },
+        {
+          "width": 2,
+          "height": 4,
+          "placements": 8
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 8
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 4,
+          "height": 3,
+          "placements": 10
+        },
+        {
+          "width": 4,
+          "height": 2,
+          "placements": 8
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 4,
+          "height": 1,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 2,
+          "placements": 5
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 4,
+          "height": 7,
+          "placements": 23
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 2,
+          "placements": 5
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 2,
+          "placements": 5
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 4,
+          "height": 5,
+          "placements": 19
+        },
+        {
+          "width": 4,
+          "height": 5,
+          "placements": 20
+        },
+        {
+          "width": 4,
+          "height": 4,
+          "placements": 15
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 7
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 7
+        },
+        {
+          "width": 6,
+          "height": 5,
+          "placements": 25
+        },
+        {
+          "width": 4,
+          "height": 4,
+          "placements": 11
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 4,
+          "height": 3,
+          "placements": 11
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 2,
+          "placements": 6
+        },
+        {
+          "width": 4,
+          "height": 5,
+          "placements": 17
+        },
+        {
+          "width": 4,
+          "height": 4,
+          "placements": 15
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 4,
+          "height": 4,
+          "placements": 16
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 8
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "main-home-house-details",
+      "source": "assets-src/vendor/craftpix/main-home/Tiled_files/house_details.png",
+      "animationMode": "none",
+      "usageMode": "metatile",
+      "tileAnimationCount": 0,
+      "integratedPrefabCount": 7,
+      "sourcePlacementCount": 110,
+      "prefabPlacementCount": 113,
+      "coverageBasis": "png-alpha",
+      "definitionPlacementCount": 113,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 10,
+          "height": 12,
+          "placements": 91
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "main-home-smoke-animation",
+      "source": "assets-src/vendor/craftpix/main-home/Tiled_files/Smoke_animation.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 9,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 9,
+      "prefabPlacementCount": 9,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 9,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "main-home-doors-windows-animation",
+      "source": "assets-src/vendor/craftpix/main-home/Tiled_files/Doors_windows_animation.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 34,
+      "integratedPrefabCount": 5,
+      "sourcePlacementCount": 34,
+      "prefabPlacementCount": 34,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 34,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 5,
+          "height": 4,
+          "placements": 14
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 4,
+          "height": 2,
+          "placements": 8
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "main-home-bird-jump-animation",
+      "source": "assets-src/vendor/craftpix/main-home/Tiled_files/bird_jump_animation.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 12,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 4,
+      "prefabPlacementCount": 4,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 4,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "main-home-bird-fly-animation",
+      "source": "assets-src/vendor/craftpix/main-home/Tiled_files/bird_fly_animation.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 108,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 45,
+      "prefabPlacementCount": 45,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 45,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 9,
+          "height": 5,
+          "placements": 45
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "main-home-trees-animation",
+      "source": "assets-src/vendor/craftpix/main-home/Tiled_files/Trees_animation.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 119,
+      "integratedPrefabCount": 3,
+      "sourcePlacementCount": 37,
+      "prefabPlacementCount": 37,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 37,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 5,
+          "height": 4,
+          "placements": 20
+        },
+        {
+          "width": 2,
+          "height": 4,
+          "placements": 8
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "main-home-cat-animation",
+      "source": "assets-src/vendor/craftpix/main-home/Tiled_files/cat_animation.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 12,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 4,
+      "prefabPlacementCount": 4,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 4,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "main-home-walls-floor",
+      "source": "assets-src/vendor/craftpix/main-home/Tiled_files/walls_floor.png",
+      "animationMode": "none",
+      "usageMode": "metatile",
+      "tileAnimationCount": 0,
+      "integratedPrefabCount": 9,
+      "sourcePlacementCount": 892,
+      "prefabPlacementCount": 90,
+      "coverageBasis": "png-alpha",
+      "definitionPlacementCount": 90,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 3,
+          "height": 5,
+          "placements": 15
+        },
+        {
+          "width": 2,
+          "height": 4,
+          "placements": 8
+        },
+        {
+          "width": 4,
+          "height": 4,
+          "placements": 16
+        },
+        {
+          "width": 9,
+          "height": 2,
+          "placements": 18
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 4,
+          "height": 2,
+          "placements": 7
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 5,
+          "height": 3,
+          "placements": 12
+        },
+        {
+          "width": 3,
+          "height": 2,
+          "placements": 6
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "main-home-interior",
+      "source": "assets-src/vendor/craftpix/main-home/Tiled_files/Interior.png",
+      "animationMode": "none",
+      "usageMode": "metatile",
+      "tileAnimationCount": 0,
+      "integratedPrefabCount": 49,
+      "sourcePlacementCount": 180,
+      "prefabPlacementCount": 274,
+      "coverageBasis": "png-alpha",
+      "definitionPlacementCount": 274,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 3,
+          "height": 5,
+          "placements": 15
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 4,
+          "height": 4,
+          "placements": 16
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 12
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 5,
+          "height": 4,
+          "placements": 16
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 7
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 4,
+          "placements": 7
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 8
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 7,
+          "height": 6,
+          "placements": 35
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 5,
+          "height": 5,
+          "placements": 21
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 8,
+          "height": 2,
+          "placements": 10
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 4,
+          "height": 2,
+          "placements": 8
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 3,
+          "height": 1,
+          "placements": 3
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "guild-hall-exterior",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Exterior.png",
+      "animationMode": "none",
+      "usageMode": "metatile",
+      "tileAnimationCount": 0,
+      "integratedPrefabCount": 8,
+      "sourcePlacementCount": 96,
+      "prefabPlacementCount": 182,
+      "coverageBasis": "png-alpha",
+      "definitionPlacementCount": 182,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 6,
+          "height": 4,
+          "placements": 24
+        },
+        {
+          "width": 10,
+          "height": 7,
+          "placements": 64
+        },
+        {
+          "width": 6,
+          "height": 7,
+          "placements": 42
+        },
+        {
+          "width": 3,
+          "height": 6,
+          "placements": 17
+        },
+        {
+          "width": 3,
+          "height": 6,
+          "placements": 17
+        },
+        {
+          "width": 6,
+          "height": 2,
+          "placements": 12
+        },
+        {
+          "width": 1,
+          "height": 3,
+          "placements": 3
+        },
+        {
+          "width": 1,
+          "height": 3,
+          "placements": 3
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "guild-hall-walls-street",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Walls_street.png",
+      "animationMode": "none",
+      "usageMode": "metatile",
+      "tileAnimationCount": 0,
+      "integratedPrefabCount": 43,
+      "sourcePlacementCount": 377,
+      "prefabPlacementCount": 296,
+      "coverageBasis": "png-alpha",
+      "definitionPlacementCount": 296,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 3,
+          "height": 5,
+          "placements": 15
+        },
+        {
+          "width": 2,
+          "height": 5,
+          "placements": 10
+        },
+        {
+          "width": 4,
+          "height": 4,
+          "placements": 16
+        },
+        {
+          "width": 2,
+          "height": 5,
+          "placements": 10
+        },
+        {
+          "width": 2,
+          "height": 4,
+          "placements": 8
+        },
+        {
+          "width": 4,
+          "height": 4,
+          "placements": 16
+        },
+        {
+          "width": 4,
+          "height": 3,
+          "placements": 10
+        },
+        {
+          "width": 7,
+          "height": 6,
+          "placements": 38
+        },
+        {
+          "width": 5,
+          "height": 5,
+          "placements": 15
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 2,
+          "placements": 6
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 17,
+          "height": 6,
+          "placements": 85
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 3,
+          "height": 1,
+          "placements": 3
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 3,
+          "height": 1,
+          "placements": 3
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 3,
+          "height": 1,
+          "placements": 3
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "guild-hall-decorative-cracks",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Decorative_cracks.png",
+      "animationMode": "none",
+      "usageMode": "tile",
+      "tileAnimationCount": 0,
+      "integratedPrefabCount": 0,
+      "sourcePlacementCount": 12,
+      "prefabPlacementCount": 0,
+      "coverageBasis": "tile",
+      "definitionPlacementCount": 12,
+      "definitionCoverage": true,
+      "footprints": [],
+      "rule": "single-cell-tile"
+    },
+    {
+      "sheet": "guild-hall-flags-animation",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Flags_animation.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 18,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 18,
+      "prefabPlacementCount": 18,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 18,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 6,
+          "height": 3,
+          "placements": 18
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "guild-hall-windows-doors",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Windows_doors.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 26,
+      "integratedPrefabCount": 4,
+      "sourcePlacementCount": 28,
+      "prefabPlacementCount": 28,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 28,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 6,
+          "placements": 12
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "guild-hall-walls-interior",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Walls_interior.png",
+      "animationMode": "none",
+      "usageMode": "metatile",
+      "tileAnimationCount": 0,
+      "integratedPrefabCount": 11,
+      "sourcePlacementCount": 813,
+      "prefabPlacementCount": 159,
+      "coverageBasis": "png-alpha",
+      "definitionPlacementCount": 159,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 3,
+          "height": 5,
+          "placements": 15
+        },
+        {
+          "width": 18,
+          "height": 8,
+          "placements": 74
+        },
+        {
+          "width": 4,
+          "height": 4,
+          "placements": 16
+        },
+        {
+          "width": 4,
+          "height": 4,
+          "placements": 16
+        },
+        {
+          "width": 1,
+          "height": 5,
+          "placements": 5
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 8
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 2,
+          "placements": 6
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "guild-hall-interior-objects",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Interior_objects.png",
+      "animationMode": "none",
+      "usageMode": "metatile",
+      "tileAnimationCount": 0,
+      "integratedPrefabCount": 76,
+      "sourcePlacementCount": 328,
+      "prefabPlacementCount": 520,
+      "coverageBasis": "png-alpha",
+      "definitionPlacementCount": 520,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 5,
+          "height": 4,
+          "placements": 17
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 12,
+          "height": 6,
+          "placements": 41
+        },
+        {
+          "width": 1,
+          "height": 3,
+          "placements": 3
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 4,
+          "height": 3,
+          "placements": 10
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 4,
+          "height": 2,
+          "placements": 8
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 4,
+          "height": 4,
+          "placements": 15
+        },
+        {
+          "width": 4,
+          "height": 4,
+          "placements": 15
+        },
+        {
+          "width": 4,
+          "height": 4,
+          "placements": 16
+        },
+        {
+          "width": 4,
+          "height": 4,
+          "placements": 16
+        },
+        {
+          "width": 4,
+          "height": 4,
+          "placements": 16
+        },
+        {
+          "width": 4,
+          "height": 3,
+          "placements": 12
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 12
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 12
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 12
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 12
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 12
+        },
+        {
+          "width": 4,
+          "height": 4,
+          "placements": 15
+        },
+        {
+          "width": 1,
+          "height": 3,
+          "placements": 3
+        },
+        {
+          "width": 4,
+          "height": 3,
+          "placements": 12
+        },
+        {
+          "width": 1,
+          "height": 3,
+          "placements": 3
+        },
+        {
+          "width": 5,
+          "height": 5,
+          "placements": 25
+        },
+        {
+          "width": 4,
+          "height": 3,
+          "placements": 11
+        },
+        {
+          "width": 3,
+          "height": 2,
+          "placements": 6
+        },
+        {
+          "width": 5,
+          "height": 3,
+          "placements": 15
+        },
+        {
+          "width": 5,
+          "height": 3,
+          "placements": 15
+        },
+        {
+          "width": 4,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 4,
+          "height": 2,
+          "placements": 8
+        },
+        {
+          "width": 4,
+          "height": 2,
+          "placements": 8
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 3,
+          "height": 2,
+          "placements": 6
+        },
+        {
+          "width": 4,
+          "height": 3,
+          "placements": 7
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 3,
+          "placements": 3
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "guild-hall-guildmaster",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Guildmaster.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 6,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 6,
+      "prefabPlacementCount": 6,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 6,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 3,
+          "height": 2,
+          "placements": 6
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "guild-hall-talking-people",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Talking_people.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 9,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 9,
+      "prefabPlacementCount": 9,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 9,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "guild-hall-citizen1-idle",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Citizen1_Idle.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 16,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 4,
+      "prefabPlacementCount": 4,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 4,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "guild-hall-fighter2-idle",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Fighter2_Idle.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 16,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 4,
+      "prefabPlacementCount": 4,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 4,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "guild-hall-citizen2-walk",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Citizen2_Walk.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 16,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 4,
+      "prefabPlacementCount": 4,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 4,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "guild-hall-fighter-sword-without-shadow",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Fighter_sword_without_shadow.png",
+      "animationMode": "tile",
+      "usageMode": "tile",
+      "tileAnimationCount": 26,
+      "integratedPrefabCount": 0,
+      "sourcePlacementCount": 0,
+      "prefabPlacementCount": 0,
+      "coverageBasis": "tile",
+      "definitionPlacementCount": 0,
+      "definitionCoverage": true,
+      "footprints": [],
+      "rule": "single-cell-tile"
+    },
+    {
+      "sheet": "guild-hall-attacked-manequin2-with-shadow",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Attacked_Manequin2_with_shadow.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 16,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 4,
+      "prefabPlacementCount": 4,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 4,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "guild-hall-mage4",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Mage4.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 37,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 12,
+      "prefabPlacementCount": 12,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 12,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 12
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "guild-hall-mage2",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Mage2.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 37,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 9,
+      "prefabPlacementCount": 9,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 9,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "guild-hall-mage3",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Mage3.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 37,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 12,
+      "prefabPlacementCount": 12,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 12,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 4,
+          "height": 3,
+          "placements": 12
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "guild-hall-mage1",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Mage1.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 37,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 12,
+      "prefabPlacementCount": 12,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 12,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 4,
+          "height": 3,
+          "placements": 12
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "guild-hall-fire",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Fire.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 9,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 9,
+      "prefabPlacementCount": 9,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 9,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "guild-hall-reader2",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Reader2.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 2,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 2,
+      "prefabPlacementCount": 2,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 2,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "guild-hall-reader1",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Reader1.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 6,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 6,
+      "prefabPlacementCount": 6,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 6,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "guild-hall-attacked-manequin1-with-shadow",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Attacked_Manequin1_with_shadow.png",
+      "animationMode": "none",
+      "usageMode": "metatile",
+      "tileAnimationCount": 0,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 4,
+      "prefabPlacementCount": 4,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 4,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "guild-hall-attacked-manequin3-with-shadow",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Attacked_Manequin3_with_shadow.png",
+      "animationMode": "none",
+      "usageMode": "metatile",
+      "tileAnimationCount": 0,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 4,
+      "prefabPlacementCount": 4,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 4,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "guild-hall-fighter-sword-with-shadow",
+      "source": "assets-src/vendor/craftpix/guild-hall/Tiled_files/Fighter_sword_with_shadow.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 26,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 6,
+      "prefabPlacementCount": 6,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 6,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "glassblower-workshop-walls-street",
+      "source": "assets-src/vendor/craftpix/glassblower-workshop/Tiled_files/Walls_street.png",
+      "animationMode": "none",
+      "usageMode": "metatile",
+      "tileAnimationCount": 0,
+      "integratedPrefabCount": 43,
+      "sourcePlacementCount": 516,
+      "prefabPlacementCount": 296,
+      "coverageBasis": "png-alpha",
+      "definitionPlacementCount": 296,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 3,
+          "height": 5,
+          "placements": 15
+        },
+        {
+          "width": 2,
+          "height": 5,
+          "placements": 10
+        },
+        {
+          "width": 4,
+          "height": 4,
+          "placements": 16
+        },
+        {
+          "width": 2,
+          "height": 5,
+          "placements": 10
+        },
+        {
+          "width": 2,
+          "height": 4,
+          "placements": 8
+        },
+        {
+          "width": 4,
+          "height": 4,
+          "placements": 16
+        },
+        {
+          "width": 4,
+          "height": 3,
+          "placements": 10
+        },
+        {
+          "width": 7,
+          "height": 6,
+          "placements": 38
+        },
+        {
+          "width": 5,
+          "height": 5,
+          "placements": 15
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 2,
+          "placements": 6
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 17,
+          "height": 6,
+          "placements": 85
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 3,
+          "height": 1,
+          "placements": 3
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 3,
+          "height": 1,
+          "placements": 3
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 3,
+          "height": 1,
+          "placements": 3
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "glassblower-workshop-exterior-house",
+      "source": "assets-src/vendor/craftpix/glassblower-workshop/Tiled_files/Exterior_house.png",
+      "animationMode": "none",
+      "usageMode": "metatile",
+      "tileAnimationCount": 0,
+      "integratedPrefabCount": 18,
+      "sourcePlacementCount": 178,
+      "prefabPlacementCount": 262,
+      "coverageBasis": "png-alpha",
+      "definitionPlacementCount": 262,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 9,
+          "height": 10,
+          "placements": 75
+        },
+        {
+          "width": 2,
+          "height": 4,
+          "placements": 8
+        },
+        {
+          "width": 4,
+          "height": 5,
+          "placements": 15
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 10
+        },
+        {
+          "width": 5,
+          "height": 4,
+          "placements": 18
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 7,
+          "height": 5,
+          "placements": 35
+        },
+        {
+          "width": 9,
+          "height": 7,
+          "placements": 49
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 7
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 1,
+          "height": 3,
+          "placements": 3
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 5
+        },
+        {
+          "width": 4,
+          "height": 2,
+          "placements": 8
+        },
+        {
+          "width": 4,
+          "height": 2,
+          "placements": 8
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "glassblower-workshop-doors-windows-animations",
+      "source": "assets-src/vendor/craftpix/glassblower-workshop/Tiled_files/Doors_windows_animations.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 65,
+      "integratedPrefabCount": 7,
+      "sourcePlacementCount": 16,
+      "prefabPlacementCount": 16,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 16,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 3,
+          "height": 2,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "glassblower-workshop-walls-interior",
+      "source": "assets-src/vendor/craftpix/glassblower-workshop/Tiled_files/Walls_interior.png",
+      "animationMode": "none",
+      "usageMode": "metatile",
+      "tileAnimationCount": 0,
+      "integratedPrefabCount": 3,
+      "sourcePlacementCount": 462,
+      "prefabPlacementCount": 267,
+      "coverageBasis": "png-alpha",
+      "definitionPlacementCount": 267,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 3,
+          "height": 5,
+          "placements": 15
+        },
+        {
+          "width": 16,
+          "height": 11,
+          "placements": 153
+        },
+        {
+          "width": 16,
+          "height": 9,
+          "placements": 99
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "glassblower-workshop-interior-objects",
+      "source": "assets-src/vendor/craftpix/glassblower-workshop/Tiled_files/Interior_objects.png",
+      "animationMode": "none",
+      "usageMode": "metatile",
+      "tileAnimationCount": 0,
+      "integratedPrefabCount": 75,
+      "sourcePlacementCount": 181,
+      "prefabPlacementCount": 462,
+      "coverageBasis": "png-alpha",
+      "definitionPlacementCount": 462,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 12,
+          "height": 2,
+          "placements": 23
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 12,
+          "height": 2,
+          "placements": 23
+        },
+        {
+          "width": 1,
+          "height": 4,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 11
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 11
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 11
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 11
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 12
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 12
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 12
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 12
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 12
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 12
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 12
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 9
+        },
+        {
+          "width": 4,
+          "height": 4,
+          "placements": 15
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 11
+        },
+        {
+          "width": 4,
+          "height": 4,
+          "placements": 14
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 4,
+          "height": 4,
+          "placements": 13
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 10
+        },
+        {
+          "width": 4,
+          "height": 4,
+          "placements": 14
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 4,
+          "height": 3,
+          "placements": 12
+        },
+        {
+          "width": 4,
+          "height": 3,
+          "placements": 12
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 8
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 4,
+          "height": 3,
+          "placements": 11
+        },
+        {
+          "width": 4,
+          "height": 2,
+          "placements": 8
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 5
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 4,
+          "height": 2,
+          "placements": 8
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 4,
+          "height": 3,
+          "placements": 12
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "glassblower-workshop-forge",
+      "source": "assets-src/vendor/craftpix/glassblower-workshop/Tiled_files/Forge.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 7,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 24,
+      "prefabPlacementCount": 24,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 24,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 4,
+          "height": 6,
+          "placements": 24
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "glassblower-workshop-light-animation",
+      "source": "assets-src/vendor/craftpix/glassblower-workshop/Tiled_files/Light_animation.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 12,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 24,
+      "prefabPlacementCount": 24,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 24,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 8,
+          "height": 3,
+          "placements": 24
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "glassblower-workshop-customer",
+      "source": "assets-src/vendor/craftpix/glassblower-workshop/Tiled_files/Customer.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 4,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 4,
+      "prefabPlacementCount": 4,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 4,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "glassblower-workshop-seller",
+      "source": "assets-src/vendor/craftpix/glassblower-workshop/Tiled_files/Seller.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 4,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 4,
+      "prefabPlacementCount": 4,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 4,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "glassblower-workshop-master",
+      "source": "assets-src/vendor/craftpix/glassblower-workshop/Tiled_files/Master.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 13,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 20,
+      "prefabPlacementCount": 20,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 20,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 4,
+          "height": 5,
+          "placements": 20
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "dungeon-objects-trap-saw",
+      "source": "assets-src/vendor/craftpix/dungeon-objects/Tiled_files/trap_saw.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 36,
+      "integratedPrefabCount": 6,
+      "sourcePlacementCount": 38,
+      "prefabPlacementCount": 38,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 38,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 4,
+          "height": 4,
+          "placements": 12
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 4,
+          "height": 2,
+          "placements": 8
+        },
+        {
+          "width": 4,
+          "height": 2,
+          "placements": 8
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "dungeon-objects-trap-plate",
+      "source": "assets-src/vendor/craftpix/dungeon-objects/Tiled_files/trap_plate.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 12,
+      "integratedPrefabCount": 1,
+      "sourcePlacementCount": 14,
+      "prefabPlacementCount": 14,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 14,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 7,
+          "height": 2,
+          "placements": 14
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "dungeon-objects-fire-trap",
+      "source": "assets-src/vendor/craftpix/dungeon-objects/Tiled_files/fire_trap.png",
+      "animationMode": "composite",
+      "usageMode": "metatile",
+      "tileAnimationCount": 49,
+      "integratedPrefabCount": 5,
+      "sourcePlacementCount": 53,
+      "prefabPlacementCount": 53,
+      "coverageBasis": "source-map",
+      "definitionPlacementCount": 53,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 12
+        },
+        {
+          "width": 2,
+          "height": 4,
+          "placements": 8
+        },
+        {
+          "width": 2,
+          "height": 5,
+          "placements": 9
+        },
+        {
+          "width": 6,
+          "height": 4,
+          "placements": 23
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "dungeon-objects-other-objects",
+      "source": "assets-src/vendor/craftpix/dungeon-objects/Tiled_files/Other_objects.png",
+      "animationMode": "none",
+      "usageMode": "metatile",
+      "tileAnimationCount": 0,
+      "integratedPrefabCount": 22,
+      "sourcePlacementCount": 0,
+      "prefabPlacementCount": 124,
+      "coverageBasis": "png-alpha",
+      "definitionPlacementCount": 124,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 12
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "dungeon-objects-pedestals",
+      "source": "assets-src/vendor/craftpix/dungeon-objects/Tiled_files/pedestals.png",
+      "animationMode": "none",
+      "usageMode": "metatile",
+      "tileAnimationCount": 0,
+      "integratedPrefabCount": 48,
+      "sourcePlacementCount": 0,
+      "prefabPlacementCount": 226,
+      "coverageBasis": "png-alpha",
+      "definitionPlacementCount": 226,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 2,
+          "placements": 5
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 3,
+          "height": 2,
+          "placements": 6
+        },
+        {
+          "width": 4,
+          "height": 2,
+          "placements": 6
+        },
+        {
+          "width": 4,
+          "height": 2,
+          "placements": 6
+        },
+        {
+          "width": 3,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 3,
+          "height": 2,
+          "placements": 5
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 1,
+          "placements": 2
+        }
+      ],
+      "rule": "metatile-only"
+    },
+    {
+      "sheet": "dungeon-objects-supplies-objects",
+      "source": "assets-src/vendor/craftpix/dungeon-objects/Tiled_files/supplies_objects.png",
+      "animationMode": "none",
+      "usageMode": "metatile",
+      "tileAnimationCount": 0,
+      "integratedPrefabCount": 123,
+      "sourcePlacementCount": 0,
+      "prefabPlacementCount": 446,
+      "coverageBasis": "png-alpha",
+      "definitionPlacementCount": 446,
+      "definitionCoverage": true,
+      "footprints": [
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 11
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 12
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 12
+        },
+        {
+          "width": 2,
+          "height": 4,
+          "placements": 8
+        },
+        {
+          "width": 2,
+          "height": 4,
+          "placements": 8
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 11
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 12
+        },
+        {
+          "width": 3,
+          "height": 4,
+          "placements": 12
+        },
+        {
+          "width": 2,
+          "height": 4,
+          "placements": 8
+        },
+        {
+          "width": 2,
+          "height": 4,
+          "placements": 8
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 5
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 5
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 4,
+          "height": 3,
+          "placements": 12
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 8
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 5
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 8
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 7
+        },
+        {
+          "width": 4,
+          "height": 3,
+          "placements": 10
+        },
+        {
+          "width": 3,
+          "height": 2,
+          "placements": 6
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 8
+        },
+        {
+          "width": 3,
+          "height": 3,
+          "placements": 9
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 5
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 5
+        },
+        {
+          "width": 3,
+          "height": 2,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 2,
+          "height": 3,
+          "placements": 6
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 3,
+          "placements": 3
+        },
+        {
+          "width": 1,
+          "height": 3,
+          "placements": 3
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 3,
+          "placements": 3
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 4
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 2,
+          "placements": 2
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 2,
+          "height": 2,
+          "placements": 3
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        },
+        {
+          "width": 1,
+          "height": 1,
+          "placements": 1
+        }
+      ],
+      "rule": "metatile-only"
+    }
+  ]
+}
