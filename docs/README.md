@@ -1,5 +1,9 @@
 # ドキュメント案内
 
+## ゲーム設計・実装計画
+
+- [GAMEPLAY_IMPLEMENTATION_PLAN.md](GAMEPLAY_IMPLEMENTATION_PLAN.md) — 町を廃止した自宅店舗⇄ダンジョンのゲームループ、護衛戦闘、遺体・戦利品、店舗運営、実装フェーズ、未決事項
+
 ## アセット制作
 
 - [ASSET_SPEC.md](ASSET_SPEC.md) — ゲームへ組み込む画像の固定寸法、セル座標、フレーム順

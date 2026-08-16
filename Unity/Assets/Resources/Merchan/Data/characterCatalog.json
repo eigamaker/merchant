@@ -2,32 +2,6 @@
     "version": 1,
     "actors": [
         {
-            "id": "MerchantProtagonist",
-            "pack": "provided-character",
-            "sourceSheet": "Assets/Resources/Merchan/assets/actors/craftpix/MerchantProtagonist/MerchantProtagonist_Idle_with_shadow.png",
-            "sourceSheets": [
-                "Assets/Resources/Merchan/assets/actors/craftpix/MerchantProtagonist/MerchantProtagonist_Idle_with_shadow.png",
-                "Assets/Resources/Merchan/assets/actors/craftpix/MerchantProtagonist/MerchantProtagonist_Walk_with_shadow.png"
-            ],
-            "prefab": "Assets/Prefabs/Player/Craftpix/MerchantProtagonist.prefab",
-            "runtimePrefab": "Assets/Resources/Merchan/Prefabs/Player/Craftpix/MerchantProtagonist.prefab",
-            "role": "player",
-            "usage": "main-character",
-            "frameWidth": 32,
-            "frameHeight": 32,
-            "directions": "down,left,right,up",
-            "clips": [
-                "idle-down",
-                "idle-left",
-                "idle-right",
-                "idle-up",
-                "walk-down",
-                "walk-left",
-                "walk-right",
-                "walk-up"
-            ]
-        },
-        {
             "id": "Swordsman_lvl1",
             "pack": "swordsman",
             "sourceSheet": "Assets/Resources/Merchan/assets/actors/craftpix/Swordsman_lvl1/Swordsman_lvl1_attack_with_shadow.png",
@@ -41,10 +15,10 @@
                 "Assets/Resources/Merchan/assets/actors/craftpix/Swordsman_lvl1/Swordsman_lvl1_Walk_Attack_with_shadow.png",
                 "Assets/Resources/Merchan/assets/actors/craftpix/Swordsman_lvl1/Swordsman_lvl1_Walk_with_shadow.png"
             ],
-            "prefab": "Assets/Prefabs/NPCs/Craftpix/Swordsman_lvl1.prefab",
-            "runtimePrefab": "",
-            "role": "npc",
-            "usage": "legacy-main-character",
+            "prefab": "Assets/Prefabs/Player/Craftpix/Swordsman_lvl1.prefab",
+            "runtimePrefab": "Assets/Resources/Merchan/Prefabs/Player/Craftpix/Swordsman_lvl1.prefab",
+            "role": "player",
+            "usage": "main-character",
             "frameWidth": 64,
             "frameHeight": 64,
             "directions": "down,left,right,up",

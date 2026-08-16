@@ -18,7 +18,7 @@ namespace Merchan.Unity.Editor
 
         private static readonly ReviewGroup[] Groups =
         {
-            new ReviewGroup("PLAYER", "main character", "Assets/Prefabs/Player/Craftpix/MerchantProtagonist.prefab", new[]
+            new ReviewGroup("PLAYER", "main character", "Assets/Prefabs/Player/Craftpix/Swordsman_lvl1.prefab", new[]
             {
                 new Vector3(10.5f, 26.5f, -1f),
             }),

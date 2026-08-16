@@ -40,8 +40,7 @@ namespace Merchan.Unity.Editor
             new ActorSpec("Vampires1", "vampires", "Vampires1", 64, 64, 4, true, "Vampires1"),
             new ActorSpec("Vampires2", "vampires", "Vampires2", 64, 64, 4, true, "Vampires2"),
             new ActorSpec("Vampires3", "vampires", "Vampires3", 64, 64, 4, true, "Vampires3"),
-            new ActorSpec("MerchantProtagonist", "provided-character", "MerchantProtagonist", 32, 32, 4, true, "MerchantProtagonist", "player", "main-character"),
-            new ActorSpec("Swordsman_lvl1", "swordsman", "Swordsman_lvl1", 64, 64, 4, true, "Swordsman_lvl1", "npc", "legacy-main-character"),
+            new ActorSpec("Swordsman_lvl1", "swordsman", "Swordsman_lvl1", 64, 64, 4, true, "Swordsman_lvl1", "player", "main-character"),
             new ActorSpec("Swordsman_lvl2", "swordsman", "Swordsman_lvl2", 64, 64, 4, true, "Swordsman_lvl2", "npc", "villager"),
             new ActorSpec("Swordsman_lvl3", "swordsman", "Swordsman_lvl3", 64, 64, 4, true, "Swordsman_lvl3", "npc", "guard"),
             new ActorSpec("Glassblower_Customer", "glassblower-workshop", "Glassblower", 32, 32, 1, false, "Customer"),
@@ -60,13 +59,13 @@ namespace Merchan.Unity.Editor
                 // Force a disk refresh before checking the generated player;
                 // this also catches a replacement sheet made outside Unity.
                 AssetDatabase.Refresh(ImportAssetOptions.ForceUpdate);
-                var merchantSheet = AssetDatabase.LoadAssetAtPath<Texture2D>(
-                    $"{ActorRoot}/MerchantProtagonist/MerchantProtagonist_Idle_with_shadow.png");
-                var merchantPrefabFile = ProjectAbsolutePath($"{PlayerPrefabRoot}/MerchantProtagonist.prefab");
+                var swordsmanSheet = AssetDatabase.LoadAssetAtPath<Texture2D>(
+                    $"{ActorRoot}/Swordsman_lvl1/Swordsman_lvl1_Idle_with_shadow.png");
+                var swordsmanPrefabFile = ProjectAbsolutePath($"{PlayerPrefabRoot}/Swordsman_lvl1.prefab");
                 if (AssetDatabase.LoadMainAssetAtPath($"{PrefabRoot}/Plant1.prefab") == null ||
-                    AssetDatabase.LoadMainAssetAtPath($"{PlayerPrefabRoot}/MerchantProtagonist.prefab") == null ||
-                    !File.Exists(merchantPrefabFile) ||
-                    merchantSheet == null || merchantSheet.width != 96 || merchantSheet.height != 128)
+                    AssetDatabase.LoadMainAssetAtPath($"{PlayerPrefabRoot}/Swordsman_lvl1.prefab") == null ||
+                    !File.Exists(swordsmanPrefabFile) ||
+                    swordsmanSheet == null)
                     ImportAll();
             };
         }
@@ -90,11 +89,11 @@ namespace Merchan.Unity.Editor
             EnsureFolder("Assets/Prefabs/NPCs");
             EnsureFolder(NpcPrefabRoot);
 
-            // The supplied merchant replaces the previous Swordsman level 1
-            // player. Keep the Swordsman source available as a legacy NPC,
-            // but remove only its obsolete player prefab copies.
-            DeleteAssetIfExists($"{PlayerPrefabRoot}/Swordsman_lvl1.prefab");
-            DeleteAssetIfExists($"{PlayerResourcePrefabRoot}/Swordsman_lvl1.prefab");
+            // Swordsman level 1 is the playable protagonist. The previous
+            // merchant protagonist is intentionally not generated anymore.
+            DeleteAssetIfExists($"{PlayerPrefabRoot}/MerchantProtagonist.prefab");
+            DeleteAssetIfExists($"{PlayerResourcePrefabRoot}/MerchantProtagonist.prefab");
+            DeleteAssetIfExists($"{NpcPrefabRoot}/Swordsman_lvl1.prefab");
 
             var enemyEntries = new List<CatalogEntry>();
             var characterEntries = new List<CatalogEntry>();

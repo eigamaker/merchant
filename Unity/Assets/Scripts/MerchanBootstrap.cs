@@ -30,6 +30,12 @@ namespace Merchan.Unity
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void CreateGame()
         {
+            // The town prototype starts itself in any scene that does not already
+            // run something else. Without this check it would also boot on top of
+            // the dungeon and fight it for the camera.
+            if (FindFirstObjectByType<DungeonSceneController>() != null) return;
+            if (FindFirstObjectByType<HomeShopSceneController>() != null) return;
+
             if (FindFirstObjectByType<MerchanBootstrap>() == null)
                 new GameObject("Merchan Unity Bootstrap").AddComponent<MerchanBootstrap>();
         }
@@ -123,35 +129,35 @@ namespace Merchan.Unity
 
         private void BuildPlayer()
         {
-            var playerPrefab = Resources.Load<GameObject>("Merchan/Prefabs/Player/Craftpix/MerchantProtagonist");
+            var playerPrefab = Resources.Load<GameObject>("Merchan/Prefabs/Player/Craftpix/Swordsman_lvl1");
             if (playerPrefab != null)
             {
-                var merchantObject = Instantiate(playerPrefab);
-                merchantObject.name = "Player";
-                merchantObject.transform.position = ToWorld(town.spawn.x, town.spawn.y, -2f);
-                merchantObject.transform.SetPositionAndRotation(merchantObject.transform.position, Quaternion.identity);
-                var playerRenderer = merchantObject.GetComponent<SpriteRenderer>();
+                var playerObject = Instantiate(playerPrefab);
+                playerObject.name = "Player";
+                playerObject.transform.position = ToWorld(town.spawn.x, town.spawn.y, -2f);
+                playerObject.transform.SetPositionAndRotation(playerObject.transform.position, Quaternion.identity);
+                var playerRenderer = playerObject.GetComponent<SpriteRenderer>();
                 if (playerRenderer != null)
                     playerRenderer.sortingOrder = 10;
-                playerAnimator = merchantObject.GetComponent<EnemyActorAnimator>();
-                player = merchantObject.transform;
+                playerAnimator = playerObject.GetComponent<EnemyActorAnimator>();
+                player = playerObject.transform;
                 return;
             }
 
-            // Keep the legacy fallback for projects that have not regenerated
-            // the Craftpix player resource prefab yet.
-            var texture = Resources.Load<Texture2D>("Merchan/assets/actors/player");
+            // Keep a visible fallback for projects that have not generated
+            // the Swordsman player resource prefab yet.
+            var texture = Resources.Load<Texture2D>("Merchan/assets/actors/craftpix/Swordsman_lvl1/Swordsman_lvl1_Idle_with_shadow");
             if (texture == null)
             {
-                Debug.LogError("Player art is missing at Assets/Resources/Merchan/assets/actors/player.png.");
+                Debug.LogError("Swordsman player art is missing. Run Merchan/Import Character Packs.");
                 return;
             }
 
-            var playerObject = new GameObject("Player");
-            var renderer = playerObject.AddComponent<SpriteRenderer>();
-            renderer.sprite = Sprite.Create(texture, new Rect(0, 0, 32, 32), new Vector2(0.5f, 0.15f), town.tile);
+            var fallbackPlayerObject = new GameObject("Player");
+            var renderer = fallbackPlayerObject.AddComponent<SpriteRenderer>();
+            renderer.sprite = Sprite.Create(texture, new Rect(0, 0, 64, 64), new Vector2(0.5f, 0.15f), 16f);
             renderer.sortingOrder = 10;
-            player = playerObject.transform;
+            player = fallbackPlayerObject.transform;
             player.position = ToWorld(town.spawn.x, town.spawn.y, -2f);
         }
 
