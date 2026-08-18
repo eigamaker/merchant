@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "pages": [
+    {
+      "id": "home-default",
+      "label": "家・基本",
+      "mapKind": "home",
+      "tileSize": 16,
+      "width": 4,
+      "height": 4,
+      "cells": [
+        {
+          "x": 0,
+          "y": 0,
+          "assetId": "home.floor",
+          "frame": 0,
+          "layer": "ground",
+          "walkable": true
+        },
+        {
+          "x": 1,
+          "y": 0,
+          "assetId": "home.wall",
+          "frame": 0,
+          "layer": "structure",
+          "walkable": false
+        }
+      ]
+    },
+    {
+      "id": "dungeon-default",
+      "label": "ダンジョン・基本",
+      "mapKind": "dungeon",
+      "tileSize": 16,
+      "width": 4,
+      "height": 4,
+      "cells": [
+        {
+          "x": 0,
+          "y": 0,
+          "assetId": "dungeon.floor",
+          "frame": 0,
+          "layer": "ground",
+          "walkable": true
+        },
+        {
+          "x": 1,
+          "y": 0,
+          "assetId": "dungeon.wall",
+          "frame": 0,
+          "layer": "structure",
+          "walkable": false
+        },
+        {
+          "x": 2,
+          "y": 0,
+          "assetId": "dungeon.stairs-up",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": true
+        },
+        {
+          "x": 3,
+          "y": 0,
+          "assetId": "dungeon.stairs-down",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": true
+        }
+      ]
+    }
+  ]
+}

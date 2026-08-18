@@ -9,7 +9,7 @@ replaced.
 from __future__ import annotations
 
 from pathlib import Path
-from PIL import Image, ImageEnhance
+from PIL import Image
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -182,61 +182,14 @@ def wide_from_grid(source: Image.Image, index: int, width: int) -> Image.Image:
     return building_from_grid(source, index, width)
 
 
-def build_buildings() -> None:
-    source = rgba("town-buildings-alpha.png")
-    names = ["tavern", "guild", "curio-shop", "scholar-house", "arcane-shop", "dungeon-gate"]
-    outputs = [192, 192, 96, 96, 96, 192]
-    for index, (name, width) in enumerate(zip(names, outputs)):
-        wide_from_grid(source, index, width).save(output(f"buildings/{name}.png"))
-    # A noble residence reuses the stone house silhouette with a warm tint in
-    # the game; it still gets its own stable runtime file.
-    noble = ImageEnhance.Color(wide_from_grid(source, 3, 192)).enhance(0.78)
-    noble.save(output("buildings/noble-house.png"))
-
-    # The frame contract reserves eight complete 4x3 modules.  Do not place
-    # 8-cell canvases here: their transparent gutters make half of the named
-    # BUILDING_KIT_ORIGINS resolve to another building or an empty region.
-    primary = Image.new("RGBA", (TILE * 16, TILE * 12))
-    primary_kits = (
-        (0, 0, 2, False, 1.0),  # woodShop
-        (4, 0, 1, False, 0.9),  # stonePublic
-        (8, 0, 0, False, 1.0),  # warmInn
-        (12, 0, 3, False, 0.78),  # nobleHouse
-        (0, 3, 4, False, 1.0),  # arcaneShop
-        (4, 3, 2, True, 0.82),  # marketProps
-        (8, 3, 5, False, 1.0),  # dungeonEntrance
-        (12, 3, 4, True, 0.7),  # sharedProps
-    )
-    for cell_x, cell_y, source_index, mirror, saturation in primary_kits:
-        module = building_from_grid(source, source_index, TILE * 4, mirror=mirror, saturation=saturation)
-        primary.alpha_composite(module, (cell_x * TILE, cell_y * TILE))
-    primary.save(output("tiles/town_buildings.png"))
-
-    # Wide buildings occupy dedicated contiguous 8x3 regions.  This separate
-    # sheet deliberately has the same dimensions as the primary kit sheet so
-    # both can be addressed with the same 24px frame grid.
-    extension = Image.new("RGBA", (TILE * 16, TILE * 12))
-    wide_kits = (
-        (0, 0, 0, False, 1.0),  # warmInn
-        (8, 0, 1, False, 0.9),  # stonePublic
-        (0, 3, 3, False, 0.78),  # nobleHouse
-        (8, 3, 5, False, 1.0),  # dungeonEntrance
-    )
-    for cell_x, cell_y, source_index, mirror, saturation in wide_kits:
-        module = building_from_grid(source, source_index, TILE * 8, mirror=mirror, saturation=saturation)
-        extension.alpha_composite(module, (cell_x * TILE, cell_y * TILE))
-    extension.save(output("tiles/town_building_extensions.png"))
-
-
 def build_preview() -> None:
     # A compact contact sheet is useful for art review without exposing source
     # chrome-key backgrounds in the game.
     entries = [
         Image.open(output_path).convert("RGBA")
         for output_path in [
-            output("buildings/tavern.png"), output("buildings/guild.png"), output("buildings/curio-shop.png"),
             output("actors/player.png"), output("actors/npc-innkeeper.png"), output("actors/enemy-goblin.png"),
-            output("tiles/town_objects.png"), output("objects/dungeon_objects.png"),
+            output("objects/items.png"), output("objects/dungeon_objects.png"),
         ]
     ]
     sheet = Image.new("RGBA", (384, 192), (33, 29, 38, 255))
@@ -251,7 +204,6 @@ def build_preview() -> None:
 def main() -> None:
     build_actors()
     build_objects()
-    build_buildings()
     build_preview()
 
 

@@ -7,19 +7,8 @@ import {
   GUARD_ASSET_VARIANTS,
   DUNGEON_OBJECT_FRAMES,
 } from "../game/assets";
-import {
-  CARDINAL_MASK_BITS,
-  dungeonTerrainBankForFloor,
-  dungeonWallFrame as dungeonWallFrameAddress,
-  terrainBankFrame,
-  type DungeonWallFrameId,
-} from "../game/assetFrames";
-import { CRAFTPIX_SHEETS, craftpixAsset } from "../game/craftpixCatalog";
-import type { CraftpixAnimationCatalog } from "../game/craftpixAnimations";
 import { CRAFTPIX_ACTORS, CRAFTPIX_ENEMY_ACTORS, CRAFTPIX_PLAYER_ACTOR, actorFrame, type ActorAction, type ActorDirection, type CraftpixActorDefinition } from "../game/craftpixActors";
 import { CRAFTPIX_UI } from "../game/craftpixUi";
-import { canTraverse } from "../game/dungeonRules";
-import { loadManualTrialMap, manualMapToDungeonMap } from "../review/manualMapModel";
 import {
   DIRECTION,
   INVENTORY_CAPACITY,
@@ -55,25 +44,30 @@ import {
   useSmokeBomb,
 } from "../game/engine";
 import { SaveRepository, type SaveSlot } from "../game/save";
-import {
-  moveTownPosition,
-  TOWN_POINTS,
-  TOWN_TILE,
-  TOWN_TILE_INDICES,
-  TOWN_WORLD_HEIGHT,
-  TOWN_WORLD_WIDTH,
-  type TownPointOfInterest,
-} from "../game/townMap";
+import { HOME_POI, HOME_SPAWN, createHomeMap } from "../game/homeMap";
+import { isMapPositionWalkable, moveMapPosition } from "../game/mapTiles";
+import { compileMap, loadTrialMap, loadTrialMapPack } from "../game/mapDocument";
+import { MAP_ASSET_CATALOG } from "../game/mapAssetCatalog.generated";
+import { MISSING_MAP_ASSET_TEXTURE, resolveMapAssetFrame } from "../game/mapAssetRuntime";
 import type { Customer, DungeonCommand, DungeonEvent, GameState, ItemInstance, MenuChoice, Vec } from "../game/types";
-
-const TOWN_RENDER_TILE = 24;
-const DUNGEON_LEGACY_TILE = 24;
+/** Viewport and generated fallback textures stay at the game's base pixel grid. */
+const VIEWPORT_BASE_TILE = 16;
+const PLACEHOLDER_TILE = 16;
+const DUNGEON_LEGACY_TILE = 16;
 const LEGACY_ACTOR_SCALE = 0.9;
 const LEGACY_ACTOR_ORIGIN_Y = 0.94;
 const GRID_W = 21;
 const GRID_H = 12;
-const MAP_W = GRID_W * TOWN_RENDER_TILE;
-const MAP_H = GRID_H * TOWN_RENDER_TILE;
+const MAP_W = GRID_W * VIEWPORT_BASE_TILE;
+const MAP_H = GRID_H * VIEWPORT_BASE_TILE;
+
+type HomePoint = { id: string; name: string; kind: "entrance" | "shop" | "guild" | "visitors" | "customer"; pos: { x: number; y: number }; customerId?: string };
+const HOME_POINTS: HomePoint[] = [
+  { id: "entrance", name: "ダンジョン入口", kind: "entrance", pos: { x: 16, y: 2 } },
+  { id: "shop", name: "保管・陳列", kind: "shop", pos: HOME_POI.storage },
+  { id: "guild", name: "依頼・探索準備", kind: "guild", pos: HOME_POI.preparation },
+  { id: "visitors", name: "来客", kind: "visitors", pos: HOME_POI.visitors },
+];
 const PANEL_X = MAP_W + 8;
 
 type Modal = {
@@ -104,22 +98,20 @@ function distanceSquared(a: Vec, b: Vec): number {
 
 export class MerchantScene extends Phaser.Scene {
   private state: GameState = createNewGame();
+  private homeMap = createHomeMap();
   private modal?: Modal;
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private readonly saves = new SaveRepository();
   private gameStarted = false;
   private lastAutoSaveAt = Number.NEGATIVE_INFINITY;
-  private townWorld?: Phaser.GameObjects.Container;
-  private townBackdrop?: Phaser.Tilemaps.TilemapLayer;
-  private townPlayer?: Phaser.GameObjects.Sprite;
-  private townNpcs: RoamingNpc[] = [];
+  private homeWorld?: Phaser.GameObjects.Container;
+  private homeBackdrop?: Phaser.Tilemaps.TilemapLayer;
+  private homePlayer?: Phaser.GameObjects.Sprite;
+  private homeNpcs: RoamingNpc[] = [];
   private dungeonWalkAnimations = new Map<string, "up" | "down" | "left" | "right">();
   private playerFacing: "up" | "down" | "left" | "right" = "down";
   private dungeonWorld?: Phaser.GameObjects.Container;
   private dungeonMaskShape?: Phaser.GameObjects.Graphics;
-  private manualWorldMap?: import("../game/types").DungeonMap;
-  private manualWorld?: Phaser.GameObjects.Container;
-  private manualWorldPlayer?: Phaser.GameObjects.Sprite;
 
   constructor() {
     super("merchant");
@@ -152,22 +144,11 @@ export class MerchantScene extends Phaser.Scene {
       frameHeight: ASSET_MANIFEST.item.frameHeight,
     });
     this.load.spritesheet("object.dungeon", "assets/objects/dungeon_objects.png", { frameWidth: 24, frameHeight: 24 });
-    this.load.image(ASSET_MANIFEST.townMap.textureKey, ASSET_MANIFEST.townMap.path);
-    this.load.json("craftpix.animation.catalog", "assets/dungeons/craftpix-animation-catalog.json");
-    this.load.json("tiled.map.catalog", "assets/craftpix/tiled-map-catalog.json");
-    this.load.image(ASSET_MANIFEST.craftpixDungeon.baseTextureKey, ASSET_MANIFEST.craftpixDungeon.basePath);
-    this.load.image(ASSET_MANIFEST.craftpixDungeon.foregroundTextureKey, ASSET_MANIFEST.craftpixDungeon.foregroundPath);
-    for (const sheet of Object.values(CRAFTPIX_SHEETS)) {
-      this.load.spritesheet(sheet.textureKey, sheet.path, { frameWidth: 16, frameHeight: 16 });
-    }
-    this.load.spritesheet(ASSET_MANIFEST.dungeonTiles.textureKey, ASSET_MANIFEST.dungeonTiles.path, {
-      frameWidth: ASSET_MANIFEST.dungeonTiles.frameWidth,
-      frameHeight: ASSET_MANIFEST.dungeonTiles.frameHeight,
-    });
-    this.load.spritesheet(ASSET_MANIFEST.dungeonWalls.textureKey, ASSET_MANIFEST.dungeonWalls.path, {
-      frameWidth: ASSET_MANIFEST.dungeonWalls.frameWidth,
-      frameHeight: ASSET_MANIFEST.dungeonWalls.frameHeight,
-    });
+    for (const asset of MAP_ASSET_CATALOG) this.load.spritesheet(`map.asset.${asset.id}`, asset.path, { frameWidth: asset.tileSize, frameHeight: asset.tileSize, margin: asset.margin, spacing: asset.spacing });
+    this.load.image(ASSET_MANIFEST.mapTiles.homeFloor.textureKey, ASSET_MANIFEST.mapTiles.homeFloor.path);
+    this.load.spritesheet(ASSET_MANIFEST.mapTiles.homeWall.textureKey, ASSET_MANIFEST.mapTiles.homeWall.path, { frameWidth: 16, frameHeight: 16 });
+    this.load.image(ASSET_MANIFEST.mapTiles.dungeonFloor.textureKey, ASSET_MANIFEST.mapTiles.dungeonFloor.path);
+    this.load.spritesheet(ASSET_MANIFEST.mapTiles.dungeonWall.textureKey, ASSET_MANIFEST.mapTiles.dungeonWall.path, { frameWidth: 16, frameHeight: 16 });
     this.load.image("ui.craftpix.panel", CRAFTPIX_UI.panel.path);
     this.load.spritesheet("ui.craftpix.buttons", CRAFTPIX_UI.buttons.path, { frameWidth: CRAFTPIX_UI.buttons.frameWidth, frameHeight: CRAFTPIX_UI.buttons.frameHeight });
     this.load.spritesheet("ui.craftpix.icons", CRAFTPIX_UI.icons.path, { frameWidth: CRAFTPIX_UI.icons.frameWidth, frameHeight: CRAFTPIX_UI.icons.frameHeight });
@@ -200,26 +181,25 @@ export class MerchantScene extends Phaser.Scene {
     }) as Record<string, Phaser.Input.Keyboard.Key>;
     this.createPlaceholderTextures();
     this.createActorAnimations();
-    this.createCraftpixTileAnimations();
     const params = new URLSearchParams(window.location.search);
     if (params.get("autostart") === "world") {
-      const authored = loadManualTrialMap();
-      if (authored) {
+      const pack = loadTrialMapPack();
+      const trial = pack?.home ?? loadTrialMap();
+      if (trial?.kind === "home") {
+        this.homeMap = trial;
+        const spawn = trial.markers.find((marker) => marker.kind === "homeSpawn");
         this.state = createNewGame();
-        this.manualWorldMap = manualMapToDungeonMap(authored);
-        this.state.worldMapId = authored.id;
-        if (authored.kind === "dungeon") {
-          const entrance = this.manualWorldMap.entrance;
-          this.state.location = "dungeon";
-          this.state.run = {
-            seed: Date.now(), floor: 1, map: this.manualWorldMap,
-            player: { ...entrance }, enemies: [], items: [], chests: [], traps: [], bodies: [],
-            shoveCooldown: 0, highestFloor: 1, turn: 0,
-          };
-        } else {
-          this.state.location = "interior";
-          this.state.townPos = { x: this.manualWorldMap.entrance.x * 16 + 8, y: this.manualWorldMap.entrance.y * 16 + 8 };
-        }
+        this.state.homePos = { x: (spawn?.x ?? 16) * trial.tileSize + trial.tileSize / 2, y: (spawn?.y ?? 16) * trial.tileSize + trial.tileSize / 2 };
+        this.gameStarted = true;
+        this.render();
+        return;
+      }
+      if (trial?.kind === "dungeon") {
+        const map = compileMap(trial);
+        const entrance = trial.markers.find((marker) => marker.kind === "stairsUp");
+        this.state = createNewGame();
+        this.state.location = "dungeon";
+        this.state.run = { seed: Date.now(), floor: trial.floor, map, player: { x: entrance?.x ?? map.stairsUp.x, y: entrance?.y ?? map.stairsUp.y }, enemies: [], items: [], chests: [], traps: [], bodies: [], shoveCooldown: 0, highestFloor: trial.floor, turn: 0, floorStates: {} };
         this.gameStarted = true;
         this.render();
         return;
@@ -268,8 +248,7 @@ export class MerchantScene extends Phaser.Scene {
 
     if (!this.gameStarted) return;
 
-    if (this.state.location === "town") this.updateTown(delta);
-    else if (this.state.location === "interior") this.updateManualWorld();
+    if (this.state.location === "home") this.updateHome(delta);
     else this.updateDungeon();
   }
 
@@ -284,13 +263,21 @@ export class MerchantScene extends Phaser.Scene {
       graphics.fillStyle(colors[0], 1).fillRect(2, 3, 20, 19);
       graphics.fillStyle(colors[1], 1).fillRect(5, 1, 14, 7);
       graphics.fillStyle(0x191521, 1).fillRect(6, 9, 3, 3).fillRect(15, 9, 3, 3);
-      graphics.generateTexture(name, TOWN_RENDER_TILE, TOWN_RENDER_TILE);
+      graphics.generateTexture(name, PLACEHOLDER_TILE, PLACEHOLDER_TILE);
       graphics.destroy();
     };
     texture(ASSET_MANIFEST.player.textureKey, [0xead8b6, 0x9d4a59]);
     texture(ASSET_MANIFEST.enemy.textureKey, [0x6a476d, 0xd06f87]);
     texture(ASSET_MANIFEST.npc.textureKey, [0xc29f70, 0x6c6b94]);
     texture(ASSET_MANIFEST.item.textureKey, [0xc9af58, 0xffeb91]);
+    if (!this.textures.exists(MISSING_MAP_ASSET_TEXTURE)) {
+      const graphics = this.make.graphics({ x: 0, y: 0 });
+      graphics.fillStyle(0xff00aa, 1).fillRect(0, 0, 8, 8).fillRect(8, 8, 8, 8);
+      graphics.fillStyle(0x200018, 1).fillRect(8, 0, 8, 8).fillRect(0, 8, 8, 8);
+      graphics.lineStyle(3, 0xffff00, 1).beginPath().moveTo(2, 2).lineTo(14, 14).moveTo(14, 2).lineTo(2, 14).strokePath();
+      graphics.generateTexture(MISSING_MAP_ASSET_TEXTURE, 16, 16);
+      graphics.destroy();
+    }
   }
 
   private createActorAnimations(): void {
@@ -318,19 +305,6 @@ export class MerchantScene extends Phaser.Scene {
     }
   }
 
-  private createCraftpixTileAnimations(): void {
-    const catalog = this.cache.json.get("craftpix.animation.catalog") as CraftpixAnimationCatalog | undefined;
-    const tiled = this.cache.json.get("tiled.map.catalog") as { animations?: CraftpixAnimationCatalog["clips"] } | undefined;
-    for (const clip of [...(catalog?.clips ?? []), ...(tiled?.animations ?? [])]) {
-      const sheet = CRAFTPIX_SHEETS[clip.sheet as keyof typeof CRAFTPIX_SHEETS];
-      if (!sheet || !this.textures.exists(sheet.textureKey) || this.anims.exists(`craftpix.tile.${clip.id}`)) continue;
-      this.anims.create({
-        key: `craftpix.tile.${clip.id}`,
-        frames: clip.frames.map((frame) => ({ key: sheet.textureKey, frame: frame.frame, duration: frame.duration })),
-        repeat: clip.loop ? -1 : 0,
-      });
-    }
-  }
 
   private craftpixAnimationKey(actorId: string, action: ActorAction, direction: ActorDirection): string {
     return `craftpix.${actorId}.${action}-${direction}`;
@@ -343,14 +317,14 @@ export class MerchantScene extends Phaser.Scene {
     return this.textures.exists(key) ? key : undefined;
   }
 
-  private playCraftpixActor(sprite: Phaser.GameObjects.Sprite, actor: CraftpixActorDefinition, action: ActorAction, direction: ActorDirection, ignoreIfPlaying = true): boolean {
+  private playCraftpixActor(sprite: Phaser.GameObjects.Sprite, actor: CraftpixActorDefinition, action: ActorAction, direction: ActorDirection, ignoreIfPlaying = true, scaleMultiplier = 1): boolean {
     const clip = actor.clips[action] ?? actor.clips.idle;
     if (!clip) return false;
     const textureKey = this.craftpixActorTexture(actor, action);
     const key = this.craftpixAnimationKey(actor.id, clip.action, direction);
     if (!textureKey || !this.anims.exists(key)) return false;
     if (!sprite.texture.key.startsWith("craftpix.actor.")) sprite.setTexture(textureKey, actorFrame(clip, direction, 0));
-    sprite.setOrigin(actor.origin.x, actor.origin.y).setScale(actor.scale);
+    sprite.setOrigin(actor.origin.x, actor.origin.y).setScale(actor.scale * scaleMultiplier);
     sprite.play(key, ignoreIfPlaying);
     return true;
   }
@@ -371,7 +345,7 @@ export class MerchantScene extends Phaser.Scene {
     create("walk-up", ACTOR_WALK_FRAMES.walkUp, 7);
   }
 
-  private updateTown(delta: number): void {
+  private updateHome(delta: number): void {
     let moved = false;
     const tapHorizontal = Number(this.just("right") || this.just("d")) - Number(this.just("left") || this.just("a"));
     const tapVertical = Number(this.just("down") || this.just("s")) - Number(this.just("up") || this.just("w"));
@@ -384,21 +358,22 @@ export class MerchantScene extends Phaser.Scene {
         ? horizontal < 0 ? "left" : "right"
         : vertical < 0 ? "up" : "down";
       const length = Math.hypot(horizontal, vertical);
-      const speed = 126;
+      const homeScale = this.homeScale();
+      const speed = 126 * homeScale;
       const stepSeconds = Math.max(delta / 1000, tapHorizontal !== 0 || tapVertical !== 0 ? 0.05 : 0);
-      const next = moveTownPosition(this.state.townPos, {
+      const next = moveMapPosition(this.homeMap, this.state.homePos, {
         x: (horizontal / length) * speed * stepSeconds,
         y: (vertical / length) * speed * stepSeconds,
-      });
-      moved = next.x !== this.state.townPos.x || next.y !== this.state.townPos.y;
-      this.state.townPos = next;
+      }, 5 * homeScale);
+      moved = next.x !== this.state.homePos.x || next.y !== this.state.homePos.y;
+      this.state.homePos = next;
     }
     const interact = this.just("enter") || this.just("space");
     const inventory = this.just("i");
     const ledger = this.just("l");
     const quest = this.just("q");
     const help = this.just("h");
-    if (interact) this.interactTown();
+    if (interact) this.interactHome();
     if (inventory) this.openInventory();
     if (ledger) this.openLedger();
     if (quest) this.openQuestBoard();
@@ -407,13 +382,13 @@ export class MerchantScene extends Phaser.Scene {
     if (this.just("f2")) void this.saveManual("manual-2");
     if (this.just("f3")) void this.saveManual("manual-3");
     if (moved) {
-      this.playTownPlayerMotion(horizontal, vertical);
-      this.updateTownPresentation();
+      this.playHomePlayerMotion(horizontal, vertical);
+      this.updateHomePresentation();
       this.saveAuto();
-    } else if (this.townPlayer) {
-      if (!this.playCraftpixActor(this.townPlayer, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing)) this.townPlayer.play(`player.idle-${this.playerFacing}`, true);
+    } else if (this.homePlayer) {
+      if (!this.playCraftpixActor(this.homePlayer, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing, true, this.homeScale())) this.homePlayer.play(`player.idle-${this.playerFacing}`, true);
     }
-    this.updateTownNpcs(delta);
+    this.updateHomeNpcs(delta);
     if (interact || inventory || ledger || quest || help) this.render();
   }
 
@@ -474,8 +449,9 @@ export class MerchantScene extends Phaser.Scene {
     }
   }
 
-  private interactTown(): void {
-    const poi = TOWN_POINTS.find((entry) => distanceSquared(this.poiPosition(entry), this.state.townPos) <= 30 * 30);
+  private interactHome(): void {
+    const interactionDistance = 30 * this.homeScale();
+    const poi = this.homePoints().find((entry) => distanceSquared(this.poiPosition(entry), this.state.homePos) <= interactionDistance * interactionDistance);
     if (!poi) {
       this.state.message = "近くに話せる相手や施設はない。";
       return;
@@ -490,8 +466,8 @@ export class MerchantScene extends Phaser.Scene {
       case "guild":
         this.openGuildMenu();
         return;
-      case "tavern":
-        this.openMenu("酒場の噂", ["「地下3階で、光を吸う黒い剣を見た者がいる」", "「深く潜るほど、帰還石は手放せないぞ」"], [{ label: "閉じる", action: () => this.closeMenu() }]);
+      case "visitors":
+        this.openMenu("来客待機場所", ["家に来た客へ品物を見せたり、話を聞いたりできます。"], [{ label: "閉じる", action: () => this.closeMenu() }]);
         return;
       case "customer":
         if (poi.customerId) this.openCustomer(poi.customerId);
@@ -520,7 +496,7 @@ export class MerchantScene extends Phaser.Scene {
       this.openBodyMenu(body.id);
       return;
     }
-    if (same(run.player, run.map.stairs) || same(run.player, run.map.returnStairs)) {
+    if ((run.map.stairsDown && same(run.player, run.map.stairsDown)) || same(run.player, run.map.stairsUp)) {
       tryStairs(this.state);
       return;
     }
@@ -626,9 +602,11 @@ export class MerchantScene extends Phaser.Scene {
     ]);
   }
 
-  private poiPosition(poi: TownPointOfInterest): Vec {
-    return { x: poi.pos.x * TOWN_RENDER_TILE + TOWN_RENDER_TILE / 2, y: poi.pos.y * TOWN_RENDER_TILE + TOWN_RENDER_TILE / 2 };
+  private poiPosition(poi: HomePoint): Vec {
+    return { x: poi.pos.x * this.homeMap.tileSize + this.homeMap.tileSize / 2, y: poi.pos.y * this.homeMap.tileSize + this.homeMap.tileSize / 2 };
   }
+
+  private homeScale(): number { return this.homeMap.tileSize / VIEWPORT_BASE_TILE; }
 
   private openMenu(title: string, body: string[], choices: MenuChoice[]): void {
     this.modal = { title, body, choices, index: 0 };
@@ -679,7 +657,7 @@ export class MerchantScene extends Phaser.Scene {
 
   private openSystemMenu(): void {
     this.openMenu("メニュー", [
-      this.state.location === "dungeon" ? "探索中はメニューを開いてもターンは進まない。" : `灰灯町 ${this.state.day}日目`,
+      this.state.location === "dungeon" ? "探索中はメニューを開いてもターンは進まない。" : `自宅兼店舗 ${this.state.day}日目`,
       `所持金 ${this.state.gold}G　容量 ${currentBulk(this.state)}/${INVENTORY_CAPACITY}`,
     ], [
       { label: "持ち物", action: () => this.openInventory() },
@@ -694,7 +672,7 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private openHelp(): void {
-    const controls = this.state.location === "town"
+    const controls = this.state.location === "home"
       ? ["移動: 矢印 / WASD", "決定・会話: Enter / Space", "Esc: メニュー", "I: 持ち物  L: 商人の記録", "Q: 依頼  F1〜F3: 手動保存"]
       : ["移動・向き変更: 矢印 / WASD", "Enter: 足元を調べる", "Space: 行動（押し返す・道具・待機）", "Z: 煙玉  R: 帰還石", "Esc: メニュー  I: 持ち物"];
     this.openMenu("操作", controls, [{ label: "閉じる", action: () => this.closeMenu() }]);
@@ -720,7 +698,7 @@ export class MerchantScene extends Phaser.Scene {
       `容量: ${itemBulk(item)}  ${definition}`,
     ];
     const choices: MenuChoice[] = [];
-    if (this.state.location === "town") {
+    if (this.state.location === "home") {
       choices.push({ label: "店へ保管する", disabled: isQuestItemProtected(this.state, item), action: () => { moveToStore(this.state, item); this.openStore(); } });
       choices.push({ label: "買い手を探す", disabled: isQuestItemProtected(this.state, item), action: () => this.openCustomerList(item) });
     } else {
@@ -921,13 +899,10 @@ export class MerchantScene extends Phaser.Scene {
     this.dungeonMaskShape = undefined;
     this.children.removeAll(true);
     // removeAll(true) destroys the backdrop layer; drop the stale handle too.
-    this.townBackdrop = undefined;
-    this.townWorld = undefined;
-    this.townPlayer = undefined;
-    this.manualWorld = undefined;
-    this.manualWorldPlayer = undefined;
-    if (this.state.location === "town") this.renderTown();
-    else if (this.state.location === "interior") this.renderManualWorld();
+    this.homeBackdrop = undefined;
+    this.homeWorld = undefined;
+    this.homePlayer = undefined;
+    if (this.state.location === "home") this.renderHome();
     else this.renderDungeon();
     this.renderHud();
     if (this.modal) this.renderModal();
@@ -951,73 +926,25 @@ export class MerchantScene extends Phaser.Scene {
     this.children.list.forEach(visit);
   }
 
-  private renderTown(): void {
-    this.drawTownBackdrop();
+  private renderHome(): void {
+    this.drawHomeBackdrop();
     const world = this.add.container(0, 0);
-    this.townNpcs = [];
+    this.homeNpcs = [];
     const playerTexture = this.craftpixActorTexture(CRAFTPIX_PLAYER_ACTOR) ?? ASSET_MANIFEST.player.textureKey;
-    const player = this.add.sprite(this.state.townPos.x, this.state.townPos.y + TOWN_RENDER_TILE / 2, playerTexture, 0);
-    if (!this.playCraftpixActor(player, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing)) player.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE).play(`player.idle-${this.playerFacing}`);
+    const homeScale = this.homeScale();
+    const player = this.add.sprite(this.state.homePos.x, this.state.homePos.y + this.homeMap.tileSize / 2, playerTexture, 0);
+    if (!this.playCraftpixActor(player, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing, true, homeScale)) player.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE * homeScale).play(`player.idle-${this.playerFacing}`);
     world.add(player);
-    this.townPlayer = player;
-    this.drawTownNpcs(world);
-    for (const poi of TOWN_POINTS.filter((entry) => entry.kind !== "customer")) {
+    this.homePlayer = player;
+    this.drawHomeNpcs(world);
+    for (const poi of this.homePoints()) {
       const position = this.poiPosition(poi);
-      const label = this.add.text(position.x, position.y - 14, poi.name, { fontSize: "10px", color: "#fff2d7", backgroundColor: "#251d25cc", padding: { x: 2, y: 1 } }).setOrigin(0.5);
+      const label = this.add.text(position.x, position.y - 14 * homeScale, poi.name, { fontSize: "10px", color: "#fff2d7", backgroundColor: "#251d25cc", padding: { x: 2, y: 1 } }).setOrigin(0.5);
       world.add(label);
     }
-    this.townWorld = world;
-    this.updateTownPresentation(true);
-    this.add.text(8, 8, `灰灯町 — ${this.state.day}日目`, { fontSize: "12px", color: "#fff2d7", stroke: "#1b1620", strokeThickness: 1 });
-  }
-
-  private renderManualWorld(): void {
-    const map = this.manualWorldMap;
-    if (!map) return;
-    const tile = map.tileSize ?? 16;
-    const center = tile / 2;
-    const world = this.add.container(0, 0);
-    this.manualWorld = world;
-    type Placement = import("../game/types").RenderPlacement;
-    const addPlacement = (entry: Placement): void => {
-      const asset = craftpixAsset(entry.assetId);
-      if (!asset) return;
-      const x = entry.x * tile + center + (entry.offsetX ?? 0);
-      const y = entry.y * tile + center + (entry.offsetY ?? 0);
-      const animated = Boolean(entry.animationId && this.anims.exists(`craftpix.tile.${entry.animationId}`));
-      const object = animated ? this.add.sprite(x, y, asset.textureKey, asset.frame) : this.add.image(x, y, asset.textureKey, asset.frame);
-      object.setDisplaySize(tile, tile).setFlip(Boolean(entry.flipX), Boolean(entry.flipY)).setAngle(entry.rotation ?? 0);
-      if (animated) (object as Phaser.GameObjects.Sprite).play(`craftpix.tile.${entry.animationId}`);
-      world.add(object);
-    };
-    for (const layer of ["ground", "structure", "decoration"] as const) for (const entry of map.renderLayers?.[layer] ?? []) addPlacement(entry);
-    if (map.entrance) world.add(this.add.rectangle(map.entrance.x * tile + center, map.entrance.y * tile + center, tile - 4, tile - 4, 0x62d7a5, 0.36).setStrokeStyle(1, 0xb8ffe2));
-    if (map.stairs) world.add(this.add.rectangle(map.stairs.x * tile + center, map.stairs.y * tile + center, tile - 4, tile - 4, 0xd7a95d, 0.4).setStrokeStyle(1, 0xffe7a6));
-    const playerTexture = this.craftpixActorTexture(CRAFTPIX_PLAYER_ACTOR) ?? ASSET_MANIFEST.player.textureKey;
-    const player = this.add.sprite(this.state.townPos.x, this.state.townPos.y + tile / 2, playerTexture, 0).setName("manual-player");
-    if (!this.playCraftpixActor(player, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing)) player.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE).play(`player.idle-${this.playerFacing}`);
-    world.add(player);
-    this.manualWorldPlayer = player;
-    for (const layer of ["overhead", "light"] as const) for (const entry of map.renderLayers?.[layer] ?? []) addPlacement(entry);
-    this.updateManualWorldPresentation(true);
-    this.add.text(8, 8, `手作りマップ / ${map.width}×${map.height}`, { fontSize: "12px", color: "#fff2d7", stroke: "#1b1620", strokeThickness: 1 });
-  }
-
-  private updateManualWorldPresentation(immediate = false): void {
-    const map = this.manualWorldMap;
-    if (!map || !this.manualWorld) return;
-    const tile = map.tileSize ?? 16;
-    this.manualWorldPlayer?.setPosition(this.state.townPos.x, this.state.townPos.y + tile / 2);
-    const worldWidth = map.width * tile;
-    const worldHeight = map.height * tile;
-    const targetX = Phaser.Math.Clamp(this.state.townPos.x - MAP_W / 2, 0, Math.max(0, worldWidth - MAP_W));
-    const targetY = Phaser.Math.Clamp(this.state.townPos.y - MAP_H / 2, 0, Math.max(0, worldHeight - MAP_H));
-    const currentX = -this.manualWorld.x;
-    const currentY = -this.manualWorld.y;
-    this.manualWorld.setPosition(
-      -Math.round(immediate ? targetX : Phaser.Math.Linear(currentX, targetX, 0.18)),
-      -Math.round(immediate ? targetY : Phaser.Math.Linear(currentY, targetY, 0.18)),
-    );
+    this.homeWorld = world;
+    this.updateHomePresentation(true);
+    this.add.text(8, 8, `自宅兼店舗 — ${this.state.day}日目`, { fontSize: "12px", color: "#fff2d7", stroke: "#1b1620", strokeThickness: 1 });
   }
 
   private renderDungeon(): void {
@@ -1039,55 +966,39 @@ export class MerchantScene extends Phaser.Scene {
       const image = this.add.image(x * tile + center, y * tile + center, texture, frame).setDisplaySize(tile, tile).setAlpha(alpha);
       return add(image);
     };
-    const placeCraftpix = (assetId: string, x: number, y: number, alpha = 1, offsetX = 0, offsetY = 0, animationId?: string): Phaser.GameObjects.Image | Phaser.GameObjects.Sprite | undefined => {
-      const asset = craftpixAsset(assetId);
-      if (!asset) return undefined;
-      if (animationId && this.anims.exists(`craftpix.tile.${animationId}`)) {
-        const sprite = this.add.sprite(x * tile + center + offsetX, y * tile + center + offsetY, asset.textureKey, asset.frame)
-          .setDisplaySize(tile, tile)
-          .setAlpha(alpha);
-        sprite.play(`craftpix.tile.${animationId}`);
-        return add(sprite);
-      }
-      const image = this.add.image(x * tile + center + offsetX, y * tile + center + offsetY, asset.textureKey, asset.frame)
-        .setDisplaySize(tile, tile)
-        .setAlpha(alpha);
-      return add(image);
-    };
-    const renderCraftpixLayer = (layer: "ground" | "structure" | "decoration" | "overhead" | "light"): void => {
-      for (const entry of run.map.renderLayers?.[layer] ?? []) {
-        const image = placeCraftpix(entry.assetId, entry.x, entry.y, 1, entry.offsetX, entry.offsetY, entry.animationId);
-        if (!image) continue;
-        image.setFlip(Boolean(entry.flipX), Boolean(entry.flipY));
-        image.setAngle(entry.rotation ?? 0);
-      }
-    };
-
-    if (run.map.visualTheme === "craftpix-showcase") {
-      add(this.add.image(run.map.width * center, run.map.height * center, ASSET_MANIFEST.craftpixDungeon.baseTextureKey).setOrigin(0.5));
-    } else if (run.map.visualTheme === "craftpix-procedural" || run.map.visualTheme === "craftpix-manual") {
-      renderCraftpixLayer("ground");
-      renderCraftpixLayer("structure");
-      renderCraftpixLayer("decoration");
-    } else {
-      const dungeonRow = dungeonTerrainBankForFloor(run.floor);
-      for (let y = 0; y < run.map.height; y += 1) {
-        for (let x = 0; x < run.map.width; x += 1) {
-          let mask = 0;
-          if (run.map.tiles[y - 1]?.[x] === 0) mask |= CARDINAL_MASK_BITS.north;
-          if (run.map.tiles[y]?.[x + 1] === 0) mask |= CARDINAL_MASK_BITS.east;
-          if (run.map.tiles[y + 1]?.[x] === 0) mask |= CARDINAL_MASK_BITS.south;
-          if (run.map.tiles[y]?.[x - 1] === 0) mask |= CARDINAL_MASK_BITS.west;
-          const terrainFrame = terrainBankFrame(dungeonRow, mask).frame;
-          place(x, y, ASSET_MANIFEST.dungeonTiles.textureKey, terrainFrame);
-          if (run.map.tiles[y]![x] === 1) place(x, y, ASSET_MANIFEST.dungeonWalls.textureKey, this.dungeonWallFrame(x, y));
+    {
+      const authored = run.map.authoredLayers;
+      const hasAuthored = authored && Object.values(authored).some((values) => values?.some(Boolean));
+      if (hasAuthored) {
+        for (let y = 0; y < run.map.height; y += 1) for (let x = 0; x < run.map.width; x += 1) {
+          const index = y * run.map.width + x;
+          for (const name of ["ground", "structure", "decoration"] as const) {
+            const cell = authored[name]?.[index];
+            if (cell) {
+              const resolved = resolveMapAssetFrame(cell.assetId, cell.frame, (key) => this.textures.exists(key));
+              place(x, y, resolved.textureKey, resolved.frame);
+            }
+          }
+        }
+      } else {
+        for (let y = 0; y < run.map.height; y += 1) for (let x = 0; x < run.map.width; x += 1) {
+          const terrain = run.map.tiles[y]?.[x] === 1 ? "dungeon.wall" : "dungeon.floor";
+          place(x, y, terrain === "dungeon.wall" ? ASSET_MANIFEST.mapTiles.dungeonWall.textureKey : ASSET_MANIFEST.mapTiles.dungeonFloor.textureKey, 0);
         }
       }
     }
 
-    if (run.map.visualTheme !== "craftpix-procedural" && run.map.visualTheme !== "craftpix-manual") {
-      place(run.map.stairs.x, run.map.stairs.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.stairs);
-      place(run.map.returnStairs.x, run.map.returnStairs.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.returnStairs);
+    {
+      const markerAt = (position: Vec, visual: { assetId: string; frame: number } | undefined, fallbackFrame: number): void => {
+        if (!visual) {
+          place(position.x, position.y, "object.dungeon", fallbackFrame);
+          return;
+        }
+        const resolved = resolveMapAssetFrame(visual.assetId, visual.frame, (key) => this.textures.exists(key));
+        place(position.x, position.y, resolved.textureKey, resolved.frame);
+      };
+      if (run.map.stairsDown) markerAt(run.map.stairsDown, run.map.stairsDownVisual, DUNGEON_OBJECT_FRAMES.stairs);
+      markerAt(run.map.stairsUp, run.map.stairsUpVisual, DUNGEON_OBJECT_FRAMES.returnStairs);
       if (run.map.specialRoom) place(run.map.specialRoom.x, run.map.specialRoom.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.torch);
     }
     for (const entry of run.items) {
@@ -1095,17 +1006,14 @@ export class MerchantScene extends Phaser.Scene {
       place(entry.pos.x, entry.pos.y, ASSET_MANIFEST.item.textureKey, frame);
     }
     for (const chest of run.chests) {
-      if (run.map.visualTheme === "craftpix-procedural" || run.map.visualTheme === "craftpix-manual") placeCraftpix("chest", chest.pos.x, chest.pos.y);
-      else place(chest.pos.x, chest.pos.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.chest);
+      place(chest.pos.x, chest.pos.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.chest);
     }
     for (const trap of run.traps) {
       const revealed = same(trap, run.player) || scoutRevealsTrap(this.state, trap);
-      if (revealed && (run.map.visualTheme === "craftpix-procedural" || run.map.visualTheme === "craftpix-manual")) placeCraftpix("crack", trap.x, trap.y, 0.72);
-      else if (revealed) place(trap.x, trap.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.trap, 0.72);
+      if (revealed) place(trap.x, trap.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.trap, 0.72);
     }
     for (const body of run.bodies) {
-      if (run.map.visualTheme === "craftpix-procedural" || run.map.visualTheme === "craftpix-manual") placeCraftpix("crack", body.pos.x, body.pos.y, 0.85);
-      else place(body.pos.x, body.pos.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.bones);
+      place(body.pos.x, body.pos.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.bones);
     }
     for (const enemy of run.enemies) {
       const actorDefinition = this.craftpixEnemyActor(enemy.id);
@@ -1127,12 +1035,6 @@ export class MerchantScene extends Phaser.Scene {
     const player = this.add.sprite(run.player.x * tile + center, run.player.y * tile + tile, playerTexture, 0).setName("actor:player");
     if (!this.playCraftpixActor(player, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing)) player.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE).play(`player.idle-${this.playerFacing}`);
     add(player);
-    if (run.map.visualTheme === "craftpix-showcase") {
-      add(this.add.image(run.map.width * center, run.map.height * center, ASSET_MANIFEST.craftpixDungeon.foregroundTextureKey).setOrigin(0.5));
-    } else if (run.map.visualTheme === "craftpix-procedural" || run.map.visualTheme === "craftpix-manual") {
-      renderCraftpixLayer("overhead");
-      renderCraftpixLayer("light");
-    }
     this.dungeonMaskShape = this.make.graphics({ x: 0, y: 0 });
     this.dungeonMaskShape.fillStyle(0xffffff).fillRect(0, 0, MAP_W, MAP_H);
     world.setMask(this.dungeonMaskShape.createGeometryMask());
@@ -1191,27 +1093,39 @@ export class MerchantScene extends Phaser.Scene {
     this.dungeonWorld.setPosition(-Math.round(targetX), -Math.round(targetY));
   }
 
-  private dungeonWallFrame(x: number, y: number): number {
-    const map = this.state.run?.map;
-    if (!map) return 0;
-    const solid = (offsetX: number, offsetY: number): boolean => map.tiles[y + offsetY]?.[x + offsetX] === 1;
-    const north = solid(0, -1);
-    const east = solid(1, 0);
-    const south = solid(0, 1);
-    const west = solid(-1, 0);
-    let id: DungeonWallFrameId = "center";
-    if (!north && !east) id = "outerNorthEast";
-    else if (!east && !south) id = "outerSouthEast";
-    else if (!south && !west) id = "outerSouthWest";
-    else if (!west && !north) id = "outerNorthWest";
-    else if (!north) id = "edgeNorth";
-    else if (!east) id = "edgeEast";
-    else if (!south) id = "edgeSouth";
-    else if (!west) id = "edgeWest";
-    else if ((x * 13 + y * 7) % 11 === 0) id = "cracked";
-    const run = this.state.run;
-    const bank = run && (run.floor >= 4 || run.map.specialRoom) ? "tomb" : "normal";
-    return dungeonWallFrameAddress(bank, id).frame;
+  private homePoints(): HomePoint[] {
+    const markerPosition = (kind: "homeSpawn" | "dungeonEntrance" | "homeStorage" | "homePreparation" | "homeVisitors", fallback: { x: number; y: number }) => {
+      const marker = this.homeMap.markers.find((candidate) => candidate.kind === kind);
+      return marker ? { x: marker.x, y: marker.y } : fallback;
+    };
+    const entrance = markerPosition("dungeonEntrance", { x: 16, y: 2 });
+    const homeSpawn = markerPosition("homeSpawn", HOME_SPAWN);
+    const storage = markerPosition("homeStorage", HOME_POI.storage);
+    const preparation = markerPosition("homePreparation", HOME_POI.preparation);
+    const visitors = markerPosition("homeVisitors", HOME_POI.visitors);
+    const occupied = [
+      homeSpawn,
+      storage,
+      preparation,
+      visitors,
+      entrance,
+    ];
+    const candidates: Array<{ x: number; y: number }> = [];
+    for (let y = 1; y < this.homeMap.height - 1; y += 1) for (let x = 1; x < this.homeMap.width - 1; x += 1) candidates.push({ x, y });
+    const tile = this.homeMap.tileSize;
+    const customers = this.state.customers.map((customer) => {
+      const pos = candidates.find((candidate) => !occupied.some((point) => point.x === candidate.x && point.y === candidate.y) && isMapPositionWalkable(this.homeMap, { x: candidate.x * tile + tile / 2, y: candidate.y * tile + tile / 2 }, Math.max(2, tile / 4))) ?? visitors;
+      occupied.push(pos);
+      return {
+      id: `customer-${customer.id}`,
+      name: customer.name,
+      kind: "customer" as const,
+      customerId: customer.id,
+      pos,
+      };
+    });
+    const points = HOME_POINTS.map((point) => point.id === "entrance" ? { ...point, pos: entrance } : point.id === "shop" ? { ...point, pos: storage } : point.id === "guild" ? { ...point, pos: preparation } : point.id === "visitors" ? { ...point, pos: visitors } : point);
+    return [...points, ...customers];
   }
 
   private enemyTextureKey(enemyId: string): string {
@@ -1227,123 +1141,80 @@ export class MerchantScene extends Phaser.Scene {
     return actor;
   }
 
-  private updateTownPresentation(immediate = false): void {
-    if (!this.townWorld || !this.townPlayer) return;
-    this.townPlayer.setPosition(this.state.townPos.x, this.state.townPos.y + TOWN_RENDER_TILE / 2);
-    const targetX = Phaser.Math.Clamp(this.state.townPos.x - MAP_W / 2, 0, TOWN_WORLD_WIDTH - MAP_W);
-    const targetY = Phaser.Math.Clamp(this.state.townPos.y - MAP_H / 2, 0, TOWN_WORLD_HEIGHT - MAP_H);
-    const currentX = -this.townWorld.x;
-    const currentY = -this.townWorld.y;
+  private updateHomePresentation(immediate = false): void {
+    if (!this.homeWorld || !this.homePlayer) return;
+    this.homePlayer.setPosition(this.state.homePos.x, this.state.homePos.y + this.homeMap.tileSize / 2);
+    const targetX = Phaser.Math.Clamp(this.state.homePos.x - MAP_W / 2, 0, Math.max(0, this.homeMap.width * this.homeMap.tileSize - MAP_W));
+    const targetY = Phaser.Math.Clamp(this.state.homePos.y - MAP_H / 2, 0, Math.max(0, this.homeMap.height * this.homeMap.tileSize - MAP_H));
+    const currentX = -this.homeWorld.x;
+    const currentY = -this.homeWorld.y;
     const nextX = -Math.round(immediate ? targetX : Phaser.Math.Linear(currentX, targetX, 0.18));
     const nextY = -Math.round(immediate ? targetY : Phaser.Math.Linear(currentY, targetY, 0.18));
-    this.townWorld.setPosition(nextX, nextY);
-    this.townBackdrop?.setPosition(nextX, nextY);
+    this.homeWorld.setPosition(nextX, nextY);
+    this.homeBackdrop?.setPosition(nextX, nextY);
   }
 
-  /**
-   * 町の地面はイラスト1枚を24pxで切り出したタイルセット。恒等インデックスの
-   * タイルマップ1層として敷き、建物・柵・木もこの絵に含まれる。
-   *
-   * TilemapLayer は Container の変形を受け継がないため、ワールドコンテナには
-   * 入れず `updateTownPresentation` で同じスクロール量を直接与える。
-   */
-  private drawTownBackdrop(): void {
-    const map = this.make.tilemap({ data: TOWN_TILE_INDICES, tileWidth: TOWN_TILE, tileHeight: TOWN_TILE });
-    const tileset = map.addTilesetImage("town-map", ASSET_MANIFEST.townMap.textureKey, TOWN_TILE, TOWN_TILE);
-    if (!tileset) throw new Error("町マップのタイルセットを作成できませんでした");
-    const layer = map.createLayer(0, tileset, 0, 0);
-    if (!layer) throw new Error("町マップのレイヤーを作成できませんでした");
-    this.townBackdrop = layer;
+  /** 家の手動レイヤーを、保存されたフレーム番号のまま描画する。 */
+  private drawHomeBackdrop(): void {
+    const map = this.homeMap;
+    const world = this.add.container(0, 0);
+    const authored = map.layers;
+    const hasAuthored = authored && Object.values(authored).some((values) => values?.some(Boolean));
+    for (let y = 0; y < map.height; y += 1) for (let x = 0; x < map.width; x += 1) {
+      const index = y * map.width + x;
+      if (hasAuthored) for (const name of ["ground", "structure", "decoration"] as const) {
+        const cell = authored[name]?.[index];
+        if (cell) {
+          const resolved = resolveMapAssetFrame(cell.assetId, cell.frame, (key) => this.textures.exists(key));
+          world.add(this.add.image(x * map.tileSize + map.tileSize / 2, y * map.tileSize + map.tileSize / 2, resolved.textureKey, resolved.frame).setDisplaySize(map.tileSize, map.tileSize));
+        }
+      }
+      else {
+        const id = map.terrain[index];
+        if (id) {
+          const legacyTexture = id === "home.wall" ? ASSET_MANIFEST.mapTiles.homeWall.textureKey : ASSET_MANIFEST.mapTiles.homeFloor.textureKey;
+          world.add(this.add.image(x * map.tileSize + map.tileSize / 2, y * map.tileSize + map.tileSize / 2, legacyTexture, 0).setDisplaySize(map.tileSize, map.tileSize));
+        }
+      }
+    }
+    this.homeBackdrop = world as unknown as Phaser.Tilemaps.TilemapLayer;
   }
 
-  private playTownPlayerMotion(horizontal: number, vertical: number): void {
-    if (!this.townPlayer) return;
+  private playHomePlayerMotion(horizontal: number, vertical: number): void {
+    if (!this.homePlayer) return;
     const direction = (Math.abs(horizontal) > Math.abs(vertical)
       ? horizontal < 0 ? "player.walk-left" : "player.walk-right"
       : vertical < 0 ? "player.walk-up" : "player.walk-down");
     const facing = direction.endsWith("left") ? "left" : direction.endsWith("right") ? "right" : direction.endsWith("up") ? "up" : "down";
-    if (!this.playCraftpixActor(this.townPlayer, CRAFTPIX_PLAYER_ACTOR, "walk", facing)) {
-      if (this.townPlayer.anims.currentAnim?.key !== direction) this.townPlayer.play(direction, true);
+    if (!this.playCraftpixActor(this.homePlayer, CRAFTPIX_PLAYER_ACTOR, "walk", facing, true, this.homeScale())) {
+      if (this.homePlayer.anims.currentAnim?.key !== direction) this.homePlayer.play(direction, true);
     }
   }
 
-  /** Free movement for a town/interior draft. The collision grid and hard
-   * edges are authoritative; the artwork is only a visual layer. */
-  private updateManualWorld(): void {
-    const map = this.manualWorldMap;
-    if (!map) return;
-    const tile = map.tileSize ?? 16;
-    const horizontal = Number(this.keys.right.isDown || this.keys.d.isDown) - Number(this.keys.left.isDown || this.keys.a.isDown);
-    const vertical = Number(this.keys.down.isDown || this.keys.s.isDown) - Number(this.keys.up.isDown || this.keys.w.isDown);
-    let moved = false;
-    if (horizontal !== 0 || vertical !== 0) {
-      const length = Math.hypot(horizontal, vertical);
-      const step = 2.4;
-      const candidate = {
-        x: this.state.townPos.x + (horizontal / length) * step,
-        y: this.state.townPos.y + (vertical / length) * step,
-      };
-      const currentCell = { x: Math.floor(this.state.townPos.x / tile), y: Math.floor(this.state.townPos.y / tile) };
-      const nextCell = { x: Math.floor(candidate.x / tile), y: Math.floor(candidate.y / tile) };
-      const legal = nextCell.x === currentCell.x && nextCell.y === currentCell.y
-        ? true
-        : canTraverse(map, currentCell, nextCell);
-      if (legal) {
-        this.state.townPos = {
-          x: Phaser.Math.Clamp(candidate.x, tile / 2, map.width * tile - tile / 2),
-          y: Phaser.Math.Clamp(candidate.y, tile / 2, map.height * tile - tile / 2),
-        };
-        moved = true;
-      }
-      this.playerFacing = Math.abs(horizontal) > Math.abs(vertical)
-        ? horizontal < 0 ? "left" : "right"
-        : vertical < 0 ? "up" : "down";
-    }
-    const interact = this.just("enter") || this.just("space");
-    if (interact) {
-      /*
-      if (same(cell, map.stairs)) this.state.message = "荳九ｊ髫取ｮｵ縺ｮ菴咲ｽｮ縺ｧ縺吶・;
-      else if (same(cell, map.entrance)) this.state.message = "蜈･蜿｣縺ｮ菴咲ｽｮ縺ｧ縺吶・;
-      else this.state.message = "縺薙・蝨ｰ逕ｺ縺ｮ邱上ｒ豕慕ｴ九〒縺阪∪縺吶・;
-    }
-      */
-      this.state.message = "You can explore this authored map.";
-    }
-    if (this.just("i")) this.openInventory();
-    if (this.just("l")) this.openLedger();
-    if (this.just("h")) this.openHelp();
-    if (moved) {
-      if (this.manualWorldPlayer) this.playCraftpixActor(this.manualWorldPlayer, CRAFTPIX_PLAYER_ACTOR, "walk", this.playerFacing);
-      this.updateManualWorldPresentation();
-      this.saveAuto();
-    } else if (this.manualWorldPlayer) {
-      this.playCraftpixActor(this.manualWorldPlayer, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing);
-    }
-    if (interact || this.just("i") || this.just("l") || this.just("h")) this.render();
-  }
-
-  private drawTownNpcs(world: Phaser.GameObjects.Container): void {
-    TOWN_POINTS.forEach((poi, index) => {
+  private drawHomeNpcs(world: Phaser.GameObjects.Container): void {
+    this.homePoints().forEach((poi, index) => {
+      if (poi.kind === "entrance" || poi.kind === "shop" || poi.kind === "guild" || poi.kind === "visitors") return;
       const center = this.poiPosition(poi);
+      const homeScale = this.homeScale();
       const actor = NPC_ASSET_VARIANTS[index % NPC_ASSET_VARIANTS.length]!;
-      const sprite = this.add.sprite(center.x, center.y + TOWN_RENDER_TILE / 2, actor.textureKey, 0).setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE);
+      const sprite = this.add.sprite(center.x, center.y + this.homeMap.tileSize / 2, actor.textureKey, 0).setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE * homeScale);
       sprite.play(`${actor.textureKey}.idle-down`);
       world.add(sprite);
       const staticResident = poi.kind === "customer" || poi.kind === "entrance";
-      this.townNpcs.push({
+      this.homeNpcs.push({
         sprite,
         textureKey: actor.textureKey,
-        center: { x: center.x, y: center.y + TOWN_RENDER_TILE / 2 },
-        radius: staticResident ? { x: 6, y: 4 } : { x: 18, y: 11 },
+        center: { x: center.x, y: center.y + this.homeMap.tileSize / 2 },
+        radius: staticResident ? { x: 6 * homeScale, y: 4 * homeScale } : { x: 18 * homeScale, y: 11 * homeScale },
         phase: index * 1.71,
         facing: "down",
       });
     });
   }
 
-  private updateTownNpcs(delta: number): void {
+  private updateHomeNpcs(delta: number): void {
     const seconds = this.time.now / 1000;
-    for (const npc of this.townNpcs) {
+    for (const npc of this.homeNpcs) {
       const targetX = npc.center.x + Math.sin(seconds * 0.7 + npc.phase) * npc.radius.x;
       const targetY = npc.center.y + Math.cos(seconds * 0.53 + npc.phase) * npc.radius.y;
       const previousX = npc.sprite.x;
@@ -1379,7 +1250,7 @@ export class MerchantScene extends Phaser.Scene {
     quests.forEach((quest, index) => this.add.text(PANEL_X + 8, 151 + index * 24, quest.title, { fontSize: "10px", color: "#eee5d1", wordWrap: { width: 110 } }));
     this.add.rectangle(MAP_W / 2, 323, MAP_W, 72, 0x17131e).setStrokeStyle(1, 0x78624b);
     this.add.text(10, 299, this.state.message, { fontSize: "11px", color: "#f6ecd5", lineSpacing: 2, wordWrap: { width: 485, useAdvancedWrap: true } });
-    const hint = this.state.location === "town" ? "Enter: 話す  Esc:メニュー  Q:依頼  H:操作" : "Enter: 調べる  Space:行動  Z:煙玉  R:帰還  Esc:メニュー";
+    const hint = this.state.location === "home" ? "Enter: 話す  Esc:メニュー  Q:依頼  H:操作" : "Enter: 調べる  Space:行動  Z:煙玉  R:帰還  Esc:メニュー";
     this.add.text(10, 340, hint, { fontSize: "10px", color: "#ad9eb1" });
   }
 

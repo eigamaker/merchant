@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   acceptQuest,
+  ascend,
   beginExpedition,
   consultRing,
   createItem,
@@ -14,10 +15,11 @@ import {
   movePlayer,
   reportQuest,
   resolveRing,
-  returnToTown,
+  returnHome,
   sellItem,
   shoveEnemy,
   tryPickup,
+  tryStairs,
   useSmokeBomb,
   waitTurn,
 } from "./engine";
@@ -25,7 +27,7 @@ import { migrateSaveState } from "./save";
 
 function reachableTiles(map: ReturnType<typeof generateDungeon>): Set<string> {
   const visited = new Set<string>();
-  const queue = [map.entrance];
+  const queue = [map.stairsUp];
   while (queue.length > 0) {
     const current = queue.shift();
     if (!current) continue;
@@ -39,6 +41,33 @@ function reachableTiles(map: ReturnType<typeof generateDungeon>): Set<string> {
   }
   return visited;
 }
+
+describe("canonical dungeon stairs", () => {
+  it("returns to home from the first floor's up stairs", () => {
+    const state = createNewGame();
+    beginExpedition(state);
+    state.run!.player = { ...state.run!.map.stairsUp };
+    tryStairs(state);
+    expect(state.location).toBe("home");
+    expect(state.run).toBeUndefined();
+    expect(state.homePos).toEqual({ x: 264, y: 40 });
+  });
+
+  it("snapshots a floor and restores defeated enemies after travelling back", () => {
+    const state = createNewGame();
+    beginExpedition(state);
+    const first = state.run!;
+    first.enemies[0]!.hp = 1;
+    first.turn = 7;
+    descend(state);
+    expect(state.run?.floor).toBe(2);
+    expect(state.run?.floorStates?.["1"]?.turn).toBe(7);
+    ascend(state);
+    expect(state.run?.floor).toBe(1);
+    expect(state.run?.enemies[0]?.hp).toBe(1);
+    expect(state.run?.turn).toBe(7);
+  });
+});
 
 describe("dungeon generator", () => {
   it("creates a town-sized dungeon with a useful amount of walkable space", () => {
@@ -57,7 +86,7 @@ describe("dungeon generator", () => {
     for (let seed = 1; seed <= 120; seed += 1) {
       const map = generateDungeon(seed, (seed % 8) + 1, seed % 3 === 0);
       const reachable = reachableTiles(map);
-      expect(reachable.has(`${map.stairs.x},${map.stairs.y}`)).toBe(true);
+      expect(reachable.has(`${map.stairsDown?.x},${map.stairsDown?.y}`)).toBe(true);
       if (map.specialRoom) expect(reachable.has(`${map.specialRoom.x},${map.specialRoom.y}`)).toBe(true);
     }
   });
@@ -70,7 +99,7 @@ describe("dungeon generator", () => {
       const run = state.run;
       if (!run) throw new Error("run missing");
       signatures.add(`${run.seed}:${run.map.tiles.flat().join("")}`);
-      returnToTown(state, false);
+      returnHome(state, false);
     }
     expect(state.expeditionSerial).toBe(30);
     expect(signatures.size).toBe(30);
@@ -82,8 +111,8 @@ describe("dungeon generator", () => {
     const run = state.run;
     if (!run) throw new Error("run missing");
     const positions = [
-      run.map.entrance,
-      run.map.stairs,
+      run.map.stairsUp,
+      run.map.stairsDown!,
       ...run.enemies.map((enemy) => enemy.pos),
       ...run.items.map((item) => item.pos),
       ...run.chests.map((chest) => chest.pos),
@@ -120,7 +149,7 @@ describe("merchant story loop", () => {
     expect(state.archive).toContain(sword);
     expect(state.events.some((event) => event.id === "black-sword-incident")).toBe(true);
 
-    returnToTown(state, false);
+    returnHome(state, false);
     expect(state.story.blackSword).toBe("incident");
     expect(state.quests.find((quest) => quest.id === "black-tomb")?.status).toBe("active");
   });
@@ -139,7 +168,7 @@ describe("merchant story loop", () => {
     if (!sword || !ordinary) throw new Error("test setup failed");
     state.inventory.push(sword, ordinary);
 
-    returnToTown(state, true);
+    returnHome(state, true);
 
     expect(state.inventory).toContain(sword);
     expect(state.inventory).not.toContain(ordinary);
@@ -275,7 +304,7 @@ describe("automatic guards", () => {
     descend(state);
     descend(state);
 
-    returnToTown(state, false);
+    returnHome(state, false);
 
     const record = state.guards.find((entry) => entry.id === "rolf")!;
     expect(record.relation).toBe(1);
@@ -337,7 +366,7 @@ describe("inventory choices and early story", () => {
     expect(first.loot.map((item) => item.definitionId).sort()).toEqual(["adventurer-badge", "old-ring"]);
     const firstSeed = state.run!.seed;
 
-    returnToTown(state, false);
+    returnHome(state, false);
     beginExpedition(state);
     descend(state);
     const second = state.run!.bodies.find((body) => body.id === "aron")!;
@@ -440,7 +469,7 @@ describe("save migration", () => {
 
     const migrated = migrateSaveState(legacy as never);
 
-    expect(migrated.version).toBe(3);
+    expect(migrated.version).toBe(4);
     expect(migrated.guildReputation).toBe(0);
     expect(migrated.guards).toHaveLength(2);
     expect(migrated.story.early.stage).toBe("lostSword");

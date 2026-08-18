@@ -1,8 +1,6 @@
 # Dungeon Curio Merchant — Web edition
 
-このリポジトリはWeb版専用です。Unity版は別リポジトリ `C:\development\merchan-Unity` で管理します。
-
-ダンジョン探索で一点物の珍品を持ち帰り、町の人々との取引と調査を通じて価値と由来を解き明かす、PCブラウザ向けの2Dターン制RPGです。
+Web版専用のPhaser/Viteゲームです。主人公の通常ロケーションは自宅兼店舗（home）とダンジョン（dungeon）です。
 
 ## 起動
 
@@ -11,35 +9,28 @@ npm install
 npm run dev
 ```
 
-表示された `http://127.0.0.1:5173/` をブラウザで開きます。
-
 ## 操作
 
-- 矢印キー / WASD: 移動。ダンジョンで敵方向へ入力した場合は向きだけ変える
-- Enter: 町で会話、ダンジョンで足元の拾得・宝箱・遺体・階段を実行
-- Space: 町で会話、ダンジョンで行動メニューを開く
-- Esc: システムメニュー／メニューを閉じる
-- R: ダンジョンで帰還石を使う
-- Z: 煙玉で近くの敵の追跡を断つ
-- I: 持ち物
-- L: 商人の記録
-- Q: 冒険者ギルドの依頼一覧
-- F1 / F2 / F3: 町で手動保存
+- 矢印キー / WASD: 移動
+- Enter / Space: 会話・拾得・階段などの操作
+- Esc: メニューを閉じる
+- R: 帰還石で家へ帰還
+- Z: 煙玉
+- I / L / Q: 持ち物・記録・依頼
 - H: 操作一覧
 
-## 現在実装されているMVP
+## マップと素材
 
-- 60×45タイルの町。1枚の俯瞰イラストを24pxタイルへ切り出して敷き、9施設と顧客を配置
-- 入場ごとに変化する48×36タイルのダンジョン、ターン制の敵、宝箱、罠、遺体、容量制の持ち物
-- 銀露草、落とした剣、帰らない冒険者、古びた指輪までの序章依頼
-- ダメージを与えない押し返しと、ロルフ／ミナの自動護衛
-- 鑑定、展示、買い手ごとの価格差、1回の反提案、関係値
-- 黒い長剣の発見、売却、売却後イベント、墓所調査、真名判明のストーリー
-- 商品履歴、IndexedDBの自動保存1枠・手動保存3枠
+家とダンジョンは `src/game/mapTiles.ts` のタイル登録と、reviewエディターで保存した手動レイヤーから描画します。床は16×16pxの単一画像、壁は16×16pxセルを4×4に並べたシートです。壁のフレームは隣接セルで変形せず、配置時の選択を保持します。通行可否はマップのcollisionレイヤーで編集します。
 
-ピクセルアートは `public/assets/` から読み込みます。論理ID、フレーム寸法、セル座標は `src/game/assets.ts` と `src/game/assetFrames.ts` が正です。町の当たり判定・施設配置・入口は `src/game/townLayout.json` が正で、`public/assets/preview/town-map-collision.png` で目視確認できます。
+マップ編集画面は開発サーバーの [`/review.html`](review.html) です。`home` は1枚、`dungeon` は階層ごとに新規・複製して管理します。
 
-ドキュメントの入口は [`docs/README.md`](docs/README.md) です。固定アセット契約、生成AI向け指示、現行パイプラインを用途別に分けています。
+- `public/assets/map-tiles/home-floor.png`
+- `public/assets/map-tiles/home-wall.png`
+- `public/assets/map-tiles/dungeon-floor.png`
+- `public/assets/map-tiles/dungeon-wall.png`
+
+キャラクター、UI、アイテム、階段・宝箱・罠の素材は `public/assets/actors/`、`public/assets/ui/`、`public/assets/objects/` に保持します。詳細は [`docs/README.md`](docs/README.md) を参照してください。
 
 ## 検証
 

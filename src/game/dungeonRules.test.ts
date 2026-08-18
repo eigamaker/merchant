@@ -11,9 +11,8 @@ function map(): DungeonMap {
     hardEdges: [],
     ledgeEdges: [],
     traversalLinks: [],
-    entrance: { x: 0, y: 0 },
-    stairs: { x: 1, y: 1 },
-    returnStairs: { x: 0, y: 0 },
+    stairsUp: { x: 0, y: 0 },
+    stairsDown: { x: 1, y: 1 },
   };
 }
 
@@ -46,6 +45,6 @@ describe("semantic dungeon movement", () => {
     dungeon.ledgeEdges = [{ x: 0, y: 0, direction: "south" }];
     dungeon.tiles[1]![1] = 1;
     expect(canTraverse(dungeon, { x: 0, y: 0 }, { x: 0, y: 1 })).toBe(false);
-    expect(reachableCells(dungeon, dungeon.entrance).has("0,1")).toBe(false);
+    expect(reachableCells(dungeon, dungeon.stairsUp).has("0,1")).toBe(false);
   });
 });

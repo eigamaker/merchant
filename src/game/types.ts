@@ -1,6 +1,7 @@
 export type ItemCategory = "weapon" | "arcane" | "relic" | "gem" | "book" | "art" | "material";
 export type KnowledgeLevel = "unknown" | "suspected" | "identified";
-export type Location = "town" | "interior" | "dungeon";
+export type MapKind = "home" | "dungeon";
+export type Location = MapKind;
 export type QuestStatus = "locked" | "available" | "active" | "readyToReport" | "complete";
 export type Facing = "up" | "down" | "left" | "right";
 
@@ -130,41 +131,11 @@ export interface TraversalLink {
   footprint: Vec[];
 }
 
-export type DungeonRenderLayer = "ground" | "structure" | "decoration" | "overhead" | "light";
-
-/** A rendered Craftpix stamp.  It contains no gameplay rule: gameplay stays
- * in tiles/heights/edges/traversalLinks. */
-export interface RenderPlacement {
-  assetId: string;
-  /** Optional Tiled animation clip; assetId remains the representative frame. */
-  animationId?: string;
-  x: number;
-  y: number;
-  layer: DungeonRenderLayer;
-  flipX?: boolean;
-  flipY?: boolean;
-  rotation?: 0 | 90 | 180 | 270;
-  offsetX?: number;
-  offsetY?: number;
-}
-
-export interface DungeonGenerationMetadata {
-  algorithm: "craftpix-hybrid-v1" | "craftpix-ports-v2";
-  seed: number;
-  floor: number;
-  templateLibraryVersion: number;
-  catalogVersion: number;
-  fallbackReason?: string;
-  blueprintSummary: { roomCount: number; branchCount: number; loopCount: number };
-}
-
 export interface DungeonMap {
   width: number;
   height: number;
   /** Rendering unit for this map; legacy generated maps omit it and use 24px. */
   tileSize?: number;
-  /** Optional art theme; omitted maps use the existing generated tile renderer. */
-  visualTheme?: "craftpix-showcase" | "craftpix-procedural" | "craftpix-manual";
   tiles: number[][];
   /** v2 adds explicit traversal semantics while preserving legacy `tiles`. */
   formatVersion?: 2;
@@ -172,12 +143,33 @@ export interface DungeonMap {
   hardEdges?: CanonicalEdge[];
   ledgeEdges?: CanonicalEdge[];
   traversalLinks?: TraversalLink[];
-  renderLayers?: Partial<Record<DungeonRenderLayer, RenderPlacement[]>>;
-  generation?: DungeonGenerationMetadata;
-  entrance: Vec;
-  stairs: Vec;
-  returnStairs: Vec;
+  /** Canonical inter-floor connectors. */
+  stairsUp: Vec;
+  stairsDown?: Vec;
+  stairsUpVisual?: { assetId: string; frame: number };
+  stairsDownVisual?: { assetId: string; frame: number };
   specialRoom?: Vec;
+  /** Authored visual layers from the manual home/dungeon editor.  The
+   * numeric collision grid above remains the movement source of truth. */
+  authoredLayers?: Partial<Record<"ground" | "structure" | "decoration", Array<{ assetId: string; frame: number } | null>>>;
+}
+
+/** Read only at the save boundary. Runtime maps never emit these fields. */
+export type LegacyDungeonMap = DungeonMap & { entrance?: Vec; stairs?: Vec; returnStairs?: Vec };
+
+/** A complete mutable floor state, persisted before every floor transition. */
+export interface DungeonFloorSnapshot {
+  floor: number;
+  map: DungeonMap;
+  player: Vec;
+  enemies: Enemy[];
+  items: GroundItem[];
+  chests: DungeonChest[];
+  traps: Vec[];
+  bodies: DungeonBody[];
+  guard?: ActiveGuard;
+  shoveCooldown: number;
+  turn: number;
 }
 
 export interface DungeonRun {
@@ -194,6 +186,8 @@ export interface DungeonRun {
   shoveCooldown: number;
   highestFloor: number;
   turn: number;
+  /** Keyed by floor number. The current floor is stored just before moving away. */
+  floorStates: Record<string, DungeonFloorSnapshot>;
 }
 
 export interface Customer {
@@ -229,7 +223,7 @@ export interface TimedEvent {
 }
 
 export interface GameState {
-  version: 3;
+  version: 4;
   day: number;
   gold: number;
   hp: number;
@@ -237,11 +231,9 @@ export interface GameState {
   returnStones: number;
   smokeBombs: number;
   location: Location;
-  townPos: Vec;
-  /** Authored free-movement map currently shown in town/interior mode. */
-  worldMapId?: string;
-  /** 固定町マップの配置版。旧セーブを安全な初期位置へ移行するために使う。 */
-  townMapRevision: number;
+  homePos: Vec;
+  /** Legacy editor revision retained only for save migration compatibility. */
+  /** 固定家マップの配置版。旧セーブを安全な初期位置へ移行するために使う。 */
   /** Number of expeditions started. Persisted so a new visit never reuses the previous seed. */
   expeditionSerial: number;
   guildReputation: number;

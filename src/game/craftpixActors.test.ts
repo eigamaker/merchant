@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import { CRAFTPIX_ENEMY_ACTORS, CRAFTPIX_ENEMY_POOLS, CRAFTPIX_NPC_ACTORS, CRAFTPIX_PLAYER_ACTOR, actorFrame } from "./craftpixActors";
-import { CRAFTPIX_ENVIRONMENT_SHEETS } from "./craftpixEnvironment";
 
 describe("Craftpix actor catalog", () => {
   it("defines the supplied 32px directional player and all supplied enemy variants", () => {
@@ -23,12 +22,4 @@ describe("Craftpix actor catalog", () => {
     expect(actorFrame(walk, "up", walk.columns - 1)).toBe(walk.columns * 4 - 1);
   });
 
-  it("exposes grid-aligned environment sheets from the imported building packs", () => {
-    expect(Object.keys(CRAFTPIX_ENVIRONMENT_SHEETS).length).toBeGreaterThan(20);
-    for (const sheet of Object.values(CRAFTPIX_ENVIRONMENT_SHEETS)) {
-      expect(sheet.columns).toBeGreaterThan(0);
-      expect(sheet.frames).toBeGreaterThan(sheet.columns);
-      expect(sheet.path).toMatch(/^assets\/craftpix\/packs\//);
-    }
-  });
 });

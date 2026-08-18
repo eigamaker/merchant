@@ -1,11 +1,8 @@
 import { CUSTOMERS, GUARD_DEFINITIONS, INITIAL_QUESTS, ITEM_DEFINITIONS } from "./content";
-import { createCraftpixDungeonMap } from "./craftpixDungeon";
-import { createCraftpixProceduralDungeon } from "./craftpixProcedural";
-import { DUNGEON_ROOM_TEMPLATES, DUNGEON_TEMPLATE_STORAGE_KEY, validateTemplateLibrary, type DungeonRoomTemplate } from "./dungeonTemplates";
-import { createManualTrialDungeon } from "./manualDungeon";
 import { canTraverse, isWalkableCell, samePosition } from "./dungeonRules";
 import { Rng } from "./rng";
-import { TOWN_SPAWN } from "./townMap";
+import { HOME_SPAWN, createHomeMap } from "./homeMap";
+import { compileMap, loadTrialMapPack } from "./mapDocument";
 import type {
   ActiveGuard,
   Customer,
@@ -40,25 +37,16 @@ export type DungeonGenerationMode = "fixed" | "procedural" | "manual";
 export function dungeonGenerationMode(): DungeonGenerationMode {
   if (typeof window === "undefined") return "fixed";
   const mode = new URLSearchParams(window.location.search).get("dungeon");
-  return mode === "manual" || mode === "procedural" ? mode : "fixed";
+  if (mode === "manual" || mode === "procedural") return mode;
+  return new URLSearchParams(window.location.search).get("autostart") === "world" && loadTrialMapPack() ? "manual" : "fixed";
 }
 
 export function createDungeonMap(mode: DungeonGenerationMode, seed: number, floor: number, requiresTomb = false): DungeonMap {
-  if (mode === "manual") return createManualTrialDungeon(requiresTomb) ?? createCraftpixDungeonMap(requiresTomb);
-  if (mode === "procedural") return createCraftpixProceduralDungeon(seed, floor, requiresTomb, runtimeTemplateLibrary());
-  return createCraftpixDungeonMap(requiresTomb);
-}
-
-function runtimeTemplateLibrary(): DungeonRoomTemplate[] {
-  if (typeof window === "undefined") return DUNGEON_ROOM_TEMPLATES;
-  try {
-    const saved = window.localStorage.getItem(DUNGEON_TEMPLATE_STORAGE_KEY);
-    if (!saved) return DUNGEON_ROOM_TEMPLATES;
-    const parsed = JSON.parse(saved) as DungeonRoomTemplate[];
-    return Array.isArray(parsed) && validateTemplateLibrary(parsed).length === 0 ? parsed : DUNGEON_ROOM_TEMPLATES;
-  } catch {
-    return DUNGEON_ROOM_TEMPLATES;
+  if (mode === "manual") {
+    const trial = typeof window !== "undefined" ? loadTrialMapPack()?.dungeons.find((map) => map.floor === floor) : undefined;
+    if (trial) return compileMap(trial);
   }
+  return generateDungeon(seed, floor, requiresTomb);
 }
 
 const clone = <T>(value: T): T => structuredClone(value);
@@ -73,17 +61,15 @@ export const DIRECTION: Record<"up" | "down" | "left" | "right", Vec> = {
 
 export function createNewGame(): GameState {
   return {
-    version: 3,
+    version: 4,
     day: 1,
     gold: 300,
     hp: 12,
     maxHp: 12,
     returnStones: 1,
     smokeBombs: 2,
-    location: "town",
-    townPos: { ...TOWN_SPAWN },
-    worldMapId: "town-main",
-    townMapRevision: 3,
+    location: "home",
+    homePos: { x: HOME_SPAWN.x * 16 + 8, y: HOME_SPAWN.y * 16 + 8 },
     expeditionSerial: 0,
     guildReputation: 0,
     guards: Object.keys(GUARD_DEFINITIONS).map((id) => ({ id, unlocked: false, relation: 0, experience: 0, level: 1 })),
@@ -140,7 +126,7 @@ export function createItem(state: GameState, definitionId: string, floor?: numbe
     knowledge: "unknown",
     clues: [],
     owner: "player",
-    history: [{ day: state.day, type: "found", detail: floor ? `地下${floor}階で発見` : "町で入手" }],
+    history: [{ day: state.day, type: "found", detail: floor ? `地下${floor}階で発見` : "家で入手" }],
   };
 }
 
@@ -239,7 +225,7 @@ function freeFloor(map: DungeonMap, rng: Rng, occupied: Vec[]): Vec {
   }
   const fallback = map.tiles.flatMap((row, y) => row.map((tile, x) => ({ tile, pos: { x, y } })))
     .find(({ pos }) => isWalkableCell(map, pos) && !occupied.some((entry) => samePosition(entry, pos)));
-  return fallback ? fallback.pos : { ...map.entrance };
+  return fallback ? fallback.pos : { ...map.stairsUp };
 }
 
 export function generateDungeon(seed: number, floor: number, requiresTomb = false): DungeonMap {
@@ -262,9 +248,8 @@ export function generateDungeon(seed: number, floor: number, requiresTomb = fals
     hardEdges: [],
     ledgeEdges: [],
     traversalLinks: [],
-    entrance,
-    stairs,
-    returnStairs: entrance,
+    stairsUp: entrance,
+    stairsDown: stairs,
     specialRoom: requiresTomb && specialCandidate ? { ...specialCandidate.center } : undefined,
   };
 }
@@ -323,8 +308,8 @@ function initialGuard(state: GameState, map: DungeonMap, occupied: Vec[]): Activ
   const record = state.guards.find((guard) => guard.id === state.hiredGuardId);
   const definition = GUARD_DEFINITIONS[state.hiredGuardId];
   if (!record || !definition || (record.injuredUntilDay ?? 0) > state.day) return undefined;
-  const candidates = Object.values(DIRECTION).map((direction) => ({ x: map.entrance.x + direction.x, y: map.entrance.y + direction.y }));
-  const pos = candidates.find((candidate) => canTraverse(map, map.entrance, candidate) && !occupied.some((entry) => samePosition(entry, candidate)))
+  const candidates = Object.values(DIRECTION).map((direction) => ({ x: map.stairsUp.x + direction.x, y: map.stairsUp.y + direction.y }));
+  const pos = candidates.find((candidate) => canTraverse(map, map.stairsUp, candidate) && !occupied.some((entry) => samePosition(entry, candidate)))
     ?? freeFloor(map, new Rng(state.expeditionSerial + state.day), occupied);
   occupied.push(pos);
   const maxHp = guardMaxHp(record, definition);
@@ -340,11 +325,11 @@ function shouldPlaceAronBody(state: GameState, floor: number): boolean {
     || (ring?.status === "active" && !ownsDefinition(state, "old-ring"));
 }
 
-function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: ActiveGuard | null, highestFloor = floor, forceTomb = false): DungeonRun {
+function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: ActiveGuard | null, highestFloor = floor, forceTomb = false, floorStates: NonNullable<DungeonRun["floorStates"]> = {}): DungeonRun {
   const needsTomb = forceTomb || (state.story.blackSword === "incident" && floor === 3);
   const map = createDungeonMap(dungeonGenerationMode(), seed, floor, needsTomb);
   const rng = new Rng(seed + floor * 997);
-  const occupied: Vec[] = [map.entrance, map.stairs];
+  const occupied: Vec[] = [map.stairsUp, ...(map.stairsDown ? [map.stairsDown] : [])];
   const items: GroundItem[] = [];
 
   for (const quest of activeCollectQuests(state, floor)) {
@@ -362,12 +347,12 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
   const guard = carriedGuard === null
     ? undefined
     : carriedGuard
-      ? { ...carriedGuard, pos: { ...map.entrance } }
+      ? { ...carriedGuard, pos: { ...map.stairsUp } }
       : initialGuard(state, map, occupied);
   if (guard && carriedGuard) {
     const candidate = Object.values(DIRECTION)
-      .map((direction) => ({ x: map.entrance.x + direction.x, y: map.entrance.y + direction.y }))
-      .find((pos) => canTraverse(map, map.entrance, pos) && !occupied.some((entry) => samePosition(entry, pos)));
+      .map((direction) => ({ x: map.stairsUp.x + direction.x, y: map.stairsUp.y + direction.y }))
+      .find((pos) => canTraverse(map, map.stairsUp, pos) && !occupied.some((entry) => samePosition(entry, pos)));
     guard.pos = candidate ?? freeFloor(map, rng, occupied);
     occupied.push(guard.pos);
   }
@@ -408,7 +393,7 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
     seed,
     floor,
     map,
-    player: { ...map.entrance },
+    player: { ...map.stairsUp },
     enemies,
     items,
     chests,
@@ -418,6 +403,7 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
     shoveCooldown: 0,
     highestFloor: Math.max(highestFloor, floor),
     turn: 0,
+    floorStates,
   };
 }
 
@@ -440,16 +426,77 @@ export function beginExpedition(state: GameState): void {
     : "ダンジョンへ入った。敵は倒せない。Spaceの「押し返す」で退路を作ろう。";
 }
 
+function snapshotFloor(run: DungeonRun): import("./types").DungeonFloorSnapshot {
+  return {
+    floor: run.floor,
+    map: clone(run.map),
+    player: clone(run.player),
+    enemies: clone(run.enemies),
+    items: clone(run.items),
+    chests: clone(run.chests),
+    traps: clone(run.traps),
+    bodies: clone(run.bodies),
+    guard: run.guard ? clone(run.guard) : undefined,
+    shoveCooldown: run.shoveCooldown,
+    turn: run.turn,
+  };
+}
+
+function restoreFloor(snapshot: import("./types").DungeonFloorSnapshot, seed: number, floorStates: NonNullable<DungeonRun["floorStates"]>, highestFloor: number, player: Vec, carriedGuard?: ActiveGuard): DungeonRun {
+  return {
+    ...clone(snapshot), seed,
+    player: { ...player },
+    guard: carriedGuard ? { ...carriedGuard } : snapshot.guard ? clone(snapshot.guard) : undefined,
+    highestFloor,
+    floorStates,
+  };
+}
+
+function manualFloorExists(floor: number): boolean {
+  return typeof window !== "undefined" && Boolean(loadTrialMapPack()?.dungeons.some((map) => map.floor === floor));
+}
+
 export function descend(state: GameState): void {
   const run = state.run;
   if (!run) return;
-  if (run.floor >= 8) {
+  if (!run.map.stairsDown) {
+    state.message = "この階に下り階段はない。";
+    return;
+  }
+  if (run.floor >= 8 && dungeonGenerationMode() !== "manual") {
     state.message = "この探索で到達できる最深部だ。帰還石か階段で戻ろう。";
     return;
   }
   const nextFloor = run.floor + 1;
-  state.run = buildRun(state, nextFloor, run.seed, run.guard ?? null, Math.max(run.highestFloor, nextFloor));
+  if (dungeonGenerationMode() === "manual" && !manualFloorExists(nextFloor)) {
+    state.message = "この探索パックには次の階がない。";
+    return;
+  }
+  const floorStates = { ...(run.floorStates ?? {}), [String(run.floor)]: snapshotFloor(run) };
+  const highestFloor = Math.max(run.highestFloor, nextFloor);
+  const previous = floorStates[String(nextFloor)];
+  state.run = previous
+    ? restoreFloor(previous, run.seed, floorStates, highestFloor, previous.map.stairsUp, run.guard)
+    : buildRun(state, nextFloor, run.seed, run.guard ?? null, highestFloor, false, floorStates);
   state.message = `地下${nextFloor}階へ降りた。`;
+}
+
+export function ascend(state: GameState): void {
+  const run = state.run;
+  if (!run) return;
+  if (run.floor === 1) { returnHome(state, false, "dungeonEntrance"); return; }
+  const nextFloor = run.floor - 1;
+  const floorStates = { ...(run.floorStates ?? {}), [String(run.floor)]: snapshotFloor(run) };
+  const previous = floorStates[String(nextFloor)];
+  if (previous) {
+    const landing = previous.map.stairsDown ?? previous.map.stairsUp;
+    state.run = restoreFloor(previous, run.seed, floorStates, run.highestFloor, landing, run.guard);
+  } else {
+    const map = createDungeonMap(dungeonGenerationMode(), run.seed, nextFloor);
+    state.run = buildRun(state, nextFloor, run.seed, run.guard ?? null, run.highestFloor, false, floorStates);
+    state.run.player = { ...(map.stairsDown ?? map.stairsUp) };
+  }
+  state.message = `地下${nextFloor}階へ上がった。`;
 }
 
 function nearestGuardTarget(run: DungeonRun): Vec[] {
@@ -805,19 +852,19 @@ function performReturnStone(state: GameState): TurnResult {
     return emptyResult();
   }
   state.returnStones -= 1;
-  returnToTown(state, false);
+  returnHome(state, false);
   return { consumedTurn: true, events: [{ type: "message", text: state.message }] };
 }
 
 function performStairs(state: GameState): TurnResult {
   const run = state.run;
   if (!run) return emptyResult();
-  if (samePosition(run.player, run.map.stairs)) {
+  if (run.map.stairsDown && samePosition(run.player, run.map.stairsDown)) {
     descend(state);
     return { consumedTurn: true, events: [{ type: "message", text: state.message }] };
   }
-  if (samePosition(run.player, run.map.returnStairs)) {
-    returnToTown(state, false);
+  if (samePosition(run.player, run.map.stairsUp)) {
+    ascend(state);
     return { consumedTurn: true, events: [{ type: "message", text: state.message }] };
   }
   state.message = "階段はここにはない。";
@@ -886,7 +933,8 @@ export function tryStairs(state: GameState): TurnResult {
   return performDungeonCommand(state, { type: "stairs" });
 }
 
-export function returnToTown(state: GameState, rescued: boolean): void {
+/** Return stones and rescue use homeSpawn; the first-floor up stair arrives at dungeonEntrance. */
+export function returnHome(state: GameState, rescued: boolean, arrival: "homeSpawn" | "dungeonEntrance" = "homeSpawn"): void {
   const completedRun = state.run;
   if (rescued) {
     const protectedDefinitions = new Set(state.quests
@@ -899,7 +947,7 @@ export function returnToTown(state: GameState, rescued: boolean): void {
     state.gold -= fee;
     state.message = `救助された。戦利品${losses.length}点と救助費${fee}Gを失った。`;
   } else {
-    state.message = "町へ帰還した。ギルドで依頼の報告と護衛契約ができる。";
+    state.message = "家へ帰還した。依頼の報告と護衛契約ができる。";
     if (completedRun?.guard) {
       const record = state.guards.find((entry) => entry.id === completedRun.guard?.guardId);
       if (record) {
@@ -911,7 +959,12 @@ export function returnToTown(state: GameState, rescued: boolean): void {
   }
   state.day += 1;
   state.hp = state.maxHp;
-  state.location = "town";
+  state.location = "home";
+  const home = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("autostart") === "world"
+    ? loadTrialMapPack()?.home ?? createHomeMap()
+    : createHomeMap();
+  const homeMarker = home.markers.find((marker) => marker.kind === arrival) ?? home.markers.find((marker) => marker.kind === "homeSpawn") ?? { ...HOME_SPAWN };
+  state.homePos = { x: homeMarker.x * home.tileSize + home.tileSize / 2, y: homeMarker.y * home.tileSize + home.tileSize / 2 };
   state.run = undefined;
   state.hiredGuardId = undefined;
   state.hiredGuardFee = undefined;
@@ -919,7 +972,7 @@ export function returnToTown(state: GameState, rescued: boolean): void {
 }
 
 function rescuePlayer(state: GameState): void {
-  returnToTown(state, true);
+  returnHome(state, true);
 }
 
 export function guardDefinition(id: string): GuardDefinition | undefined {
@@ -936,7 +989,7 @@ export function guardFee(state: GameState, guardId: string): number {
 }
 
 export function hireGuard(state: GameState, guardId: string): boolean {
-  if (state.location !== "town" || !state.story.early.guardHiringUnlocked) return false;
+  if (state.location !== "home" || !state.story.early.guardHiringUnlocked) return false;
   const definition = GUARD_DEFINITIONS[guardId];
   const record = state.guards.find((guard) => guard.id === guardId);
   if (!definition || !record?.unlocked) return false;

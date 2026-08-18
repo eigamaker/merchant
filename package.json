@@ -4,8 +4,12 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "assets": "node scripts/build-map-tile-assets.mjs",
+    "predev": "npm run assets",
     "dev": "vite",
+    "prebuild": "npm run assets",
     "build": "tsc --noEmit && vite build",
+    "pretest": "npm run assets",
     "test": "vitest run",
     "test:watch": "vitest"
   },

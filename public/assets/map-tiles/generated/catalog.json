@@ -1,0 +1,101 @@
+{
+  "version": 1,
+  "assets": [
+    {
+      "id": "dungeon.floor",
+      "label": "ダンジョンの床",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "mapKinds": [
+        "dungeon"
+      ],
+      "defaultLayer": "ground",
+      "defaultWalkable": true,
+      "path": "/assets/map-tiles/generated/dungeon.floor.png"
+    },
+    {
+      "id": "dungeon.stairs-down",
+      "label": "下り階段",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "mapKinds": [
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": true,
+      "path": "/assets/map-tiles/generated/dungeon.stairs-down.png"
+    },
+    {
+      "id": "dungeon.stairs-up",
+      "label": "上り階段",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "mapKinds": [
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": true,
+      "path": "/assets/map-tiles/generated/dungeon.stairs-up.png"
+    },
+    {
+      "id": "dungeon.wall",
+      "label": "ダンジョンの壁",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 4,
+      "rows": 4,
+      "frameCount": 16,
+      "mapKinds": [
+        "dungeon"
+      ],
+      "defaultLayer": "structure",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/dungeon.wall.png"
+    },
+    {
+      "id": "home.floor",
+      "label": "家の床",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "mapKinds": [
+        "home"
+      ],
+      "defaultLayer": "ground",
+      "defaultWalkable": true,
+      "path": "/assets/map-tiles/generated/home.floor.png"
+    },
+    {
+      "id": "home.wall",
+      "label": "家の壁",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 4,
+      "rows": 4,
+      "frameCount": 16,
+      "mapKinds": [
+        "home"
+      ],
+      "defaultLayer": "structure",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/home.wall.png"
+    }
+  ]
+}

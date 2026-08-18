@@ -1,23 +1,15 @@
 import type { Vec } from "./types";
 
-export type AuthoredMapKind = "town" | "interior" | "dungeon";
-export type AuthoredMarkerKind = "start" | "portal" | "stairsUp" | "stairsDown" | "poi" | "enemySpawn" | "npcSpawn" | "chest" | "trap";
+export type AuthoredMapKind = "home" | "dungeon";
+export type AuthoredMarkerKind = "homeSpawn" | "dungeonEntrance" | "stairsUp" | "stairsDown";
 
 export interface AuthoredPortal {
   id: string;
-  kind: "portal" | "stairsUp" | "stairsDown";
+  kind: AuthoredMarkerKind;
   position: Vec;
   targetMapId?: string;
   targetMarkerId?: string;
   activation: "enter";
-}
-
-export interface AuthoredEnemySpawn {
-  id: string;
-  position: Vec;
-  pool: "outdoor" | "shallow" | "middle" | "deep";
-  count: { min: number; max: number };
-  fixedActorId?: string;
 }
 
 export interface AuthoredMapDescriptor {
@@ -29,57 +21,35 @@ export interface AuthoredMapDescriptor {
   tileSize: 16;
   sourceDocumentId?: string;
   portals: AuthoredPortal[];
-  enemySpawns: AuthoredEnemySpawn[];
+  enemySpawns: never[];
 }
 
-/** The first connected content set used by the editor's playable samples. */
 export const AUTHORED_SAMPLE_MAPS: readonly AuthoredMapDescriptor[] = [
   {
-    id: "town-main",
-    name: "灰灯町",
-    kind: "town",
-    width: 60,
-    height: 45,
+    id: "home",
+    name: "自宅兼店舗",
+    kind: "home",
+    width: 32,
+    height: 20,
     tileSize: 16,
     portals: [
-      { id: "guild-entry", kind: "portal", position: { x: 18, y: 11 }, targetMapId: "guild-hall-1f", targetMarkerId: "guild-exit", activation: "enter" },
-      { id: "workshop-entry", kind: "portal", position: { x: 42, y: 16 }, targetMapId: "glassblower-workshop", targetMarkerId: "workshop-exit", activation: "enter" },
-      { id: "dungeon-entry", kind: "portal", position: { x: 31, y: 34 }, targetMapId: "dungeon-manual-01", targetMarkerId: "dungeon-entrance", activation: "enter" },
+      { id: "home-spawn", kind: "homeSpawn", position: { x: 16, y: 16 }, targetMapId: "home", activation: "enter" },
+      { id: "dungeon-entrance", kind: "dungeonEntrance", position: { x: 16, y: 2 }, targetMapId: "dungeon", targetMarkerId: "dungeon-up", activation: "enter" },
     ],
     enemySpawns: [],
   },
   {
-    id: "guild-hall-1f",
-    name: "ギルドホール",
-    kind: "interior",
-    width: 32,
-    height: 24,
-    tileSize: 16,
-    portals: [{ id: "guild-exit", kind: "portal", position: { x: 16, y: 22 }, targetMapId: "town-main", targetMarkerId: "guild-entry", activation: "enter" }],
-    enemySpawns: [],
-  },
-  {
-    id: "glassblower-workshop",
-    name: "ガラス工房",
-    kind: "interior",
-    width: 32,
-    height: 24,
-    tileSize: 16,
-    portals: [{ id: "workshop-exit", kind: "portal", position: { x: 15, y: 22 }, targetMapId: "town-main", targetMarkerId: "workshop-entry", activation: "enter" }],
-    enemySpawns: [],
-  },
-  {
-    id: "dungeon-manual-01",
-    name: "地下迷宮・手作り区画",
+    id: "dungeon",
+    name: "ダンジョン",
     kind: "dungeon",
     width: 48,
     height: 36,
     tileSize: 16,
     portals: [
-      { id: "dungeon-entrance", kind: "stairsUp", position: { x: 6, y: 30 }, targetMapId: "town-main", targetMarkerId: "dungeon-entry", activation: "enter" },
+      { id: "dungeon-up", kind: "stairsUp", position: { x: 6, y: 30 }, targetMapId: "home", targetMarkerId: "dungeon-entrance", activation: "enter" },
       { id: "dungeon-down", kind: "stairsDown", position: { x: 41, y: 6 }, activation: "enter" },
     ],
-    enemySpawns: [{ id: "dungeon-pool-1", position: { x: 25, y: 18 }, pool: "shallow", count: { min: 2, max: 4 } }],
+    enemySpawns: [],
   },
 ];
 

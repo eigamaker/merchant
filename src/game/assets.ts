@@ -1,6 +1,5 @@
 import { CRAFTPIX_ACTORS, CRAFTPIX_PLAYER_ACTOR, CRAFTPIX_ENEMY_ACTORS, CRAFTPIX_NPC_ACTORS } from "./craftpixActors";
 import { CRAFTPIX_UI } from "./craftpixUi";
-import { CRAFTPIX_ENVIRONMENT_SHEETS } from "./craftpixEnvironment";
 
 /**
  * 本番アート差し替え用の唯一の参照先。
@@ -8,6 +7,12 @@ import { CRAFTPIX_ENVIRONMENT_SHEETS } from "./craftpixEnvironment";
  * スプライトシートを Phaser の load.spritesheet で読み込む。
  */
 export const ASSET_MANIFEST = {
+  mapTiles: {
+    homeFloor: { textureKey: "map.home.floor", path: "assets/map-tiles/home-floor.png" },
+    homeWall: { textureKey: "map.home.wall", path: "assets/map-tiles/home-wall.png" },
+    dungeonFloor: { textureKey: "map.dungeon.floor", path: "assets/map-tiles/dungeon-floor.png" },
+    dungeonWall: { textureKey: "map.dungeon.wall", path: "assets/map-tiles/dungeon-wall.png" },
+  },
   player: {
     textureKey: "actor.player",
     path: "assets/actors/player.png",
@@ -18,28 +23,6 @@ export const ASSET_MANIFEST = {
   enemy: { textureKey: "actor.enemy", path: "assets/actors/enemy.png", frameWidth: 32, frameHeight: 32 },
   npc: { textureKey: "actor.npc", path: "assets/actors/npc.png", frameWidth: 32, frameHeight: 32 },
   item: { textureKey: "object.item", path: "assets/objects/items.png", frameWidth: 24, frameHeight: 24 },
-  dungeonTiles: { textureKey: "tile.dungeon", path: "assets/tiles/dungeon_terrain.png", frameWidth: 24, frameHeight: 24 },
-  dungeonWalls: { textureKey: "tile.dungeon-wall", path: "assets/tiles/dungeon_walls.png", frameWidth: 24, frameHeight: 24 },
-  craftpixDungeon: {
-    tileSize: 16,
-    baseTextureKey: "dungeon.craftpix.base",
-    basePath: "assets/dungeons/craftpix-showcase-base.png",
-    foregroundTextureKey: "dungeon.craftpix.foreground",
-    foregroundPath: "assets/dungeons/craftpix-showcase-foreground.png",
-    wallsFloorTextureKey: "dungeon.craftpix.walls-floor",
-    wallsFloorPath: "assets/dungeons/craftpix/walls_floor.png",
-    doorsTextureKey: "dungeon.craftpix.doors",
-    doorsPath: "assets/dungeons/craftpix/doors_lever_chest_animation.png",
-    objectsTextureKey: "dungeon.craftpix.objects",
-    objectsPath: "assets/dungeons/craftpix/Objects.png",
-    cracksTextureKey: "dungeon.craftpix.cracks",
-    cracksPath: "assets/dungeons/craftpix/decorative_cracks_floor.png",
-  },
-  /**
-   * 町の地面は1枚絵。Phaser が読み込み時に 24px セルへ切り出し、
-   * `TOWN_TILE_INDICES` の恒等インデックスでタイルマップとして並べ直す。
-   */
-  townMap: { textureKey: "tile.town-map", path: "assets/tiles/town_map.png", frameWidth: 24, frameHeight: 24 },
 } as const;
 
 /** New source-pack assets are kept beside the legacy manifest until every
@@ -51,7 +34,6 @@ export const CRAFTPIX_RUNTIME_ASSETS = {
   npcs: CRAFTPIX_NPC_ACTORS,
   enemies: CRAFTPIX_ENEMY_ACTORS,
   ui: CRAFTPIX_UI,
-  environmentSheets: CRAFTPIX_ENVIRONMENT_SHEETS,
 } as const;
 
 /** Every NPC source uses the same 4 columns × 4 rows walking-sheet contract. */

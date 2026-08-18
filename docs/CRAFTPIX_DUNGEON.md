@@ -1,52 +1,12 @@
-# Craftpix 手動ダンジョン設計
+# Home / dungeon map editing
 
-## 設計ツール
+This document is kept as the asset hand-off note for the web map editor. The former town/interior editor and its one-picture collision are retired.
 
-`http://127.0.0.1:5173/review.html` を開くと、48×36セルの手動ダンジョン設計ツールを利用できる。
+`review.html` exposes two map kinds:
 
-1. **空白マップ**、または **見本を複製** を選ぶ。
-2. 左で描画レイヤーを選び、右の素材パレットからタイルまたは矩形スタンプを選ぶ。
-3. 鉛筆・矩形・塗りつぶしで配置する。選んだタイルは周囲によって自動変更されない。
-4. 通行可能／通行不可、境界ブロック、入口、下り階段を編集する。
-5. エラーがなくなったら **このマップを試遊** を押す。
+- `home`: one house that also serves as shop and visitor area.
+- `dungeon`: one map per floor; use 新規 or 複製 to add the next floor.
 
-各セルは0始まりの座標、レイヤー、素材シート名、フレーム番号で特定できる。右の「選択情報をコピー」を使うと、修正依頼に必要な情報をJSONでコピーできる。
+Choose a layer, a palette tile, and a frame, then paint a cell. Placement is literal: neighbouring cells never rewrite a saved frame. Use the 通行可 / 通行不可 tools for the explicit collision layer. A valid home has `homeSpawn`, `dungeonEntrance`, `homeStorage`, `homePreparation`, and `homeVisitors`. Every dungeon floor has `stairsUp`; every floor with a following floor also has `stairsDown`. The deepest floor may omit `stairsDown`. The first-floor `stairsUp` returns to the home's `dungeonEntrance`; return stones and rescue still use `homeSpawn`.
 
-## ルール
-
-- フロア内の高さは常に0。段差、同一フロア内階段、ドア・格子・レバーの仕組みは使用しない。
-- 描画レイヤーは地面、構造物、装飾、キャラ前面、光の5つ。キャラ前面と光はキャラクターより後から描画される。
-- 見た目と通行判定は分離されている。床・壁・水を置くと推奨値が入るが、通行レイヤーで手動変更したセルが最終決定となる。
-- 入口と下り階段は1つずつ必要で、入口からすべての通行可能セルと階段へ到達できなければ試遊できない。
-- 敵、アイテム、宝箱、罠は到達可能セルへゲーム側が自動配置する。
-
-## 保存と共有
-
-下書きはブラウザ内へ自動保存される。選択中のマップまたは全マップをJSONとして書き出し、別の環境で読み込める。既存IDのJSONは安全のため複製として追加される。
-
-通常の街から入るダンジョンは旧固定マップのまま維持する。設計中マップは設計ツールの試遊ボタンからだけ開く。旧自動生成器は `?dungeon=procedural` を付けた開発確認用URLとして残している。
-
-## 開発確認
-
-```powershell
-npm test
-npm run build
-python scripts/build_craftpix_dungeon.py
-```
-
-最後のコマンドは、Craftpixシート、タイルカタログ、旧固定マップから作る編集可能な見本JSONを更新する。
-## 追加Craftpixパックの取り込み
-
-ZIPはゲームから直接読み込みません。原本を保管したまま、次のコマンドで実行用ファイルだけを取り込みます。
-
-```powershell
-python scripts/import_craftpix_packs.py --source-root I:\ダウンロード
-```
-
-取り込み先は `assets-src/vendor/craftpix` です。PNG、TMX、ライセンス情報だけを残し、PSD・広告・macOSメタデータは除外します。以後のビルドはZIPの場所に依存しません。
-
-## 街・屋内・ダンジョンの編集
-
-`review.html` のマップ種類で、街（60×45）、建物内部（32×24）、ダンジョン（48×36）を切り替えられます。種類変更時は既存配置と通行設定の重なる範囲を保持し、範囲外の配置は削除します。
-
-水・炎・煙などのアニメ素材は、個別フレームではなくアニメーションクリップ単位でパレットへ登録する方針です。入口、階段、ポータル、敵出現地点は画像とは別のマーカーとして保存します。
+Put map sprite sheets and matching `.tileset.json` definitions in `assets-src/map-tiles/sheets/`. The generated catalog and palette include the four starter terrain assets plus `dungeon.stairs-up` and `dungeon.stairs-down`. No 16-way auto-tile sheet is required.

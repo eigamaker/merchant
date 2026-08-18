@@ -1,6 +1,10 @@
 import { GUARD_DEFINITIONS, INITIAL_QUESTS } from "./content";
-import type { DungeonBody, DungeonChest, DungeonHeight, DungeonMap, Enemy, GameState, ItemInstance, Quest, Vec } from "./types";
-import { safeTownPosition, TOWN_SPAWN } from "./townMap";
+import type { DungeonBody, DungeonChest, DungeonHeight, DungeonMap, Enemy, GameState, ItemInstance, LegacyDungeonMap, Quest, Vec } from "./types";
+import { HOME_SPAWN, createHomeMap } from "./homeMap";
+import { loadTrialMapPack, type MapDocument } from "./mapDocument";
+import { isMapPositionWalkable } from "./mapTiles";
+/** v1-v3 saves always used the fixed 32x20, 16px home. */
+const HOME_SPAWN_PIXEL = { x: HOME_SPAWN.x * 16 + 8, y: HOME_SPAWN.y * 16 + 8 };
 
 export type SaveSlot = "autosave" | "manual-1" | "manual-2" | "manual-3";
 
@@ -28,6 +32,25 @@ type VersionTwoGameState = Omit<GameState, "version"> & { version: 2 };
 const DATABASE_NAME = "dungeon-curio-merchant";
 const STORE_NAME = "campaigns";
 
+function activeHomeMapForSave(): MapDocument {
+  if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("autostart") === "world") return loadTrialMapPack()?.home ?? createHomeMap();
+  return createHomeMap();
+}
+
+function markerPixel(map: MapDocument): Vec {
+  const marker = map.markers.find((candidate) => candidate.kind === "homeSpawn") ?? HOME_SPAWN;
+  return { x: marker.x * map.tileSize + map.tileSize / 2, y: marker.y * map.tileSize + map.tileSize / 2 };
+}
+
+/** Re-centres a current save on the active home grid, including 32px trial homes. */
+export function normalizeHomePositionForMap(map: MapDocument, position?: Vec): Vec {
+  if (!position) return markerPixel(map);
+  const x = Math.max(0, Math.min(map.width - 1, Math.floor(position.x / map.tileSize)));
+  const y = Math.max(0, Math.min(map.height - 1, Math.floor(position.y / map.tileSize)));
+  const centered = { x: x * map.tileSize + map.tileSize / 2, y: y * map.tileSize + map.tileSize / 2 };
+  return isMapPositionWalkable(map, centered, 5 * (map.tileSize / 16)) ? centered : markerPixel(map);
+}
+
 function migrationItem(state: LegacyGameState, definitionId: string, floor: number): ItemInstance {
   return {
     uuid: `item-${state.nextItemId++}`,
@@ -41,7 +64,13 @@ function migrationItem(state: LegacyGameState, definitionId: string, floor: numb
   };
 }
 
-function migrateDungeonMap(map: DungeonMap): void {
+function migrateDungeonMap(map: DungeonMap | LegacyDungeonMap): void {
+  // v5 map documents compile canonical up/down stairs. Old saves only carried
+  // entrance/stairs/returnStairs, so derive the new fields without discarding
+  // the original payload.
+  const legacy = map as LegacyDungeonMap;
+  map.stairsUp ??= { ...(legacy.returnStairs ?? legacy.entrance ?? legacy.stairs ?? { x: 1, y: 1 }) };
+  map.stairsDown ??= legacy.stairs ? { ...legacy.stairs } : undefined;
   map.formatVersion ??= 2;
   map.heights ??= Array.from({ length: map.height }, () => Array<DungeonHeight>(map.width).fill(0));
   map.hardEdges ??= [];
@@ -50,8 +79,12 @@ function migrateDungeonMap(map: DungeonMap): void {
 }
 
 export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGameState): GameState {
-  const legacyVersion = raw.version === 1;
+  const sourceVersion = raw.version;
+  const legacyVersion = sourceVersion === 1;
   const state = raw as unknown as GameState;
+  const oldLocation = (state as unknown as { location?: string }).location;
+  if (oldLocation === "town" || oldLocation === "interior") state.location = "home";
+  state.version = 4;
   // 追加した任意項目を補い、既存のブラウザ保存を壊さない。
   state.returnStones ??= 1;
   state.smokeBombs ??= 2;
@@ -59,18 +92,11 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
   state.expeditionSerial ??= 0;
   state.guildReputation ??= 0;
   state.guards ??= Object.keys(GUARD_DEFINITIONS).map((id) => ({ id, unlocked: false, relation: 0, experience: 0, level: 1 }));
-  state.townPos ??= { x: 9, y: 6 };
-  state.worldMapId ??= "town-main";
-  // 旧セーブはタイル座標、現在は町だけピクセル座標で保存する。
-  if (state.townPos.x <= 21 && state.townPos.y <= 12) {
-    state.townPos = { x: state.townPos.x * 24 + 12, y: state.townPos.y * 24 + 12 };
-  }
-  const legacy = state as GameState & { townMapRevision?: number };
-  if ((legacy.townMapRevision ?? 0) < 3) {
-    state.townPos = { ...TOWN_SPAWN };
-    legacy.townMapRevision = 3;
+  if (sourceVersion < 4) {
+    // Only legacy fixed-home saves use the historical 16px constants.
+    state.homePos = { ...HOME_SPAWN_PIXEL };
   } else {
-    state.townPos = safeTownPosition(state.townPos);
+    state.homePos = normalizeHomePositionForMap(activeHomeMapForSave(), state.homePos);
   }
 
   if (legacyVersion) {
@@ -133,6 +159,7 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
         guard: undefined,
         shoveCooldown: 0,
         highestFloor: floor,
+        floorStates: {},
       };
     }
     state.hiredGuardId = undefined;
@@ -149,11 +176,20 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
       state.run.enemies.forEach((enemy) => { enemy.staggerTurns ??= 0; });
       state.run.shoveCooldown ??= 0;
       state.run.highestFloor ??= state.run.floor;
+      state.run.floorStates ??= {};
       migrateDungeonMap(state.run.map);
     }
   }
-  if (state.run) migrateDungeonMap(state.run.map);
-  (state as { version: number }).version = 3;
+  if (state.run) {
+    state.run.floorStates ??= {};
+    migrateDungeonMap(state.run.map);
+    for (const snapshot of Object.values(state.run.floorStates ?? {})) {
+      migrateDungeonMap(snapshot.map);
+      snapshot.shoveCooldown ??= 0;
+      snapshot.turn ??= 0;
+    }
+  }
+  (state as { version: number }).version = 4;
   return state;
 }
 
@@ -190,7 +226,7 @@ export class SaveRepository {
       request.onerror = () => reject(request.error);
     });
     database.close();
-    if (!result || (result.state.version !== 1 && result.state.version !== 2 && result.state.version !== 3)) return undefined;
+    if (!result) return undefined;
     result.state = migrateSaveState(result.state);
     return result as StoredSave & { state: GameState };
   }
