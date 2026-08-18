@@ -18,8 +18,6 @@ SOURCE = ROOT / "assets-src" / "player" / "merchant-protagonist-source.png"
 OUTPUTS = (
     ROOT / "public" / "assets" / "actors" / "craftpix" / "MerchantProtagonist" / "MerchantProtagonist_Idle_with_shadow.png",
     ROOT / "public" / "assets" / "actors" / "craftpix" / "MerchantProtagonist" / "MerchantProtagonist_Walk_with_shadow.png",
-    ROOT / "Unity" / "Assets" / "Resources" / "Merchan" / "assets" / "actors" / "craftpix" / "MerchantProtagonist" / "MerchantProtagonist_Idle_with_shadow.png",
-    ROOT / "Unity" / "Assets" / "Resources" / "Merchan" / "assets" / "actors" / "craftpix" / "MerchantProtagonist" / "MerchantProtagonist_Walk_with_shadow.png",
 )
 
 

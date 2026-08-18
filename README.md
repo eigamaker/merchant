@@ -1,4 +1,6 @@
-# Dungeon Curio Merchant
+# Dungeon Curio Merchant — Web edition
+
+このリポジトリはWeb版専用です。Unity版は別リポジトリ `C:\development\merchan-Unity` で管理します。
 
 ダンジョン探索で一点物の珍品を持ち帰り、町の人々との取引と調査を通じて価値と由来を解き明かす、PCブラウザ向けの2Dターン制RPGです。
 

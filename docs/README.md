@@ -1,8 +1,8 @@
 # ドキュメント案内
 
-## ゲーム設計・実装計画
+## Web版ゲーム設計・実装計画
 
-- [GAMEPLAY_IMPLEMENTATION_PLAN.md](GAMEPLAY_IMPLEMENTATION_PLAN.md) — 町を廃止した自宅店舗⇄ダンジョンのゲームループ、護衛戦闘、遺体・戦利品、店舗運営、実装フェーズ、未決事項
+- [GAMEPLAY_IMPLEMENTATION_PLAN.md](GAMEPLAY_IMPLEMENTATION_PLAN.md) — Web版の自宅店舗⇄ダンジョンのゲームループ、直接操作、インベントリ、店舗運営、実装順序
 
 ## アセット制作
 
