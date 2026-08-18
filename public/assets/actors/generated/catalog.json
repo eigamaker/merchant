@@ -1,4 +1,147 @@
 {
   "version": 1,
-  "actors": []
+  "actors": [
+    {
+      "version": 1,
+      "id": "characters-attacked",
+      "label": "attacked (Characters.tmx)",
+      "roles": [
+        "enemy"
+      ],
+      "clips": {
+        "attack": {
+          "action": "attack",
+          "path": "/assets/actors/generated/characters-attacked/attack.png",
+          "width": 128,
+          "height": 128,
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "tileSize": 16,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 6.67,
+          "durationsMs": [
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150,
+            150
+          ]
+        }
+      },
+      "scale": 1,
+      "origin": {
+        "x": 0.5,
+        "y": 0.72
+      },
+      "enemyStats": {
+        "baseHp": 3,
+        "hpPerFloor": 1,
+        "damage": 1
+      }
+    },
+    {
+      "version": 1,
+      "id": "interior-2nd-floor-attacked",
+      "label": "attacked (Interior_2nd_floor.tmx)",
+      "roles": [
+        "enemy"
+      ],
+      "clips": {
+        "attack": {
+          "action": "attack",
+          "path": "/assets/actors/generated/interior-2nd-floor-attacked/attack.png",
+          "width": 128,
+          "height": 128,
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "tileSize": 16,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 6.67
+        }
+      },
+      "scale": 1,
+      "origin": {
+        "x": 0.5,
+        "y": 0.72
+      },
+      "enemyStats": {
+        "baseHp": 3,
+        "hpPerFloor": 1,
+        "damage": 1
+      }
+    }
+  ]
 }

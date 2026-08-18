@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { ACTOR_SETTINGS_FILE, ACTOR_SETTINGS_GENERATED_TS, readActorSettings, writeActorSettingsGenerated } from "./actor-settings.mjs";
 
 export const ACTOR_SOURCE_DIR = path.resolve("assets-src/actors/imported");
 export const ACTOR_OUTPUT_DIR = path.resolve("public/assets/actors/generated");
@@ -26,8 +27,9 @@ function writeGenerated(file, definitions) {
   fs.writeFileSync(file, text, "utf8");
 }
 
-export function buildActorAssets({ sourceDir = ACTOR_SOURCE_DIR, outputDir = ACTOR_OUTPUT_DIR, generatedTs = ACTOR_GENERATED_TS } = {}) {
+export function buildActorAssets({ sourceDir = ACTOR_SOURCE_DIR, outputDir = ACTOR_OUTPUT_DIR, generatedTs = ACTOR_GENERATED_TS, actorSettingsFile = ACTOR_SETTINGS_FILE, actorSettingsGeneratedTs = ACTOR_SETTINGS_GENERATED_TS } = {}) {
   const records = readDefinitions(sourceDir);
+  const actorSettings = readActorSettings(actorSettingsFile);
   fs.mkdirSync(outputDir, { recursive: true });
   for (const entry of fs.readdirSync(outputDir)) fs.rmSync(path.join(outputDir, entry), { recursive: true, force: true });
   const definitions = [];
@@ -47,6 +49,7 @@ export function buildActorAssets({ sourceDir = ACTOR_SOURCE_DIR, outputDir = ACT
   }
   definitions.sort((a, b) => a.id.localeCompare(b.id));
   writeGenerated(generatedTs, definitions);
+  writeActorSettingsGenerated(actorSettingsGeneratedTs, actorSettings);
   fs.writeFileSync(path.join(outputDir, "catalog.json"), JSON.stringify({ version: 1, actors: definitions }, null, 2) + "\n", "utf8");
   return definitions;
 }

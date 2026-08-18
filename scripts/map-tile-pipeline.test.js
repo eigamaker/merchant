@@ -12,7 +12,7 @@ function fixtureDirectory() {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), "map-tile-pipeline-"));
   temporaryDirectories.push(directory);
   const source = path.resolve("assets-src/map-tiles/sheets");
-  for (const name of fs.readdirSync(source)) fs.copyFileSync(path.join(source, name), path.join(directory, name));
+  for (const entry of fs.readdirSync(source, { withFileTypes: true })) if (entry.isFile()) fs.copyFileSync(path.join(source, entry.name), path.join(directory, entry.name));
   return directory;
 }
 
@@ -102,6 +102,17 @@ describe("map tile source pipeline", () => {
     expect(fs.existsSync(path.join(outputDir, "catalog.json"))).toBe(true);
     expect(fs.existsSync(generatedTs)).toBe(true);
     expect(() => validatePalette({ version: 1, pages: [{ ...palette.pages[0], cells: [{ ...palette.pages[0].cells[0], assetId: "missing" }] }] }, result.assets)).toThrow(/unknown asset/);
+  });
+
+  it("removes palette cells for sheets deleted from the source folder", () => {
+    const inputDir = fixtureDirectory();
+    const outputDir = path.join(inputDir, "generated");
+    const paletteFile = path.join(inputDir, "palettes.json");
+    const generatedTs = path.join(inputDir, "catalog.generated.ts");
+    fs.writeFileSync(paletteFile, JSON.stringify({ version: 1, pages: [{ id: "home", label: "Home", mapKind: "home", tileSize: 16, width: 2, height: 1, cells: [{ x: 0, y: 0, assetId: "home.floor", frame: 0, layer: "ground", walkable: true }, { x: 1, y: 0, assetId: "removed-sheet", frame: 0, layer: "ground", walkable: false }] }] }));
+    const result = buildMapTileAssets({ inputDir, paletteFile, outputDir, generatedTs });
+    expect(result.palette.pages[0].cells).toHaveLength(1);
+    expect(JSON.parse(fs.readFileSync(paletteFile, "utf8")).pages[0].cells).toHaveLength(1);
   });
 
   it("restores the original palette and removes transaction files when generation fails", () => {

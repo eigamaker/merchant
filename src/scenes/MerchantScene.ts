@@ -7,8 +7,8 @@ import {
   GUARD_ASSET_VARIANTS,
   DUNGEON_OBJECT_FRAMES,
 } from "../game/assets";
-import { CRAFTPIX_ACTORS, CRAFTPIX_ENEMY_ACTORS, CRAFTPIX_PLAYER_ACTOR, actorFrame, type ActorAction, type ActorDirection, type CraftpixActorDefinition } from "../game/craftpixActors";
-import { GENERATED_ACTORS } from "../game/actorAssetCatalog.generated";
+import { CRAFTPIX_ENEMY_ACTORS, CRAFTPIX_PLAYER_ACTOR, actorFrame, type ActorAction, type ActorDirection, type CraftpixActorDefinition } from "../game/craftpixActors";
+import { ACTOR_CATALOG, actorDefinition } from "../game/actorCatalog";
 import { CRAFTPIX_UI } from "../game/craftpixUi";
 import {
   DIRECTION,
@@ -52,7 +52,7 @@ import { compileMap, loadTrialMap, loadTrialMapPack } from "../game/mapDocument"
 import { MAP_ASSET_CATALOG } from "../game/mapAssetCatalog.generated";
 import { MISSING_MAP_ASSET_TEXTURE, resolveMapAssetFrame } from "../game/mapAssetRuntime";
 import type { Customer, DungeonCommand, DungeonEvent, GameState, ItemInstance, MenuChoice, Vec } from "../game/types";
-const ALL_CRAFTPIX_ACTORS: readonly CraftpixActorDefinition[] = [...Object.values(CRAFTPIX_ACTORS), ...GENERATED_ACTORS];
+const ALL_CRAFTPIX_ACTORS: readonly CraftpixActorDefinition[] = Object.values(ACTOR_CATALOG);
 /** Viewport and generated fallback textures stay at the game's base pixel grid. */
 const VIEWPORT_BASE_TILE = 16;
 const PLACEHOLDER_TILE = 16;
@@ -1136,7 +1136,7 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private craftpixEnemyActor(enemyId: string, actorId?: string): CraftpixActorDefinition | undefined {
-    if (actorId) return ALL_CRAFTPIX_ACTORS.find((actor) => actor.id === actorId);
+    if (actorId) return actorDefinition(actorId);
     const ids = Object.keys(CRAFTPIX_ENEMY_ACTORS) as (keyof typeof CRAFTPIX_ENEMY_ACTORS)[];
     const hash = Array.from(enemyId).reduce((total, character) => total + character.charCodeAt(0), 0);
     const actor = CRAFTPIX_ENEMY_ACTORS[ids[hash % ids.length]!];

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { PaletteHistory, addPalettePage, clonePaletteLayout, createPalettePage, deletePalettePage, emptyPaletteLayout, fillPaletteStamp, paintPaletteStamp, paletteStamp, placeSourceFrames, rectanglePaletteStamp, resizePalettePage, transferPaletteRegion, validatePaletteLayout, type PaletteAsset, type PaletteLayer, type StampMap } from "./paletteModel";
+import { MAX_PALETTE_DIMENSION, PaletteHistory, addPalettePage, clonePaletteLayout, createPalettePage, deletePalettePage, emptyPaletteLayout, fillPaletteStamp, paintPaletteStamp, paletteStamp, placeSourceFrames, rectanglePaletteStamp, resizePalettePage, transferPaletteRegion, validatePaletteLayout, type PaletteAsset, type PaletteLayer, type StampMap } from "./paletteModel";
 
 const asset: PaletteAsset = { id: "dungeon-sheet", label: "Dungeon", path: "/dungeon.png", mapKinds: ["dungeon"], tileSize: 16, margin: 0, spacing: 0, columns: 4, rows: 4, frameCount: 16, defaultLayer: "ground", defaultWalkable: true };
 const page = () => createPalettePage({ id: "p", label: "床", mapKind: "dungeon", tileSize: 16, width: 4, height: 4 });
@@ -23,6 +23,13 @@ describe("free-form palette model", () => {
     expect(resizePalettePage(first, 0, 1).ok).toBe(false);
     expect(resizePalettePage(first, 1, 1).ok).toBe(true);
     expect(resizePalettePage(first, 1, 0).ok).toBe(false);
+  });
+
+  it("supports sparse oversized category workspaces", () => {
+    const target = createPalettePage({ id: "large", label: "インテリア", mapKind: "home", tileSize: 16, width: 2048, height: 2048 });
+    expect(resizePalettePage(target, 2056, 2056)).toEqual({ ok: true });
+    expect(resizePalettePage(target, MAX_PALETTE_DIMENSION + 1, 2056).ok).toBe(false);
+    expect(validatePaletteLayout({ version: 1, pages: [target] }, [asset])).toEqual([]);
   });
 
   it("keeps at least one page so every editor state remains saveable", () => {

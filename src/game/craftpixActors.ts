@@ -12,6 +12,10 @@ export type ActorDirection = "down" | "left" | "right" | "up";
 export interface CraftpixActorClip {
   action: ActorAction;
   path: string;
+  /** Optional source-sheet metadata emitted by the TMX importer. */
+  width?: number;
+  height?: number;
+  tileSize?: number;
   frameWidth: number;
   frameHeight: number;
   columns: number;
@@ -19,14 +23,15 @@ export interface CraftpixActorClip {
   /** The source sheets are four directional rows; this is explicit metadata. */
   directions: readonly ActorDirection[];
   frameRate: number;
-  repeat: number;
+  repeat?: number;
   durationsMs?: readonly number[];
 }
 
 export interface CraftpixActorDefinition {
+  version?: number;
   id: string;
   label: string;
-  sourcePack: string;
+  sourcePack?: string;
   clips: Partial<Record<ActorAction, CraftpixActorClip>>;
   scale: number;
   origin: { x: 0.5; y: number };

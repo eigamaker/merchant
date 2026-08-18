@@ -147,12 +147,51 @@ function writeGeneratedTypescript(file, assets, palette) {
   fs.writeFileSync(file, text, "utf8");
 }
 
+function prunePaletteUnknownAssets(palette, assets) {
+  const known = new Set(assets.map((asset) => asset.id));
+  let removed = 0;
+  const pages = (palette.pages ?? []).map((page) => ({
+    ...page,
+    cells: (page.cells ?? []).filter((cell) => {
+      const keep = known.has(cell.assetId);
+      if (!keep) removed += 1;
+      return keep;
+    }),
+  }));
+  return { palette: { ...palette, pages }, removed };
+}
+
+function writePaletteAfterSourceRemoval(file, palette) {
+  const temporary = `${file}.${process.pid}.${Date.now()}.prune.tmp`;
+  const backup = `${file}.${process.pid}.${Date.now()}.prune.bak`;
+  const hadOriginal = fs.existsSync(file);
+  fs.writeFileSync(temporary, JSON.stringify(palette, null, 2) + "\n", "utf8");
+  try {
+    if (hadOriginal) fs.renameSync(file, backup);
+    fs.renameSync(temporary, file);
+    if (hadOriginal) fs.rmSync(backup, { force: true });
+  } catch (error) {
+    fs.rmSync(temporary, { force: true });
+    if (hadOriginal && fs.existsSync(backup)) {
+      fs.rmSync(file, { force: true });
+      fs.renameSync(backup, file);
+    }
+    throw error;
+  }
+}
+
 export function buildMapTileAssets({ inputDir = MAP_TILE_INPUT_DIR, paletteFile = MAP_TILE_PALETTE_FILE, outputDir = MAP_TILE_OUTPUT_DIR, generatedTs = MAP_TILE_GENERATED_TS } = {}) {
   const assets = readTileSheets(inputDir);
   if (assets.length === 0) throw new Error("No map tile sheets found");
   let palette;
   if (fs.existsSync(paletteFile)) palette = JSON.parse(fs.readFileSync(paletteFile, "utf8"));
   else palette = defaultPalette(assets);
+  const pruned = prunePaletteUnknownAssets(palette, assets);
+  palette = pruned.palette;
+  if (pruned.removed > 0 && fs.existsSync(paletteFile)) {
+    writePaletteAfterSourceRemoval(paletteFile, palette);
+    console.warn(`Removed ${pruned.removed} palette cells whose source sheets no longer exist.`);
+  }
   validatePalette(palette, assets);
   fs.mkdirSync(outputDir, { recursive: true });
   // Keep the dedicated directory itself in place. This makes repeated Vite

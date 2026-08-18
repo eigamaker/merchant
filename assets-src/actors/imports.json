@@ -1,0 +1,154 @@
+{
+  "version": 1,
+  "imports": [
+    {
+      "source": {
+        "fileName": "craftpix-net-189780-free-top-down-pixel-art-guild-hall-asset-pack.zip",
+        "bytes": 2505245,
+        "sha256": "4f61c6229671aef3f529c31b442be08166e17204e11a8142bee786dbadcf2dc8"
+      },
+      "actors": [
+        {
+          "id": "characters-attacked",
+          "label": "attacked (Characters.tmx)",
+          "sourcePack": "Tiled_files/Characters.tmx",
+          "roles": [
+            "enemy"
+          ],
+          "clips": {
+            "attack": {
+              "action": "attack",
+              "path": "Tiled_files/Attacked_Manequin2_with_shadow.png",
+              "width": 128,
+              "height": 128,
+              "frameWidth": 32,
+              "frameHeight": 32,
+              "columns": 4,
+              "rows": 4,
+              "tileSize": 16,
+              "directions": [
+                "down",
+                "left",
+                "right",
+                "up"
+              ],
+              "frameRate": 6.67,
+              "durationsMs": [
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150,
+                150
+              ]
+            }
+          },
+          "warnings": [],
+          "selected": true,
+          "enemyStats": {
+            "baseHp": 3,
+            "hpPerFloor": 1,
+            "damage": 1
+          }
+        },
+        {
+          "id": "interior-2nd-floor-attacked",
+          "label": "attacked (Interior_2nd_floor.tmx)",
+          "sourcePack": "Tiled_files/Interior_2nd_floor.tmx",
+          "roles": [
+            "enemy"
+          ],
+          "clips": {
+            "attack": {
+              "action": "attack",
+              "path": "Tiled_files/Attacked_Manequin3_with_shadow.png",
+              "width": 128,
+              "height": 128,
+              "frameWidth": 32,
+              "frameHeight": 32,
+              "columns": 4,
+              "rows": 4,
+              "tileSize": 16,
+              "directions": [
+                "down",
+                "left",
+                "right",
+                "up"
+              ],
+              "frameRate": 6.67
+            }
+          },
+          "warnings": [],
+          "selected": true,
+          "enemyStats": {
+            "baseHp": 3,
+            "hpPerFloor": 1,
+            "damage": 1
+          }
+        }
+      ],
+      "warnings": [
+        "Tiled_files/Interior_1st_floor.tmx: tileset image is missing: ../../x500.png",
+        "Tiled_files/Interior_2nd_floor.tmx: tileset image is missing: ../../x500.png"
+      ]
+    }
+  ]
+}

@@ -2,14 +2,18 @@ import "./review.css";
 import { zipSync } from "fflate";
 import { DEFAULT_PALETTE_LAYOUT, MAP_ASSET_CATALOG } from "../game/mapAssetCatalog.generated";
 import { addMarker, cloneMap, createManualMap, MapRepository, normalizeMap, storeTrialMapPack, validateMap, validateTrialMapPack, type ManualLayer, type MapDocument, type MapMarker, type MapMarkerKind } from "../game/mapDocument";
-import { PaletteHistory, addPalettePage, clonePaletteLayout, createPalettePage, deletePalettePage, fillPaletteStamp, paintPaletteStamp, paletteRectFromPoints, paletteStamp, placeSourceFrames, rectanglePaletteStamp, renamePalettePage, resizePalettePage, transferPaletteRegion, validatePaletteLayout, type CellPoint, type CellRect, type CollisionMode, type PaletteAsset, type PaletteLayout, type PalettePage, type StampAttributeMode } from "./paletteModel";
+import { MAX_PALETTE_DIMENSION, PaletteHistory, addPalettePage, clonePaletteLayout, createPalettePage, deletePalettePage, fillPaletteStamp, paintPaletteStamp, paletteRectFromPoints, paletteStamp, placeSourceFrames, rectanglePaletteStamp, renamePalettePage, resizePalettePage, transferPaletteRegion, validatePaletteLayout, type CellPoint, type CellRect, type CollisionMode, type PaletteAsset, type PaletteLayout, type PalettePage, type StampAttributeMode } from "./paletteModel";
 import { fitEditorCanvas } from "./canvasSizing";
 import { applyMapSettingsAtomically } from "./mapSettings";
 import { applyDungeonFloorUpdates, planDungeonFloorCompaction, smallestMissingDungeonFloor } from "./floorSequence";
-import { ACTOR_CATALOG } from "../game/actorCatalog";
+import { ACTOR_CATALOG, applyActorSettings, currentActorSettings } from "../game/actorCatalog";
+import type { ActorSettingsCatalog } from "../game/actorSettings";
+import type { CraftpixActorClip, CraftpixActorDefinition } from "../game/craftpixActors";
+import { advanceActorPreview, actorPreviewActions, actorPreviewDirections, actorPreviewFrameRect, actorPreviewPath, type ActorPreviewState } from "./actorPreview";
 
 const root = document.querySelector<HTMLElement>("#review-app");
 if (!root) throw new Error("review app root not found");
+const editorRoot = root;
 
 const assets: PaletteAsset[] = MAP_ASSET_CATALOG.map((asset) => ({ ...asset, mapKinds: [...asset.mapKinds] }));
 const assetById = new Map(assets.map((asset) => [asset.id, asset]));
@@ -23,24 +27,31 @@ root.innerHTML = `
   <div class="map-editor-shell">
     <header class="map-editor-header"><div><p class="map-editor-eyebrow">AUTHORED TILE PALETTE</p><h1>家・ダンジョン マップエディター</h1><p>スプライトシートから自由なパレットを作り、矩形スタンプとして配置します。</p></div>
       <div class="map-editor-header-actions"><button data-action="new">新規マップ</button><button data-action="rename">名前変更</button><button data-action="duplicate">複製</button><button data-action="delete">削除</button><button data-action="undo">元に戻す</button><button data-action="redo">やり直す</button><button class="primary" data-action="try">全マップを試遊</button></div></header>
-    <section class="map-editor-toolbar">
-      <label>一覧表示 <select data-kind><option value="home">家</option><option value="dungeon">ダンジョン</option></select></label>
-      <label>マップ種類 <select data-map-kind><option value="home">家</option><option value="dungeon">ダンジョン</option></select></label><label>幅 <input data-map-width type="number" min="4" max="256"></label><label>高さ <input data-map-height type="number" min="4" max="256"></label>
-      <label>セル <select data-tile-size><option value="16">16px</option><option value="32">32px</option></select></label><button data-action="apply-map-settings">サイズを適用</button>
-      <label>レイヤー <select data-layer><option value="ground">ground</option><option value="structure">structure</option><option value="decoration">decoration</option></select></label>
-      <label>道具 <select data-tool><option value="paint">鉛筆（スタンプ）</option><option value="rectangle">矩形（繰り返し）</option><option value="fill">塗りつぶし（単体のみ）</option><option value="erase">消去</option><option value="eyedropper">スポイト</option><option value="marker">マーカー</option><option value="collision-walkable">通行可</option><option value="collision-blocked">通行不可</option></select></label>
-      <label>属性 <select data-attribute-mode><option value="palette">パレット設定</option><option value="manual">手動設定</option></select></label><label>手動通行 <select data-collision-mode><option value="unchanged">変更しない</option><option value="walkable">通行可</option><option value="blocked">通行不可</option></select></label>
-      <label class="check"><input type="checkbox" data-grid checked>グリッド</label><label class="check"><input type="checkbox" data-pass checked>通行表示</label><label>ズーム <select data-zoom><option value="1">100%</option><option value="1.5">150%</option><option value="2">200%</option></select></label>
+    <nav class="editor-mode-tabs" aria-label="エディターモード"><button class="active" data-editor-mode="map">マップ編集</button><button data-editor-mode="actors">キャラクター</button></nav>
+    <section data-editor-view="map">
+      <section class="map-editor-toolbar">
+        <label>一覧表示 <select data-kind><option value="home">家</option><option value="dungeon">ダンジョン</option></select></label>
+        <label>マップ種類 <select data-map-kind><option value="home">家</option><option value="dungeon">ダンジョン</option></select></label><label>幅 <input data-map-width type="number" min="4" max="256"></label><label>高さ <input data-map-height type="number" min="4" max="256"></label>
+        <label>セル <select data-tile-size><option value="16">16px</option><option value="32">32px</option></select></label><button data-action="apply-map-settings">サイズを適用</button>
+        <label>レイヤー <select data-layer><option value="ground">ground</option><option value="structure">structure</option><option value="decoration">decoration</option></select></label>
+        <label>道具 <select data-tool><option value="paint">鉛筆（スタンプ）</option><option value="rectangle">矩形（繰り返し）</option><option value="fill">塗りつぶし（単体のみ）</option><option value="erase">消去</option><option value="eyedropper">スポイト</option><option value="marker">マーカー</option><option value="collision-walkable">通行可</option><option value="collision-blocked">通行不可</option></select></label>
+        <label>属性 <select data-attribute-mode><option value="palette">パレット設定</option><option value="manual">手動設定</option></select></label><label>手動通行 <select data-collision-mode><option value="unchanged">変更しない</option><option value="walkable">通行可</option><option value="blocked">通行不可</option></select></label>
+        <label class="check"><input type="checkbox" data-grid checked>グリッド</label><label class="check"><input type="checkbox" data-pass checked>通行表示</label><label>ズーム <select data-zoom><option value="1">100%</option><option value="1.5">150%</option><option value="2">200%</option></select></label>
+      </section>
+      <section class="actor-roster-strip" data-map-actor-strip><div class="panel-heading"><div><h2>このマップの登場キャラクター</h2><p class="small">画像カードをクリックして、ダンジョンの敵候補を切り替えます。</p></div><span data-map-actor-strip-status></span></div><div class="actor-roster-strip-list" data-map-actor-strip-list></div></section>
+      <main class="map-editor-layout">
+        <aside class="map-editor-side"><div class="panel-heading"><h2>マップ</h2><span data-map-count></span></div><div class="map-list" data-map-list></div><div class="map-actions"><button data-action="export-map">現在JSON</button><button data-action="export-pack">試遊パックJSON</button><label class="file-button">JSON読込<input type="file" accept="application/json" data-import></label></div><hr>
+          <h2>マーカー</h2><label>種類 <select data-marker></select></label><p class="small">マーカー道具でセルをクリックします。stairsUp / stairsDownには、パレットの単一セルを見た目として設定します。</p><div hidden data-enemy-roster></div><p hidden data-enemy-roster-status></p><hr>
+          <h2>素材取込</h2><label class="file-button">ZIP／TMX／PNGを解析<input type="file" accept=".zip,.tmx,.tsx,.png" multiple data-asset-import></label><div data-import-report></div><p class="save-status" data-status>読み込み中…</p></aside>
+        <section class="map-canvas-panel"><div class="panel-heading"><h2 data-map-title>マップ</h2><span data-stamp-info>スタンプ未選択</span></div><p class="canvas-fit-warning" data-canvas-fit hidden></p><div class="map-canvas-wrap"><canvas data-map-canvas></canvas></div><div class="map-canvas-help">パレットの画像セルをクリックして選び、マップへ配置します。鉛筆は選択矩形の左上を配置、矩形は選択パターンを繰り返します。素材がマップ外へ出る操作は全体を拒否します。</div><div class="map-validation" data-validation></div></section>
+        <aside class="map-editor-side palette-panel"><div class="panel-heading"><h2>自由配置パレット</h2><span data-palette-dirty></span></div><p class="small palette-selection-hint">大きなパレットに素材を自由配置します。ページは用途ごとに手動で追加できます。</p><div class="palette-tabs" data-palette-tabs></div><div class="palette-actions"><button data-action="palette-add">ページ追加</button><button data-action="palette-rename">改名</button><button data-action="palette-resize">拡縮</button><button data-action="palette-delete">削除</button><button data-action="palette-undo">戻す</button><button data-action="palette-redo">やり直し</button><button data-action="palette-save">保存</button><button data-action="palette-reload">再読込</button><button data-action="palette-export">JSON書出し</button></div><div class="palette-wrap"><canvas data-palette-canvas></canvas></div>
+          <p class="small">パレットの画像セルをクリックして選び、マップへ配置します。選択範囲をドラッグすると移動、Shift+ドラッグで複製、Deleteで削除できます。</p></aside>
+      </main>
+      <section class="asset-folder-panel" data-asset-folder><div class="panel-heading"><div><h2>素材フォルダ（Project）</h2><p class="small">取り込んだスプライトシートを画像で選び、下のタイルからパレットへドラッグします。矩形選択した複数タイルは一つの素材として配置できます。</p></div><span data-asset-folder-status></span></div><select class="visually-hidden" data-asset aria-label="素材シート"></select><div class="asset-image-picker" data-asset-picker></div><div class="source-wrap asset-source-wrap"><canvas data-source-canvas></canvas></div><p class="small">素材画像をクリックしてシートを選択 → 下の方眼で単体または矩形を選択 → そのまま右側のパレットへドラッグ。</p></section>
     </section>
-    <main class="map-editor-layout">
-      <aside class="map-editor-side"><div class="panel-heading"><h2>マップ</h2><span data-map-count></span></div><div class="map-list" data-map-list></div><div class="map-actions"><button data-action="export-map">現在JSON</button><button data-action="export-pack">試遊パックJSON</button><label class="file-button">JSON読込<input type="file" accept="application/json" data-import></label></div><hr>
-        <h2>マーカー</h2><label>種類 <select data-marker></select></label><p class="small">マーカー道具でセルをクリックします。stairsUp / stairsDownには、パレットの単一セルを見た目として設定します。</p><hr>
-        <h2>敵ロスター</h2><p class="small">ダンジョン階で出現する敵を選びます。位置は試遊開始時にランダム配置されます。</p><div data-enemy-roster></div><p class="small" data-enemy-roster-status></p><hr>
-        <h2>素材取込</h2><label class="file-button">ZIP／TMX／PNGを解析<input type="file" accept=".zip,.tmx,.tsx,.png" multiple data-asset-import></label><div data-import-report></div><p class="save-status" data-status>読み込み中…</p></aside>
-      <section class="map-canvas-panel"><div class="panel-heading"><h2 data-map-title>マップ</h2><span data-stamp-info>スタンプ未選択</span></div><p class="canvas-fit-warning" data-canvas-fit hidden></p><div class="map-canvas-wrap"><canvas data-map-canvas></canvas></div><div class="map-canvas-help">鉛筆は選択矩形の左上を配置します。矩形は選択パターンを繰り返し、空白セルは既存マップを消しません。素材がマップ外へ出る操作は全体を拒否します。</div><div class="map-validation" data-validation></div></section>
-      <aside class="map-editor-side palette-panel"><div class="panel-heading"><h2>自由配置パレット</h2><span data-palette-dirty></span></div><div class="palette-tabs" data-palette-tabs></div><div class="palette-actions"><button data-action="palette-add">ページ追加</button><button data-action="palette-rename">改名</button><button data-action="palette-resize">拡縮</button><button data-action="palette-delete">削除</button><button data-action="palette-undo">戻す</button><button data-action="palette-redo">やり直す</button><button data-action="palette-save">保存</button><button data-action="palette-reload">再読込</button><button data-action="palette-export">JSON書出し</button></div><div class="palette-wrap"><canvas data-palette-canvas></canvas></div>
-        <p class="small">パレット上をドラッグして矩形を選択します。選択後にドラッグすると移動、Shift+ドラッグで複製、Deleteで削除できます。シート選択をパレットへドラッグすると登録できます。</p><hr><h2>素材シート</h2><label>素材 <select data-asset></select></label><div class="source-wrap"><canvas data-source-canvas></canvas></div><p class="small">シート上をドラッグして単体または矩形を選択し、パレットへドラッグしてください。</p></aside>
-    </main>
+    <section class="actor-editor-view" data-editor-view="actors" hidden>
+      <div class="actor-editor-grid"><aside class="map-editor-side actor-library-panel"><div class="panel-heading"><div><h2>キャラクター素材</h2><p class="small">画像を選ぶと右側でアニメーションと能力値を確認できます。素材の追加はマップ編集タブの取込ボタンから行います。</p></div><span data-actor-library-count></span></div><div class="actor-preview-list" data-actor-preview-list></div></aside><section class="map-editor-side actor-detail-panel"><div class="panel-heading"><h2>キャラクター確認・設定</h2><span data-actor-preview-status></span></div><div class="actor-preview-controls"><select class="visually-hidden" data-actor-preview-id aria-label="キャラクター"></select><label>動作 <select data-actor-preview-action></select></label><label>方向 <select data-actor-preview-direction></select></label></div><canvas class="actor-preview-canvas" data-actor-preview-canvas width="320" height="320"></canvas><div data-actor-settings></div><button data-action="actor-settings-save">能力値・役割を保存</button><p class="small" data-actor-settings-status></p></section></div>
+    </section>
   </div>`;
 
 const q = <T extends Element>(selector: string): T => { const result = root.querySelector<T>(selector); if (!result) throw new Error(`missing editor element: ${selector}`); return result; };
@@ -48,9 +59,9 @@ const mapCanvas = q<HTMLCanvasElement>("[data-map-canvas]"), mapContext = mapCan
 const paletteCanvas = q<HTMLCanvasElement>("[data-palette-canvas]"), paletteContext = paletteCanvas.getContext("2d")!;
 const sourceCanvas = q<HTMLCanvasElement>("[data-source-canvas]"), sourceContext = sourceCanvas.getContext("2d")!;
 const mapList = q<HTMLElement>("[data-map-list]"), paletteTabs = q<HTMLElement>("[data-palette-tabs]"), validation = q<HTMLElement>("[data-validation]"), status = q<HTMLElement>("[data-status]");
-const mapCount = q<HTMLElement>("[data-map-count]"), mapTitle = q<HTMLElement>("[data-map-title]"), stampInfo = q<HTMLElement>("[data-stamp-info]"), paletteDirty = q<HTMLElement>("[data-palette-dirty]"), canvasFitWarning = q<HTMLElement>("[data-canvas-fit]"), enemyRoster = q<HTMLElement>("[data-enemy-roster]"), enemyRosterStatus = q<HTMLElement>("[data-enemy-roster-status]"), importReport = q<HTMLElement>("[data-import-report]");
+const mapCount = q<HTMLElement>("[data-map-count]"), mapTitle = q<HTMLElement>("[data-map-title]"), stampInfo = q<HTMLElement>("[data-stamp-info]"), paletteDirty = q<HTMLElement>("[data-palette-dirty]"), canvasFitWarning = q<HTMLElement>("[data-canvas-fit]"), enemyRoster = q<HTMLElement>("[data-enemy-roster]"), enemyRosterStatus = q<HTMLElement>("[data-enemy-roster-status]"), importReport = q<HTMLElement>("[data-import-report]"), actorPreviewStatus = q<HTMLElement>("[data-actor-preview-status]"), actorSettings = q<HTMLElement>("[data-actor-settings]"), actorSettingsStatus = q<HTMLElement>("[data-actor-settings-status]"), assetPicker = q<HTMLElement>("[data-asset-picker]"), assetFolderStatus = q<HTMLElement>("[data-asset-folder-status]"), paletteActorStrip = q<HTMLElement>("[data-map-actor-strip]"), paletteActorStripList = q<HTMLElement>("[data-map-actor-strip-list]"), paletteActorStripStatus = q<HTMLElement>("[data-map-actor-strip-status]"), actorPreviewList = q<HTMLElement>("[data-actor-preview-list]"), actorLibraryCount = q<HTMLElement>("[data-actor-library-count]");
 const kind = q<HTMLSelectElement>("[data-kind]"), mapKind = q<HTMLSelectElement>("[data-map-kind]"), mapWidth = q<HTMLInputElement>("[data-map-width]"), mapHeight = q<HTMLInputElement>("[data-map-height]"), tileSize = q<HTMLSelectElement>("[data-tile-size]"), layer = q<HTMLSelectElement>("[data-layer]"), tool = q<HTMLSelectElement>("[data-tool]"), attributeMode = q<HTMLSelectElement>("[data-attribute-mode]"), collisionMode = q<HTMLSelectElement>("[data-collision-mode]"), marker = q<HTMLSelectElement>("[data-marker]"), zoom = q<HTMLSelectElement>("[data-zoom]"), assetSelect = q<HTMLSelectElement>("[data-asset]"), importInput = q<HTMLInputElement>("[data-import]");
-const grid = q<HTMLInputElement>("[data-grid]"), pass = q<HTMLInputElement>("[data-pass]"), assetImportInput = q<HTMLInputElement>("[data-asset-import]");
+const grid = q<HTMLInputElement>("[data-grid]"), pass = q<HTMLInputElement>("[data-pass]"), assetImportInput = q<HTMLInputElement>("[data-asset-import]"), actorPreviewId = q<HTMLSelectElement>("[data-actor-preview-id]"), actorPreviewAction = q<HTMLSelectElement>("[data-actor-preview-action]"), actorPreviewDirection = q<HTMLSelectElement>("[data-actor-preview-direction]"), actorPreviewCanvas = q<HTMLCanvasElement>("[data-actor-preview-canvas]"), actorPreviewContext = actorPreviewCanvas.getContext("2d")!;
 
 let maps: MapDocument[] = [], active: MapDocument | undefined;
 let palettes = new PaletteHistory(clonePaletteLayout(DEFAULT_PALETTE_LAYOUT as unknown as PaletteLayout));
@@ -61,6 +72,10 @@ let sourceDrag: { start: CellPoint; moved: boolean; existing: boolean } | undefi
 let paletteDrag: { start: CellPoint; moved: boolean; original?: CellRect } | undefined;
 let mapCellPixels = 16, paletteCellPixels = 16, sourceCellPixels = 16;
 let pendingImport: { id: string; analysis: any } | undefined;
+let loadedActorSettings: ActorSettingsCatalog = currentActorSettings();
+let actorPreviewState: ActorPreviewState = { action: "idle", direction: "down", frame: 0, elapsedMs: 0 };
+let actorPreviewLastTime = 0;
+const actorPreviewImages = new Map<string, HTMLImageElement>();
 const mapHistory = new Map<string, { undo: MapDocument[]; redo: MapDocument[] }>(), images = new Map<string, HTMLImageElement>();
 for (const asset of assets) { const image = new Image(); image.onload = () => render(); image.src = asset.path; images.set(asset.id, image); }
 
@@ -84,14 +99,50 @@ function touch(map: MapDocument): void { map.updatedAt = new Date().toISOString(
 async function saveActive(): Promise<void> { if (!active) return; maps = maps.map((map) => map.id === active!.id ? cloneMap(active!) : map); await repository.save(active); renderList(); }
 function mutateMap(action: () => void): void { if (!active) return; const before = mapSnapshot(); action(); if (JSON.stringify(before) !== JSON.stringify(active)) { historyFor(active).undo.push(before); historyFor(active).redo = []; touch(active); void saveActive(); } render(); }
 function selectPageForMap(): void { if (!active) return; const compatible = palettes.layout.pages.filter((page) => page.mapKind === active!.kind && page.tileSize === active!.tileSize); if (!compatible.some((page) => page.id === activePageId)) activePageId = compatible[0]?.id ?? ""; paletteRect = undefined; }
-function ensurePalettePage(): PalettePage | undefined { if (!active) return undefined; let page = pageForActiveMap(); if (page) return page; const id = uniqueId(`${active.kind}-${active.tileSize}`); palettes.mutate((layout) => addPalettePage(layout, createPalettePage({ id, label: `${active!.kind === "home" ? "家" : "ダンジョン"} ${active!.tileSize}px`, mapKind: active!.kind, tileSize: active!.tileSize, width: 8, height: 8 }))); activePageId = id; page = activePage(); return page; }
+function ensurePalettePage(): PalettePage | undefined { if (!active) return undefined; let page = pageForActiveMap(); if (page) return page; const id = uniqueId(`${active.kind}-${active.tileSize}`); palettes.mutate((layout) => addPalettePage(layout, createPalettePage({ id, label: `${active!.kind === "home" ? "家" : "ダンジョン"} ${active!.tileSize}px`, mapKind: active!.kind, tileSize: active!.tileSize, width: 2048, height: 2048 }))); activePageId = id; page = activePage(); return page; }
 function setActive(map: MapDocument): void { active = cloneMap(map); kind.value = active.kind; mapKind.value = active.kind; mapWidth.value = String(active.width); mapHeight.value = String(active.height); tileSize.value = String(active.tileSize); selectPageForMap(); updateMarkerOptions(); render(); }
 function missingAssetIds(map: MapDocument): string[] { const values = new Set<string>(); for (const currentLayer of layers) for (const cell of map.layers[currentLayer]) if (cell && !assetById.has(cell.assetId)) values.add(cell.assetId); for (const entry of map.markers) if (entry.visual && !assetById.has(entry.visual.assetId)) values.add(entry.visual.assetId); return [...values]; }
 function updateMarkerOptions(): void { if (!active) return; const kinds = active.kind === "home" ? homeMarkers : dungeonMarkers; marker.innerHTML = kinds.map((value) => `<option value="${value}">${value}</option>`).join(""); }
 function escapeHtml(value: string): string { const element = document.createElement("span"); element.textContent = value; return element.innerHTML; }
 function renderList(): void { if (!active) return; const filtered = maps.filter((map) => map.kind === kind.value).sort((a, b) => a.floor - b.floor); mapCount.textContent = `${filtered.length} 枚`; mapList.innerHTML = filtered.map((map) => `<button class="map-list-item${map.id === active?.id ? " active" : ""}" data-map-id="${map.id}"><span>${escapeHtml(map.name)}</span><small>${map.kind === "home" ? "家" : `${map.floor}F`} / ${map.width}×${map.height} / ${map.tileSize}px</small></button>`).join("") || `<p class="small">この種類のマップはありません。</p>`; mapList.querySelectorAll<HTMLButtonElement>("[data-map-id]").forEach((button) => button.onclick = () => { const map = maps.find((value) => value.id === button.dataset.mapId); if (map) setActive(map); }); }
-function renderPaletteTabs(): void { if (!active) return; const compatible = palettes.layout.pages.filter((page) => page.mapKind === active!.kind && page.tileSize === active!.tileSize); paletteTabs.innerHTML = compatible.map((page) => `<button data-page-id="${page.id}" class="${page.id === activePageId ? "active" : ""}">${escapeHtml(page.label)}</button>`).join("") || `<p class="small">${active.kind} / ${active.tileSize}px のページがありません。</p>`; paletteTabs.querySelectorAll<HTMLButtonElement>("[data-page-id]").forEach((button) => button.onclick = () => { activePageId = button.dataset.pageId!; paletteRect = undefined; render(); }); paletteDirty.textContent = palettes.dirty ? "未保存" : "保存済み"; }
-function renderAssetOptions(): void { if (!active) return; const allowed = assets.filter((asset) => asset.mapKinds.includes(active!.kind) && asset.tileSize === active!.tileSize); if (!allowed.some((asset) => asset.id === selectedAssetId)) selectedAssetId = allowed[0]?.id ?? ""; assetSelect.innerHTML = allowed.map((asset) => `<option value="${asset.id}">${escapeHtml(asset.label)} (${asset.columns}×${asset.rows})</option>`).join(""); assetSelect.value = selectedAssetId; }
+function drawPalettePageThumb(canvas: HTMLCanvasElement, page: PalettePage): void {
+  const context = canvas.getContext("2d"); if (!context) return;
+  const scale = Math.max(1, Math.min(16, Math.floor(Math.min(canvas.width / page.width, canvas.height / page.height))));
+  canvas.width = page.width * scale; canvas.height = page.height * scale; context.imageSmoothingEnabled = false;
+  context.fillStyle = "#0d1420"; context.fillRect(0, 0, canvas.width, canvas.height);
+  for (const cell of page.cells) drawAsset(context, cell.assetId, cell.frame, cell.x * scale, cell.y * scale, scale);
+  context.strokeStyle = "#ffffff25"; context.lineWidth = 1;
+  for (let x = 0; x <= page.width; x += 1) { context.beginPath(); context.moveTo(x * scale + .5, 0); context.lineTo(x * scale + .5, canvas.height); context.stroke(); }
+  for (let y = 0; y <= page.height; y += 1) { context.beginPath(); context.moveTo(0, y * scale + .5); context.lineTo(canvas.width, y * scale + .5); context.stroke(); }
+}
+function drawAssetThumb(canvas: HTMLCanvasElement, asset: PaletteAsset): void {
+  const context = canvas.getContext("2d"); if (!context) return;
+  const scale = Math.max(4, Math.min(24, Math.floor(Math.min(canvas.width / asset.columns, canvas.height / asset.rows))));
+  canvas.width = asset.columns * scale; canvas.height = asset.rows * scale; context.imageSmoothingEnabled = false;
+  context.fillStyle = "#0d1420"; context.fillRect(0, 0, canvas.width, canvas.height);
+  for (let frame = 0; frame < asset.frameCount; frame += 1) drawAsset(context, asset.id, frame, (frame % asset.columns) * scale, Math.floor(frame / asset.columns) * scale, scale);
+  context.strokeStyle = "#ffffff28";
+  for (let x = 0; x <= asset.columns; x += 1) { context.beginPath(); context.moveTo(x * scale + .5, 0); context.lineTo(x * scale + .5, canvas.height); context.stroke(); }
+  for (let y = 0; y <= asset.rows; y += 1) { context.beginPath(); context.moveTo(0, y * scale + .5); context.lineTo(canvas.width, y * scale + .5); context.stroke(); }
+}
+function renderPaletteTabs(): void {
+  if (!active) return;
+  const compatible = palettes.layout.pages.filter((page) => page.mapKind === active!.kind && page.tileSize === active!.tileSize);
+  paletteTabs.innerHTML = compatible.map((page) => `<button type="button" data-page-id="${escapeHtml(page.id)}" class="palette-page-card${page.id === activePageId ? " active" : ""}"><canvas class="palette-page-thumb" data-page-thumb-id="${escapeHtml(page.id)}" width="112" height="72"></canvas><small>${escapeHtml(page.label)}</small><em>${page.width}×${page.height}</em></button>`).join("") || `<p class="small">${active.kind} / ${active.tileSize}px のページがありません。</p>`;
+  compatible.forEach((page) => { const canvas = paletteTabs.querySelector<HTMLCanvasElement>(`[data-page-thumb-id="${CSS.escape(page.id)}"]`); if (canvas) drawPalettePageThumb(canvas, page); });
+  paletteTabs.querySelectorAll<HTMLButtonElement>("[data-page-id]").forEach((button) => button.onclick = () => { activePageId = button.dataset.pageId!; paletteRect = undefined; render(); });
+  paletteDirty.textContent = palettes.dirty ? "未保存" : "保存済み";
+}
+function renderAssetOptions(): void {
+  if (!active) return;
+  const allowed = assets.filter((asset) => asset.mapKinds.includes(active!.kind) && asset.tileSize === active!.tileSize);
+  if (!allowed.some((asset) => asset.id === selectedAssetId)) selectedAssetId = allowed[0]?.id ?? "";
+  assetSelect.innerHTML = allowed.map((asset) => `<option value="${escapeHtml(asset.id)}">${escapeHtml(asset.label)}</option>`).join(""); assetSelect.value = selectedAssetId;
+  assetFolderStatus.textContent = allowed.length ? `${allowed.length}枚のシート` : "素材なし";
+  assetPicker.innerHTML = allowed.map((asset) => `<button type="button" class="asset-image-card${asset.id === selectedAssetId ? " active" : ""}" data-asset-card="${escapeHtml(asset.id)}"><canvas data-asset-thumb="${escapeHtml(asset.id)}" width="82" height="82"></canvas><small>${escapeHtml(asset.label)}</small><em>${asset.columns}×${asset.rows} / ${asset.tileSize}px</em></button>`).join("") || `<p class="small">対応する素材がありません。</p>`;
+  allowed.forEach((asset) => { const canvas = assetPicker.querySelector<HTMLCanvasElement>(`[data-asset-thumb="${CSS.escape(asset.id)}"]`); if (canvas) drawAssetThumb(canvas, asset); });
+  assetPicker.querySelectorAll<HTMLButtonElement>("[data-asset-card]").forEach((button) => button.onclick = () => { selectedAssetId = button.dataset.assetCard!; assetSelect.value = selectedAssetId; sourceRect = undefined; renderAssetOptions(); renderSource(); });
+}
 function renderEnemyRoster(): void {
   if (!active || active.kind !== "dungeon") { enemyRoster.innerHTML = `<p class="small">家では敵ロスターを使用しません。</p>`; enemyRosterStatus.textContent = ""; return; }
   const actors = Object.values(ACTOR_CATALOG).filter((actor) => actor.roles?.includes("enemy") && actor.enemyStats);
@@ -105,12 +156,104 @@ function renderEnemyRoster(): void {
     active!.enemyRoster = input.checked ? [...new Set([...active!.enemyRoster, id])] : active!.enemyRoster.filter((value) => value !== id);
   }));
 }
+function actorPreviewClip(actor: CraftpixActorDefinition): CraftpixActorClip | undefined { return (actor.clips.idle ?? actor.clips.walk ?? actor.clips.attack ?? Object.values(actor.clips)[0]) as CraftpixActorClip | undefined; }
+function drawActorThumbnail(canvas: HTMLCanvasElement, actor: CraftpixActorDefinition): void {
+  const context = canvas.getContext("2d"); if (!context) return;
+  context.imageSmoothingEnabled = false; context.fillStyle = "#101725"; context.fillRect(0, 0, canvas.width, canvas.height);
+  for (let y = 0; y < canvas.height; y += 12) for (let x = 0; x < canvas.width; x += 12) { context.fillStyle = ((x + y) / 12) % 2 ? "#182233" : "#1d2a3e"; context.fillRect(x, y, 12, 12); }
+  const clip = actorPreviewClip(actor); if (!clip) return;
+  const image = previewImage(clip); if (!image.complete || image.naturalWidth === 0) return;
+  const rect = actorPreviewFrameRect(clip, clip.directions[0] ?? "down", 0), scale = Math.max(1, Math.floor(Math.min((canvas.width - 8) / rect.width, (canvas.height - 8) / rect.height))), width = rect.width * scale, height = rect.height * scale;
+  context.drawImage(image, rect.sx, rect.sy, rect.width, rect.height, Math.floor((canvas.width - width) / 2), Math.floor((canvas.height - height) / 2), width, height);
+}
+function renderMapActorStrip(): void {
+  if (!active) { paletteActorStrip.hidden = true; return; }
+  paletteActorStrip.hidden = false;
+  const actors = Object.values(ACTOR_CATALOG).filter((actor) => active!.kind === "dungeon" ? actor.roles?.includes("enemy") && actor.enemyStats : actor.roles?.includes("player") || actor.roles?.includes("npc")).sort((a, b) => a.label.localeCompare(b.label));
+  paletteActorStripStatus.textContent = active.kind === "dungeon" ? `${active.enemyRoster.length}体候補を選択中` : `${actors.length}体を表示`;
+  paletteActorStripList.innerHTML = actors.map((actor) => {
+    const selected = active!.kind === "dungeon" && active!.enemyRoster.includes(actor.id);
+    const control = active!.kind === "dungeon" ? `<input type="checkbox" data-strip-actor-id="${escapeHtml(actor.id)}" ${selected ? "checked" : ""}>` : "";
+    return `<label class="actor-strip-card${selected ? " selected" : ""}">${control}<canvas data-strip-actor-thumb="${escapeHtml(actor.id)}" width="58" height="58"></canvas><span>${escapeHtml(actor.label)}</span><small>${actor.roles?.includes("enemy") ? `HP ${actor.enemyStats?.baseHp ?? "?"}` : actor.roles?.includes("player") ? "プレイヤー" : "NPC"}</small></label>`;
+  }).join("") || `<p class="small">登録済みのキャラクターがありません。</p>`;
+  actors.forEach((actor) => { const canvas = paletteActorStripList.querySelector<HTMLCanvasElement>(`[data-strip-actor-thumb="${CSS.escape(actor.id)}"]`); if (canvas) drawActorThumbnail(canvas, actor); });
+  paletteActorStripList.querySelectorAll<HTMLInputElement>("[data-strip-actor-id]").forEach((input) => input.onchange = () => mutateMap(() => { const id = input.dataset.stripActorId!; active!.enemyRoster = input.checked ? [...new Set([...active!.enemyRoster, id])] : active!.enemyRoster.filter((value) => value !== id); }));
+}
+function selectedPreviewActor() { return ACTOR_CATALOG[actorPreviewId.value] ?? Object.values(ACTOR_CATALOG)[0]; }
+function previewImage(clip: CraftpixActorClip): HTMLImageElement {
+  const path = actorPreviewPath(clip.path);
+  let image = actorPreviewImages.get(path);
+  if (!image) { image = new Image(); image.onload = () => { drawActorPreview(); renderActorPreviewOptions(); renderMapActorStrip(); }; image.onerror = () => { drawActorPreview(); renderActorPreviewOptions(); renderMapActorStrip(); }; image.src = path; actorPreviewImages.set(path, image); }
+  return image;
+}
+function renderActorPreviewOptions(): void {
+  const actors = Object.values(ACTOR_CATALOG).sort((a, b) => a.label.localeCompare(b.label));
+  actorLibraryCount.textContent = `${actors.length}体`;
+  if (!actors.length) { actorPreviewId.innerHTML = `<option value="">登録なし</option>`; actorPreviewAction.innerHTML = ""; actorPreviewDirection.innerHTML = ""; actorPreviewList.innerHTML = `<p class="small">アクターが登録されていません。</p>`; actorSettings.innerHTML = `<p class="small">アクターが登録されていません。</p>`; return; }
+  const previousId = actorPreviewId.value;
+  actorPreviewId.innerHTML = actors.map((actor) => `<option value="${escapeHtml(actor.id)}">${escapeHtml(actor.label)}</option>`).join("");
+  actorPreviewId.value = actors.some((actor) => actor.id === previousId) ? previousId : actors[0]!.id;
+  actorPreviewList.innerHTML = actors.map((actor) => `<button type="button" class="actor-preview-card${actor.id === actorPreviewId.value ? " active" : ""}" data-actor-card="${escapeHtml(actor.id)}"><canvas data-actor-card-thumb="${escapeHtml(actor.id)}" width="82" height="82"></canvas><strong>${escapeHtml(actor.label)}</strong><small>${actor.roles?.includes("enemy") ? "敵" : actor.roles?.includes("player") ? "プレイヤー" : "NPC"}</small></button>`).join("");
+  actors.forEach((actor) => { const canvas = actorPreviewList.querySelector<HTMLCanvasElement>(`[data-actor-card-thumb="${CSS.escape(actor.id)}"]`); if (canvas) drawActorThumbnail(canvas, actor); });
+  actorPreviewList.querySelectorAll<HTMLButtonElement>("[data-actor-card]").forEach((button) => button.onclick = () => { actorPreviewId.value = button.dataset.actorCard!; actorPreviewState = { action: "idle", direction: "down", frame: 0, elapsedMs: 0 }; renderActorPreviewOptions(); drawActorPreview(); });
+  const actor = selectedPreviewActor(), actions = actorPreviewActions(actor);
+  if (!actions.includes(actorPreviewState.action)) actorPreviewState = { ...actorPreviewState, action: actions[0] ?? "idle", frame: 0, elapsedMs: 0 };
+  actorPreviewAction.innerHTML = actions.map((action) => `<option value="${escapeHtml(action)}">${escapeHtml(action)}</option>`).join("");
+  actorPreviewAction.value = actorPreviewState.action;
+  const clip = actor?.clips[actorPreviewState.action as keyof typeof actor.clips], directions = actorPreviewDirections(clip);
+  if (!directions.includes(actorPreviewState.direction)) actorPreviewState = { ...actorPreviewState, direction: directions[0] ?? "down", frame: 0, elapsedMs: 0 };
+  actorPreviewDirection.innerHTML = directions.map((direction) => `<option value="${direction}">${direction}</option>`).join("");
+  actorPreviewDirection.value = actorPreviewState.direction;
+  renderActorSettingsForm();
+}
+function renderActorSettingsForm(): void {
+  const actor = selectedPreviewActor();
+  if (!actor) { actorSettings.innerHTML = ""; return; }
+  const stored = loadedActorSettings.actors[actor.id] ?? {}, roles = stored.roles ?? actor.roles ?? [], stats = stored.enemyStats ?? actor.enemyStats ?? { baseHp: 3, hpPerFloor: 1, damage: 1 };
+  actorSettings.innerHTML = `<label class="actor-setting-field">表示名 <input data-actor-label value="${escapeHtml(stored.label ?? actor.label)}"></label><div class="actor-role-fields"><span>役割</span><label><input type="checkbox" data-actor-role="enemy" ${roles.includes("enemy") ? "checked" : ""}>敵</label><label><input type="checkbox" data-actor-role="npc" ${roles.includes("npc") ? "checked" : ""}>NPC</label><label><input type="checkbox" data-actor-role="player" ${roles.includes("player") ? "checked" : ""}>プレイヤー</label></div><div class="actor-stat-fields"><label>基礎HP <input type="number" min="1" data-actor-base-hp value="${stats.baseHp}"></label><label>階加算 <input type="number" min="0" data-actor-hp-floor value="${stats.hpPerFloor}"></label><label>攻撃力 <input type="number" min="0" data-actor-damage value="${stats.damage}"></label></div>`;
+}
+function drawActorPreview(): void {
+  actorPreviewContext.imageSmoothingEnabled = false;
+  actorPreviewContext.fillStyle = "#101725"; actorPreviewContext.fillRect(0, 0, actorPreviewCanvas.width, actorPreviewCanvas.height);
+  for (let y = 0; y < actorPreviewCanvas.height; y += 16) for (let x = 0; x < actorPreviewCanvas.width; x += 16) { actorPreviewContext.fillStyle = ((x + y) / 16) % 2 ? "#182233" : "#1d2a3e"; actorPreviewContext.fillRect(x, y, 16, 16); }
+  const actor = selectedPreviewActor(), clip = actor?.clips[actorPreviewState.action as keyof typeof actor.clips];
+  if (!actor || !clip) { actorPreviewStatus.textContent = "表示できるアニメーションがありません。"; return; }
+  const image = previewImage(clip);
+  if (!image.complete || image.naturalWidth === 0) { actorPreviewStatus.textContent = `${actor.label} / ${actorPreviewState.action} を読み込み中…`; return; }
+  const rect = actorPreviewFrameRect(clip, actorPreviewState.direction, actorPreviewState.frame), maxSize = 154, scale = Math.max(1, Math.floor(maxSize / Math.max(rect.width, rect.height))), width = rect.width * scale, height = rect.height * scale, dx = Math.floor((actorPreviewCanvas.width - width) / 2), dy = Math.floor((actorPreviewCanvas.height - height) / 2);
+  actorPreviewContext.drawImage(image, rect.sx, rect.sy, rect.width, rect.height, dx, dy, width, height);
+  const stats = actor.enemyStats ? ` / HP ${actor.enemyStats.baseHp}+${actor.enemyStats.hpPerFloor}/F / 攻撃 ${actor.enemyStats.damage}` : "";
+  actorPreviewStatus.textContent = `${actor.label} / ${actorPreviewState.action} / ${actorPreviewState.direction} / frame ${actorPreviewState.frame + 1}/${clip.columns}${stats}`;
+}
+function animateActorPreview(time: number): void {
+  const delta = actorPreviewLastTime ? Math.min(100, time - actorPreviewLastTime) : 0; actorPreviewLastTime = time;
+  const actor = selectedPreviewActor(), clip = actor?.clips[actorPreviewState.action as keyof typeof actor.clips];
+  if (clip) actorPreviewState = advanceActorPreview(actorPreviewState, clip, delta);
+  drawActorPreview(); window.requestAnimationFrame(animateActorPreview);
+}
+async function loadActorSettings(): Promise<void> {
+  if (import.meta.env.DEV) {
+    try { const response = await fetch("/__map-editor/actors/settings", { headers: { Accept: "application/json" } }); if (response.ok) loadedActorSettings = await response.json() as ActorSettingsCatalog; } catch { /* use generated settings */ }
+  }
+  applyActorSettings(loadedActorSettings); renderActorPreviewOptions(); renderEnemyRoster();
+}
+async function saveActorSettings(): Promise<void> {
+  const actor = selectedPreviewActor(); if (!actor) return;
+  const roles = (["enemy", "npc", "player"] as const).filter((role) => actorSettings.querySelector<HTMLInputElement>(`[data-actor-role="${role}"]`)?.checked === true);
+  const next: ActorSettingsCatalog = { version: 1, actors: { ...loadedActorSettings.actors, [actor.id]: { label: actorSettings.querySelector<HTMLInputElement>("[data-actor-label]")?.value.trim() || actor.label, roles, enemyStats: { baseHp: Number(actorSettings.querySelector<HTMLInputElement>("[data-actor-base-hp]")?.value ?? 3), hpPerFloor: Number(actorSettings.querySelector<HTMLInputElement>("[data-actor-hp-floor]")?.value ?? 1), damage: Number(actorSettings.querySelector<HTMLInputElement>("[data-actor-damage]")?.value ?? 1) } } } };
+  try {
+    if (import.meta.env.DEV) { const response = await fetch("/__map-editor/actors/settings", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(next) }); if (!response.ok) throw new Error(await response.text()); loadedActorSettings = await response.json().then((body) => body.settings as ActorSettingsCatalog); }
+    else { download("actor-settings.json", next); loadedActorSettings = next; }
+    applyActorSettings(loadedActorSettings); renderActorPreviewOptions(); renderEnemyRoster(); actorSettingsStatus.textContent = "キャラクター設定を保存しました。";
+  } catch (error) { actorSettingsStatus.textContent = `キャラクター設定保存エラー: ${error instanceof Error ? error.message : "不明"}`; }
+}
 function renderImportReport(): void {
   if (!pendingImport) { importReport.innerHTML = ""; return; }
   const analysis = pendingImport.analysis;
   const mapRows = (analysis.mapTiles ?? []).map((entry: any) => `<div class="import-row"><label><input type="checkbox" data-import-map-id="${escapeHtml(entry.id)}" ${entry.selected ? "checked" : ""}> ${escapeHtml(entry.label)}</label><label>セル <select data-import-tile-size="${escapeHtml(entry.id)}"><option value="">手動</option><option value="16" ${entry.tileSize === 16 ? "selected" : ""}>16px</option><option value="32" ${entry.tileSize === 32 ? "selected" : ""}>32px</option></select></label><label>余白 <input type="number" min="0" data-import-margin="${escapeHtml(entry.id)}" value="${Number(entry.margin ?? 0)}"></label><label>間隔 <input type="number" min="0" data-import-spacing="${escapeHtml(entry.id)}" value="${Number(entry.spacing ?? 0)}"></label><small>${entry.tileSize ?? "手動"}px / ${entry.columns ?? "?"}×${entry.rows ?? "?"}${entry.warnings?.length ? ` / ${escapeHtml(entry.warnings.join("、"))}` : ""}</small></div>`).join("");
   const actorRows = (analysis.actors ?? []).map((entry: any) => `<div class="import-actor"><label><input type="checkbox" data-import-actor-id="${escapeHtml(entry.id)}" checked><span>${escapeHtml(entry.label)}</span></label><label>HP <input type="number" min="1" data-import-hp="${escapeHtml(entry.id)}" value="3"></label><label>階加算 <input type="number" min="0" data-import-hp-floor="${escapeHtml(entry.id)}" value="1"></label><label>攻撃 <input type="number" min="0" data-import-damage="${escapeHtml(entry.id)}" value="1"></label><small>action: ${escapeHtml(Object.keys(entry.clips ?? {}).join(", "))}</small></div>`).join("");
-  importReport.innerHTML = `<p class="small">${escapeHtml(analysis.source.fileName)} / map ${analysis.mapTiles?.length ?? 0} / actor ${analysis.actors?.length ?? 0}</p><div class="import-list">${mapRows || `<p class="small">マップ素材候補なし</p>`}${actorRows || `<p class="small">アクター候補なし</p>`}</div><label class="small"><input type="checkbox" data-import-pages checked>初期パレットページも作成</label><label class="small"><input type="checkbox" data-import-license>利用条件／ライセンスを確認しました</label><button data-action="import-commit">選択した候補を承認して登録</button><button data-action="import-cancel">キャンセル</button>`;
+  importReport.innerHTML = `<p class="small">${escapeHtml(analysis.source.fileName)} / map ${analysis.mapTiles?.length ?? 0} / actor ${analysis.actors?.length ?? 0}</p><p class="small">マップ素材: assets-src/map-tiles/sheets/imported/　キャラクター: assets-src/actors/imported/</p><div class="import-list">${mapRows || `<p class="small">マップ素材候補なし</p>`}${actorRows || `<p class="small">アクター候補なし</p>`}</div><label class="small"><input type="checkbox" data-import-pages>自動パレットページも作成（任意。通常は素材フォルダから手動配置）</label><label class="small"><input type="checkbox" data-import-license>利用条件／ライセンスを確認しました</label><div class="import-actions"><button data-action="import-select-all">全候補を選択</button><button data-action="import-commit">まとめて登録</button><button data-action="import-cancel">キャンセル</button></div>`;
+  q<HTMLButtonElement>("[data-action=import-select-all]").onclick = () => { importReport.querySelectorAll<HTMLInputElement>("[data-import-map-id], [data-import-actor-id]").forEach((input) => { input.checked = true; }); status.textContent = "全候補を選択しました。セルサイズと利用条件を確認してから、まとめて登録してください。"; };
   q<HTMLButtonElement>("[data-action=import-cancel]").onclick = () => { pendingImport = undefined; renderImportReport(); };
   q<HTMLButtonElement>("[data-action=import-commit]").onclick = async () => {
     const licenseAcknowledged = importReport.querySelector<HTMLInputElement>("[data-import-license]")?.checked === true;
@@ -124,12 +267,17 @@ function renderImportReport(): void {
 }
 function drawSelection(context: CanvasRenderingContext2D, rect: CellRect, size: number, colour: string): void { context.lineWidth = 2; context.strokeStyle = colour; context.strokeRect(rect.x * size + 1, rect.y * size + 1, rect.width * size - 2, rect.height * size - 2); }
 function renderSource(): void { const asset = sourceAsset(); if (!asset) { sourceCanvas.width = sourceCanvas.height = 1; return; } const fit = fitEditorCanvas(asset.columns, asset.rows, asset.tileSize * sourceScale); sourceCellPixels = fit.cellPixels; sourceCanvas.width = fit.width; sourceCanvas.height = fit.height; sourceContext.imageSmoothingEnabled = false; sourceContext.clearRect(0, 0, sourceCanvas.width, sourceCanvas.height); for (let frame = 0; frame < asset.frameCount; frame += 1) drawAsset(sourceContext, asset.id, frame, (frame % asset.columns) * sourceCellPixels, Math.floor(frame / asset.columns) * sourceCellPixels, sourceCellPixels); sourceContext.strokeStyle = "#ffffff33"; for (let x = 0; x <= asset.columns; x += 1) { sourceContext.beginPath(); sourceContext.moveTo(x * sourceCellPixels, 0); sourceContext.lineTo(x * sourceCellPixels, sourceCanvas.height); sourceContext.stroke(); } for (let y = 0; y <= asset.rows; y += 1) { sourceContext.beginPath(); sourceContext.moveTo(0, y * sourceCellPixels); sourceContext.lineTo(sourceCanvas.width, y * sourceCellPixels); sourceContext.stroke(); } if (sourceRect) drawSelection(sourceContext, sourceRect, sourceCellPixels, "#ffd166"); }
-function renderPalette(): void { const page = pageForActiveMap(); if (!page) { paletteCanvas.width = paletteCanvas.height = 1; return; } const fit = fitEditorCanvas(page.width, page.height, page.tileSize * sourceScale); paletteCellPixels = fit.cellPixels; paletteCanvas.width = fit.width; paletteCanvas.height = fit.height; paletteContext.imageSmoothingEnabled = false; paletteContext.fillStyle = "#101725"; paletteContext.fillRect(0, 0, paletteCanvas.width, paletteCanvas.height); for (const cell of page.cells) drawAsset(paletteContext, cell.assetId, cell.frame, cell.x * paletteCellPixels, cell.y * paletteCellPixels, paletteCellPixels); paletteContext.strokeStyle = "#ffffff20"; for (let x = 0; x <= page.width; x += 1) { paletteContext.beginPath(); paletteContext.moveTo(x * paletteCellPixels, 0); paletteContext.lineTo(x * paletteCellPixels, paletteCanvas.height); paletteContext.stroke(); } for (let y = 0; y <= page.height; y += 1) { paletteContext.beginPath(); paletteContext.moveTo(0, y * paletteCellPixels); paletteContext.lineTo(paletteCanvas.width, y * paletteCellPixels); paletteContext.stroke(); } if (paletteRect) drawSelection(paletteContext, paletteRect, paletteCellPixels, "#70d9ce"); }
+function renderPalette(): void { const page = pageForActiveMap(); if (!page) { paletteCanvas.width = paletteCanvas.height = 1; paletteCanvas.style.width = "1px"; paletteCanvas.style.height = "1px"; return; } const requested = page.tileSize * sourceScale, fit = fitEditorCanvas(page.width, page.height, requested); paletteCellPixels = fit.cellPixels; paletteCanvas.width = fit.width; paletteCanvas.height = fit.height; const displayScale = requested / paletteCellPixels; paletteCanvas.style.width = `${Math.ceil(fit.width * displayScale)}px`; paletteCanvas.style.height = `${Math.ceil(fit.height * displayScale)}px`; paletteContext.imageSmoothingEnabled = false; paletteContext.fillStyle = "#101725"; paletteContext.fillRect(0, 0, paletteCanvas.width, paletteCanvas.height); for (const cell of page.cells) drawAsset(paletteContext, cell.assetId, cell.frame, cell.x * paletteCellPixels, cell.y * paletteCellPixels, paletteCellPixels); paletteContext.strokeStyle = "#ffffff20"; for (let x = 0; x <= page.width; x += 1) { paletteContext.beginPath(); paletteContext.moveTo(x * paletteCellPixels, 0); paletteContext.lineTo(x * paletteCellPixels, paletteCanvas.height); paletteContext.stroke(); } for (let y = 0; y <= page.height; y += 1) { paletteContext.beginPath(); paletteContext.moveTo(0, y * paletteCellPixels); paletteContext.lineTo(paletteCanvas.width, y * paletteCellPixels); paletteContext.stroke(); } if (paletteRect) drawSelection(paletteContext, paletteRect, paletteCellPixels, "#70d9ce"); }
 function drawMapCell(map: MapDocument, index: number, x: number, y: number, display: number): void { const px = x * display, py = y * display; mapContext.fillStyle = "#172130"; mapContext.fillRect(px, py, display, display); for (const currentLayer of layers) { const cell = map.layers[currentLayer][index]; if (cell) drawAsset(mapContext, cell.assetId, cell.frame, px, py, display); } if (pass.checked) { mapContext.fillStyle = map.collision[index] ? "#42d37a44" : "#ed536044"; mapContext.fillRect(px, py, display, display); } if (grid.checked) { mapContext.strokeStyle = "#ffffff24"; mapContext.strokeRect(px, py, display, display); } }
 function drawMarker(entry: MapMarker, display: number): void { const px = entry.x * display, py = entry.y * display; if (entry.visual) drawAsset(mapContext, entry.visual.assetId, entry.visual.frame, px, py, display); mapContext.fillStyle = entry.visual ? "#ffd166bb" : "#ffd166"; mapContext.fillRect(px + display * .25, py + display * .25, display * .5, display * .5); mapContext.fillStyle = "#fff8d7"; mapContext.font = `${Math.max(8, display * .55)}px sans-serif`; mapContext.fillText(entry.kind, px + 2, py + Math.max(10, display * .75)); }
 function renderMap(): void { if (!active) return; const requested = active.tileSize * Number(zoom.value), fit = fitEditorCanvas(active.width, active.height, requested); mapCellPixels = fit.cellPixels; mapCanvas.width = fit.width; mapCanvas.height = fit.height; mapContext.imageSmoothingEnabled = false; mapContext.clearRect(0, 0, mapCanvas.width, mapCanvas.height); for (let y = 0; y < active.height; y += 1) for (let x = 0; x < active.width; x += 1) drawMapCell(active, y * active.width + x, x, y, mapCellPixels); for (const entry of active.markers) drawMarker(entry, mapCellPixels); mapTitle.textContent = `${active.name} — ${active.width}×${active.height} / ${active.tileSize}px`; const stamp = selectedStamp(); stampInfo.textContent = stamp ? `${stamp.width}×${stamp.height} スタンプ` : "スタンプ未選択"; canvasFitWarning.hidden = !fit.reduced; canvasFitWarning.textContent = fit.reduced ? `大きなマップのため表示を ${mapCellPixels}px/セルへ自動縮小しています（指定: ${requested}px/セル）。編集座標は保持されます。` : ""; }
 function renderValidation(): void { if (!active) return; const issues = [...validateMap(active), ...missingAssetIds(active).map((id) => `missing asset ${id}`)]; validation.innerHTML = issues.length ? issues.map((issue) => `<p class="error">${escapeHtml(issue)}</p>`).join("") : `<p class="ok">検証OK</p>`; const home = maps.find((map) => map.kind === "home"), dungeons = maps.filter((map) => map.kind === "dungeon"), packIssues = home ? validateTrialMapPack({ home, dungeons }) : ["trial home"]; const missingInPack = maps.some((map) => missingAssetIds(map).length > 0); q<HTMLButtonElement>("[data-action=try]").disabled = packIssues.length > 0 || missingInPack; }
-function render(): void { if (!active) return; renderList(); renderPaletteTabs(); renderAssetOptions(); renderEnemyRoster(); renderSource(); renderPalette(); renderMap(); renderValidation(); }
+function render(): void { if (!active) return; renderList(); renderPaletteTabs(); renderAssetOptions(); renderEnemyRoster(); renderMapActorStrip(); renderSource(); renderPalette(); renderMap(); renderValidation(); }
+function setEditorMode(mode: "map" | "actors"): void {
+  editorRoot.querySelectorAll<HTMLElement>("[data-editor-view]").forEach((view) => { view.hidden = view.dataset.editorView !== mode; });
+  editorRoot.querySelectorAll<HTMLButtonElement>("[data-editor-mode]").forEach((button) => { button.classList.toggle("active", button.dataset.editorMode === mode); });
+  if (mode === "actors") { renderActorPreviewOptions(); drawActorPreview(); }
+}
 function canvasPoint(canvas: HTMLCanvasElement, event: PointerEvent, cellPixels: number): CellPoint { const rect = canvas.getBoundingClientRect(), pixelX = (event.clientX - rect.left) * (canvas.width / rect.width), pixelY = (event.clientY - rect.top) * (canvas.height / rect.height); return { x: Math.floor(pixelX / cellPixels), y: Math.floor(pixelY / cellPixels) }; }
 function sourcePoint(event: PointerEvent): CellPoint | undefined { const asset = sourceAsset(); if (!asset) return undefined; const point = canvasPoint(sourceCanvas, event, sourceCellPixels); return inside(asset.columns, asset.rows, point) ? point : undefined; }
 function palettePoint(event: PointerEvent): CellPoint | undefined { const page = pageForActiveMap(); if (!page) return undefined; const point = canvasPoint(paletteCanvas, event, paletteCellPixels); return inside(page.width, page.height, point) ? point : undefined; }
@@ -156,8 +304,13 @@ document.addEventListener("pointerup", (event) => { if (!sourceDrag || !sourceRe
 document.addEventListener("keydown", (event) => { if (event.key !== "Delete" || !paletteRect) return; const page = pageForActiveMap(); if (!page) return; event.preventDefault(); palettes.mutate(() => { page.cells = page.cells.filter((cell) => cell.x < paletteRect!.x || cell.x >= paletteRect!.x + paletteRect!.width || cell.y < paletteRect!.y || cell.y >= paletteRect!.y + paletteRect!.height); }); render(); });
 
 kind.onchange = () => { const candidate = maps.filter((map) => map.kind === kind.value).sort((a, b) => a.floor - b.floor)[0]; if (candidate) setActive(candidate); else render(); };
+root.querySelectorAll<HTMLButtonElement>("[data-editor-mode]").forEach((button) => button.onclick = () => setEditorMode(button.dataset.editorMode as "map" | "actors"));
 layer.onchange = render; zoom.onchange = render; grid.onchange = render; pass.onchange = render; attributeMode.onchange = render;
 assetSelect.onchange = () => { selectedAssetId = assetSelect.value; sourceRect = undefined; renderSource(); };
+actorPreviewId.onchange = () => { actorPreviewState = { action: "idle", direction: "down", frame: 0, elapsedMs: 0 }; renderActorPreviewOptions(); drawActorPreview(); };
+actorPreviewAction.onchange = () => { actorPreviewState = { ...actorPreviewState, action: actorPreviewAction.value, frame: 0, elapsedMs: 0 }; renderActorPreviewOptions(); drawActorPreview(); };
+actorPreviewDirection.onchange = () => { actorPreviewState = { ...actorPreviewState, direction: actorPreviewDirection.value as ActorPreviewState["direction"], frame: 0, elapsedMs: 0 }; drawActorPreview(); };
+q<HTMLButtonElement>("[data-action=actor-settings-save]").onclick = () => { void saveActorSettings(); };
 q<HTMLButtonElement>("[data-action=apply-map-settings]").onclick = () => { if (!active) return; const width = Number(mapWidth.value), height = Number(mapHeight.value), requestedSize = Number(tileSize.value) as 16 | 32, requestedKind = mapKind.value as "home" | "dungeon"; mutateMap(() => { const result = applyMapSettingsAtomically(active!, { width, height, tileSize: requestedSize, kind: requestedKind, maps }); if (!result.ok) status.textContent = result.reason; }); kind.value = active.kind; mapKind.value = active.kind; mapWidth.value = String(active.width); mapHeight.value = String(active.height); tileSize.value = String(active.tileSize); selectPageForMap(); updateMarkerOptions(); render(); };
 q<HTMLButtonElement>("[data-action=undo]").onclick = async () => { if (!active) return; const history = historyFor(active), previous = history.undo.pop(); if (!previous) return; history.redo.push(mapSnapshot()); active = previous; await saveActive(); selectPageForMap(); render(); };
 q<HTMLButtonElement>("[data-action=redo]").onclick = async () => { if (!active) return; const history = historyFor(active), next = history.redo.pop(); if (!next) return; history.undo.push(mapSnapshot()); active = next; await saveActive(); selectPageForMap(); render(); };
@@ -168,9 +321,9 @@ q<HTMLButtonElement>("[data-action=delete]").onclick = async () => { if (!active
 q<HTMLButtonElement>("[data-action=export-map]").onclick = () => { if (active) download(`${active.id}.json`, active); };
 q<HTMLButtonElement>("[data-action=export-pack]").onclick = () => download("map-pack.json", { version: 6, maps });
 q<HTMLButtonElement>("[data-action=try]").onclick = () => { const home = maps.find((map) => map.kind === "home"), dungeons = maps.filter((map) => map.kind === "dungeon").sort((a, b) => a.floor - b.floor); if (!home) return; const pack = { home, dungeons }, issues = validateTrialMapPack(pack); if (issues.length) { status.textContent = `試遊できません: ${issues.join(", ")}`; render(); return; } storeTrialMapPack(pack); window.location.href = "./?autostart=world"; };
-q<HTMLButtonElement>("[data-action=palette-add]").onclick = () => { if (!active) return; const id = uniqueId("palette"); palettes.mutate((layout) => addPalettePage(layout, createPalettePage({ id, label: "新しいパレット", mapKind: active!.kind, tileSize: active!.tileSize, width: 8, height: 8 }))); activePageId = id; paletteRect = undefined; render(); };
+q<HTMLButtonElement>("[data-action=palette-add]").onclick = () => { if (!active) return; const id = uniqueId("palette"); palettes.mutate((layout) => addPalettePage(layout, createPalettePage({ id, label: "新しいパレット", mapKind: active!.kind, tileSize: active!.tileSize, width: 2048, height: 2048 }))); activePageId = id; paletteRect = undefined; render(); };
 q<HTMLButtonElement>("[data-action=palette-rename]").onclick = () => { const page = activePage(); if (!page) return; const label = prompt("パレット名", page.label); if (label) palettes.mutate(() => { if (!renamePalettePage(page, label)) status.textContent = "名前を入力してください。"; }); render(); };
-q<HTMLButtonElement>("[data-action=palette-resize]").onclick = () => { const page = activePage(); if (!page) return; const width = Number(prompt("幅（1〜256）", String(page.width))), height = Number(prompt("高さ（1〜256）", String(page.height))); palettes.mutate(() => { const result = resizePalettePage(page, width, height); if (!result.ok) status.textContent = result.reason; }); render(); };
+q<HTMLButtonElement>("[data-action=palette-resize]").onclick = () => { const page = activePage(); if (!page) return; const width = Number(prompt(`幅（1〜${MAX_PALETTE_DIMENSION}セル）`, String(page.width))), height = Number(prompt(`高さ（1〜${MAX_PALETTE_DIMENSION}セル）`, String(page.height))); palettes.mutate(() => { const result = resizePalettePage(page, width, height); if (!result.ok) status.textContent = result.reason; }); render(); };
 q<HTMLButtonElement>("[data-action=palette-delete]").onclick = () => { const page = activePage(); if (!page) return; if (palettes.layout.pages.length <= 1) { status.textContent = "最後のパレットページは削除できません。保存可能なページを1つ残してください。"; render(); return; } if (!confirm(`パレット「${page.label}」を削除しますか？`)) return; palettes.mutate((layout) => { deletePalettePage(layout, page.id); }); selectPageForMap(); render(); };
 q<HTMLButtonElement>("[data-action=palette-undo]").onclick = () => { palettes.undo(); selectPageForMap(); render(); };
 q<HTMLButtonElement>("[data-action=palette-redo]").onclick = () => { palettes.redo(); selectPageForMap(); render(); };
@@ -191,4 +344,4 @@ assetImportInput.onchange = async () => {
   } catch (error) { status.textContent = `素材解析エラー: ${error instanceof Error ? error.message : "不明"}`; }
   assetImportInput.value = "";
 };
-void (async () => { maps = await repository.list(); if (!maps.length) { const home = createManualMap("home", "新しい家", { width: 32, height: 20, tileSize: 16, floor: 0 }), dungeon = createManualMap("dungeon", "新しいダンジョン", { width: 48, height: 36, tileSize: 16, floor: 1 }); maps = [home, dungeon]; await repository.save(home); await repository.save(dungeon); } setActive(maps.find((map) => map.kind === "home") ?? maps[0]!); await loadPalettes(); })();
+void (async () => { maps = await repository.list(); if (!maps.length) { const home = createManualMap("home", "新しい家", { width: 32, height: 20, tileSize: 16, floor: 0 }), dungeon = createManualMap("dungeon", "新しいダンジョン", { width: 48, height: 36, tileSize: 16, floor: 1 }); maps = [home, dungeon]; await repository.save(home); await repository.save(dungeon); } await loadActorSettings(); setActive(maps.find((map) => map.kind === "home") ?? maps[0]!); await loadPalettes(); window.requestAnimationFrame(animateActorPreview); })();

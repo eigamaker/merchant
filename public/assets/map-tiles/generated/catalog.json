@@ -96,6 +96,618 @@
       "defaultLayer": "structure",
       "defaultWalkable": false,
       "path": "/assets/map-tiles/generated/home.wall.png"
+    },
+    {
+      "id": "png-attacked-manequin2-with-shadow",
+      "label": "Attacked_Manequin2_with_shadow",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 8,
+      "rows": 8,
+      "frameCount": 64,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-attacked-manequin2-with-shadow.png"
+    },
+    {
+      "id": "png-attacked-manequin3-with-shadow",
+      "label": "Attacked_Manequin3_with_shadow",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 8,
+      "rows": 8,
+      "frameCount": 64,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-attacked-manequin3-with-shadow.png"
+    },
+    {
+      "id": "png-attacked-manequin3-without-shadow",
+      "label": "Attacked_Manequin3_without_shadow",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 8,
+      "rows": 8,
+      "frameCount": 64,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-attacked-manequin3-without-shadow.png"
+    },
+    {
+      "id": "png-citizen1-idle-without-shadow",
+      "label": "Citizen1_Idle_without_shadow",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 24,
+      "rows": 8,
+      "frameCount": 192,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-citizen1-idle-without-shadow.png"
+    },
+    {
+      "id": "png-citizen1-idle",
+      "label": "Citizen1_Idle",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 24,
+      "rows": 8,
+      "frameCount": 192,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-citizen1-idle.png"
+    },
+    {
+      "id": "png-citizen1-walk-without-shadow",
+      "label": "Citizen1_Walk_without_shadow",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 12,
+      "rows": 8,
+      "frameCount": 96,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-citizen1-walk-without-shadow.png"
+    },
+    {
+      "id": "png-citizen1-walk",
+      "label": "Citizen1_Walk",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 12,
+      "rows": 8,
+      "frameCount": 96,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-citizen1-walk.png"
+    },
+    {
+      "id": "png-citizen2-idle",
+      "label": "Citizen2_Idle",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 24,
+      "rows": 8,
+      "frameCount": 192,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-citizen2-idle.png"
+    },
+    {
+      "id": "png-citizen2-walk-without-shadow",
+      "label": "Citizen2_Walk_without_shadow",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 12,
+      "rows": 8,
+      "frameCount": 96,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-citizen2-walk-without-shadow.png"
+    },
+    {
+      "id": "png-decorative-cracks",
+      "label": "Decorative_cracks",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 19,
+      "rows": 15,
+      "frameCount": 285,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-decorative-cracks.png"
+    },
+    {
+      "id": "png-different-characters-shadow",
+      "label": "Different_characters_shadow",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 2,
+      "rows": 2,
+      "frameCount": 4,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-different-characters-shadow.png"
+    },
+    {
+      "id": "png-exterior",
+      "label": "Exterior",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 28,
+      "rows": 9,
+      "frameCount": 252,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-exterior.png"
+    },
+    {
+      "id": "png-fighter-sword-with-shadow",
+      "label": "Fighter_sword_with_shadow",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 24,
+      "rows": 16,
+      "frameCount": 384,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-fighter-sword-with-shadow.png"
+    },
+    {
+      "id": "png-fighter2-idle-without-shadow",
+      "label": "Fighter2_Idle_without_shadow",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 24,
+      "rows": 8,
+      "frameCount": 192,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-fighter2-idle-without-shadow.png"
+    },
+    {
+      "id": "png-fighter2-idle",
+      "label": "Fighter2_Idle",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 24,
+      "rows": 8,
+      "frameCount": 192,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-fighter2-idle.png"
+    },
+    {
+      "id": "png-fighter2-walk-without-shadow",
+      "label": "Fighter2_Walk_without_shadow",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 12,
+      "rows": 8,
+      "frameCount": 96,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-fighter2-walk-without-shadow.png"
+    },
+    {
+      "id": "png-fighter2-walk",
+      "label": "Fighter2_Walk",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 12,
+      "rows": 8,
+      "frameCount": 96,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-fighter2-walk.png"
+    },
+    {
+      "id": "png-fire",
+      "label": "Fire",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 24,
+      "rows": 3,
+      "frameCount": 72,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-fire.png"
+    },
+    {
+      "id": "png-flags-animation",
+      "label": "Flags_animation",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 6,
+      "rows": 36,
+      "frameCount": 216,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-flags-animation.png"
+    },
+    {
+      "id": "png-mage1-without-shadow",
+      "label": "Mage1_without_shadow",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 28,
+      "rows": 13,
+      "frameCount": 364,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-mage1-without-shadow.png"
+    },
+    {
+      "id": "png-mage1",
+      "label": "Mage1",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 28,
+      "rows": 13,
+      "frameCount": 364,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-mage1.png"
+    },
+    {
+      "id": "png-mage2-without-shadow",
+      "label": "Mage2_without_shadow",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 28,
+      "rows": 13,
+      "frameCount": 364,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-mage2-without-shadow.png"
+    },
+    {
+      "id": "png-mage3-without-shadow",
+      "label": "Mage3_without_shadow",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 28,
+      "rows": 13,
+      "frameCount": 364,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-mage3-without-shadow.png"
+    },
+    {
+      "id": "png-mages-shadow",
+      "label": "Mages_shadow",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 2,
+      "rows": 3,
+      "frameCount": 6,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-mages-shadow.png"
+    },
+    {
+      "id": "png-reader1",
+      "label": "Reader1",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 22,
+      "rows": 3,
+      "frameCount": 66,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-reader1.png"
+    },
+    {
+      "id": "png-reader2",
+      "label": "Reader2",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 2,
+      "rows": 2,
+      "frameCount": 4,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-reader2.png"
+    },
+    {
+      "id": "png-shadow-fighter",
+      "label": "Shadow_fighter",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 2,
+      "rows": 1,
+      "frameCount": 2,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-shadow-fighter.png"
+    },
+    {
+      "id": "png-shadow-manequin",
+      "label": "shadow_manequin",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 2,
+      "rows": 2,
+      "frameCount": 4,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-shadow-manequin.png"
+    },
+    {
+      "id": "png-talking-people-shadow",
+      "label": "Talking_people_shadow",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 5,
+      "rows": 2,
+      "frameCount": 10,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-talking-people-shadow.png"
+    },
+    {
+      "id": "png-talking-people-without-shadow",
+      "label": "Talking_people_without_shadow",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 36,
+      "rows": 3,
+      "frameCount": 108,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-talking-people-without-shadow.png"
+    },
+    {
+      "id": "png-talking-person1-without-shadow",
+      "label": "Talking_person1_without_shadow",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 24,
+      "rows": 2,
+      "frameCount": 48,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-talking-person1-without-shadow.png"
+    },
+    {
+      "id": "png-talking-person1",
+      "label": "Talking_person1",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 24,
+      "rows": 2,
+      "frameCount": 48,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-talking-person1.png"
+    },
+    {
+      "id": "png-talking-person2-without-shadow",
+      "label": "Talking_person2_without_shadow",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 24,
+      "rows": 2,
+      "frameCount": 48,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-talking-person2-without-shadow.png"
+    },
+    {
+      "id": "png-walls-interior",
+      "label": "Walls_interior",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 24,
+      "rows": 8,
+      "frameCount": 192,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-walls-interior.png"
+    },
+    {
+      "id": "png-walls-street",
+      "label": "Walls_street",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 21,
+      "rows": 18,
+      "frameCount": 378,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-walls-street.png"
+    },
+    {
+      "id": "png-windows-doors",
+      "label": "Windows_doors",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 18,
+      "rows": 18,
+      "frameCount": 324,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-windows-doors.png"
     }
   ]
 }

@@ -27,7 +27,9 @@ PNG単体は16/32px候補と境界周期から初期値を推定しますが、�
 
 WOLF RPG Editorの`.tile`は自動接続規則を持つ独自形式として検出します。`base.png`や`world.png`などの静的シートは取り込めますが、自動接続そのものは再現せず、個別画像を通常グリッドとして使う場合は警告を表示します。
 
-解析結果は30分間だけ開発サーバーの一時領域に保持され、「承認して登録」を押した候補だけが`assets-src/map-tiles/sheets/imported/`または`assets-src/actors/imported/`へ保存されます。原本のSHA-256、参照パス、README/ライセンスの有無は`imports.json`へ記録します。
+解析結果は30分間だけ開発サーバーの一時領域に保持され、「まとめて登録」を押した候補だけが`assets-src/map-tiles/sheets/imported/`または`assets-src/actors/imported/`へ保存されます。原本のSHA-256、参照パス、README/ライセンスの有無は`imports.json`へ記録します。
+
+アクターを登録した場合は、開発サーバーが同時にアクター生成処理を実行し、`public/assets/actors/generated/`と`src/game/actorAssetCatalog.generated.ts`を更新します。アクター画像はマップパレットには追加せず、敵ロスター／実行時アクターカタログから参照します。
 
 ## パレット
 
@@ -40,5 +42,7 @@ npm run assets
 ```
 
 生成物は専用ディレクトリ `public/assets/map-tiles/generated/` と `src/game/mapAssetCatalog.generated.ts` に出力されます。生成ディレクトリ以外は掃除しません。`npm run dev`、`npm test`、`npm run build` は開始前に自動生成します。
+
+原本を削除すると、次回生成時に対応する生成画像・カタログからも消えます。PNGと`.tileset.json`は必ずセットで削除してください。マップパレットに残っている削除素材のセルは自動的に除去します。アクターも、アクターのフォルダを削除して再生成すれば生成カタログから除去されます。
 
 開発サーバーでは `GET /__map-editor/palettes` で正本を読み取り、`PUT /__map-editor/palettes` に検証済みのパレットJSONを送ると、正本を一時ファイルから置換して再生成します。このAPIはVite開発サーバーにだけ登録され、本番ビルドには含まれません。旧クライアント向けに `GET/POST /__map-tiles/palettes.json` も利用できます。素材シートの追加・変更・削除は開発サーバーが監視し、成功時に全ページを再読込します。

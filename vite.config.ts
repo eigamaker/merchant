@@ -4,6 +4,8 @@ import fs from "node:fs";
 import { randomUUID } from "node:crypto";
 import { MAP_EDITOR_PALETTE_API, MAP_TILE_INPUT_DIR, MAP_TILE_PALETTE_API, MAP_TILE_PALETTE_FILE, buildMapTileAssets, savePaletteAtomically } from "./scripts/map-tile-pipeline.mjs";
 import { analyzeImport, commitImport } from "./scripts/asset-import-pipeline.mjs";
+import { ACTOR_SOURCE_DIR, buildActorAssets } from "./scripts/build-actor-assets.mjs";
+import { readActorSettings, writeActorSettingsAtomically } from "./scripts/actor-settings.mjs";
 
 function mapTilePipelinePlugin(): Plugin {
   const importSessions = new Map<string, { expiresAt: number; analysis: ReturnType<typeof analyzeImport> }>();
@@ -26,6 +28,7 @@ function mapTilePipelinePlugin(): Plugin {
         rebuildTimer = setTimeout(() => {
           try {
             buildMapTileAssets();
+            buildActorAssets();
             server.ws.send({ type: "full-reload" });
           } catch (error) {
             server.config.logger.error(error instanceof Error ? error.message : String(error));
@@ -33,9 +36,11 @@ function mapTilePipelinePlugin(): Plugin {
         }, 80);
       };
       const watchedRoot = MAP_TILE_INPUT_DIR.replaceAll("\\", "/");
-      server.watcher.on("add", (file) => { if (file.replaceAll("\\", "/").startsWith(watchedRoot)) rebuild(); });
-      server.watcher.on("change", (file) => { if (file.replaceAll("\\", "/").startsWith(watchedRoot)) rebuild(); });
-      server.watcher.on("unlink", (file) => { if (file.replaceAll("\\", "/").startsWith(watchedRoot)) rebuild(); });
+      const watchedActorRoot = ACTOR_SOURCE_DIR.replaceAll("\\", "/");
+      const isAssetSource = (file: string) => { const normalized = file.replaceAll("\\", "/"); return normalized.startsWith(watchedRoot) || normalized.startsWith(watchedActorRoot); };
+      server.watcher.on("add", (file) => { if (isAssetSource(file)) rebuild(); });
+      server.watcher.on("change", (file) => { if (isAssetSource(file)) rebuild(); });
+      server.watcher.on("unlink", (file) => { if (isAssetSource(file)) rebuild(); });
       server.middlewares.use((request, response, next) => {
         const pathname = request.url?.split("?", 1)[0];
         cleanupImports();
@@ -52,6 +57,29 @@ function mapTilePipelinePlugin(): Plugin {
           }).catch((error) => { response.statusCode = 400; response.setHeader("Content-Type", "application/json; charset=utf-8"); response.end(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) })); });
           return;
         }
+        if (pathname === "/__map-editor/actors/settings") {
+          if (request.method === "GET") {
+            try {
+              response.statusCode = 200;
+              response.setHeader("Content-Type", "application/json; charset=utf-8");
+              response.end(JSON.stringify(readActorSettings()));
+            } catch (error) {
+              response.statusCode = 500;
+              response.end(error instanceof Error ? error.message : String(error));
+            }
+            return;
+          }
+          if (request.method !== "PUT") { response.statusCode = 405; response.setHeader("Allow", "GET, PUT"); response.end("Method Not Allowed"); return; }
+          void jsonBody(request).then((body) => {
+            const saved = writeActorSettingsAtomically(body);
+            buildActorAssets();
+            server.ws.send({ type: "full-reload" });
+            response.statusCode = 200;
+            response.setHeader("Content-Type", "application/json; charset=utf-8");
+            response.end(JSON.stringify({ ok: true, settings: saved }));
+          }).catch((error) => { response.statusCode = 400; response.setHeader("Content-Type", "application/json; charset=utf-8"); response.end(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) })); });
+          return;
+        }
         const commitMatch = pathname?.match(/^\/__map-editor\/import\/([^/]+)\/commit$/);
         if (commitMatch) {
           if (request.method !== "POST") { response.statusCode = 405; response.setHeader("Allow", "POST"); response.end("Method Not Allowed"); return; }
@@ -63,6 +91,7 @@ function mapTilePipelinePlugin(): Plugin {
             const result = commitImport(session.analysis, { mapTiles, actors, createPalettePages: decisions.createPalettePages === true, licenseAcknowledged: decisions.licenseAcknowledged === true });
             importSessions.delete(commitMatch[1]!);
             buildMapTileAssets();
+            buildActorAssets();
             server.ws.send({ type: "full-reload" });
             response.statusCode = 200;
             response.setHeader("Content-Type", "application/json; charset=utf-8");

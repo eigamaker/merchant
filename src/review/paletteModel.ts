@@ -6,6 +6,8 @@
 export type PaletteMapKind = "home" | "dungeon";
 export type PaletteTileSize = 16 | 32;
 export type PaletteLayer = "ground" | "structure" | "decoration";
+/** Large authored workspaces are sparse; only populated cells are persisted. */
+export const MAX_PALETTE_DIMENSION = 4096;
 
 export interface PaletteCell {
   x: number;
@@ -108,7 +110,7 @@ export function validatePaletteLayout(value: unknown, assets?: readonly PaletteA
     if (typeof page.label !== "string" || !page.label.trim()) errors.push("page label");
     if (page.mapKind !== "home" && page.mapKind !== "dungeon") errors.push("page mapKind");
     if (page.tileSize !== 16 && page.tileSize !== 32) errors.push("page tileSize");
-    if (!Number.isInteger(page.width) || !Number.isInteger(page.height) || page.width < 1 || page.height < 1 || page.width > 256 || page.height > 256) errors.push("page dimensions");
+    if (!Number.isInteger(page.width) || !Number.isInteger(page.height) || page.width < 1 || page.height < 1 || page.width > MAX_PALETTE_DIMENSION || page.height > MAX_PALETTE_DIMENSION) errors.push("page dimensions");
     if (!Array.isArray(page.cells)) { errors.push("page cells"); continue; }
     const positions = new Set<string>();
     for (const cell of page.cells) {
@@ -149,7 +151,7 @@ export function renamePalettePage(page: PalettePage, label: string): boolean {
 
 /** Refuses a shrink that would discard an authored palette cell. */
 export function resizePalettePage(page: PalettePage, width: number, height: number): { ok: true } | { ok: false; reason: string } {
-  if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 || width > 256 || height > 256) return { ok: false, reason: "サイズは1〜256セルで指定してください。" };
+  if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 || width > MAX_PALETTE_DIMENSION || height > MAX_PALETTE_DIMENSION) return { ok: false, reason: `サイズは1〜${MAX_PALETTE_DIMENSION}セルで指定してください。` };
   if (page.cells.some((cell) => cell.x >= width || cell.y >= height)) return { ok: false, reason: "縮小範囲にパレット素材があります。先に移動または削除してください。" };
   page.width = width;
   page.height = height;
