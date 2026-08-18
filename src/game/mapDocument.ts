@@ -98,7 +98,17 @@ export function validateMap(map: MapDocument): string[] {
   map.terrain.forEach((assetId) => { if (assetId) { const issue = assetIssue(assetId, map.kind, map.tileSize); if (issue) errors.push(issue); } }); LAYERS.forEach((layer) => map.layers[layer].forEach((cell) => { if (cell) { const issue = assetIssue(cell.assetId, map.kind, map.tileSize, cell.frame); if (issue) errors.push(issue); } }));
   for (const marker of map.markers) { if (ids.has(marker.id)) errors.push("duplicate marker"); ids.add(marker.id); if (!allowed.includes(marker.kind as never)) errors.push("marker kind"); if (!inside(map, marker.x, marker.y)) errors.push("marker bounds"); else if (!cellWalkable(map, marker.x, marker.y)) errors.push("marker on blocked cell"); if (STAIR_KINDS.has(marker.kind) && !marker.visual) errors.push(`marker ${marker.kind} visual`); if (marker.visual) { const issue = assetIssue(marker.visual.assetId, map.kind, map.tileSize, marker.visual.frame); if (issue) errors.push(issue); } }
   for (const kind of allowed) if (!(map.kind === "dungeon" && kind === "stairsDown") && map.markers.filter((marker) => marker.kind === kind).length !== 1) errors.push(`marker ${kind}`);
-  const a = map.markers.find((marker) => marker.kind === (map.kind === "home" ? "homeSpawn" : "stairsUp")), b = map.markers.find((marker) => marker.kind === (map.kind === "home" ? "dungeonEntrance" : "stairsDown")); if (a && b && !reachable(map, a, b)) errors.push("markers unreachable"); return [...new Set(errors)];
+  if (map.kind === "home") {
+    const spawn = map.markers.find((marker) => marker.kind === "homeSpawn");
+    for (const kind of ["dungeonEntrance", "homeStorage", "homePreparation", "homeVisitors"] as const) {
+      const target = map.markers.find((marker) => marker.kind === kind);
+      if (spawn && target && !reachable(map, spawn, target)) errors.push(`marker ${kind} unreachable`);
+    }
+  } else {
+    const up = map.markers.find((marker) => marker.kind === "stairsUp"), down = map.markers.find((marker) => marker.kind === "stairsDown");
+    if (up && down && !reachable(map, up, down)) errors.push("markers unreachable");
+  }
+  return [...new Set(errors)];
 }
 
 type LegacyMap = { version: 3 | 4; id: string; name: string; kind: MapKind; floor: number; width: number; height: number; tileSize?: number; terrain: Array<string | null>; collision?: boolean[]; tileFrames?: Array<number | null>; layers?: Partial<Record<ManualLayer, Array<{ tileId?: string; assetId?: string; frame: number } | null>>>; markers: Array<{ id: string; kind: string; x: number; y: number; visual?: MapMarkerVisual }>; createdAt: string; updatedAt: string; };

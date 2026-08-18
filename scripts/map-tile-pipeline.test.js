@@ -1,8 +1,9 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { PNG } from "pngjs";
 import { afterEach, describe, expect, it } from "vitest";
-import { MAP_EDITOR_PALETTE_API, MAP_TILE_PALETTE_API, buildMapTileAssets, readTileSheets, validatePalette } from "./map-tile-pipeline.mjs";
+import { MAP_EDITOR_PALETTE_API, MAP_TILE_PALETTE_API, buildMapTileAssets, readTileSheets, savePaletteAtomically, validatePalette } from "./map-tile-pipeline.mjs";
 
 const temporaryDirectories = [];
 afterEach(() => { for (const directory of temporaryDirectories.splice(0)) fs.rmSync(directory, { recursive: true, force: true }); });
@@ -13,6 +14,20 @@ function fixtureDirectory() {
   const source = path.resolve("assets-src/map-tiles/sheets");
   for (const name of fs.readdirSync(source)) fs.copyFileSync(path.join(source, name), path.join(directory, name));
   return directory;
+}
+
+function emptyFixtureDirectory() {
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), "map-tile-pipeline-"));
+  temporaryDirectories.push(directory);
+  return directory;
+}
+
+function writeSheet(directory, base, overrides = {}, width = 16, height = 16) {
+  const image = new PNG({ width, height, colorType: 6 });
+  image.data.fill(255);
+  fs.writeFileSync(path.join(directory, `${base}.png`), PNG.sync.write(image, { colorType: 6, inputColorType: 6, bitDepth: 8 }));
+  const config = { version: 1, id: base, label: base, tileSize: 16, margin: 0, spacing: 0, mapKinds: ["home"], defaultLayer: "ground", defaultWalkable: true, ...overrides };
+  fs.writeFileSync(path.join(directory, `${base}.tileset.json`), JSON.stringify(config));
 }
 
 describe("map tile source pipeline", () => {
@@ -43,6 +58,38 @@ describe("map tile source pipeline", () => {
     expect(() => readTileSheets(directory)).toThrow(/Missing \.tileset\.json/);
   });
 
+  it("supports 32px sheets with nonzero margin and spacing", () => {
+    const directory = emptyFixtureDirectory();
+    writeSheet(directory, "large.sheet", { tileSize: 32, margin: 2, spacing: 1, mapKinds: ["dungeon"] }, 69, 69);
+    expect(readTileSheets(directory)[0]).toMatchObject({ id: "large.sheet", tileSize: 32, margin: 2, spacing: 1, columns: 2, rows: 2, frameCount: 4 });
+  });
+
+  it("rejects duplicate asset ids across different source pairs", () => {
+    const directory = emptyFixtureDirectory();
+    writeSheet(directory, "first", { id: "duplicate.asset" });
+    writeSheet(directory, "second", { id: "duplicate.asset" });
+    expect(() => readTileSheets(directory)).toThrow(/duplicate asset id duplicate\.asset/);
+  });
+
+  it("rejects sheet dimensions that do not fit the configured grid", () => {
+    const directory = emptyFixtureDirectory();
+    writeSheet(directory, "bad-dimensions", { margin: 1, spacing: 2 }, 20, 20);
+    expect(() => readTileSheets(directory)).toThrow(/dimensions 20x20 do not fit/);
+  });
+
+  it("rejects invalid PNG data", () => {
+    const directory = emptyFixtureDirectory();
+    writeSheet(directory, "broken-png");
+    fs.writeFileSync(path.join(directory, "broken-png.png"), "not a png");
+    expect(() => readTileSheets(directory)).toThrow(/PNG signature is missing/);
+  });
+
+  it("rejects invalid tileset configuration fields", () => {
+    const directory = emptyFixtureDirectory();
+    writeSheet(directory, "bad-config", { tileSize: 24, defaultWalkable: "yes" });
+    expect(() => readTileSheets(directory)).toThrow(/tileSize must be 16 or 32/);
+  });
+
   it("validates palette references and writes generated catalog files", () => {
     const inputDir = fixtureDirectory();
     const outputDir = path.join(inputDir, "generated");
@@ -55,5 +102,28 @@ describe("map tile source pipeline", () => {
     expect(fs.existsSync(path.join(outputDir, "catalog.json"))).toBe(true);
     expect(fs.existsSync(generatedTs)).toBe(true);
     expect(() => validatePalette({ version: 1, pages: [{ ...palette.pages[0], cells: [{ ...palette.pages[0].cells[0], assetId: "missing" }] }] }, result.assets)).toThrow(/unknown asset/);
+  });
+
+  it("restores the original palette and removes transaction files when generation fails", () => {
+    const inputDir = fixtureDirectory();
+    const outputDir = path.join(inputDir, "generated");
+    const paletteFile = path.join(inputDir, "palettes.json");
+    const generatedTs = path.join(inputDir, "catalog.generated.ts");
+    const original = { version: 1, pages: [{ id: "home", label: "Original", mapKind: "home", tileSize: 16, width: 2, height: 2, cells: [{ x: 0, y: 0, assetId: "home.floor", frame: 0, layer: "ground", walkable: true }] }] };
+    const replacement = { ...original, pages: [{ ...original.pages[0], label: "Replacement" }] };
+    const originalText = JSON.stringify(original, null, 2) + "\n";
+    fs.writeFileSync(paletteFile, originalText);
+    buildMapTileAssets({ inputDir, paletteFile, outputDir, generatedTs });
+
+    expect(() => savePaletteAtomically(replacement, {
+      inputDir,
+      paletteFile,
+      outputDir,
+      generatedTs,
+      generateAssets: () => { throw new Error("injected generation failure"); },
+    })).toThrow("injected generation failure");
+
+    expect(fs.readFileSync(paletteFile, "utf8")).toBe(originalText);
+    expect(fs.readdirSync(inputDir).filter((name) => name.startsWith("palettes.json.") && (name.endsWith(".tmp") || name.endsWith(".bak")))).toEqual([]);
   });
 });

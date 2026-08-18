@@ -45,7 +45,8 @@ import {
 } from "../game/engine";
 import { SaveRepository, type SaveSlot } from "../game/save";
 import { HOME_POI, HOME_SPAWN, createHomeMap } from "../game/homeMap";
-import { isMapPositionWalkable, moveMapPosition } from "../game/mapTiles";
+import { moveMapPosition } from "../game/mapTiles";
+import { assignHomeVisitorCells } from "../game/homeVisitors";
 import { compileMap, loadTrialMap, loadTrialMapPack } from "../game/mapDocument";
 import { MAP_ASSET_CATALOG } from "../game/mapAssetCatalog.generated";
 import { MISSING_MAP_ASSET_TEXTURE, resolveMapAssetFrame } from "../game/mapAssetRuntime";
@@ -1110,18 +1111,15 @@ export class MerchantScene extends Phaser.Scene {
       visitors,
       entrance,
     ];
-    const candidates: Array<{ x: number; y: number }> = [];
-    for (let y = 1; y < this.homeMap.height - 1; y += 1) for (let x = 1; x < this.homeMap.width - 1; x += 1) candidates.push({ x, y });
-    const tile = this.homeMap.tileSize;
-    const customers = this.state.customers.map((customer) => {
-      const pos = candidates.find((candidate) => !occupied.some((point) => point.x === candidate.x && point.y === candidate.y) && isMapPositionWalkable(this.homeMap, { x: candidate.x * tile + tile / 2, y: candidate.y * tile + tile / 2 }, Math.max(2, tile / 4))) ?? visitors;
-      occupied.push(pos);
+    const customerById = new Map(this.state.customers.map((customer) => [customer.id, customer]));
+    const customers = assignHomeVisitorCells(this.homeMap, this.state.customers.map((customer) => customer.id), occupied).map(({ visitorId, pos }) => {
+      const customer = customerById.get(visitorId)!;
       return {
-      id: `customer-${customer.id}`,
-      name: customer.name,
-      kind: "customer" as const,
-      customerId: customer.id,
-      pos,
+        id: `customer-${customer.id}`,
+        name: customer.name,
+        kind: "customer" as const,
+        customerId: customer.id,
+        pos,
       };
     });
     const points = HOME_POINTS.map((point) => point.id === "entrance" ? { ...point, pos: entrance } : point.id === "shop" ? { ...point, pos: storage } : point.id === "guild" ? { ...point, pos: preparation } : point.id === "visitors" ? { ...point, pos: visitors } : point);

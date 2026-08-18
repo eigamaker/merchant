@@ -24,6 +24,16 @@ import {
   waitTurn,
 } from "./engine";
 import { migrateSaveState } from "./save";
+import type { DungeonFloorSnapshot, DungeonMap } from "./types";
+
+function compactDungeonMap(width: number, height: number, stairsUp: { x: number; y: number }, stairsDown: { x: number; y: number }): DungeonMap {
+  const tiles = Array.from({ length: height }, (_, y) => Array.from({ length: width }, (_, x) => x === 0 || y === 0 || x === width - 1 || y === height - 1 ? 1 : 0));
+  return { width, height, tileSize: 16, tiles, stairsUp, stairsDown };
+}
+
+function emptyFloorSnapshot(floor: number, map: DungeonMap): DungeonFloorSnapshot {
+  return { floor, map, player: { ...map.stairsUp }, enemies: [], items: [], chests: [], traps: [], bodies: [], shoveCooldown: 0, turn: 0 };
+}
 
 function reachableTiles(map: ReturnType<typeof generateDungeon>): Set<string> {
   const visited = new Set<string>();
@@ -66,6 +76,41 @@ describe("canonical dungeon stairs", () => {
     expect(state.run?.floor).toBe(1);
     expect(state.run?.enemies[0]?.hp).toBe(1);
     expect(state.run?.turn).toBe(7);
+  });
+
+  it("repositions a carried guard beside the down-stair landing on a smaller visited floor", () => {
+    const state = createNewGame();
+    beginExpedition(state);
+    const run = state.run!;
+    run.guard = { guardId: "rolf", pos: { x: 47, y: 35 }, hp: 3, maxHp: 8, damage: 2 };
+    const targetMap = compactDungeonMap(6, 5, { x: 1, y: 1 }, { x: 4, y: 3 });
+    run.floorStates["2"] = emptyFloorSnapshot(2, targetMap);
+
+    descend(state);
+
+    expect(state.run?.map.width).toBe(6);
+    expect(state.run?.player).toEqual(targetMap.stairsUp);
+    expect(state.run?.guard).toMatchObject({ hp: 3, maxHp: 8, damage: 2, pos: { x: 1, y: 2 } });
+    expect(state.run?.guard?.pos).not.toEqual(state.run?.player);
+  });
+
+  it("repositions a carried guard beside the up-stair landing when restoring a differently sized floor", () => {
+    const state = createNewGame();
+    beginExpedition(state);
+    descend(state);
+    const run = state.run!;
+    run.guard = { guardId: "rolf", pos: { x: 47, y: 35 }, hp: 2, maxHp: 8, damage: 2 };
+    const targetMap = compactDungeonMap(8, 6, { x: 1, y: 1 }, { x: 6, y: 4 });
+    const target = emptyFloorSnapshot(1, targetMap);
+    target.guard = { guardId: "rolf", pos: { x: 2, y: 2 }, hp: 8, maxHp: 8, damage: 2 };
+    run.floorStates["1"] = target;
+
+    ascend(state);
+
+    expect(state.run?.map.width).toBe(8);
+    expect(state.run?.player).toEqual(targetMap.stairsDown);
+    expect(state.run?.guard).toMatchObject({ hp: 2, maxHp: 8, damage: 2, pos: { x: 6, y: 3 } });
+    expect(state.run?.guard?.pos).not.toEqual(state.run?.player);
   });
 });
 

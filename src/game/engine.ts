@@ -1,5 +1,6 @@
 import { CUSTOMERS, GUARD_DEFINITIONS, INITIAL_QUESTS, ITEM_DEFINITIONS } from "./content";
 import { canTraverse, isWalkableCell, samePosition } from "./dungeonRules";
+import { findSafeCompanionArrival } from "./dungeonArrival";
 import { Rng } from "./rng";
 import { HOME_SPAWN, createHomeMap } from "./homeMap";
 import { compileMap, loadTrialMapPack } from "./mapDocument";
@@ -443,10 +444,23 @@ function snapshotFloor(run: DungeonRun): import("./types").DungeonFloorSnapshot 
 }
 
 function restoreFloor(snapshot: import("./types").DungeonFloorSnapshot, seed: number, floorStates: NonNullable<DungeonRun["floorStates"]>, highestFloor: number, player: Vec, carriedGuard?: ActiveGuard): DungeonRun {
+  const restored = clone(snapshot);
+  const occupied: Vec[] = [
+    player,
+    restored.map.stairsUp,
+    ...(restored.map.stairsDown ? [restored.map.stairsDown] : []),
+    ...restored.enemies.map((enemy) => enemy.pos),
+    ...restored.items.map((item) => item.pos),
+    ...restored.chests.map((chest) => chest.pos),
+    ...restored.traps,
+    ...restored.bodies.map((body) => body.pos),
+  ];
+  const guardPosition = carriedGuard ? findSafeCompanionArrival(restored.map, player, occupied) : undefined;
   return {
-    ...clone(snapshot), seed,
+    ...restored, seed,
     player: { ...player },
-    guard: carriedGuard ? { ...carriedGuard } : snapshot.guard ? clone(snapshot.guard) : undefined,
+    // A fully occupied invalid map cannot safely render the guard; never overlap it with another entity.
+    guard: carriedGuard && guardPosition ? { ...clone(carriedGuard), pos: guardPosition } : undefined,
     highestFloor,
     floorStates,
   };

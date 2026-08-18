@@ -154,20 +154,51 @@ export function buildMapTileAssets({ inputDir = MAP_TILE_INPUT_DIR, paletteFile 
   return { assets: definitions, palette };
 }
 
-export function savePaletteAtomically(value, { paletteFile = MAP_TILE_PALETTE_FILE, inputDir = MAP_TILE_INPUT_DIR, outputDir = MAP_TILE_OUTPUT_DIR, generatedTs = MAP_TILE_GENERATED_TS } = {}) {
+export function savePaletteAtomically(value, { paletteFile = MAP_TILE_PALETTE_FILE, inputDir = MAP_TILE_INPUT_DIR, outputDir = MAP_TILE_OUTPUT_DIR, generatedTs = MAP_TILE_GENERATED_TS, generateAssets = buildMapTileAssets } = {}) {
   const assets = readTileSheets(inputDir);
   validatePalette(value, assets);
   fs.mkdirSync(path.dirname(paletteFile), { recursive: true });
-  const temporary = `${paletteFile}.${process.pid}.${Date.now()}.tmp`;
-  fs.writeFileSync(temporary, JSON.stringify(value, null, 2) + "\n", "utf8");
+  const suffix = `${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2)}`;
+  const temporary = `${paletteFile}.${suffix}.tmp`;
+  const backup = `${paletteFile}.${suffix}.bak`;
+  const hadOriginal = fs.existsSync(paletteFile);
+  let backupCreated = false;
+  let replacementInstalled = false;
   try {
-    // Windows cannot rename over an existing file. The target is the one fixed,
-    // validated source file, so replacing it here remains scoped and atomic to readers.
-    fs.rmSync(paletteFile, { force: true });
+    fs.writeFileSync(temporary, JSON.stringify(value, null, 2) + "\n", "utf8");
+    // Windows cannot rename over an existing file. Move the validated current
+    // source aside first so every later failure can restore it losslessly.
+    if (hadOriginal) {
+      fs.renameSync(paletteFile, backup);
+      backupCreated = true;
+    }
     fs.renameSync(temporary, paletteFile);
-    return buildMapTileAssets({ inputDir, paletteFile, outputDir, generatedTs });
+    replacementInstalled = true;
+    const result = generateAssets({ inputDir, paletteFile, outputDir, generatedTs });
+    if (backupCreated) {
+      fs.rmSync(backup, { force: true });
+      backupCreated = false;
+    }
+    return result;
   } catch (error) {
-    fs.rmSync(temporary, { force: true });
+    let rollbackError;
+    try {
+      if (backupCreated) {
+        if (replacementInstalled || fs.existsSync(paletteFile)) fs.rmSync(paletteFile, { force: true });
+        fs.renameSync(backup, paletteFile);
+        backupCreated = false;
+      } else if (!hadOriginal && replacementInstalled) {
+        fs.rmSync(paletteFile, { force: true });
+      }
+    } catch (failure) {
+      rollbackError = failure;
+    } finally {
+      fs.rmSync(temporary, { force: true });
+      if (!backupCreated) fs.rmSync(backup, { force: true });
+    }
+    if (rollbackError) throw new AggregateError([error, rollbackError], "Palette save failed and the original source could not be restored");
     throw error;
+  } finally {
+    fs.rmSync(temporary, { force: true });
   }
 }

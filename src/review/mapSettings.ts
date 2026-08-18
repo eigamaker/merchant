@@ -1,5 +1,6 @@
 import { cloneMap, resizeMap, setMapTileSize, type MapDocument, type MapMutationResult, type TileSize } from "../game/mapDocument";
 import type { MapKind } from "../game/types";
+import { smallestMissingDungeonFloor } from "./floorSequence";
 
 export interface MapSettingsInput {
   width: number;
@@ -21,7 +22,8 @@ function changeKindOnEmptyDraft(draft: MapDocument, requestedKind: MapKind, maps
   if (!isEmptyMap(draft)) return { ok: false, reason: "マップ種類はタイル・通行設定・マーカーが空のマップだけ変更できます。" };
   if (requestedKind === "home" && maps.some((map) => map.id !== draft.id && map.kind === "home")) return { ok: false, reason: "家マップは1枚だけにしてください。" };
   draft.kind = requestedKind;
-  draft.floor = requestedKind === "home" ? 0 : Math.max(0, ...maps.filter((map) => map.id !== draft.id && map.kind === "dungeon").map((map) => map.floor)) + 1;
+  try { draft.floor = requestedKind === "home" ? 0 : smallestMissingDungeonFloor(maps.filter((map) => map.id !== draft.id)); }
+  catch (error) { return { ok: false, reason: error instanceof Error ? error.message : "階番号を割り当てられません。" }; }
   return { ok: true };
 }
 

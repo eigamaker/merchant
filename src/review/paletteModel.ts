@@ -98,6 +98,7 @@ export function validatePaletteLayout(value: unknown, assets?: readonly PaletteA
   const errors: string[] = [];
   if (layout.version !== 1) errors.push("version");
   if (!Array.isArray(layout.pages)) return [...errors, "pages"];
+  if (layout.pages.length === 0) errors.push("pages");
   const pageIds = new Set<string>();
   const assetIndex = assets ? new Map(assets.map((asset) => [asset.id, asset])) : undefined;
   for (const page of layout.pages) {
@@ -156,6 +157,7 @@ export function resizePalettePage(page: PalettePage, width: number, height: numb
 }
 
 export function deletePalettePage(layout: PaletteLayout, pageId: string): boolean {
+  if (layout.pages.length <= 1) return false;
   const index = layout.pages.findIndex((page) => page.id === pageId);
   if (index < 0) return false;
   layout.pages.splice(index, 1);
