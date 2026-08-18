@@ -14,7 +14,8 @@ function isEmptyMap(map: MapDocument): boolean {
   return map.terrain.every((cell) => cell === null)
     && map.collision.every((walkable) => !walkable)
     && Object.values(map.layers).every((cells) => cells.every((cell) => cell === null))
-    && map.markers.length === 0;
+    && map.markers.length === 0
+    && map.enemyRoster.length === 0;
 }
 
 function changeKindOnEmptyDraft(draft: MapDocument, requestedKind: MapKind, maps: readonly MapDocument[]): MapMutationResult {

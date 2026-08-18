@@ -21,6 +21,19 @@ function issue(message, file) {
 
 function integer(value) { return Number.isInteger(value); }
 
+function inputFiles(inputDir) {
+  const files = [];
+  const visit = (directory) => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const absolute = path.join(directory, entry.name);
+      if (entry.isDirectory() && entry.name !== "generated") visit(absolute);
+      else files.push({ absolute, relative: path.relative(inputDir, absolute).replaceAll("\\", "/") });
+    }
+  };
+  visit(inputDir);
+  return files;
+}
+
 function readPngInfo(file) {
   const bytes = fs.readFileSync(file);
   if (bytes.length < 33 || bytes.subarray(0, 8).toString("hex") !== "89504e470d0a1a0a") {
@@ -53,9 +66,9 @@ function assertConfig(config, file) {
 
 export function readTileSheets(inputDir = MAP_TILE_INPUT_DIR) {
   if (!fs.existsSync(inputDir)) throw new Error(`map tile input directory does not exist: ${inputDir}`);
-  const names = fs.readdirSync(inputDir);
-  const pngNames = names.filter((name) => name.toLowerCase().endsWith(".png"));
-  const jsonNames = names.filter((name) => name.endsWith(".tileset.json"));
+  const files = inputFiles(inputDir);
+  const pngNames = files.filter(({ relative }) => relative.toLowerCase().endsWith(".png")).map(({ relative }) => relative);
+  const jsonNames = files.filter(({ relative }) => relative.endsWith(".tileset.json")).map(({ relative }) => relative);
   const jsonBases = new Set(jsonNames.map((name) => name.slice(0, -".tileset.json".length)));
   const pngBases = new Set(pngNames.map((name) => name.slice(0, -4)));
   const missingJson = pngNames.filter((name) => !jsonBases.has(name.slice(0, -4)));

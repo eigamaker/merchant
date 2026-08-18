@@ -11,7 +11,7 @@
 
 The editor intentionally does not calculate neighbouring tiles. A click stores exactly the selected tile and frame at that coordinate. A wall remains the selected wall frame whether it is alone, adjacent, at a corner, or in a line. Curves, joins, and other variants are chosen by the author.
 
-`MapDocument` v5 keeps the compatibility `terrain` array and always contains:
+`MapDocument` v6 keeps the compatibility `terrain` array and always contains:
 
 ```ts
 collision: boolean[]; // true = walkable, false = blocked
@@ -22,7 +22,7 @@ layers: {
 };
 ```
 
-`TilePlacement` is `{ assetId, frame }`. The three arrays are cell-sized and are drawn from bottom to top. `collision` is the movement source of truth; it is not inferred from the image. Old v3/v4 documents remain readable and are migrated to v5 in memory. Legacy `dungeonReturn` and `stairs` markers become `stairsUp` and `stairsDown` respectively.
+`TilePlacement` is `{ assetId, frame }`. The three arrays are cell-sized and are drawn from bottom to top. `collision` is the movement source of truth; it is not inferred from the image. Old v3/v4/v5 documents remain readable and are migrated to v6 in memory. Legacy `dungeonReturn` and `stairs` markers become `stairsUp` and `stairsDown` respectively. Dungeon v6 documents also carry an `enemyRoster` of actor IDs; home maps must keep it empty.
 
 The initial palette is deliberately small:
 

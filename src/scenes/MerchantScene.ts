@@ -8,6 +8,7 @@ import {
   DUNGEON_OBJECT_FRAMES,
 } from "../game/assets";
 import { CRAFTPIX_ACTORS, CRAFTPIX_ENEMY_ACTORS, CRAFTPIX_PLAYER_ACTOR, actorFrame, type ActorAction, type ActorDirection, type CraftpixActorDefinition } from "../game/craftpixActors";
+import { GENERATED_ACTORS } from "../game/actorAssetCatalog.generated";
 import { CRAFTPIX_UI } from "../game/craftpixUi";
 import {
   DIRECTION,
@@ -51,6 +52,7 @@ import { compileMap, loadTrialMap, loadTrialMapPack } from "../game/mapDocument"
 import { MAP_ASSET_CATALOG } from "../game/mapAssetCatalog.generated";
 import { MISSING_MAP_ASSET_TEXTURE, resolveMapAssetFrame } from "../game/mapAssetRuntime";
 import type { Customer, DungeonCommand, DungeonEvent, GameState, ItemInstance, MenuChoice, Vec } from "../game/types";
+const ALL_CRAFTPIX_ACTORS: readonly CraftpixActorDefinition[] = [...Object.values(CRAFTPIX_ACTORS), ...GENERATED_ACTORS];
 /** Viewport and generated fallback textures stay at the game's base pixel grid. */
 const VIEWPORT_BASE_TILE = 16;
 const PLACEHOLDER_TILE = 16;
@@ -134,7 +136,7 @@ export class MerchantScene extends Phaser.Scene {
     for (const actor of [...NPC_ASSET_VARIANTS, ...ENEMY_ASSET_VARIANTS, ...GUARD_ASSET_VARIANTS]) {
       this.load.spritesheet(actor.textureKey, actor.path, { frameWidth: 32, frameHeight: 32 });
     }
-    for (const actor of Object.values(CRAFTPIX_ACTORS)) {
+    for (const actor of ALL_CRAFTPIX_ACTORS) {
       for (const [action, clip] of Object.entries(actor.clips)) {
         if (!clip) continue;
         this.load.spritesheet(`craftpix.actor.${actor.id}.${action}`, clip.path, { frameWidth: clip.frameWidth, frameHeight: clip.frameHeight });
@@ -290,7 +292,7 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private createCraftpixActorAnimations(): void {
-    for (const actor of Object.values(CRAFTPIX_ACTORS)) {
+    for (const actor of ALL_CRAFTPIX_ACTORS) {
       for (const [actionName, clip] of Object.entries(actor.clips) as [ActorAction, NonNullable<CraftpixActorDefinition["clips"][ActorAction]>][]) {
         if (!clip || !this.textures.exists(`craftpix.actor.${actor.id}.${actionName}`)) continue;
         for (const direction of clip.directions) {
@@ -299,6 +301,7 @@ export class MerchantScene extends Phaser.Scene {
           const frames = Array.from({ length: clip.columns }, (_, index) => ({
             key: `craftpix.actor.${actor.id}.${actionName}`,
             frame: actorFrame(clip, direction, index),
+            ...(clip.durationsMs?.[index] ? { duration: clip.durationsMs[index] } : {}),
           }));
           this.anims.create({ key, frames, frameRate: clip.frameRate, repeat: clip.repeat });
         }
@@ -1017,7 +1020,7 @@ export class MerchantScene extends Phaser.Scene {
       place(body.pos.x, body.pos.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.bones);
     }
     for (const enemy of run.enemies) {
-      const actorDefinition = this.craftpixEnemyActor(enemy.id);
+      const actorDefinition = this.craftpixEnemyActor(enemy.id, enemy.actorId);
       const textureKey = actorDefinition ? (this.craftpixActorTexture(actorDefinition) ?? this.enemyTextureKey(enemy.id)) : this.enemyTextureKey(enemy.id);
       const sprite = this.add.sprite(enemy.pos.x * tile + center, enemy.pos.y * tile + tile, textureKey, 0).setName(`actor:${enemy.id}`);
       const direction = this.dungeonWalkAnimations.get(enemy.id) ?? "down";
@@ -1063,8 +1066,8 @@ export class MerchantScene extends Phaser.Scene {
         const attacker = actor(event.attackerId);
         const target = actor(event.targetId);
         if (!attacker || !target) continue;
-        const attackerDefinition = event.attackerId === "player" ? CRAFTPIX_PLAYER_ACTOR : this.craftpixEnemyActor(event.attackerId);
-        const targetDefinition = event.targetId === "player" ? CRAFTPIX_PLAYER_ACTOR : this.craftpixEnemyActor(event.targetId);
+        const attackerDefinition = event.attackerId === "player" ? CRAFTPIX_PLAYER_ACTOR : this.craftpixEnemyActor(event.attackerId, this.state.run?.enemies.find((enemy) => enemy.id === event.attackerId)?.actorId);
+        const targetDefinition = event.targetId === "player" ? CRAFTPIX_PLAYER_ACTOR : this.craftpixEnemyActor(event.targetId, this.state.run?.enemies.find((enemy) => enemy.id === event.targetId)?.actorId);
         const attackerDirection = this.dungeonWalkAnimations.get(event.attackerId) ?? this.playerFacing;
         const targetDirection = this.dungeonWalkAnimations.get(event.targetId) ?? "down";
         if (attackerDefinition) this.playCraftpixActor(attacker, attackerDefinition, "attack", attackerDirection, false);
@@ -1132,7 +1135,8 @@ export class MerchantScene extends Phaser.Scene {
     return "actor.enemy.goblin";
   }
 
-  private craftpixEnemyActor(enemyId: string): CraftpixActorDefinition | undefined {
+  private craftpixEnemyActor(enemyId: string, actorId?: string): CraftpixActorDefinition | undefined {
+    if (actorId) return ALL_CRAFTPIX_ACTORS.find((actor) => actor.id === actorId);
     const ids = Object.keys(CRAFTPIX_ENEMY_ACTORS) as (keyof typeof CRAFTPIX_ENEMY_ACTORS)[];
     const hash = Array.from(enemyId).reduce((total, character) => total + character.charCodeAt(0), 0);
     const actor = CRAFTPIX_ENEMY_ACTORS[ids[hash % ids.length]!];

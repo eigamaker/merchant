@@ -13,6 +13,22 @@ stairs.tileset.json
 
 同じ `id` は一度しか登録できません。PNGだけ、またはJSONだけのペアはエラーになります。
 
+## ZIP／TMX／PNGの取込
+
+`/review.html` の「素材取込」からZIP、TMX/TSX一式、またはPNGを解析できます。複数ファイルを選択した場合はブラウザー側で一時ZIPにまとめます。CLIでは次の診断コマンドも使えます。
+
+```powershell
+npm run assets:inspect -- C:\path\to\pack.zip
+```
+
+TMXはtilesetの画像・グリッド情報を読み取り、アニメーション定義とアクション名が揃うものはキャラクター候補へ分類します。完成済みTMXマップのセル配置は今回のマップJSONへ自動変換しません。参照画像不足、寸法不一致、曖昧な分類は警告としてレビュー画面に残します。
+
+PNG単体は16/32px候補と境界周期から初期値を推定しますが、レイヤー、通行可否、margin/spacingは承認前に変更できます。減色PNGは正規化されたRGBAコピーを生成します。
+
+WOLF RPG Editorの`.tile`は自動接続規則を持つ独自形式として検出します。`base.png`や`world.png`などの静的シートは取り込めますが、自動接続そのものは再現せず、個別画像を通常グリッドとして使う場合は警告を表示します。
+
+解析結果は30分間だけ開発サーバーの一時領域に保持され、「承認して登録」を押した候補だけが`assets-src/map-tiles/sheets/imported/`または`assets-src/actors/imported/`へ保存されます。原本のSHA-256、参照パス、README/ライセンスの有無は`imports.json`へ記録します。
+
 ## パレット
 
 `assets-src/map-tiles/palettes.json` が正本です。ページは `id`、`label`、`mapKind`、`tileSize`、`width`、`height`、`cells` を持ちます。セルには `x`、`y`、`assetId`、`frame`、`layer`、`walkable` を保存します。空白セルは `cells` に含めません。

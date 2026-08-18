@@ -19,5 +19,5 @@ export function createHomeMap(): MapDocument {
   const collision = terrain.map((id) => id === "home.floor");
   const ground = terrain.map((id) => id === "home.floor" ? { assetId: id, frame: 0 } : null);
   const structure = terrain.map((id) => id === "home.wall" ? { assetId: id, frame: 0 } : null);
-  return {version:5,id:"home",name:"自宅兼店舗",kind:"home",floor:0,width:HOME_WIDTH,height:HOME_HEIGHT,tileSize:16,terrain,collision,layers:{ground,structure,decoration:Array(terrain.length).fill(null)},markers,createdAt:now,updatedAt:now};
+  return {version:6,id:"home",name:"自宅兼店舗",kind:"home",floor:0,width:HOME_WIDTH,height:HOME_HEIGHT,tileSize:16,terrain,collision,layers:{ground,structure,decoration:Array(terrain.length).fill(null)},markers,enemyRoster:[],createdAt:now,updatedAt:now};
 }

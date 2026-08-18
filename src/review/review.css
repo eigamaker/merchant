@@ -52,4 +52,13 @@ hr { border: 0; border-top: 1px solid #35445a; margin: 14px 0; }
 .file-button { display: block; text-align: center; }
 .file-button input { display: none; }
 .save-status { min-height: 2.5em; color: #76d9c3; font-size: 11px; line-height: 1.45; }
+.enemy-roster-item, .import-row { display: grid; grid-template-columns: 1fr auto auto auto; gap: 4px 6px; align-items: center; margin: 5px 0; padding: 5px; border: 1px solid #2f3c50; border-radius: 4px; background: #151f2d; font-size: 11px; }
+.enemy-roster-item small, .import-row small { grid-column: 2; color: #9facbe; font-size: 10px; }
+.import-row small { grid-column: 1 / -1; }
+.import-row input[type="number"] { width: 4em; }
+[data-import-report] { margin-top: 8px; max-height: 390px; overflow: auto; }
+.import-list { display: grid; gap: 4px; }
+.import-actor { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 6px; border: 1px solid #2f3c50; border-radius: 4px; background: #151f2d; font-size: 10px; }
+.import-actor small { grid-column: 1 / -1; color: #9facbe; }
+.import-actor input[type="number"] { width: 4em; }
 @media (max-width: 1250px) { body { min-width: 0; } .map-editor-shell { width: min(100% - 18px, 930px); } .map-editor-header { flex-direction: column; } .map-editor-header-actions { justify-content: start; max-width: none; } .map-editor-layout { grid-template-columns: 1fr; } .palette-panel { position: static; max-height: none; } .map-canvas-wrap { min-height: 0; max-height: 72vh; } }

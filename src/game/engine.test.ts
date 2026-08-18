@@ -3,6 +3,7 @@ import {
   acceptQuest,
   ascend,
   beginExpedition,
+  buildInitialEnemies,
   consultRing,
   createItem,
   createNewGame,
@@ -53,6 +54,15 @@ function reachableTiles(map: ReturnType<typeof generateDungeon>): Set<string> {
 }
 
 describe("canonical dungeon stairs", () => {
+  it("uses the selected authored enemy roster with per-actor stats and random positions", () => {
+    const map = compactDungeonMap(10, 8, { x: 1, y: 1 }, { x: 8, y: 6 });
+    map.enemyRoster = ["slime1"];
+    const enemies = buildInitialEnemies(map, 1, 42);
+    expect(enemies).toHaveLength(7);
+    expect(enemies.every((enemy) => enemy.actorId === "slime1" && enemy.name === "Slime1" && enemy.hp === 4 && enemy.damage === 1)).toBe(true);
+    expect(new Set(enemies.map((enemy) => `${enemy.pos.x},${enemy.pos.y}`)).size).toBe(enemies.length);
+  });
+
   it("returns to home from the first floor's up stairs", () => {
     const state = createNewGame();
     beginExpedition(state);

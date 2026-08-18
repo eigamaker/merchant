@@ -20,6 +20,7 @@ export interface CraftpixActorClip {
   directions: readonly ActorDirection[];
   frameRate: number;
   repeat: number;
+  durationsMs?: readonly number[];
 }
 
 export interface CraftpixActorDefinition {
@@ -29,6 +30,8 @@ export interface CraftpixActorDefinition {
   clips: Partial<Record<ActorAction, CraftpixActorClip>>;
   scale: number;
   origin: { x: 0.5; y: number };
+  roles?: readonly ("player" | "npc" | "enemy")[];
+  enemyStats?: { baseHp: number; hpPerFloor: number; damage: number };
 }
 
 const directions = ["down", "left", "right", "up"] as const;
@@ -46,7 +49,7 @@ const clip = (action: ActorAction, path: string, columns: number, frameRate: num
 
 type ActorColumns = Partial<Record<"idle" | "walk" | "run" | "attack" | "walkAttack" | "runAttack" | "hurt" | "death", number>>;
 
-function characterSet(prefix: string, folder: string, sourcePack: string, columns: ActorColumns): CraftpixActorDefinition {
+function characterSet(prefix: string, folder: string, sourcePack: string, columns: ActorColumns, roles: readonly ("player" | "npc" | "enemy")[] = ["enemy"]): CraftpixActorDefinition {
   const uppercaseActions = prefix.startsWith("Swordsman") || prefix.startsWith("Slime") || prefix.startsWith("Plant") || prefix.startsWith("Vampires");
   const file = (action: string): string => {
     const names: Record<string, string> = uppercaseActions
@@ -78,6 +81,8 @@ function characterSet(prefix: string, folder: string, sourcePack: string, column
     // cell. Render at native scale and anchor the feet to the shadow.
     scale: 1,
     origin: { x: 0.5, y: 0.72 },
+    roles,
+    enemyStats: roles.includes("enemy") ? { baseHp: prefix.startsWith("Slime") ? 3 : prefix.startsWith("Vampires") ? 2 : 4, hpPerFloor: 1, damage: prefix.startsWith("Slime") || prefix.startsWith("Vampires") ? 1 : 2 } : undefined,
   };
 }
 
@@ -96,6 +101,7 @@ function merchantProtagonistSet(): CraftpixActorDefinition {
     },
     scale: 1,
     origin: { x: 0.5, y: 0.72 },
+    roles: ["player"],
   };
 }
 
@@ -103,8 +109,8 @@ export const CRAFTPIX_PLAYER_ACTOR = merchantProtagonistSet();
 
 /** The level 2/3 Swordsman sheets are human NPC variants, not enemies. */
 export const CRAFTPIX_NPC_ACTORS = {
-  swordsman_lvl2: characterSet("Swordsman_lvl2", "Swordsman_lvl2", "swordsman", { idle: 12, walk: 6, run: 8, attack: 8, walkAttack: 6, runAttack: 8, hurt: 5, death: 7 }),
-  swordsman_lvl3: characterSet("Swordsman_lvl3", "Swordsman_lvl3", "swordsman", { idle: 12, walk: 6, run: 8, attack: 8, walkAttack: 6, runAttack: 8, hurt: 5, death: 7 }),
+  swordsman_lvl2: characterSet("Swordsman_lvl2", "Swordsman_lvl2", "swordsman", { idle: 12, walk: 6, run: 8, attack: 8, walkAttack: 6, runAttack: 8, hurt: 5, death: 7 }, ["npc"]),
+  swordsman_lvl3: characterSet("Swordsman_lvl3", "Swordsman_lvl3", "swordsman", { idle: 12, walk: 6, run: 8, attack: 8, walkAttack: 6, runAttack: 8, hurt: 5, death: 7 }, ["npc"]),
 } as const;
 
 export type CraftpixNpcActorId = keyof typeof CRAFTPIX_NPC_ACTORS;

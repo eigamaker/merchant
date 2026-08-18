@@ -4,6 +4,7 @@ import { findSafeCompanionArrival } from "./dungeonArrival";
 import { Rng } from "./rng";
 import { HOME_SPAWN, createHomeMap } from "./homeMap";
 import { compileMap, loadTrialMapPack } from "./mapDocument";
+import { actorDefinition } from "./actorCatalog";
 import type {
   ActiveGuard,
   Customer,
@@ -280,6 +281,27 @@ function randomItemId(rng: Rng): string {
 }
 
 function buildEnemies(rng: Rng, map: DungeonMap, floor: number, occupied: Vec[]): Enemy[] {
+  if (Array.isArray(map.enemyRoster)) {
+    const authored = map.enemyRoster.map((actorId) => ({ actorId, actor: actorDefinition(actorId) })).filter((entry) => entry.actor?.enemyStats);
+    if (!authored.length) return [];
+    return Array.from({ length: 6 + Math.min(floor, 6) }, (_, index) => {
+      const selected = rng.pick(authored);
+      const stats = selected.actor!.enemyStats!;
+      const pos = freeFloor(map, rng, occupied);
+      occupied.push(pos);
+      return {
+        id: `${selected.actorId}-${floor}-${index}`,
+        actorId: selected.actorId,
+        name: selected.actor!.label,
+        hp: stats.baseHp + floor * stats.hpPerFloor,
+        maxHp: stats.baseHp + floor * stats.hpPerFloor,
+        damage: stats.damage,
+        state: "patrol" as const,
+        staggerTurns: 0,
+        pos,
+      };
+    });
+  }
   const variants = [
     { id: "slime", name: "深青スライム", hp: 3 + floor, damage: 1 },
     { id: "bat", name: "影蝙蝠", hp: 2 + floor, damage: 1 },
@@ -298,6 +320,12 @@ function buildEnemies(rng: Rng, map: DungeonMap, floor: number, occupied: Vec[])
       staggerTurns: 0,
     };
   });
+}
+
+/** Deterministic entry point used by the map-editor trial and regression tests. */
+export function buildInitialEnemies(map: DungeonMap, floor: number, seed = 1): Enemy[] {
+  const occupied: Vec[] = [map.stairsUp, ...(map.stairsDown ? [map.stairsDown] : [])];
+  return buildEnemies(new Rng(seed + floor * 997), map, floor, occupied);
 }
 
 function guardMaxHp(record: GuardRecord, definition: GuardDefinition): number {

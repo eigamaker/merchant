@@ -45,6 +45,8 @@ export interface Enemy {
   id: string;
   name: string;
   pos: Vec;
+  /** Exact actor appearance selected by the authored floor roster. */
+  actorId?: string;
   hp: number;
   maxHp: number;
   damage: number;
@@ -148,6 +150,8 @@ export interface DungeonMap {
   stairsDown?: Vec;
   stairsUpVisual?: { assetId: string; frame: number };
   stairsDownVisual?: { assetId: string; frame: number };
+  /** Authored enemy roster; runtime chooses positions and repeats existing count rules. */
+  enemyRoster?: string[];
   specialRoom?: Vec;
   /** Authored visual layers from the manual home/dungeon editor.  The
    * numeric collision grid above remains the movement source of truth. */
