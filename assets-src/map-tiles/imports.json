@@ -1860,6 +1860,3773 @@
         "Tiled_files/Interior_1st_floor.tmx: tileset image is missing: ../../x500.png",
         "Tiled_files/Interior_2nd_floor.tmx: tileset image is missing: ../../x500.png"
       ]
+    },
+    {
+      "source": {
+        "fileName": "mapchip2_0724.zip",
+        "bytes": 183350,
+        "sha256": "a663d394d94c66dc205079c4029bde38a8092c79212a8d68d524898a3b35e36d"
+      },
+      "mapTiles": [
+        {
+          "id": "mapchip2-mapchip-base",
+          "label": "base",
+          "sourcePath": "mapchip2/MapChip/base.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 8,
+          "rows": 292,
+          "frameCount": 2336,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 128,
+            "height": 4672,
+            "bitDepth": 8,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 8,
+                "rows": 292,
+                "frameCount": 2336,
+                "boundary": {
+                  "boundaryMean": 162.01433840347667,
+                  "internalMean": 69.59554526969178,
+                  "ratio": 2.3279412177266527
+                }
+              },
+              {
+                "tileSize": 32,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 4,
+                "rows": 146,
+                "frameCount": 584,
+                "boundary": {
+                  "boundaryMean": 164.479893172888,
+                  "internalMean": 72.50747676618427,
+                  "ratio": 2.268454240978324
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-hana",
+          "label": "hana",
+          "sourcePath": "mapchip2/MapChip/hana.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 228.5,
+                  "internalMean": 346.36375,
+                  "ratio": 0.6597110696485993
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-kabe-ue1",
+          "label": "kabe-ue1",
+          "sourcePath": "mapchip2/MapChip/kabe-ue1.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 114.75,
+                  "internalMean": 11.2,
+                  "ratio": 10.245535714285715
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-kabe-ue2",
+          "label": "kabe-ue2",
+          "sourcePath": "mapchip2/MapChip/kabe-ue2.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 100.8125,
+                  "internalMean": 8.8,
+                  "ratio": 11.455965909090908
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-kabe-ue-doukutu1",
+          "label": "kabe-ue_doukutu1",
+          "sourcePath": "mapchip2/MapChip/kabe-ue_doukutu1.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 74.734375,
+                  "internalMean": 10.8425,
+                  "ratio": 6.8927253862116675
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-kabe-ue-doukutu2",
+          "label": "kabe-ue_doukutu2",
+          "sourcePath": "mapchip2/MapChip/kabe-ue_doukutu2.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 101.203125,
+                  "internalMean": 17.7625,
+                  "ratio": 5.697572132301197
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-kabe-ue-doukutu3",
+          "label": "kabe-ue_doukutu3",
+          "sourcePath": "mapchip2/MapChip/kabe-ue_doukutu3.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 138.59375,
+                  "internalMean": 26.3775,
+                  "ratio": 5.254241304141788
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-kabe-ue-doukutu4",
+          "label": "kabe-ue_doukutu4",
+          "sourcePath": "mapchip2/MapChip/kabe-ue_doukutu4.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 102.625,
+                  "internalMean": 14.282083333333333,
+                  "ratio": 7.185576333984888
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-kabe-ue-doukutu5",
+          "label": "kabe-ue_doukutu5",
+          "sourcePath": "mapchip2/MapChip/kabe-ue_doukutu5.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 118.40625,
+                  "internalMean": 18.42,
+                  "ratio": 6.428135179153094
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-kabe-ue-dungeon1",
+          "label": "kabe-ue_dungeon1",
+          "sourcePath": "mapchip2/MapChip/kabe-ue_dungeon1.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 94.625,
+                  "internalMean": 12.4,
+                  "ratio": 7.631048387096774
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-kabe-ue-dungeon2",
+          "label": "kabe-ue_dungeon2",
+          "sourcePath": "mapchip2/MapChip/kabe-ue_dungeon2.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 224.921875,
+                  "internalMean": 40.14416666666666,
+                  "ratio": 5.602853258049115
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-kabe-ue-mori1",
+          "label": "kabe-ue_mori1",
+          "sourcePath": "mapchip2/MapChip/kabe-ue_mori1.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 220.734375,
+                  "internalMean": 48.056666666666665,
+                  "ratio": 4.593210272594853
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-kabe-ue-mori2",
+          "label": "kabe-ue_mori2",
+          "sourcePath": "mapchip2/MapChip/kabe-ue_mori2.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 390.53125,
+                  "internalMean": 96.14916666666667,
+                  "ratio": 4.061722670503298
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-kabe-ue-yuki",
+          "label": "kabe-ue_yuki",
+          "sourcePath": "mapchip2/MapChip/kabe-ue_yuki.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 2,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 55.84375,
+                  "internalMean": 6.406666666666666,
+                  "ratio": 8.716506243496358
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-koke",
+          "label": "koke",
+          "sourcePath": "mapchip2/MapChip/koke.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 2,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 242.34375,
+                  "internalMean": 207.95833333333334,
+                  "ratio": 1.1653476257263073
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-koori1",
+          "label": "koori1",
+          "sourcePath": "mapchip2/MapChip/koori1.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 2,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 415.046875,
+                  "internalMean": 77.8225,
+                  "ratio": 5.333250345337145
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-koori2",
+          "label": "koori2",
+          "sourcePath": "mapchip2/MapChip/koori2.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 189.5625,
+                  "internalMean": 98.47125,
+                  "ratio": 1.92505426710842
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-kusa1-kusa2",
+          "label": "kusa1-kusa2",
+          "sourcePath": "mapchip2/MapChip/kusa1-kusa2.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 61.25,
+                  "internalMean": 27.294166666666666,
+                  "ratio": 2.2440692455652917
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-kusa1-kusa3",
+          "label": "kusa1-kusa3",
+          "sourcePath": "mapchip2/MapChip/kusa1-kusa3.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 65.21875,
+                  "internalMean": 28.464583333333334,
+                  "ratio": 2.2912244748591086
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-kusa1-kusa4",
+          "label": "kusa1-kusa4",
+          "sourcePath": "mapchip2/MapChip/kusa1-kusa4.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 62.125,
+                  "internalMean": 28.968333333333334,
+                  "ratio": 2.144583165525574
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-kusa1-tuti1",
+          "label": "kusa1-tuti1",
+          "sourcePath": "mapchip2/MapChip/kusa1-tuti1.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 134.5,
+                  "internalMean": 44.38791666666667,
+                  "ratio": 3.0301039134148744
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-kusa1-tuti2",
+          "label": "kusa1-tuti2",
+          "sourcePath": "mapchip2/MapChip/kusa1-tuti2.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 82.796875,
+                  "internalMean": 34.155,
+                  "ratio": 2.424150929585712
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-kusa1-tuti3",
+          "label": "kusa1-tuti3",
+          "sourcePath": "mapchip2/MapChip/kusa1-tuti3.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 177.28125,
+                  "internalMean": 38.639583333333334,
+                  "ratio": 4.588073542891033
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-kusa1-tuti4",
+          "label": "kusa1-tuti4",
+          "sourcePath": "mapchip2/MapChip/kusa1-tuti4.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 111.125,
+                  "internalMean": 42.71,
+                  "ratio": 2.6018496839147742
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-kusa1",
+          "label": "kusa1",
+          "sourcePath": "mapchip2/MapChip/kusa1.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 359.9375,
+                  "internalMean": 59.85166666666667,
+                  "ratio": 6.013825847233438
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-kusa2",
+          "label": "kusa2",
+          "sourcePath": "mapchip2/MapChip/kusa2.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 306.375,
+                  "internalMean": 51.714166666666664,
+                  "ratio": 5.924392091142015
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-kusa3",
+          "label": "kusa3",
+          "sourcePath": "mapchip2/MapChip/kusa3.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 407.21875,
+                  "internalMean": 61.84791666666667,
+                  "ratio": 6.5841951022333
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-kusa4",
+          "label": "kusa4",
+          "sourcePath": "mapchip2/MapChip/kusa4.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 364.1875,
+                  "internalMean": 57.549166666666665,
+                  "ratio": 6.328284510346226
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-mizu1",
+          "label": "mizu1",
+          "sourcePath": "mapchip2/MapChip/mizu1.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 228.97115384615384,
+                  "internalMean": 83.76791666666666,
+                  "ratio": 2.733399169484982
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-mizu1-doukutu1",
+          "label": "mizu1_doukutu1",
+          "sourcePath": "mapchip2/MapChip/mizu1_doukutu1.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 219.17307692307693,
+                  "internalMean": 75.29625,
+                  "ratio": 2.9108099928359903
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-mizu1-doukutu2",
+          "label": "mizu1_doukutu2",
+          "sourcePath": "mapchip2/MapChip/mizu1_doukutu2.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 209.89903846153845,
+                  "internalMean": 68.4025,
+                  "ratio": 3.068587236746295
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-mizu1-doukutu3",
+          "label": "mizu1_doukutu3",
+          "sourcePath": "mapchip2/MapChip/mizu1_doukutu3.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 221.33653846153845,
+                  "internalMean": 90.35625,
+                  "ratio": 2.449598544223985
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-mizu1-doukutu4",
+          "label": "mizu1_doukutu4",
+          "sourcePath": "mapchip2/MapChip/mizu1_doukutu4.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 217.02403846153845,
+                  "internalMean": 71.4275,
+                  "ratio": 3.0383821141932517
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-mizu1-doukutu5",
+          "label": "mizu1_doukutu5",
+          "sourcePath": "mapchip2/MapChip/mizu1_doukutu5.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 227.9471153846154,
+                  "internalMean": 90.80583333333334,
+                  "ratio": 2.5102695170238554
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-mizu2",
+          "label": "mizu2",
+          "sourcePath": "mapchip2/MapChip/mizu2.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 266.83653846153845,
+                  "internalMean": 86.17729166666666,
+                  "ratio": 3.096367190253099
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-mizu2-doukutu1",
+          "label": "mizu2_doukutu1",
+          "sourcePath": "mapchip2/MapChip/mizu2_doukutu1.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 259.4807692307692,
+                  "internalMean": 78.95645833333333,
+                  "ratio": 3.286378020342679
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-mizu2-doukutu2",
+          "label": "mizu2_doukutu2",
+          "sourcePath": "mapchip2/MapChip/mizu2_doukutu2.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 250.97596153846155,
+                  "internalMean": 71.820625,
+                  "ratio": 3.494483117328226
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-mizu2-doukutu3",
+          "label": "mizu2_doukutu3",
+          "sourcePath": "mapchip2/MapChip/mizu2_doukutu3.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 261.00961538461536,
+                  "internalMean": 95.051875,
+                  "ratio": 2.745970191378291
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-mizu2-doukutu4",
+          "label": "mizu2_doukutu4",
+          "sourcePath": "mapchip2/MapChip/mizu2_doukutu4.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 258.0048076923077,
+                  "internalMean": 75.79270833333334,
+                  "ratio": 3.4040848172044824
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-mizu2-doukutu5",
+          "label": "mizu2_doukutu5",
+          "sourcePath": "mapchip2/MapChip/mizu2_doukutu5.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 265.17788461538464,
+                  "internalMean": 92.07229166666667,
+                  "ratio": 2.8801051849064394
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-mizu3",
+          "label": "mizu3",
+          "sourcePath": "mapchip2/MapChip/mizu3.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 228.37980769230768,
+                  "internalMean": 78.600625,
+                  "ratio": 2.905572413607496
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-mizu3-doukutu1",
+          "label": "mizu3_doukutu1",
+          "sourcePath": "mapchip2/MapChip/mizu3_doukutu1.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 219.58173076923077,
+                  "internalMean": 70.82645833333333,
+                  "ratio": 3.1002782849285597
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-mizu3-doukutu2",
+          "label": "mizu3_doukutu2",
+          "sourcePath": "mapchip2/MapChip/mizu3_doukutu2.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 211.15384615384616,
+                  "internalMean": 63.92395833333333,
+                  "ratio": 3.3032035508936777
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-mizu3-doukutu3",
+          "label": "mizu3_doukutu3",
+          "sourcePath": "mapchip2/MapChip/mizu3_doukutu3.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 223.9375,
+                  "internalMean": 87.336875,
+                  "ratio": 2.5640658656495323
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-mizu3-doukutu4",
+          "label": "mizu3_doukutu4",
+          "sourcePath": "mapchip2/MapChip/mizu3_doukutu4.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 217.66346153846155,
+                  "internalMean": 67.22354166666666,
+                  "ratio": 3.2379052954062333
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-mizu3-doukutu5",
+          "label": "mizu3_doukutu5",
+          "sourcePath": "mapchip2/MapChip/mizu3_doukutu5.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 226.77884615384616,
+                  "internalMean": 84.89645833333333,
+                  "ratio": 2.6712403627420205
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-mizu4",
+          "label": "mizu4",
+          "sourcePath": "mapchip2/MapChip/mizu4.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 75.10096153846153,
+                  "internalMean": 14.930416666666666,
+                  "ratio": 5.030064680387008
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-mizu5",
+          "label": "mizu5",
+          "sourcePath": "mapchip2/MapChip/mizu5.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 49.48557692307692,
+                  "internalMean": 10.314791666666666,
+                  "ratio": 4.797535279650365
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-mizu6",
+          "label": "mizu6",
+          "sourcePath": "mapchip2/MapChip/mizu6.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 57.57692307692308,
+                  "internalMean": 11.219791666666667,
+                  "ratio": 5.131728358912464
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-mizu7",
+          "label": "mizu7",
+          "sourcePath": "mapchip2/MapChip/mizu7.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 4,
+          "rows": 5,
+          "frameCount": 20,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 64,
+            "height": 80,
+            "bitDepth": 8,
+            "colorType": 6,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 4,
+                "rows": 5,
+                "frameCount": 20,
+                "boundary": {
+                  "boundaryMean": 156.12701612903226,
+                  "internalMean": 38.23802083333333,
+                  "ratio": 4.083030782621763
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": false
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-taki1",
+          "label": "taki1",
+          "sourcePath": "mapchip2/MapChip/taki1.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 4,
+          "rows": 5,
+          "frameCount": 20,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 64,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 4,
+                "rows": 5,
+                "frameCount": 20,
+                "boundary": {
+                  "boundaryMean": 160.0141129032258,
+                  "internalMean": 110.34489583333334,
+                  "ratio": 1.4501270012970389
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-taki2",
+          "label": "taki2",
+          "sourcePath": "mapchip2/MapChip/taki2.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 4,
+          "rows": 5,
+          "frameCount": 20,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 64,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 4,
+                "rows": 5,
+                "frameCount": 20,
+                "boundary": {
+                  "boundaryMean": 163.26612903225808,
+                  "internalMean": 90.75625,
+                  "ratio": 1.798951907248901
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-taki3",
+          "label": "taki3",
+          "sourcePath": "mapchip2/MapChip/taki3.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 4,
+          "rows": 5,
+          "frameCount": 20,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 64,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 4,
+                "rows": 5,
+                "frameCount": 20,
+                "boundary": {
+                  "boundaryMean": 145.88306451612902,
+                  "internalMean": 93.99270833333334,
+                  "ratio": 1.552067890189663
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-tuti1-tuti2",
+          "label": "tuti1-tuti2",
+          "sourcePath": "mapchip2/MapChip/tuti1-tuti2.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 98.671875,
+                  "internalMean": 36.05916666666667,
+                  "ratio": 2.736388112130526
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-tuti1-tuti3",
+          "label": "tuti1-tuti3",
+          "sourcePath": "mapchip2/MapChip/tuti1-tuti3.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 52.03125,
+                  "internalMean": 24.985416666666666,
+                  "ratio": 2.0824647711164848
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-tuti1-tuti4",
+          "label": "tuti1-tuti4",
+          "sourcePath": "mapchip2/MapChip/tuti1-tuti4.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 96.65625,
+                  "internalMean": 40.455,
+                  "ratio": 2.389228772710419
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-tuti1",
+          "label": "tuti1",
+          "sourcePath": "mapchip2/MapChip/tuti1.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 481,
+                  "internalMean": 70.20416666666667,
+                  "ratio": 6.8514451896254975
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-tuti2",
+          "label": "tuti2",
+          "sourcePath": "mapchip2/MapChip/tuti2.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 405.578125,
+                  "internalMean": 64.65333333333334,
+                  "ratio": 6.2731201020829035
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-tuti3",
+          "label": "tuti3",
+          "sourcePath": "mapchip2/MapChip/tuti3.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 526.15625,
+                  "internalMean": 64.28291666666667,
+                  "ratio": 8.185008977242529
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-tuti4",
+          "label": "tuti4",
+          "sourcePath": "mapchip2/MapChip/tuti4.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 452.96875,
+                  "internalMean": 73.03833333333333,
+                  "ratio": 6.201794719667755
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-world",
+          "label": "world",
+          "sourcePath": "mapchip2/MapChip/world.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 8,
+          "rows": 23,
+          "frameCount": 184,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 128,
+            "height": 368,
+            "bitDepth": 8,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 8,
+                "rows": 23,
+                "frameCount": 184,
+                "boundary": {
+                  "boundaryMean": 223.9111646884273,
+                  "internalMean": 93.06734601449276,
+                  "ratio": 2.4059046945806224
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-world-kusa-kusa",
+          "label": "world_kusa-kusa",
+          "sourcePath": "mapchip2/MapChip/world_kusa-kusa.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 42.828125,
+                  "internalMean": 4.6241666666666665,
+                  "ratio": 9.261803928635791
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-world-kusa-miti",
+          "label": "world_kusa-miti",
+          "sourcePath": "mapchip2/MapChip/world_kusa-miti.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 106.953125,
+                  "internalMean": 11.450833333333334,
+                  "ratio": 9.340204497489266
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-world-kusa-sabaku",
+          "label": "world_kusa-sabaku",
+          "sourcePath": "mapchip2/MapChip/world_kusa-sabaku.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 131.765625,
+                  "internalMean": 19.872083333333332,
+                  "ratio": 6.630690038370411
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-world-kusa-sitti",
+          "label": "world_kusa-sitti",
+          "sourcePath": "mapchip2/MapChip/world_kusa-sitti.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 90.609375,
+                  "internalMean": 14.007083333333334,
+                  "ratio": 6.468825296724871
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-world-kusa-tuti",
+          "label": "world_kusa-tuti",
+          "sourcePath": "mapchip2/MapChip/world_kusa-tuti.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 76.125,
+                  "internalMean": 12.944583333333334,
+                  "ratio": 5.880838188431454
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-world-kusa-yuki",
+          "label": "world_kusa-yuki",
+          "sourcePath": "mapchip2/MapChip/world_kusa-yuki.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 214.203125,
+                  "internalMean": 23.140833333333333,
+                  "ratio": 9.256500054017069
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-world-mori-kareki",
+          "label": "world_mori-kareki",
+          "sourcePath": "mapchip2/MapChip/world_mori-kareki.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 325.90625,
+                  "internalMean": 76.7675,
+                  "ratio": 4.245367505780441
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-world-mori-yuki",
+          "label": "world_mori-yuki",
+          "sourcePath": "mapchip2/MapChip/world_mori-yuki.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 501.015625,
+                  "internalMean": 129.2575,
+                  "ratio": 3.8761048681894668
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-world-mori",
+          "label": "world_mori",
+          "sourcePath": "mapchip2/MapChip/world_mori.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 333.59375,
+                  "internalMean": 88.49666666666667,
+                  "ratio": 3.769562883724434
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-world-sabaku-tuti",
+          "label": "world_sabaku-tuti",
+          "sourcePath": "mapchip2/MapChip/world_sabaku-tuti.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 98.5,
+                  "internalMean": 18.660416666666666,
+                  "ratio": 5.278553086971084
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-world-umi1",
+          "label": "world_umi1",
+          "sourcePath": "mapchip2/MapChip/world_umi1.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 286.5048076923077,
+                  "internalMean": 67.64020833333333,
+                  "ratio": 4.235717404659694
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-world-umi2",
+          "label": "world_umi2",
+          "sourcePath": "mapchip2/MapChip/world_umi2.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 300.25,
+                  "internalMean": 65.166875,
+                  "ratio": 4.60740215024888
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-world-umi3",
+          "label": "world_umi3",
+          "sourcePath": "mapchip2/MapChip/world_umi3.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 264.9519230769231,
+                  "internalMean": 70.456875,
+                  "ratio": 3.7604836018759435
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-world-umi4",
+          "label": "world_umi4",
+          "sourcePath": "mapchip2/MapChip/world_umi4.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 2,
+          "rows": 5,
+          "frameCount": 10,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 32,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 2,
+                "rows": 5,
+                "frameCount": 10,
+                "boundary": {
+                  "boundaryMean": 270.4807692307692,
+                  "internalMean": 67.816875,
+                  "ratio": 3.988399188708846
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-world-yama1-yuki",
+          "label": "world_yama1-yuki",
+          "sourcePath": "mapchip2/MapChip/world_yama1-yuki.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 206.671875,
+                  "internalMean": 126.46958333333333,
+                  "ratio": 1.634162693928382
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-world-yama1",
+          "label": "world_yama1",
+          "sourcePath": "mapchip2/MapChip/world_yama1.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 124.5625,
+                  "internalMean": 76.03166666666667,
+                  "ratio": 1.6382976391415858
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-world-yama2-yuki",
+          "label": "world_yama2-yuki",
+          "sourcePath": "mapchip2/MapChip/world_yama2-yuki.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 8,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 291.75,
+                  "internalMean": 162.02125,
+                  "ratio": 1.8006897243417144
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-world-yama2",
+          "label": "world_yama2",
+          "sourcePath": "mapchip2/MapChip/world_yama2.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 242.109375,
+                  "internalMean": 98.13458333333334,
+                  "ratio": 2.467115738165699
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-world-yuki-tuti",
+          "label": "world_yuki-tuti",
+          "sourcePath": "mapchip2/MapChip/world_yuki-tuti.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 185.1875,
+                  "internalMean": 24.569166666666668,
+                  "ratio": 7.537394430688871
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-world-yuki",
+          "label": "world_yuki",
+          "sourcePath": "mapchip2/MapChip/world_yuki.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 2,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 562.5,
+                  "internalMean": 57.8,
+                  "ratio": 9.731833910034602
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-yougan",
+          "label": "yougan",
+          "sourcePath": "mapchip2/MapChip/yougan.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 6,
+          "rows": 5,
+          "frameCount": 30,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 96,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 6,
+                "rows": 5,
+                "frameCount": 30,
+                "boundary": {
+                  "boundaryMean": 212.58545918367346,
+                  "internalMean": 103.559375,
+                  "ratio": 2.052788163154456
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-yuki-kusa1",
+          "label": "yuki-kusa1",
+          "sourcePath": "mapchip2/MapChip/yuki-kusa1.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 198.21875,
+                  "internalMean": 41.19,
+                  "ratio": 4.812302743384317
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-yuki-kusa4",
+          "label": "yuki-kusa4",
+          "sourcePath": "mapchip2/MapChip/yuki-kusa4.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 191.515625,
+                  "internalMean": 37.8625,
+                  "ratio": 5.058187520633873
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-yuki-tuti2",
+          "label": "yuki-tuti2",
+          "sourcePath": "mapchip2/MapChip/yuki-tuti2.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 163.78125,
+                  "internalMean": 36.26708333333333,
+                  "ratio": 4.515975230063993
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-yuki-tuti4",
+          "label": "yuki-tuti4",
+          "sourcePath": "mapchip2/MapChip/yuki-tuti4.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 4,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 121.9375,
+                  "internalMean": 34.87916666666667,
+                  "ratio": 3.49599808863935
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        },
+        {
+          "id": "mapchip2-mapchip-yuki",
+          "label": "yuki",
+          "sourcePath": "mapchip2/MapChip/yuki.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 1,
+          "rows": 5,
+          "frameCount": 5,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 16,
+            "height": 80,
+            "bitDepth": 2,
+            "colorType": 3,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 1,
+                "rows": 5,
+                "frameCount": 5,
+                "boundary": {
+                  "boundaryMean": 570.125,
+                  "internalMean": 60.848333333333336,
+                  "ratio": 9.369607494042564
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": true
+          },
+          "sourceArchive": "mapchip2_0724.zip"
+        }
+      ],
+      "warnings": [
+        "WOLF RPG Editorの.tile設定を4件検出しました。自動接続規則は静的タイルへ変換しません。",
+        "License/READMEが見つかりません。利用条件を手動確認してください。"
+      ]
     }
   ]
 }
