@@ -1,4 +1,5 @@
-export type ItemCategory = "weapon" | "arcane" | "relic" | "gem" | "book" | "art" | "material";
+export type ItemCategory = "weapon" | "armor" | "medicine" | "material" | "curio" | "arcane" | "relic" | "gem" | "book" | "art";
+export type ItemRarity = "common" | "uncommon" | "rare" | "legendary" | "unique";
 export type KnowledgeLevel = "unknown" | "suspected" | "identified";
 export type MapKind = "home" | "dungeon";
 export type Location = MapKind;
@@ -21,7 +22,29 @@ export interface ItemDefinition {
   description: string;
   unique?: boolean;
   preferredBuyer?: string;
+  visualId?: string;
+  rarity?: ItemRarity;
+  attack?: number;
+  defense?: number;
+  healing?: number;
+  cures?: "poison";
+  singular?: boolean;
 }
+
+export type ItemLocation =
+  | { kind: "playerBag" }
+  | { kind: "homeStorage" }
+  | { kind: "shopStock" }
+  | { kind: "dungeonGround"; floor: number; pos: Vec }
+  | { kind: "corpse"; npcId: string; floor: number }
+  | { kind: "npcInventory"; npcId: string }
+  | { kind: "soldArchive"; npcId: string };
+
+export type ItemHistoryEvent =
+  | { day: number; type: "created" | "found" | "stored" | "listed"; detail: string }
+  | { day: number; type: "lootedFromCorpse" | "ownerDied"; npcId: string; detail: string }
+  | { day: number; type: "sold"; npcId: string; price: number; detail: string }
+  | { day: number; type: "named"; npcId: string; name: string; detail: string };
 
 export interface ItemInstance {
   uuid: string;
@@ -32,6 +55,13 @@ export interface ItemInstance {
   clues: string[];
   owner: "player" | "store" | string;
   history: LedgerEntry[];
+  visualId?: string;
+  rarity?: ItemRarity;
+  location?: ItemLocation;
+  singular?: boolean;
+  currentName?: string;
+  namedByNpcId?: string;
+  historyV2?: ItemHistoryEvent[];
 }
 
 export interface LedgerEntry {
@@ -73,6 +103,7 @@ export interface DungeonBody {
   loot: ItemInstance[];
   inspected: boolean;
   questId?: string;
+  npcId?: string;
 }
 
 export interface GuardDefinition {
@@ -102,6 +133,32 @@ export interface ActiveGuard {
   hp: number;
   maxHp: number;
   damage: number;
+}
+
+export type NpcProfession = "swordsman" | "scout" | "mercenary" | "merchant" | "blacksmith" | "apothecary" | "noble" | "townsperson";
+export type NpcStatus = "inTown" | "visiting" | "contracted" | "dungeon" | "dead" | "departed";
+
+export interface NpcRecord {
+  id: string;
+  name: string;
+  profession: NpcProfession;
+  appearanceId: string;
+  adventurer: boolean;
+  status: NpcStatus;
+  relation: number;
+  interests: ItemCategory[];
+  budget: number;
+  inventoryIds: string[];
+  baseFee?: number;
+  maxHp?: number;
+  damage?: number;
+  trait?: "standard" | "scout";
+}
+
+export interface EscortCommission {
+  offeredFee: number;
+  status: "draft" | "accepted" | "active";
+  npcId?: string;
 }
 
 /** A dungeon has three authored elevation bands.  Movement between bands is
@@ -227,7 +284,9 @@ export interface TimedEvent {
 }
 
 export interface GameState {
-  version: 4;
+  version: 5;
+  campaignId: string;
+  status: "active" | "gameOver";
   day: number;
   gold: number;
   hp: number;
@@ -254,6 +313,13 @@ export interface GameState {
   run?: DungeonRun;
   message: string;
   nextItemId: number;
+  nextNpcId: number;
+  itemsById: Record<string, ItemInstance>;
+  npcs: NpcRecord[];
+  visitorNpcIds: string[];
+  escortCommission?: EscortCommission;
+  refusedOffers: Record<string, number>;
+  singularItemIds: string[];
   story: {
     blackSword: "locked" | "rumor" | "found" | "sold" | "incident" | "tomb" | "revealed";
     early: {

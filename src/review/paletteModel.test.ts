@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_PALETTE_DIMENSION, PaletteHistory, addPalettePage, clonePaletteLayout, createPalettePage, deletePalettePage, emptyPaletteLayout, fillPaletteStamp, paintPaletteStamp, paletteStamp, placeSourceFrames, rectanglePaletteStamp, resizePalettePage, transferPaletteRegion, validatePaletteLayout, type PaletteAsset, type PaletteLayer, type StampMap } from "./paletteModel";
+import { MAX_PALETTE_DIMENSION, PaletteHistory, addPalettePage, clonePaletteLayout, createPalettePage, deletePalettePage, emptyPaletteLayout, fillPaletteStamp, paintPaletteStamp, paletteStamp, placeSourceFrames, rectanglePaletteStamp, resizePalettePage, selectCompatiblePalettePageId, transferPaletteRegion, validatePaletteLayout, type PaletteAsset, type PaletteLayer, type StampMap } from "./paletteModel";
 
 const asset: PaletteAsset = { id: "dungeon-sheet", label: "Dungeon", path: "/dungeon.png", mapKinds: ["dungeon"], tileSize: 16, margin: 0, spacing: 0, columns: 4, rows: 4, frameCount: 16, defaultLayer: "ground", defaultWalkable: true };
 const page = () => createPalettePage({ id: "p", label: "床", mapKind: "dungeon", tileSize: 16, width: 4, height: 4 });
@@ -7,6 +7,16 @@ const map = (): StampMap => ({ width: 4, height: 4, layers: { ground: Array(16).
 const manual = { mode: "manual" as const, layer: "structure" as PaletteLayer, collision: "unchanged" as const };
 
 describe("free-form palette model", () => {
+  it("shares palette pages between home and dungeon maps when tile size matches", () => {
+    const home = createPalettePage({ id: "home", label: "Home", mapKind: "home", tileSize: 16, width: 4, height: 4 });
+    expect(selectCompatiblePalettePageId([home], "home", 16)).toBe("home");
+
+    const dungeon = createPalettePage({ id: "dungeon", label: "Dungeon", mapKind: "dungeon", tileSize: 16, width: 4, height: 4 });
+    expect(selectCompatiblePalettePageId([home, dungeon], "home", 16)).toBe("home");
+    expect(selectCompatiblePalettePageId([home, dungeon], "dungeon", 16)).toBe("dungeon");
+    expect(selectCompatiblePalettePageId([home, dungeon], "home", 32)).toBe("");
+  });
+
   it("accepts duplicate assets but rejects a duplicate cell coordinate", () => {
     const value = { version: 1, pages: [{ ...page(), cells: [
       { x: 0, y: 0, assetId: asset.id, frame: 0, layer: "ground" as const, walkable: true },

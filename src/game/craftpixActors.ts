@@ -114,6 +114,7 @@ export const CRAFTPIX_PLAYER_ACTOR = merchantProtagonistSet();
 
 /** The level 2/3 Swordsman sheets are human NPC variants, not enemies. */
 export const CRAFTPIX_NPC_ACTORS = {
+  swordsman_lvl1: characterSet("Swordsman_lvl1", "Swordsman_lvl1", "swordsman", { idle: 12, walk: 6, run: 8, attack: 8, walkAttack: 6, runAttack: 8, hurt: 5, death: 7 }, ["npc"]),
   swordsman_lvl2: characterSet("Swordsman_lvl2", "Swordsman_lvl2", "swordsman", { idle: 12, walk: 6, run: 8, attack: 8, walkAttack: 6, runAttack: 8, hurt: 5, death: 7 }, ["npc"]),
   swordsman_lvl3: characterSet("Swordsman_lvl3", "Swordsman_lvl3", "swordsman", { idle: 12, walk: 6, run: 8, attack: 8, walkAttack: 6, runAttack: 8, hurt: 5, death: 7 }, ["npc"]),
 } as const;

@@ -21,6 +21,8 @@ UI_PUBLIC = ROOT / "public" / "assets" / "ui" / "craftpix"
 
 ACTOR_FILES = {
     "Swordsman_lvl1": ("swordsman", "PNG/Swordsman_lvl1/With_shadow"),
+    "Swordsman_lvl2": ("swordsman", "PNG/Swordsman_lvl2/With_shadow"),
+    "Swordsman_lvl3": ("swordsman", "PNG/Swordsman_lvl3/With_shadow"),
     "Slime1": ("slimes", "PNG/Slime1/With_shadow"),
     "Slime2": ("slimes", "PNG/Slime2/With_shadow"),
     "Slime3": ("slimes", "PNG/Slime3/With_shadow"),

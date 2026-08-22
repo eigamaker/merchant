@@ -25,6 +25,7 @@ import {
   waitTurn,
 } from "./engine";
 import { migrateSaveState } from "./save";
+import { DUNGEON_ENTRANCE } from "./homeMap";
 import type { DungeonFloorSnapshot, DungeonMap } from "./types";
 
 function compactDungeonMap(width: number, height: number, stairsUp: { x: number; y: number }, stairsDown: { x: number; y: number }): DungeonMap {
@@ -70,7 +71,7 @@ describe("canonical dungeon stairs", () => {
     tryStairs(state);
     expect(state.location).toBe("home");
     expect(state.run).toBeUndefined();
-    expect(state.homePos).toEqual({ x: 264, y: 40 });
+    expect(state.homePos).toEqual({ x: DUNGEON_ENTRANCE.x * 16 + 8, y: DUNGEON_ENTRANCE.y * 16 + 8 });
   });
 
   it("snapshots a floor and restores defeated enemies after travelling back", () => {
@@ -348,8 +349,8 @@ describe("automatic guards", () => {
     waitTurn(state);
 
     expect(run.guard).toBeUndefined();
-    const record = state.guards.find((entry) => entry.id === "rolf")!;
-    expect(record.injuredUntilDay).toBe(state.day + 3);
+    expect(state.npcs.find((entry) => entry.id === "rolf")?.status).toBe("dead");
+    expect(run.bodies.some((body) => body.npcId === "rolf")).toBe(true);
   });
 
   it("gains relation and floor experience only after a safe return", () => {
@@ -524,7 +525,7 @@ describe("save migration", () => {
 
     const migrated = migrateSaveState(legacy as never);
 
-    expect(migrated.version).toBe(4);
+    expect(migrated.version).toBe(5);
     expect(migrated.guildReputation).toBe(0);
     expect(migrated.guards).toHaveLength(2);
     expect(migrated.story.early.stage).toBe("lostSword");

@@ -90,6 +90,16 @@ export function clonePaletteLayout(layout: PaletteLayout): PaletteLayout {
 
 export function emptyPaletteLayout(): PaletteLayout { return { version: 1, pages: [] }; }
 
+/** Palette pages are shared by home and dungeon maps; only cell size must match. */
+export function selectCompatiblePalettePageId(
+  pages: readonly PalettePage[],
+  selectedPageId: string,
+  tileSize: PaletteTileSize,
+): string {
+  const compatible = pages.filter((page) => page.tileSize === tileSize);
+  return compatible.some((page) => page.id === selectedPageId) ? selectedPageId : (compatible[0]?.id ?? "");
+}
+
 export function pageCell(page: PalettePage, x: number, y: number): PaletteCell | undefined {
   return page.cells.find((cell) => cell.x === x && cell.y === y);
 }

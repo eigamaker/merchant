@@ -2,11 +2,12 @@ import { describe, expect, it } from "vitest";
 import { beginExpedition, createNewGame } from "./engine";
 import { migrateSaveState, normalizeHomePositionForMap } from "./save";
 import { addMarker, createManualMap } from "./mapDocument";
+import { HOME_SPAWN } from "./homeMap";
 describe("save migration", () => {
   it.each([1,2,3])("migrates v%d town/interior saves to home", (version) => {
     const state:any = createNewGame(); state.version=version; state.location=version===2?"interior":"town"; state.townPos={x:4,y:4}; delete state.homePos; delete state.homeMapRevision;
     const migrated=migrateSaveState(state);
-    expect(migrated.version).toBe(4); expect(migrated.location).toBe("home"); expect(migrated.homePos).toEqual({x:264,y:264});
+    expect(migrated.version).toBe(5); expect(migrated.location).toBe("home"); expect(migrated.homePos).toEqual({x:HOME_SPAWN.x*16+8,y:HOME_SPAWN.y*16+8});
   });
   it("migrates legacy dungeon connector fields and adds the floor snapshot dictionary", () => {
     const state:any = createNewGame(); beginExpedition(state);

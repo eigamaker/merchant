@@ -4,7 +4,10 @@ import { findSafeCompanionArrival } from "./dungeonArrival";
 import { Rng } from "./rng";
 import { HOME_SPAWN, createHomeMap } from "./homeMap";
 import { compileMap, loadTrialMapPack } from "./mapDocument";
+import { createDefaultMapPack } from "./defaultMapPack";
 import { actorDefinition } from "./actorCatalog";
+import { MERCHANT_ITEM_DEFINITIONS } from "./merchantContent";
+import { createGeneratedDeadAdventurer, initializeMerchantWorld, refreshDailyVisitors, registerWorldItem } from "./merchantEconomy";
 import type {
   ActiveGuard,
   Customer,
@@ -48,6 +51,10 @@ export function createDungeonMap(mode: DungeonGenerationMode, seed: number, floo
     const trial = typeof window !== "undefined" ? loadTrialMapPack()?.dungeons.find((map) => map.floor === floor) : undefined;
     if (trial) return compileMap(trial);
   }
+  if (mode === "fixed") {
+    const authored = createDefaultMapPack().dungeons.find((map) => map.floor === floor);
+    if (authored) return compileMap(authored);
+  }
   return generateDungeon(seed, floor, requiresTomb);
 }
 
@@ -62,8 +69,10 @@ export const DIRECTION: Record<"up" | "down" | "left" | "right", Vec> = {
 };
 
 export function createNewGame(): GameState {
-  return {
-    version: 4,
+  const state: GameState = {
+    version: 5,
+    campaignId: typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `campaign-${Date.now()}`,
+    status: "active",
     day: 1,
     gold: 300,
     hp: 12,
@@ -80,10 +89,18 @@ export function createNewGame(): GameState {
     archive: [],
     display: [],
     customers: clone(CUSTOMERS),
+    // Retained as compatibility data for the existing story helpers. The v5
+    // home UI exposes merchant-authored commissions instead of this board.
     quests: clone(INITIAL_QUESTS),
     events: [],
-    message: "最初の依頼は銀露草の回収だ。入口から地下へ向かおう。",
+    message: "商品を探しにダンジョンへ向かおう。護衛は探索準備から募集できる。",
     nextItemId: 1,
+    nextNpcId: 1,
+    itemsById: {},
+    npcs: [],
+    visitorNpcIds: [],
+    refusedOffers: {},
+    singularItemIds: [],
     story: {
       blackSword: "locked",
       early: {
@@ -95,15 +112,26 @@ export function createNewGame(): GameState {
       },
     },
   };
+  initializeMerchantWorld(state);
+  for (const [npcId, definitionId] of [["rolf", "iron-sword"], ["mina", "antidote"], ["bastian", "bronze-spear"]] as const) {
+    const npc = state.npcs.find((entry) => entry.id === npcId)!;
+    const gear = createItem(state, definitionId);
+    gear.owner = npcId;
+    gear.location = { kind: "npcInventory", npcId };
+    npc.inventoryIds.push(gear.uuid);
+  }
+  return state;
 }
 
 export function itemDefinition(item: ItemInstance): ItemDefinition {
-  const definition = ITEM_DEFINITIONS[item.definitionId];
+  const definition = MERCHANT_ITEM_DEFINITIONS[item.definitionId] ?? ITEM_DEFINITIONS[item.definitionId];
   if (!definition) throw new Error(`未定義アイテム: ${item.definitionId}`);
   return definition;
 }
 
 export function itemName(item: ItemInstance): string {
+  if (item.currentName) return item.currentName;
+  if (item.singular && !item.namedByNpcId) return "？？？の剣";
   const definition = itemDefinition(item);
   if (item.knowledge === "identified") return definition.trueName;
   if (item.knowledge === "suspected") return definition.suspectedName;
@@ -119,8 +147,10 @@ export function currentBulk(state: GameState): number {
 }
 
 export function createItem(state: GameState, definitionId: string, floor?: number): ItemInstance {
-  if (!ITEM_DEFINITIONS[definitionId]) throw new Error(`未定義アイテム: ${definitionId}`);
-  return {
+  const definition = MERCHANT_ITEM_DEFINITIONS[definitionId] ?? ITEM_DEFINITIONS[definitionId];
+  if (!definition) throw new Error(`未定義アイテム: ${definitionId}`);
+  if (definition.singular && state.singularItemIds.includes(definitionId)) throw new Error(`一点ものは既に生成済み: ${definitionId}`);
+  const instance: ItemInstance = {
     uuid: `item-${state.nextItemId++}`,
     definitionId,
     discoveredDay: state.day,
@@ -129,7 +159,14 @@ export function createItem(state: GameState, definitionId: string, floor?: numbe
     clues: [],
     owner: "player",
     history: [{ day: state.day, type: "found", detail: floor ? `地下${floor}階で発見` : "家で入手" }],
+    visualId: definition.visualId,
+    rarity: definition.rarity,
+    location: floor ? { kind: "dungeonGround", floor, pos: { x: 0, y: 0 } } : { kind: "playerBag" },
+    singular: definition.singular,
+    historyV2: [{ day: state.day, type: "created", detail: floor ? `地下${floor}階で生成` : "家で生成" }],
   };
+  if (definition.singular) state.singularItemIds.push(definitionId);
+  return registerWorldItem(state, instance);
 }
 
 function carveRoom(tiles: number[][], x: number, y: number, width: number, height: number): Vec {
@@ -275,9 +312,20 @@ function activeCollectQuests(state: GameState, floor: number): Quest[] {
     && quest.objective?.kind === "collect");
 }
 
-function randomItemId(rng: Rng): string {
-  const ids = Object.keys(ITEM_DEFINITIONS).filter((id) => !ITEM_DEFINITIONS[id]!.unique);
-  return rng.pick(ids);
+function randomItemId(state: GameState, rng: Rng, floor: number): string {
+  const definitions = Object.values(MERCHANT_ITEM_DEFINITIONS).filter((definition) => {
+    if (definition.singular && state.singularItemIds.includes(definition.id)) return false;
+    if (definition.rarity === "legendary" && floor < 6) return false;
+    return true;
+  });
+  const weighted = definitions.flatMap((definition) => {
+    const rarityWeight = definition.rarity === "common" ? Math.max(2, 9 - floor)
+      : definition.rarity === "uncommon" ? 5
+        : definition.rarity === "rare" ? Math.max(1, floor - 1)
+          : floor >= 6 ? 1 : 0;
+    return Array<string>(rarityWeight).fill(definition.id);
+  });
+  return rng.pick(weighted);
 }
 
 function buildEnemies(rng: Rng, map: DungeonMap, floor: number, occupied: Vec[]): Enemy[] {
@@ -334,6 +382,14 @@ function guardMaxHp(record: GuardRecord, definition: GuardDefinition): number {
 
 function initialGuard(state: GameState, map: DungeonMap, occupied: Vec[]): ActiveGuard | undefined {
   if (!state.hiredGuardId) return undefined;
+  const npc = state.npcs.find((entry) => entry.id === state.hiredGuardId && entry.adventurer && entry.status !== "dead");
+  if (npc) {
+    const candidates = Object.values(DIRECTION).map((direction) => ({ x: map.stairsUp.x + direction.x, y: map.stairsUp.y + direction.y }));
+    const pos = candidates.find((candidate) => canTraverse(map, map.stairsUp, candidate) && !occupied.some((entry) => samePosition(entry, candidate)))
+      ?? freeFloor(map, new Rng(state.expeditionSerial + state.day), occupied);
+    occupied.push(pos);
+    return { guardId: npc.id, pos, hp: npc.maxHp ?? 6, maxHp: npc.maxHp ?? 6, damage: npc.damage ?? 1 };
+  }
   const record = state.guards.find((guard) => guard.id === state.hiredGuardId);
   const definition = GUARD_DEFINITIONS[state.hiredGuardId];
   if (!record || !definition || (record.injuredUntilDay ?? 0) > state.day) return undefined;
@@ -370,7 +426,9 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
   for (let index = items.length; index < 7; index += 1) {
     const pos = freeFloor(map, rng, occupied);
     occupied.push(pos);
-    items.push({ item: createItem(state, randomItemId(rng), floor), pos });
+    const generated = createItem(state, randomItemId(state, rng, floor), floor);
+    generated.location = { kind: "dungeonGround", floor, pos: { ...pos } };
+    items.push({ item: generated, pos });
   }
 
   const guard = carriedGuard === null
@@ -391,7 +449,7 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
   const chests = Array.from({ length: 2 }, (_, index) => {
     const pos = freeFloor(map, rng, occupiedEntities);
     occupiedEntities.push(pos);
-    return { id: `chest-${floor}-${index}`, pos, item: createItem(state, randomItemId(rng), floor) };
+    return { id: `chest-${floor}-${index}`, pos, item: createItem(state, randomItemId(state, rng, floor), floor) };
   });
   const traps = Array.from({ length: rng.int(2, 4) }, () => {
     const pos = freeFloor(map, rng, occupiedEntities);
@@ -412,10 +470,20 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
       questId: "missing",
     });
   }
-  for (let index = bodies.length; index < 2; index += 1) {
+  const corpseChance = Math.min(0.6, 0.25 + (floor - 1) * 0.05);
+  if (rng.next() < corpseChance) {
+    const deadNpc = createGeneratedDeadAdventurer(state, floor);
     const pos = freeFloor(map, rng, occupiedEntities);
     occupiedEntities.push(pos);
-    bodies.push({ id: `body-${floor}-${index}`, name: "名もなき冒険者", pos, loot: [], inspected: false });
+    const loot = Array.from({ length: rng.int(1, 3) }, () => createItem(state, randomItemId(state, rng, floor), floor));
+    for (const found of loot) {
+      found.owner = deadNpc.id;
+      found.location = { kind: "corpse", npcId: deadNpc.id, floor };
+      found.historyV2 ??= [];
+      found.historyV2.push({ day: state.day, type: "ownerDied", npcId: deadNpc.id, detail: `${deadNpc.name}が地下${floor}階で死亡` });
+      deadNpc.inventoryIds.push(found.uuid);
+    }
+    bodies.push({ id: `body-${deadNpc.id}`, npcId: deadNpc.id, name: `冒険者${deadNpc.name}`, pos, loot, inspected: false });
   }
 
   return {
@@ -450,6 +518,11 @@ export function beginExpedition(state: GameState): void {
   state.returnStones = 1;
   state.smokeBombs = 2;
   state.run = buildRun(state, floor, seed, undefined, floor, forceTomb);
+  if (state.escortCommission?.status === "accepted" && state.escortCommission.npcId) {
+    state.escortCommission.status = "active";
+    const npc = state.npcs.find((entry) => entry.id === state.escortCommission?.npcId);
+    if (npc) npc.status = "dungeon";
+  }
   state.message = state.run.guard
     ? `${guardDefinition(state.run.guard.guardId)?.name ?? "護衛"}とダンジョンへ入った。主人公の後に護衛、敵の順で動く。`
     : "ダンジョンへ入った。敵は倒せない。Spaceの「押し返す」で退路を作ろう。";
@@ -643,10 +716,22 @@ function enemyPhase(state: GameState, events: DungeonEvent[]): void {
       events.push({ type: "attack", attackerId: enemy.id, targetId: guard.guardId, damage: enemy.damage });
       state.message = `${enemy.name}が${guardDefinition(guard.guardId)?.name ?? "護衛"}へ${enemy.damage}ダメージ。`;
       if (guard.hp <= 0) {
-        const record = state.guards.find((entry) => entry.id === guard.guardId);
-        if (record) record.injuredUntilDay = state.day + 3;
+        const npc = state.npcs.find((entry) => entry.id === guard.guardId);
+        if (npc) {
+          npc.status = "dead";
+          const loot = npc.inventoryIds.map((id) => state.itemsById[id]).filter((item): item is ItemInstance => Boolean(item));
+          for (const item of loot) {
+            item.location = { kind: "corpse", npcId: npc.id, floor: run.floor };
+            item.historyV2 ??= [];
+            item.historyV2.push({ day: state.day, type: "ownerDied", npcId: npc.id, detail: `${npc.name}が地下${run.floor}階で死亡` });
+          }
+          run.bodies.push({ id: `body-${npc.id}`, npcId: npc.id, name: `冒険者${npc.name}`, pos: { ...guard.pos }, loot, inspected: false });
+        } else {
+          const record = state.guards.find((entry) => entry.id === guard.guardId);
+          if (record) record.injuredUntilDay = state.day + 3;
+        }
         events.push({ type: "defeated", actorId: guard.guardId });
-        state.message = `${guardDefinition(guard.guardId)?.name ?? "護衛"}は負傷して撤退した。2日間雇えない。`;
+        state.message = npc ? `${npc.name}は死亡し、その場に所持品を残した。` : `${guardDefinition(guard.guardId)?.name ?? "護衛"}は負傷して撤退した。`;
         run.guard = undefined;
       }
       continue;
@@ -656,7 +741,7 @@ function enemyPhase(state: GameState, events: DungeonEvent[]): void {
       events.push({ type: "attack", attackerId: enemy.id, targetId: "player", damage: enemy.damage });
       state.message = `${enemy.name}の攻撃。${enemy.damage}ダメージ。`;
       if (state.hp <= 0) {
-        rescuePlayer(state);
+        merchantGameOver(state, `${enemy.name}の攻撃で命を落とした。`);
         break;
       }
       continue;
@@ -705,7 +790,7 @@ function performMove(state: GameState, direction: Vec): TurnResult {
     state.hp -= 2;
     state.message = "床の罠が作動した。2ダメージ。";
     if (state.hp <= 0) {
-      rescuePlayer(state);
+      merchantGameOver(state, "罠によって命を落とした。" );
       return { consumedTurn: true, events };
     }
   }
@@ -769,10 +854,12 @@ function carryItem(state: GameState, incoming: ItemInstance, swapOutId: string |
   if (swap) {
     state.inventory = state.inventory.filter((item) => item.uuid !== swap.uuid);
     swap.owner = "ground";
+    if (state.run) swap.location = { kind: "dungeonGround", floor: state.run.floor, pos: { ...state.run.player } };
     onSwap(swap);
     syncQuestCarryProgress(state, swap.definitionId);
   }
   incoming.owner = "player";
+  incoming.location = { kind: "playerBag" };
   state.inventory.push(incoming);
   completePickupObjective(state, incoming);
   return true;
@@ -840,7 +927,10 @@ function performInspectBody(state: GameState, bodyId: string): TurnResult {
     state.story.early.missingBodyInspected = true;
     state.message = "認識票には『アロン』とある。傍らに古びた指輪も残されている。";
   } else {
-    state.message = "古い遺体だ。身元を示す物も、持ち帰れる遺品も残っていない。";
+    const deadNpc = body.npcId ? state.npcs.find((npc) => npc.id === body.npcId) : undefined;
+    state.message = deadNpc
+      ? `${deadNpc.name}という冒険者だ。${body.loot.length}個の所持品が残されている。`
+      : "古い遺体だ。身元を示す物は残っていない。";
   }
   return finishTurn(state, [{ type: "message", text: state.message }]);
 }
@@ -852,6 +942,13 @@ function performLootBody(state: GameState, bodyId: string, itemId: string, swapO
   if (!run || !body || !item) return emptyResult();
   if (!carryItem(state, item, swapOutId, (dropped) => run.items.push({ item: dropped, pos: { ...run.player } }))) return emptyResult();
   body.loot = body.loot.filter((entry) => entry.uuid !== item.uuid);
+  const npcId = body.npcId;
+  if (npcId) {
+    const npc = state.npcs.find((entry) => entry.id === npcId);
+    if (npc) npc.inventoryIds = npc.inventoryIds.filter((id) => id !== item.uuid);
+    item.historyV2 ??= [];
+    item.historyV2.push({ day: state.day, type: "lootedFromCorpse", npcId, detail: `${body.name}の遺体から回収` });
+  }
   item.history.push({ day: state.day, type: "recovered", detail: `${body.name}の遺品として回収` });
   state.message = `${body.name}から${itemName(item)}を回収した。`;
   return finishTurn(state, [{ type: "pickup", itemId: item.uuid }]);
@@ -863,6 +960,7 @@ function performDrop(state: GameState, itemId: string): TurnResult {
   if (!run || !item) return emptyResult();
   state.inventory = state.inventory.filter((entry) => entry.uuid !== item.uuid);
   item.owner = "ground";
+  item.location = { kind: "dungeonGround", floor: run.floor, pos: { ...run.player } };
   run.items.push({ item, pos: { ...run.player } });
   syncQuestCarryProgress(state, item.definitionId);
   state.message = `${itemName(item)}を足元に置いた。`;
@@ -975,6 +1073,13 @@ export function tryStairs(state: GameState): TurnResult {
   return performDungeonCommand(state, { type: "stairs" });
 }
 
+export function merchantGameOver(state: GameState, cause: string): void {
+  if (state.status === "gameOver") return;
+  state.hp = 0;
+  state.status = "gameOver";
+  state.message = `${cause} 商人の物語はここで終わった。`;
+}
+
 /** Return stones and rescue use homeSpawn; the first-floor up stair arrives at dungeonEntrance. */
 export function returnHome(state: GameState, rescued: boolean, arrival: "homeSpawn" | "dungeonEntrance" = "homeSpawn"): void {
   const completedRun = state.run;
@@ -991,6 +1096,11 @@ export function returnHome(state: GameState, rescued: boolean, arrival: "homeSpa
   } else {
     state.message = "家へ帰還した。依頼の報告と護衛契約ができる。";
     if (completedRun?.guard) {
+      const npc = state.npcs.find((entry) => entry.id === completedRun.guard?.guardId);
+      if (npc && npc.status !== "dead") {
+        npc.status = "inTown";
+        npc.relation = Math.min(100, npc.relation + 1);
+      }
       const record = state.guards.find((entry) => entry.id === completedRun.guard?.guardId);
       if (record) {
         record.relation = Math.min(100, record.relation + 1);
@@ -1010,11 +1120,9 @@ export function returnHome(state: GameState, rescued: boolean, arrival: "homeSpa
   state.run = undefined;
   state.hiredGuardId = undefined;
   state.hiredGuardFee = undefined;
+  state.escortCommission = undefined;
   processDayEvents(state);
-}
-
-function rescuePlayer(state: GameState): void {
-  returnHome(state, true);
+  refreshDailyVisitors(state);
 }
 
 export function guardDefinition(id: string): GuardDefinition | undefined {
@@ -1235,12 +1343,11 @@ export function sellItem(state: GameState, item: ItemInstance, customerId: strin
 }
 
 export function moveToStore(state: GameState, item: ItemInstance): void {
-  if (isQuestItemProtected(state, item)) {
-    state.message = "依頼品は報告まで持ち歩こう。";
-    return;
-  }
   state.inventory = state.inventory.filter((entry) => entry.uuid !== item.uuid);
   item.owner = "store";
+  item.location = { kind: "homeStorage" };
+  item.historyV2 ??= [];
+  item.historyV2.push({ day: state.day, type: "stored", detail: "自宅保管庫へ移動" });
   state.store.push(item);
   state.message = `${itemName(item)}を店の保管庫へ移した。`;
 }
@@ -1250,11 +1357,15 @@ export function toggleDisplay(state: GameState, item: ItemInstance): void {
   const showing = state.display.includes(item.uuid);
   if (showing) {
     state.display = state.display.filter((uuid) => uuid !== item.uuid);
+    item.location = { kind: "homeStorage" };
     state.message = "展示を取り下げた。";
   } else if (state.display.length >= 4) {
     state.message = "展示台は4枠までだ。";
   } else {
     state.display.push(item.uuid);
+    item.location = { kind: "shopStock" };
+    item.historyV2 ??= [];
+    item.historyV2.push({ day: state.day, type: "listed", detail: "販売品として店頭へ配置" });
     item.history.push({ day: state.day, type: "displayed", detail: "店頭に展示" });
     if (itemDefinition(item).unique) {
       state.events.push({ id: `showcase-${item.uuid}`, dueDay: state.day + 1, text: `${itemName(item)}の展示を見た、見知らぬ客が店を訪ねてきた。` });

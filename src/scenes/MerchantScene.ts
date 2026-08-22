@@ -15,7 +15,6 @@ import {
   INVENTORY_CAPACITY,
   acceptQuest,
   activeQuestSummary,
-  appraiseItem,
   beginExpedition,
   cancelGuard,
   createNewGame,
@@ -24,7 +23,6 @@ import {
   guardDefinition,
   guardFee,
   hireGuard,
-  initialOffer,
   inspectBody,
   isQuestItemProtected,
   itemBulk,
@@ -37,7 +35,6 @@ import {
   reportQuest,
   resolveRing,
   scoutRevealsTrap,
-  sellItem,
   toggleDisplay,
   tryOpenChest,
   tryPickup,
@@ -51,7 +48,9 @@ import { assignHomeVisitorCells } from "../game/homeVisitors";
 import { compileMap, loadTrialMap, loadTrialMapPack } from "../game/mapDocument";
 import { MAP_ASSET_CATALOG } from "../game/mapAssetCatalog.generated";
 import { MISSING_MAP_ASSET_TEXTURE, resolveMapAssetFrame } from "../game/mapAssetRuntime";
-import type { Customer, DungeonCommand, DungeonEvent, GameState, ItemInstance, MenuChoice, Vec } from "../game/types";
+import { cancelEscortCommission, merchantItemName, offerShopItem, postEscortCommission } from "../game/merchantEconomy";
+import { ITEM_VISUALS, MERCHANT_ITEM_DEFINITIONS, NPC_APPEARANCES } from "../game/merchantContent";
+import type { DungeonCommand, DungeonEvent, GameState, ItemInstance, MenuChoice, NpcRecord, Vec } from "../game/types";
 const ALL_CRAFTPIX_ACTORS: readonly CraftpixActorDefinition[] = Object.values(ACTOR_CATALOG);
 /** Viewport and generated fallback textures stay at the game's base pixel grid. */
 const VIEWPORT_BASE_TILE = 16;
@@ -107,6 +106,7 @@ export class MerchantScene extends Phaser.Scene {
   private readonly saves = new SaveRepository();
   private gameStarted = false;
   private lastAutoSaveAt = Number.NEGATIVE_INFINITY;
+  private gameOverHandled = false;
   private homeWorld?: Phaser.GameObjects.Container;
   private homeBackdrop?: Phaser.Tilemaps.TilemapLayer;
   private homePlayer?: Phaser.GameObjects.Sprite;
@@ -146,6 +146,7 @@ export class MerchantScene extends Phaser.Scene {
       frameWidth: ASSET_MANIFEST.item.frameWidth,
       frameHeight: ASSET_MANIFEST.item.frameHeight,
     });
+    for (const [visualId, path] of Object.entries(ITEM_VISUALS)) this.load.image(`merchant.${visualId}`, path);
     this.load.spritesheet("object.dungeon", "assets/objects/dungeon_objects.png", { frameWidth: 24, frameHeight: 24 });
     for (const asset of MAP_ASSET_CATALOG) this.load.spritesheet(`map.asset.${asset.id}`, asset.path, { frameWidth: asset.tileSize, frameHeight: asset.tileSize, margin: asset.margin, spacing: asset.spacing });
     this.load.image(ASSET_MANIFEST.mapTiles.homeFloor.textureKey, ASSET_MANIFEST.mapTiles.homeFloor.path);
@@ -219,6 +220,10 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   update(_time: number, delta: number): void {
+    if (this.gameStarted && this.state.status === "gameOver") {
+      if (!this.gameOverHandled) this.showGameOver();
+      return;
+    }
     if (this.gameStarted && this.just("escape")) {
       if (this.modal) {
         this.modal = undefined;
@@ -471,10 +476,13 @@ export class MerchantScene extends Phaser.Scene {
         this.openGuildMenu();
         return;
       case "visitors":
-        this.openMenu("来客待機場所", ["家に来た客へ品物を見せたり、話を聞いたりできます。"], [{ label: "閉じる", action: () => this.closeMenu() }]);
+        this.openMenu("今日の来客", [
+          ...this.state.visitorNpcIds.map((id) => this.state.npcs.find((npc) => npc.id === id)?.name ?? id),
+          this.state.escortCommission?.status === "accepted" ? "護衛依頼を受けた冒険者が出発を待っている。" : "販売品を用意して客へ直接提示しよう。",
+        ], [{ label: "閉じる", action: () => this.closeMenu() }]);
         return;
       case "customer":
-        if (poi.customerId) this.openCustomer(poi.customerId);
+        if (poi.customerId) this.openNpcVisitor(poi.customerId);
         return;
     }
   }
@@ -561,18 +569,22 @@ export class MerchantScene extends Phaser.Scene {
       ]);
       return;
     }
+    const npc = this.state.npcs.find((entry) => entry.id === active.guardId);
     const definition = guardDefinition(active.guardId);
     this.openMenu("護衛状態", [
-      `${definition?.name ?? active.guardId} — ${definition?.title ?? "護衛"}`,
+      `${npc?.name ?? definition?.name ?? active.guardId} — ${npc ? this.professionLabel(npc) : definition?.title ?? "護衛"}`,
       `HP ${active.hp}/${active.maxHp}　攻撃 ${active.damage}`,
-      definition?.description ?? "主人公を自動で守る。",
+      npc ? "主人公に同行し、近くの敵と自動で戦う。HPが0になると死亡する。" : definition?.description ?? "主人公を自動で守る。",
     ], [{ label: "戻る", action: () => this.openDungeonActionMenu() }]);
   }
 
   private openBodyMenu(bodyId: string): void {
     const body = this.state.run?.bodies.find((entry) => entry.id === bodyId);
     if (!body) return;
-    const lines = body.id === "aron"
+    const deadNpc = body.npcId ? this.state.npcs.find((npc) => npc.id === body.npcId) : undefined;
+    const lines = deadNpc
+      ? [`${deadNpc.name}という名の${this.professionLabel(deadNpc)}だ。`, body.loot.length > 0 ? "所持品を選んで回収する。" : "所持品は残っていない。"]
+      : body.id === "aron"
       ? ["認識票には『アロン』と刻まれている。", body.loot.length > 0 ? "残された遺品を選んで回収する。" : "回収できる遺品は残っていない。"]
       : ["身元不明の古い遺体だ。", "持ち帰れる物は残っていない。"];
     this.openMenu(body.name, lines, [
@@ -624,7 +636,7 @@ export class MerchantScene extends Phaser.Scene {
   private async openTitle(): Promise<void> {
     const available = await this.saves.availableSlots();
     const choices: MenuChoice[] = [
-      { label: "新しい商人として始める", action: () => { this.state = createNewGame(); this.gameStarted = true; this.closeMenu(); } },
+      { label: "新しい商人として始める", action: () => { this.state = createNewGame(); this.gameOverHandled = false; this.gameStarted = true; this.closeMenu(); } },
       ...(["autosave", "manual-1", "manual-2", "manual-3"] as SaveSlot[]).map((slot) => ({
         label: slot === "autosave" ? "自動保存を再開" : `手動保存 ${slot.at(-1)} を読み込む`,
         disabled: !available.includes(slot),
@@ -665,7 +677,7 @@ export class MerchantScene extends Phaser.Scene {
       `所持金 ${this.state.gold}G　容量 ${currentBulk(this.state)}/${INVENTORY_CAPACITY}`,
     ], [
       { label: "持ち物", action: () => this.openInventory() },
-      { label: "依頼", action: () => this.openQuestBoard() },
+      { label: "護衛募集", action: () => this.openEscortCommission(this.state.escortCommission?.offeredFee ?? 100) },
       { label: "商人の記録", action: () => this.openLedger() },
       { label: "操作", action: () => this.openHelp() },
       { label: "手動保存 1", action: () => { void this.saveManual("manual-1"); } },
@@ -677,7 +689,7 @@ export class MerchantScene extends Phaser.Scene {
 
   private openHelp(): void {
     const controls = this.state.location === "home"
-      ? ["移動: 矢印 / WASD", "決定・会話: Enter / Space", "Esc: メニュー", "I: 持ち物  L: 商人の記録", "Q: 依頼  F1〜F3: 手動保存"]
+      ? ["移動: 矢印 / WASD", "決定・会話: Enter / Space", "Esc: メニュー", "I: 持ち物  L: 商人の記録", "Q: 護衛募集  F1〜F3: 手動保存"]
       : ["移動・向き変更: 矢印 / WASD", "Enter: 足元を調べる", "Space: 行動（押し返す・道具・待機）", "Z: 煙玉  R: 帰還石", "Esc: メニュー  I: 持ち物"];
     this.openMenu("操作", controls, [{ label: "閉じる", action: () => this.closeMenu() }]);
   }
@@ -695,16 +707,16 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private openItemMenu(item: ItemInstance): void {
-    const definition = item.definitionId;
+    const definition = MERCHANT_ITEM_DEFINITIONS[item.definitionId];
     const lines = [
       itemName(item),
-      `知識: ${item.knowledge === "unknown" ? "未鑑定" : item.knowledge === "suspected" ? "推測" : "判明"}`,
-      `容量: ${itemBulk(item)}  ${definition}`,
+      `分類: ${definition ? this.categoryLabel(definition.category) : item.definitionId}`,
+      `希少度: ${definition?.rarity ?? "旧商品"}　容量: ${itemBulk(item)}`,
+      definition?.description ?? "",
     ];
     const choices: MenuChoice[] = [];
     if (this.state.location === "home") {
-      choices.push({ label: "店へ保管する", disabled: isQuestItemProtected(this.state, item), action: () => { moveToStore(this.state, item); this.openStore(); } });
-      choices.push({ label: "買い手を探す", disabled: isQuestItemProtected(this.state, item), action: () => this.openCustomerList(item) });
+      choices.push({ label: "店へ保管する", action: () => { moveToStore(this.state, item); this.openStore(); } });
     } else {
       choices.push({ label: "足元に置く", action: () => { dropItem(this.state, item.uuid); this.openInventory(); } });
     }
@@ -713,10 +725,10 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private openStore(): void {
-    const lines = [`保管品 ${this.state.store.length}点 / 展示 ${this.state.display.length}点`, "展示品は特別な来客を呼ぶことがある。"];
+    const lines = [`保管品 ${this.state.store.length}点 / 販売品 ${this.state.display.length}点`, "販売品は来客との対面交渉で価格を提示する。"];
     const choices: MenuChoice[] = [
-      ...this.state.inventory.map((item) => ({ label: `保管する: ${itemName(item)}`, disabled: isQuestItemProtected(this.state, item), action: () => { moveToStore(this.state, item); this.openStore(); } })),
-      ...this.state.store.map((item) => ({ label: `保管品: ${itemName(item)}${this.state.display.includes(item.uuid) ? " ★展示中" : ""}`, action: () => this.openStoredItem(item) })),
+      ...this.state.inventory.map((item) => ({ label: `保管する: ${itemName(item)}`, action: () => { moveToStore(this.state, item); this.openStore(); } })),
+      ...this.state.store.map((item) => ({ label: `保管品: ${itemName(item)}${this.state.display.includes(item.uuid) ? " ★販売中" : ""}`, action: () => this.openStoredItem(item) })),
       { label: "閉じる", action: () => this.closeMenu() },
     ];
     this.openMenu("珍品店", lines, choices);
@@ -724,9 +736,8 @@ export class MerchantScene extends Phaser.Scene {
 
   private openStoredItem(item: ItemInstance): void {
     const showing = this.state.display.includes(item.uuid);
-    this.openMenu(itemName(item), ["店の保管庫にある一点物。", `現在: ${showing ? "展示中" : "保管中"}`], [
-      { label: showing ? "展示をやめる" : "展示する", action: () => { toggleDisplay(this.state, item); this.openStore(); } },
-      { label: "買い手を探す", action: () => this.openCustomerList(item) },
+    this.openMenu(itemName(item), ["店の保管庫にある商品。", `現在: ${showing ? "販売中" : "保管中"}`], [
+      { label: showing ? "販売品から下げる" : "販売品として店頭へ出す", action: () => { toggleDisplay(this.state, item); this.openStore(); } },
       { label: "持ち物へ戻す", action: () => this.retrieveItem(item) },
       { label: "戻る", action: () => this.openStore() },
     ]);
@@ -740,94 +751,107 @@ export class MerchantScene extends Phaser.Scene {
     this.state.store = this.state.store.filter((entry) => entry.uuid !== item.uuid);
     this.state.display = this.state.display.filter((uuid) => uuid !== item.uuid);
     item.owner = "player";
+    item.location = { kind: "playerBag" };
     this.state.inventory.push(item);
     this.state.message = `${itemName(item)}を持ち物へ戻した。`;
     this.openStore();
   }
 
-  private openCustomerList(item?: ItemInstance): void {
-    this.openMenu("誰に見せる？", [item ? `${itemName(item)}を見せる相手を選ぶ。` : "相手を選ぶ。"], [
-      ...this.state.customers.map((customer) => ({ label: `${customer.name}（${customer.title}）`, action: () => item ? this.openOffer(item, customer) : this.openCustomer(customer.id) })),
-      { label: "戻る", action: () => item ? (this.state.store.includes(item) ? this.openStoredItem(item) : this.openItemMenu(item)) : this.closeMenu() },
-    ]);
-  }
-
-  private openCustomer(customerId: string): void {
-    const customer = this.state.customers.find((entry) => entry.id === customerId);
-    if (!customer) return;
-    const items = [...this.state.inventory, ...this.state.store];
-    const choices: MenuChoice[] = [
-      ...items.map((item) => ({ label: `品を見せる: ${itemName(item)}`, action: () => this.openOffer(item, customer) })),
-    ];
-    const ring = items.find((item) => item.definitionId === "old-ring");
-    if (ring && ["scholar", "jeweler", "duke"].includes(customer.id)) {
-      const consulted = this.state.story.early.ringConsulted.includes(customer.id);
-      choices.unshift({
-        label: `${consulted ? "✓ " : ""}古びた指輪について相談する`,
-        action: () => this.finishAppraisal(ring, customer),
-      });
-    }
-    if (customer.id === "scholar" && this.state.story.blackSword === "tomb") {
-      choices.unshift({ label: "墓所の碑文を照合する", action: () => this.resolveBlackSword(customer) });
-    }
-    choices.push({ label: "閉じる", action: () => this.closeMenu() });
-    this.openMenu(`${customer.name} — ${customer.title}`, [
-      `関係: ${customer.relation >= 0 ? "+" : ""}${customer.relation}`,
-      `興味: ${customer.interests.join(" / ")}`,
-      items.length > 0 ? "品を選んで、鑑定または売却できる。" : "売れる品を持っていない。",
-    ], choices);
-  }
-
-  private resolveBlackSword(customer: Customer): void {
-    const sword = this.state.archive.find((item) => item.definitionId === "black-sword");
-    if (!sword) return;
-    const result = appraiseItem(this.state, sword, customer);
-    this.openMenu("碑文の照合", [result, "商品帳簿の表示名が更新された。"], [{ label: "閉じる", action: () => this.closeMenu() }]);
-  }
-
-  private openOffer(item: ItemInstance, customer: Customer): void {
-    if (isQuestItemProtected(this.state, item)) {
-      this.openMenu(`${itemName(item)}を見せる`, ["依頼に関わる品のため、通常売却はできない。"], [
-        { label: "鑑定・相談する", action: () => this.finishAppraisal(item, customer) },
-        { label: "やめる", action: () => this.openCustomer(customer.id) },
+  private openNpcVisitor(npcId: string): void {
+    const npc = this.state.npcs.find((entry) => entry.id === npcId);
+    if (!npc) return;
+    if (this.state.escortCommission?.npcId === npcId && this.state.escortCommission.status === "accepted") {
+      this.openMenu(`${npc.name} — ${this.professionLabel(npc)}`, [
+        `護衛料 ${this.state.escortCommission.offeredFee}G 支払済み`,
+        "出発すると契約の取消と返金はできない。",
+      ], [
+        { label: "一緒にダンジョンへ出発", action: () => { beginExpedition(this.state); this.closeMenu(); } },
+        { label: "護衛依頼を取り消す", action: () => { cancelEscortCommission(this.state); this.closeMenu(); } },
+        { label: "閉じる", action: () => this.closeMenu() },
       ]);
       return;
     }
-    const offer = initialOffer(this.state, item, customer);
-    const explain = `${customer.name}の提示額: ${offer}G`;
-    this.openMenu(`${itemName(item)}の取引`, [explain, "反提案は一度だけ。高すぎれば関係が悪化する。"], [
-      { label: `${offer}Gで売る`, action: () => this.finishSale(item, customer, 1) },
-      { label: `${Math.floor(offer * 1.1)}Gを提案`, action: () => this.finishSale(item, customer, 1.1) },
-      { label: `${Math.floor(offer * 1.25)}Gを提案`, action: () => this.finishSale(item, customer, 1.25) },
-      { label: `${Math.floor(offer * 1.5)}Gを提案`, action: () => this.finishSale(item, customer, 1.5) },
-      { label: "鑑定だけして戻る", action: () => this.finishAppraisal(item, customer) },
-      { label: "やめる", action: () => this.openCustomer(customer.id) },
-    ]);
-  }
-
-  private finishAppraisal(item: ItemInstance, customer: Customer): void {
-    const result = appraiseItem(this.state, item, customer);
-    this.openMenu("鑑定結果", [result], [{ label: "戻る", action: () => this.openCustomer(customer.id) }]);
-  }
-
-  private finishSale(item: ItemInstance, customer: Customer, multiplier: number): void {
-    const result = sellItem(this.state, item, customer.id, multiplier);
-    this.openMenu("取引結果", [result, `所持金: ${this.state.gold}G`], [{ label: "閉じる", action: () => this.closeMenu() }]);
-  }
-
-  private openGuildMenu(): void {
-    this.openMenu("冒険者ギルド", [
-      `ギルド評判 ${this.state.guildReputation}`,
-      this.state.story.early.guardHiringUnlocked ? "依頼の報告と護衛契約を扱う。" : "まずは序章の依頼を進めよう。",
+    const stock = this.state.display.map((id) => this.state.itemsById[id]).filter((item): item is ItemInstance => Boolean(item) && item.location?.kind === "shopStock");
+    this.openMenu(`${npc.name} — ${this.professionLabel(npc)}`, [
+      `興味: ${npc.interests.map((interest) => this.categoryLabel(interest)).join(" / ")}`,
+      `予算の目安: ${npc.budget}G`,
+      stock.length ? "商品を選び、こちらから販売価格を提示する。" : "店頭に販売品がない。",
     ], [
-      { label: "地下迷宮へ入る", action: () => { beginExpedition(this.state); this.closeMenu(); } },
-      { label: "依頼と報告", action: () => this.openQuestBoard() },
-      { label: "護衛を雇う", disabled: !this.state.story.early.guardHiringUnlocked, action: () => this.openGuardRoster() },
+      ...stock.map((item) => ({ label: `見せる: ${merchantItemName(item) ?? itemName(item)}`, action: () => this.openPriceOffer(item, npc, MERCHANT_ITEM_DEFINITIONS[item.definitionId]?.baseValue ?? 100) })),
       { label: "閉じる", action: () => this.closeMenu() },
     ]);
   }
 
+  private openPriceOffer(item: ItemInstance, npc: NpcRecord, price: number): void {
+    const adjusted = Math.max(1, Math.min(99_999, Math.floor(price)));
+    const change = (delta: number) => () => this.openPriceOffer(item, npc, adjusted + delta);
+    this.openMenu(`${merchantItemName(item) ?? itemName(item)}の価格`, [
+      `${npc.name}への提示価格: ${adjusted}G`,
+      "価格は1G～99,999G。断られた品は翌日まで再提示できない。",
+    ], [
+      { label: "-1000G", disabled: adjusted <= 1, action: change(-1000) },
+      { label: "-100G", disabled: adjusted <= 1, action: change(-100) },
+      { label: "-10G", disabled: adjusted <= 1, action: change(-10) },
+      { label: "+10G", action: change(10) },
+      { label: "+100G", action: change(100) },
+      { label: "+1000G", action: change(1000) },
+      { label: `${adjusted}Gで提示`, action: () => {
+        const result = offerShopItem(this.state, item.uuid, npc.id, adjusted);
+        this.state.message = result.message;
+        this.openMenu(result.accepted ? "売買成立" : "交渉不成立", [result.message], [{ label: "閉じる", action: () => this.closeMenu() }]);
+      } },
+      { label: "戻る", action: () => this.openNpcVisitor(npc.id) },
+    ]);
+  }
+
+  private professionLabel(npc: NpcRecord): string {
+    return ({ swordsman: "剣士", scout: "斥候", mercenary: "傭兵", merchant: "商人", blacksmith: "鍛冶師", apothecary: "薬師", noble: "貴族", townsperson: "街人" } as const)[npc.profession];
+  }
+
+  private categoryLabel(category: NpcRecord["interests"][number]): string {
+    return ({ weapon: "武器", armor: "防具", medicine: "薬品", material: "素材", curio: "珍品", arcane: "魔法品", relic: "遺物", gem: "宝石", book: "書物", art: "美術品" } as const)[category];
+  }
+
+  private openGuildMenu(): void {
+    const contracted = this.state.escortCommission?.npcId ? this.state.npcs.find((npc) => npc.id === this.state.escortCommission?.npcId) : undefined;
+    this.openMenu("探索準備", [
+      contracted ? `${contracted.name}が店で出発を待っている。` : "護衛募集は主人公が条件を決め、冒険者へ依頼する。",
+      "護衛なしで出発することもできる。",
+    ], [
+      { label: "地下迷宮へ入る", action: () => { beginExpedition(this.state); this.closeMenu(); } },
+      { label: contracted ? "護衛依頼を確認" : "護衛募集を出す", action: () => this.openEscortCommission(this.state.escortCommission?.offeredFee ?? 100) },
+      { label: "閉じる", action: () => this.closeMenu() },
+    ]);
+  }
+
+  private openEscortCommission(fee: number): void {
+    const current = this.state.escortCommission;
+    if (current?.status === "accepted" && current.npcId) {
+      const npc = this.state.npcs.find((entry) => entry.id === current.npcId)!;
+      this.openMenu("護衛依頼", [`${npc.name}が${current.offeredFee}Gで受注済み。`, "店内の本人へ話しかけると一緒に出発できる。"], [
+        { label: "依頼を取り消して返金", action: () => { cancelEscortCommission(this.state); this.openGuildMenu(); } },
+        { label: "戻る", action: () => this.openGuildMenu() },
+      ]);
+      return;
+    }
+    const adjusted = Math.max(1, Math.min(99_999, Math.floor(fee)));
+    const change = (delta: number) => () => this.openEscortCommission(adjusted + delta);
+    this.openMenu("護衛募集", [`提示する護衛料: ${adjusted}G`, `所持金: ${this.state.gold}G`, "条件を満たす冒険者1人が即時に店へ来る。"], [
+      { label: "-1000G", disabled: adjusted <= 1, action: change(-1000) },
+      { label: "-100G", disabled: adjusted <= 1, action: change(-100) },
+      { label: "-10G", disabled: adjusted <= 1, action: change(-10) },
+      { label: "+10G", action: change(10) },
+      { label: "+100G", action: change(100) },
+      { label: "+1000G", action: change(1000) },
+      { label: `${adjusted}Gで募集`, action: () => { postEscortCommission(this.state, adjusted); this.openEscortCommission(adjusted); } },
+      { label: "戻る", action: () => this.openGuildMenu() },
+    ]);
+  }
+
   private openQuestBoard(): void {
+    this.openEscortCommission(this.state.escortCommission?.offeredFee ?? 100);
+    return;
+    /* Legacy player-received quests are intentionally unreachable in v5. */
     const active = activeQuestSummary(this.state).split("\n");
     const visible = this.state.quests.filter((quest) => quest.status !== "locked");
     this.openMenu("依頼と報告", ["受注中", ...active, "", "完了条件を満たした依頼はここで報告する。"], [
@@ -1006,8 +1030,12 @@ export class MerchantScene extends Phaser.Scene {
       if (run.map.specialRoom) place(run.map.specialRoom.x, run.map.specialRoom.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.torch);
     }
     for (const entry of run.items) {
-      const frame = Array.from(entry.item.definitionId).reduce((total, character) => total + character.charCodeAt(0), 0) % 8;
-      place(entry.pos.x, entry.pos.y, ASSET_MANIFEST.item.textureKey, frame);
+      const texture = entry.item.visualId ? `merchant.${entry.item.visualId}` : "";
+      if (texture && this.textures.exists(texture)) place(entry.pos.x, entry.pos.y, texture, 0);
+      else {
+        const frame = Array.from(entry.item.definitionId).reduce((total, character) => total + character.charCodeAt(0), 0) % 8;
+        place(entry.pos.x, entry.pos.y, ASSET_MANIFEST.item.textureKey, frame);
+      }
     }
     for (const chest of run.chests) {
       place(chest.pos.x, chest.pos.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.chest);
@@ -1028,11 +1056,14 @@ export class MerchantScene extends Phaser.Scene {
       add(sprite);
     }
     if (run.guard) {
+      const npc = this.state.npcs.find((entry) => entry.id === run.guard?.guardId);
+      const appearance = npc ? NPC_APPEARANCES[npc.appearanceId] : undefined;
+      const craftpix = appearance ? actorDefinition(appearance) : undefined;
       const definition = guardDefinition(run.guard.guardId);
-      const textureKey = definition?.textureKey ?? "actor.npc.scout";
+      const textureKey = craftpix ? (this.craftpixActorTexture(craftpix) ?? ASSET_MANIFEST.npc.textureKey) : definition?.textureKey ?? "actor.npc.scout";
       const direction = this.dungeonWalkAnimations.get(run.guard.guardId) ?? "down";
-      const sprite = this.add.sprite(run.guard.pos.x * tile + center, run.guard.pos.y * tile + tile, textureKey, 0).setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE).setName(`actor:${run.guard.guardId}`);
-      sprite.play(`${textureKey}.idle-${direction}`);
+      const sprite = this.add.sprite(run.guard.pos.x * tile + center, run.guard.pos.y * tile + tile, textureKey, 0).setName(`actor:${run.guard.guardId}`);
+      if (!craftpix || !this.playCraftpixActor(sprite, craftpix, "idle", direction)) sprite.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE).play(`${textureKey}.idle-${direction}`);
       add(sprite);
     }
     const playerTexture = this.craftpixActorTexture(CRAFTPIX_PLAYER_ACTOR) ?? ASSET_MANIFEST.player.textureKey;
@@ -1114,9 +1145,13 @@ export class MerchantScene extends Phaser.Scene {
       visitors,
       entrance,
     ];
-    const customerById = new Map(this.state.customers.map((customer) => [customer.id, customer]));
-    const customers = assignHomeVisitorCells(this.homeMap, this.state.customers.map((customer) => customer.id), occupied).map(({ visitorId, pos }) => {
-      const customer = customerById.get(visitorId)!;
+    const visibleNpcIds = [...new Set([
+      ...this.state.visitorNpcIds,
+      ...(this.state.escortCommission?.status === "accepted" && this.state.escortCommission.npcId ? [this.state.escortCommission.npcId] : []),
+    ])];
+    const npcById = new Map(this.state.npcs.map((npc) => [npc.id, npc]));
+    const customers = assignHomeVisitorCells(this.homeMap, visibleNpcIds, occupied).map(({ visitorId, pos }) => {
+      const customer = npcById.get(visitorId)!;
       return {
         id: `customer-${customer.id}`,
         name: customer.name,
@@ -1127,6 +1162,23 @@ export class MerchantScene extends Phaser.Scene {
     });
     const points = HOME_POINTS.map((point) => point.id === "entrance" ? { ...point, pos: entrance } : point.id === "shop" ? { ...point, pos: storage } : point.id === "guild" ? { ...point, pos: preparation } : point.id === "visitors" ? { ...point, pos: visitors } : point);
     return [...points, ...customers];
+  }
+
+  private showGameOver(): void {
+    this.gameOverHandled = true;
+    const campaignId = this.state.campaignId;
+    void this.saves.deleteCampaign(campaignId).catch(() => undefined);
+    this.openMenu("ゲームオーバー", [
+      this.state.message,
+      `到達日: ${this.state.day}日目${this.state.run ? `　地下${this.state.run.floor}階` : ""}`,
+      "この商人の自動保存・手動保存はすべて無効になりました。",
+    ], [{ label: "新しい商人として始める", action: () => {
+      this.state = createNewGame();
+      this.gameOverHandled = false;
+      this.gameStarted = true;
+      this.closeMenu();
+    } }]);
+    this.render();
   }
 
   private enemyTextureKey(enemyId: string): string {
@@ -1198,14 +1250,32 @@ export class MerchantScene extends Phaser.Scene {
       if (poi.kind === "entrance" || poi.kind === "shop" || poi.kind === "guild" || poi.kind === "visitors") return;
       const center = this.poiPosition(poi);
       const homeScale = this.homeScale();
-      const actor = NPC_ASSET_VARIANTS[index % NPC_ASSET_VARIANTS.length]!;
-      const sprite = this.add.sprite(center.x, center.y + this.homeMap.tileSize / 2, actor.textureKey, 0).setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE * homeScale);
-      sprite.play(`${actor.textureKey}.idle-down`);
+      const npc = poi.customerId ? this.state.npcs.find((entry) => entry.id === poi.customerId) : undefined;
+      const visual = npc ? NPC_APPEARANCES[npc.appearanceId] : undefined;
+      const craftpix = visual ? actorDefinition(visual) : undefined;
+      if (craftpix) {
+        const texture = this.craftpixActorTexture(craftpix) ?? ASSET_MANIFEST.npc.textureKey;
+        const sprite = this.add.sprite(center.x, center.y + this.homeMap.tileSize / 2, texture, 0);
+        if (!this.playCraftpixActor(sprite, craftpix, "idle", "down", true, homeScale)) sprite.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE * homeScale);
+        world.add(sprite);
+        return;
+      }
+      const legacyTexture: Record<string, string> = {
+        "legacy.guard.mina": "actor.guard.mina",
+        "legacy.guard.rolf": "actor.guard.rolf",
+        "legacy.npc.trader": "actor.npc.trader",
+        "legacy.npc.mage": "actor.npc.mage",
+        "legacy.npc.innkeeper": "actor.npc.innkeeper",
+        "legacy.npc.scout": "actor.npc.scout",
+      };
+      const textureKey = legacyTexture[visual ?? ""] ?? NPC_ASSET_VARIANTS[index % NPC_ASSET_VARIANTS.length]!.textureKey;
+      const sprite = this.add.sprite(center.x, center.y + this.homeMap.tileSize / 2, textureKey, 0).setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE * homeScale);
+      sprite.play(`${textureKey}.idle-down`);
       world.add(sprite);
       const staticResident = poi.kind === "customer" || poi.kind === "entrance";
       this.homeNpcs.push({
         sprite,
-        textureKey: actor.textureKey,
+        textureKey,
         center: { x: center.x, y: center.y + this.homeMap.tileSize / 2 },
         radius: staticResident ? { x: 6 * homeScale, y: 4 * homeScale } : { x: 18 * homeScale, y: 11 * homeScale },
         phase: index * 1.71,
@@ -1247,12 +1317,18 @@ export class MerchantScene extends Phaser.Scene {
     this.add.text(PANEL_X + 8, 84, `所持 ${currentBulk(this.state)}/${INVENTORY_CAPACITY}`, { fontSize: "10px", color: "#cdd8df" });
     this.add.text(PANEL_X + 8, 100, `帰還石 ${this.state.returnStones}`, { fontSize: "10px", color: "#b7d8e8" });
     this.add.text(PANEL_X + 8, 114, `煙玉 ${this.state.smokeBombs}`, { fontSize: "10px", color: "#d2b5e8" });
-    this.add.text(PANEL_X + 8, 134, "受注中", { fontSize: "10px", color: "#bca7d8" });
-    const quests = this.state.quests.filter((quest) => quest.status === "active" || quest.status === "readyToReport").slice(0, 3);
-    quests.forEach((quest, index) => this.add.text(PANEL_X + 8, 151 + index * 24, quest.title, { fontSize: "10px", color: "#eee5d1", wordWrap: { width: 110 } }));
+    this.add.text(PANEL_X + 8, 134, this.state.location === "home" ? "今日の来客" : "同行者", { fontSize: "10px", color: "#bca7d8" });
+    if (this.state.location === "home") this.state.visitorNpcIds.slice(0, 2).forEach((id, index) => {
+      const npc = this.state.npcs.find((entry) => entry.id === id);
+      this.add.text(PANEL_X + 8, 151 + index * 18, npc?.name ?? id, { fontSize: "10px", color: "#eee5d1", wordWrap: { width: 110 } });
+    });
+    else if (this.state.run?.guard) {
+      const npc = this.state.npcs.find((entry) => entry.id === this.state.run?.guard?.guardId);
+      this.add.text(PANEL_X + 8, 151, `${npc?.name ?? "護衛"} HP ${this.state.run.guard.hp}/${this.state.run.guard.maxHp}`, { fontSize: "10px", color: "#eee5d1", wordWrap: { width: 110 } });
+    }
     this.add.rectangle(MAP_W / 2, 323, MAP_W, 72, 0x17131e).setStrokeStyle(1, 0x78624b);
     this.add.text(10, 299, this.state.message, { fontSize: "11px", color: "#f6ecd5", lineSpacing: 2, wordWrap: { width: 485, useAdvancedWrap: true } });
-    const hint = this.state.location === "home" ? "Enter: 話す  Esc:メニュー  Q:依頼  H:操作" : "Enter: 調べる  Space:行動  Z:煙玉  R:帰還  Esc:メニュー";
+    const hint = this.state.location === "home" ? "Enter: 話す  Esc:メニュー  Q:護衛募集  H:操作" : "Enter: 調べる  Space:行動  Z:煙玉  R:帰還  Esc:メニュー";
     this.add.text(10, 340, hint, { fontSize: "10px", color: "#ad9eb1" });
   }
 

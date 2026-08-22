@@ -3,6 +3,7 @@ import type { DungeonBody, DungeonChest, DungeonHeight, DungeonMap, Enemy, GameS
 import { HOME_SPAWN, createHomeMap } from "./homeMap";
 import { loadTrialMapPack, type MapDocument } from "./mapDocument";
 import { isMapPositionWalkable } from "./mapTiles";
+import { initializeMerchantWorld } from "./merchantEconomy";
 /** v1-v3 saves always used the fixed 32x20, 16px home. */
 const HOME_SPAWN_PIXEL = { x: HOME_SPAWN.x * 16 + 8, y: HOME_SPAWN.y * 16 + 8 };
 
@@ -31,6 +32,24 @@ type VersionTwoGameState = Omit<GameState, "version"> & { version: 2 };
 
 const DATABASE_NAME = "dungeon-curio-merchant";
 const STORE_NAME = "campaigns";
+const DEAD_CAMPAIGNS_KEY = "dungeon-curio-merchant-dead-campaigns";
+
+function deadCampaigns(): Set<string> {
+  if (typeof localStorage === "undefined") return new Set();
+  try { return new Set(JSON.parse(localStorage.getItem(DEAD_CAMPAIGNS_KEY) ?? "[]") as string[]); }
+  catch { return new Set(); }
+}
+
+export function markCampaignDead(campaignId: string): void {
+  if (typeof localStorage === "undefined") return;
+  const dead = deadCampaigns();
+  dead.add(campaignId);
+  localStorage.setItem(DEAD_CAMPAIGNS_KEY, JSON.stringify([...dead]));
+}
+
+export function isCampaignDead(campaignId: string): boolean {
+  return deadCampaigns().has(campaignId);
+}
 
 function activeHomeMapForSave(): MapDocument {
   if (typeof window !== "undefined" && new URLSearchParams(window.location.search).get("autostart") === "world") return loadTrialMapPack()?.home ?? createHomeMap();
@@ -84,7 +103,9 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
   const state = raw as unknown as GameState;
   const oldLocation = (state as unknown as { location?: string }).location;
   if (oldLocation === "town" || oldLocation === "interior") state.location = "home";
-  state.version = 4;
+  state.version = 5;
+  state.campaignId ??= `legacy-${Date.now()}`;
+  state.status ??= "active";
   // 追加した任意項目を補い、既存のブラウザ保存を壊さない。
   state.returnStones ??= 1;
   state.smokeBombs ??= 2;
@@ -92,6 +113,13 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
   state.expeditionSerial ??= 0;
   state.guildReputation ??= 0;
   state.guards ??= Object.keys(GUARD_DEFINITIONS).map((id) => ({ id, unlocked: false, relation: 0, experience: 0, level: 1 }));
+  state.itemsById ??= {};
+  state.npcs ??= [];
+  state.visitorNpcIds ??= [];
+  state.nextNpcId ??= 1;
+  state.refusedOffers ??= {};
+  state.singularItemIds ??= [];
+  if (state.npcs.length === 0) initializeMerchantWorld(state);
   if (sourceVersion < 4) {
     // Only legacy fixed-home saves use the historical 16px constants.
     state.homePos = { ...HOME_SPAWN_PIXEL };
@@ -189,7 +217,7 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
       snapshot.turn ??= 0;
     }
   }
-  (state as { version: number }).version = 4;
+  (state as { version: number }).version = 5;
   return state;
 }
 
@@ -207,6 +235,7 @@ function openDatabase(): Promise<IDBDatabase> {
 
 export class SaveRepository {
   async save(slot: SaveSlot, state: GameState): Promise<void> {
+    if (state.status === "gameOver" || isCampaignDead(state.campaignId)) return;
     const database = await openDatabase();
     const payload: StoredSave = { slot, savedAt: new Date().toISOString(), state: structuredClone(state) };
     await new Promise<void>((resolve, reject) => {
@@ -227,8 +256,30 @@ export class SaveRepository {
     });
     database.close();
     if (!result) return undefined;
+    if ((result.state as { version?: number }).version !== 5) return undefined;
     result.state = migrateSaveState(result.state);
+    if (isCampaignDead(result.state.campaignId) || result.state.status === "gameOver") return undefined;
     return result as StoredSave & { state: GameState };
+  }
+
+  async deleteCampaign(campaignId: string): Promise<void> {
+    markCampaignDead(campaignId);
+    const database = await openDatabase();
+    await new Promise<void>((resolve, reject) => {
+      const transaction = database.transaction(STORE_NAME, "readwrite");
+      const store = transaction.objectStore(STORE_NAME);
+      const request = store.openCursor();
+      request.onsuccess = () => {
+        const cursor = request.result;
+        if (!cursor) return;
+        const saved = cursor.value as StoredSave;
+        if ((saved.state as GameState).campaignId === campaignId) cursor.delete();
+        cursor.continue();
+      };
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+    database.close();
   }
 
   async availableSlots(): Promise<SaveSlot[]> {

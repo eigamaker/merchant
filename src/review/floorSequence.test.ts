@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyDungeonFloorUpdates, planDungeonFloorCompaction, smallestMissingDungeonFloor, type DungeonFloorLike } from "./floorSequence";
+import { applyDungeonFloorUpdates, planDungeonFloorCompaction, planDungeonFloorMove, smallestMissingDungeonFloor, type DungeonFloorLike } from "./floorSequence";
 
 const dungeon = (id: string, floor: number): DungeonFloorLike => ({ id, kind: "dungeon", floor });
 
@@ -21,5 +21,17 @@ describe("dungeon floor sequence helpers", () => {
     const duplicate = [dungeon("a", 1), dungeon("b", 1)];
     expect(() => smallestMissingDungeonFloor(duplicate)).toThrow(/重複/);
     expect(() => planDungeonFloorCompaction(duplicate)).toThrow(/重複/);
+  });
+
+  it("moves a dungeon to a specified basement level and shifts the intervening floors", () => {
+    const maps = [dungeon("f1", 1), dungeon("f2", 2), dungeon("f3", 3)];
+    applyDungeonFloorUpdates(maps, planDungeonFloorMove(maps, "f1", 3));
+    expect(maps.map((map) => [map.id, map.floor])).toEqual([["f1", 3], ["f2", 1], ["f3", 2]]);
+    applyDungeonFloorUpdates(maps, planDungeonFloorMove(maps, "f1", 1));
+    expect(maps.map((map) => [map.id, map.floor])).toEqual([["f1", 1], ["f2", 2], ["f3", 3]]);
+  });
+
+  it("rejects a basement level outside the existing sequence", () => {
+    expect(() => planDungeonFloorMove([dungeon("f1", 1)], "f1", 2)).toThrow(/1〜1/);
   });
 });
