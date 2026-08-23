@@ -1,5 +1,5 @@
-import { LEGENDARY_NAME_PREFIXES, MERCHANT_ITEM_DEFINITIONS, NPC_SEEDS, createInitialNpcs, GENERATED_ADVENTURER_NAMES } from "./merchantContent";
-import type { GameState, ItemInstance, NpcProfession, NpcRecord } from "./types";
+import { ADVENTURER_RANKS, LEGENDARY_NAME_PREFIXES, MERCHANT_ITEM_DEFINITIONS, NPC_SEEDS, adventurerRankForFloor, createInitialNpcs, GENERATED_ADVENTURER_NAMES } from "./merchantContent";
+import type { AdventurerRank, GameState, ItemInstance, NpcProfession, NpcRecord } from "./types";
 
 function hash(value: string): number {
   let result = 2166136261;
@@ -35,28 +35,32 @@ export function merchantItemName(item: ItemInstance): string | undefined {
   return MERCHANT_ITEM_DEFINITIONS[item.definitionId]?.trueName;
 }
 
-export function postEscortCommission(state: GameState, offeredFee: number): NpcRecord | undefined {
+export function escortFeeForNpc(state: GameState, npc: NpcRecord): number {
+  const baseFee = ADVENTURER_RANKS[npc.rank ?? "E"].escortFee;
+  const relationDiscount = Math.min(0.2, npc.relation * 0.02);
+  const guildDiscount = state.guildReputation >= 2 ? 0.2 : 0;
+  return Math.max(1, Math.floor(baseFee * (1 - relationDiscount) * (1 - guildDiscount)));
+}
+
+export function postEscortCommission(state: GameState, npcId: string): NpcRecord | undefined {
   if (state.location !== "home" || state.status !== "active" || state.escortCommission?.status === "active") return undefined;
-  const fee = Math.max(1, Math.floor(offeredFee));
-  const eligible = state.npcs.filter((npc) => npc.adventurer
-    && (npc.status === "inTown" || npc.status === "visiting")
-    && (npc.baseFee ?? Number.POSITIVE_INFINITY) <= fee);
-  if (!eligible.length || state.gold < fee) {
-    state.escortCommission = { offeredFee: fee, status: "draft" };
-    state.message = state.gold < fee ? `護衛料${fee}Gを支払えない。` : "その条件で受ける冒険者はいなかった。";
+  const selected = state.npcs.find((npc) => npc.id === npcId && npc.adventurer);
+  if (!selected || (selected.status !== "inTown" && selected.status !== "visiting")) {
+    state.message = "その冒険者は今は護衛を引き受けられない。";
     return undefined;
   }
-  const selected = [...eligible].sort((a, b) => {
-    const relation = b.relation - a.relation;
-    return relation || hash(`${state.campaignId}:${state.day}:${fee}:${a.id}`) - hash(`${state.campaignId}:${state.day}:${fee}:${b.id}`);
-  })[0]!;
+  const fee = escortFeeForNpc(state, selected);
+  if (state.gold < fee) {
+    state.message = `${selected.rank ?? "E"}ランクの${selected.name}を雇うには${fee}G必要だ。`;
+    return undefined;
+  }
   state.gold -= fee;
   selected.status = "contracted";
   state.visitorNpcIds = state.visitorNpcIds.filter((id) => id !== selected.id);
-  state.escortCommission = { offeredFee: fee, status: "accepted", npcId: selected.id };
+  state.escortCommission = { offeredFee: fee, status: "accepted", npcId: selected.id, rank: selected.rank ?? "E" };
   state.hiredGuardId = selected.id;
   state.hiredGuardFee = fee;
-  state.message = `${selected.name}が護衛依頼を受け、店へやってきた。`;
+  state.message = `${selected.rank ?? "E"}ランクの${selected.name}を${fee}Gで護衛に指定した。`;
   return selected;
 }
 
@@ -84,6 +88,49 @@ function saleLimit(npc: NpcRecord, item: ItemInstance): number {
   return Math.min(npc.budget, Math.max(1, Math.floor(definition.baseValue * interest * relation * history)));
 }
 
+export interface CustomerPurchaseRequest {
+  itemId: string;
+  price: number;
+}
+
+/**
+ * Lets the current customer choose one displayed item and name the amount they
+ * are willing to pay. The persisted request makes reopening a save or menu
+ * unable to reroll either the item or its price.
+ */
+export function prepareCustomerPurchaseRequest(state: GameState, npcId: string): CustomerPurchaseRequest | undefined {
+  const npc = state.npcs.find((entry) => entry.id === npcId);
+  const session = state.shopSession;
+  if (!npc || session.status !== "serving" || session.currentNpcId !== npcId) return undefined;
+
+  const existing = session.requestedItemId ? state.itemsById[session.requestedItemId] : undefined;
+  if (existing?.location?.kind === "shopStock" && session.requestedPrice !== undefined) {
+    return { itemId: existing.uuid, price: session.requestedPrice };
+  }
+
+  session.requestedItemId = undefined;
+  session.requestedPrice = undefined;
+  const stock = session.status === "serving"
+    ? state.display
+      .map((id) => state.itemsById[id])
+      .filter((item): item is ItemInstance => Boolean(item) && item.location?.kind === "shopStock")
+    : [];
+  const selected = stock
+    .map((item) => {
+      const itemDefinition = MERCHANT_ITEM_DEFINITIONS[item.definitionId];
+      const interested = itemDefinition && npc.interests.includes(itemDefinition.category) ? 1 : 0;
+      return { item, interested, order: hash(`${state.campaignId}:${state.day}:purchase:${npc.id}:${item.uuid}`) };
+    })
+    .sort((a, b) => b.interested - a.interested || a.order - b.order)[0]?.item;
+  if (!selected) return undefined;
+
+  const willingness = 80 + hash(`${state.campaignId}:${state.day}:price:${npc.id}:${selected.uuid}`) % 21;
+  const price = Math.max(1, Math.floor(saleLimit(npc, selected) * willingness / 100));
+  session.requestedItemId = selected.uuid;
+  session.requestedPrice = price;
+  return { itemId: selected.uuid, price };
+}
+
 function assignLegendaryName(state: GameState, item: ItemInstance, npc: NpcRecord): void {
   if (!item.singular || item.currentName) return;
   const prefix = LEGENDARY_NAME_PREFIXES[hash(`${state.campaignId}:${item.uuid}:${npc.id}`) % LEGENDARY_NAME_PREFIXES.length]!;
@@ -94,17 +141,16 @@ function assignLegendaryName(state: GameState, item: ItemInstance, npc: NpcRecor
   item.historyV2.push({ day: state.day, type: "named", npcId: npc.id, name, detail: `${npc.name}が命名` });
 }
 
-export function offerShopItem(state: GameState, itemId: string, npcId: string, askingPrice: number): { accepted: boolean; message: string } {
-  const item = state.itemsById[itemId];
-  const npc = state.npcs.find((entry) => entry.id === npcId);
-  const price = Math.max(1, Math.min(99_999, Math.floor(askingPrice)));
-  const refusalKey = `${npcId}:${itemId}`;
-  const isCurrentCustomer = state.shopSession.currentNpcId === npcId && state.shopSession.status === "serving";
-  if (!item || !npc || item.location?.kind !== "shopStock" || (!isCurrentCustomer && !state.visitorNpcIds.includes(npcId))) return { accepted: false, message: "その取引はできない。" };
-  if (state.refusedOffers[refusalKey] === state.day) return { accepted: false, message: `${npc.name}には明日まで同じ品を提示できない。` };
-  if (price > saleLimit(npc, item)) {
-    state.refusedOffers[refusalKey] = state.day;
-    return { accepted: false, message: `${npc.name}「その値段では買えない」` };
+export function acceptCustomerPurchaseRequest(state: GameState): { accepted: boolean; message: string } {
+  const { currentNpcId: npcId, requestedItemId: itemId, requestedPrice: price } = state.shopSession;
+  const item = itemId ? state.itemsById[itemId] : undefined;
+  const npc = npcId ? state.npcs.find((entry) => entry.id === npcId) : undefined;
+  const isCurrentRequest = state.shopSession.status === "serving"
+    && npcId !== undefined
+    && itemId !== undefined
+    && price !== undefined;
+  if (!isCurrentRequest || !item || !npc || item.location?.kind !== "shopStock" || !state.display.includes(item.uuid)) {
+    return { accepted: false, message: "その取引はできない。" };
   }
   state.gold += price;
   item.location = { kind: "npcInventory", npcId };
@@ -119,10 +165,16 @@ export function offerShopItem(state: GameState, itemId: string, npcId: string, a
   assignLegendaryName(state, item, npc);
   state.archive.push(item);
   npc.relation = Math.min(100, npc.relation + 1);
-  return { accepted: true, message: `${npc.name}へ${merchantItemName(item) ?? item.definitionId}を${price}Gで売却した。` };
+  return { accepted: true, message: `${npc.name}の希望を受け、${merchantItemName(item) ?? item.definitionId}を${price}Gで売却した。` };
 }
 
 export function createGeneratedDeadAdventurer(state: GameState, floor: number): NpcRecord {
+  const npc = createGeneratedAdventurer(state, floor);
+  npc.status = "dead";
+  return npc;
+}
+
+export function createGeneratedAdventurer(state: GameState, floor: number): NpcRecord {
   const serial = state.nextNpcId++;
   const usedNames = new Set(state.npcs.map((npc) => npc.name));
   const baseIndex = hash(`${state.campaignId}:${floor}:${serial}`) % GENERATED_ADVENTURER_NAMES.length;
@@ -131,11 +183,20 @@ export function createGeneratedDeadAdventurer(state: GameState, floor: number): 
   const professions: NpcProfession[] = ["swordsman", "scout", "mercenary"];
   const profession = professions[hash(`${name}:${floor}`) % professions.length]!;
   const template = NPC_SEEDS.find((npc) => npc.profession === profession)!;
+  const rank: AdventurerRank = adventurerRankForFloor(floor);
+  const rankStats = ADVENTURER_RANKS[rank];
+  const variation = hash(`${state.campaignId}:${name}:${floor}:stats`);
   const npc: NpcRecord = {
     ...template,
     id: `generated-adventurer-${serial}`,
     name,
-    status: "dead",
+    rank,
+    baseFee: rankStats.escortFee,
+    maxHp: rankStats.baseHp + variation % 4,
+    damage: rankStats.baseDamage + Math.floor(variation / 7) % 2,
+    retreatHpRatio: profession === "scout" ? 0.45 : 0.25 + (variation % 2) * 0.05,
+    budget: rankStats.escortFee * 2 + variation % 151,
+    status: "dungeon",
     relation: 0,
     interests: [...template.interests],
     inventoryIds: [],

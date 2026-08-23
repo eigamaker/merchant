@@ -20,7 +20,6 @@ export interface ItemDefinition {
   suspectedName: string;
   trueName: string;
   baseValue: number;
-  bulk: 1 | 2 | 3;
   description: string;
   unique?: boolean;
   preferredBuyer?: string;
@@ -40,6 +39,7 @@ export type ItemLocation =
   | { kind: "dungeonGround"; floor: number; pos: Vec }
   | { kind: "corpse"; npcId: string; floor: number }
   | { kind: "npcInventory"; npcId: string }
+  | { kind: "consumed"; actorId: string }
   | { kind: "soldArchive"; npcId: string };
 
 export type ItemHistoryEvent =
@@ -140,8 +140,19 @@ export interface ActiveGuard {
   safeTurns: number;
 }
 
+/** An adventurer who explores the current floor independently of the party. */
+export interface DungeonAdventurer {
+  npcId: string;
+  pos: Vec;
+  hp: number;
+  maxHp: number;
+  damage: number;
+  gold: number;
+}
+
 export type NpcProfession = "swordsman" | "scout" | "mercenary" | "merchant" | "blacksmith" | "apothecary" | "noble" | "townsperson";
 export type NpcStatus = "inTown" | "visiting" | "contracted" | "dungeon" | "dead" | "departed";
+export type AdventurerRank = "E" | "D" | "C" | "B" | "A";
 
 export interface NpcRecord {
   id: string;
@@ -154,6 +165,7 @@ export interface NpcRecord {
   interests: ItemCategory[];
   budget: number;
   inventoryIds: string[];
+  rank?: AdventurerRank;
   baseFee?: number;
   maxHp?: number;
   damage?: number;
@@ -165,6 +177,7 @@ export interface EscortCommission {
   offeredFee: number;
   status: "draft" | "accepted" | "active";
   npcId?: string;
+  rank?: AdventurerRank;
 }
 
 /** A dungeon has three authored elevation bands.  Movement between bands is
@@ -234,6 +247,7 @@ export interface DungeonFloorSnapshot {
   chests: DungeonChest[];
   traps: Vec[];
   bodies: DungeonBody[];
+  adventurers: DungeonAdventurer[];
   guard?: ActiveGuard;
   shoveCooldown: number;
   turn: number;
@@ -249,6 +263,7 @@ export interface DungeonRun {
   chests: DungeonChest[];
   traps: Vec[];
   bodies: DungeonBody[];
+  adventurers: DungeonAdventurer[];
   guard?: ActiveGuard;
   shoveCooldown: number;
   highestFloor: number;
@@ -272,6 +287,9 @@ export interface ShopSession {
   /** Persisted for reloads, but never displayed before each NPC enters. */
   queueNpcIds: string[];
   currentNpcId?: string;
+  /** The shelf item and price named by the current customer. */
+  requestedItemId?: string;
+  requestedPrice?: number;
   servedNpcIds: string[];
 }
 
@@ -395,6 +413,9 @@ export type DungeonCommand =
   | { type: "inspectBody"; bodyId: string }
   | { type: "lootBody"; bodyId: string; itemId: string; swapOutId?: string }
   | { type: "drop"; itemId: string }
+  | { type: "useMedicine"; itemId: string; target: "player" | "guard" }
+  | { type: "buyFromAdventurer"; npcId: string; itemId: string; swapOutId?: string }
+  | { type: "sellToAdventurer"; npcId: string; itemId: string }
   | { type: "stairs" };
 
 export type MenuAction = () => void;

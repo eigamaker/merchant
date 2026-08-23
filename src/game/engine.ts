@@ -6,12 +6,13 @@ import { compileMap, loadTrialMapPack } from "./mapDocument";
 import { createDefaultMapPack } from "./defaultMapPack";
 import { actorDefinition } from "./actorCatalog";
 import { MERCHANT_ITEM_DEFINITIONS } from "./merchantContent";
-import { createGeneratedDeadAdventurer, initializeMerchantWorld, registerWorldItem } from "./merchantEconomy";
-import { consumeDungeonTime, playerAttackPower, playerDefensePower, resetDailySystems, settleShortExpedition, totalBulk, unequipIfNeeded } from "./merchantSystems";
+import { createGeneratedAdventurer, createGeneratedDeadAdventurer, initializeMerchantWorld, registerWorldItem } from "./merchantEconomy";
+import { consumeDungeonTime, inventoryItemCount, playerAttackPower, playerDefensePower, resetDailySystems, settleShortExpedition, unequipIfNeeded } from "./merchantSystems";
 import type {
   ActiveGuard,
   Customer,
   DungeonBody,
+  DungeonAdventurer,
   DungeonCommand,
   DungeonEvent,
   DungeonMap,
@@ -31,7 +32,7 @@ import type {
 
 export const DUNGEON_WIDTH = 48;
 export const DUNGEON_HEIGHT = 36;
-export const INVENTORY_CAPACITY = 12;
+export const INVENTORY_CAPACITY = 24;
 const FLOOR = 0;
 const WALL = 1;
 
@@ -119,11 +120,11 @@ export function createNewGame(): GameState {
   };
   initializeMerchantWorld(state);
   resetDailySystems(state);
-  for (const [npcId, definitionId] of [["rolf", "iron-sword"], ["mina", "antidote"], ["bastian", "bronze-spear"]] as const) {
-    const npc = state.npcs.find((entry) => entry.id === npcId)!;
+  for (const npc of state.npcs.filter((entry) => entry.adventurer)) {
+    const definitionId = npc.profession === "scout" ? "antidote" : npc.profession === "mercenary" ? "bronze-spear" : "iron-sword";
     const gear = createItem(state, definitionId);
-    gear.owner = npcId;
-    gear.location = { kind: "npcInventory", npcId };
+    gear.owner = npc.id;
+    gear.location = { kind: "npcInventory", npcId: npc.id };
     npc.inventoryIds.push(gear.uuid);
   }
   return state;
@@ -144,12 +145,8 @@ export function itemName(item: ItemInstance): string {
   return definition.unknownName;
 }
 
-export function itemBulk(item: ItemInstance): number {
-  return itemDefinition(item).bulk;
-}
-
-export function currentBulk(state: GameState): number {
-  return totalBulk(state);
+export function currentItemCount(state: GameState): number {
+  return inventoryItemCount(state);
 }
 
 export function createItem(state: GameState, definitionId: string, floor?: number): ItemInstance {
@@ -453,6 +450,7 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
     return pos;
   });
   const bodies: DungeonBody[] = [];
+  const adventurers: DungeonAdventurer[] = [];
   if (shouldPlaceAronBody(state, floor)) {
     const pos = freeFloor(map, rng, occupiedEntities);
     occupiedEntities.push(pos);
@@ -482,6 +480,32 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
     bodies.push({ id: `body-${deadNpc.id}`, npcId: deadNpc.id, name: `冒険者${deadNpc.name}`, pos, loot, inspected: false });
   }
 
+  // Every floor has another party with its own survival and trading loop.
+  // Generated NPC records make their name, inventory and eventual death part
+  // of the persistent merchant world rather than a disposable visual effect.
+  for (let index = 0; index < 2; index += 1) {
+    const roamingNpc = createGeneratedAdventurer(state, floor);
+    const roamingPos = freeFloor(map, rng, occupiedEntities);
+    occupiedEntities.push(roamingPos);
+    const stockIds = index === 0
+      ? ["minor-healing-potion", randomItemId(state, rng, floor)]
+      : [randomItemId(state, rng, floor)];
+    for (const definitionId of stockIds) {
+      const stock = createItem(state, definitionId, floor);
+      stock.owner = roamingNpc.id;
+      stock.location = { kind: "npcInventory", npcId: roamingNpc.id };
+      roamingNpc.inventoryIds.push(stock.uuid);
+    }
+    adventurers.push({
+      npcId: roamingNpc.id,
+      pos: roamingPos,
+      hp: roamingNpc.maxHp ?? 6,
+      maxHp: roamingNpc.maxHp ?? 6,
+      damage: roamingNpc.damage ?? 1,
+      gold: Math.max(200, Math.floor(roamingNpc.budget * 0.6)),
+    });
+  }
+
   return {
     seed,
     floor,
@@ -492,6 +516,7 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
     chests,
     traps,
     bodies,
+    adventurers,
     guard,
     shoveCooldown: 0,
     highestFloor: Math.max(highestFloor, floor),
@@ -538,6 +563,7 @@ function snapshotFloor(run: DungeonRun): import("./types").DungeonFloorSnapshot 
     chests: clone(run.chests),
     traps: clone(run.traps),
     bodies: clone(run.bodies),
+    adventurers: clone(run.adventurers),
     guard: run.guard ? clone(run.guard) : undefined,
     shoveCooldown: run.shoveCooldown,
     turn: run.turn,
@@ -639,8 +665,65 @@ function guardPhase(state: GameState, events: DungeonEvent[]): void {
   }
 }
 
-function moveEnemy(enemy: Enemy, run: DungeonRun, rng: Rng): void {
-  const target = run.player;
+function adventurerName(state: GameState, npcId: string): string {
+  return state.npcs.find((npc) => npc.id === npcId)?.name ?? "名もなき冒険者";
+}
+
+function consumeNpcMedicine(state: GameState, adventurer: DungeonAdventurer): boolean {
+  if (adventurer.hp > Math.ceil(adventurer.maxHp / 2)) return false;
+  const npc = state.npcs.find((entry) => entry.id === adventurer.npcId);
+  const medicine = npc?.inventoryIds
+    .map((id) => state.itemsById[id])
+    .find((item) => item && (itemDefinition(item).healing ?? 0) > 0);
+  if (!npc || !medicine) return false;
+  const healing = itemDefinition(medicine).healing ?? 0;
+  adventurer.hp = Math.min(adventurer.maxHp, adventurer.hp + healing);
+  npc.inventoryIds = npc.inventoryIds.filter((id) => id !== medicine.uuid);
+  medicine.location = { kind: "consumed", actorId: adventurer.npcId };
+  state.message = `${npc.name}は${itemName(medicine)}を使い、HPを${healing}回復した。`;
+  return true;
+}
+
+function moveToward(from: Vec, target: Vec, run: DungeonRun, blocked: Vec[], rng: Rng): Vec {
+  const horizontal = { x: Math.sign(target.x - from.x), y: 0 };
+  const vertical = { x: 0, y: Math.sign(target.y - from.y) };
+  const preferred = rng.next() > 0.5 ? [horizontal, vertical] : [vertical, horizontal];
+  for (const direction of preferred) {
+    if (direction.x === 0 && direction.y === 0) continue;
+    const next = { x: from.x + direction.x, y: from.y + direction.y };
+    if (canTraverse(run.map, from, next) && !blocked.some((pos) => samePosition(pos, next))) return next;
+  }
+  return from;
+}
+
+function adventurerPhase(state: GameState, events: DungeonEvent[]): void {
+  const run = state.run;
+  if (!run) return;
+  const rng = new Rng(run.seed + run.turn * 53 + run.floor * 11);
+  for (const adventurer of [...run.adventurers]) {
+    if (consumeNpcMedicine(state, adventurer)) continue;
+    const target = [...run.enemies]
+      .sort((a, b) => distance(a.pos, adventurer.pos) - distance(b.pos, adventurer.pos) || a.hp - b.hp)[0];
+    if (!target) continue;
+    if (distance(target.pos, adventurer.pos) === 1) {
+      target.hp -= adventurer.damage;
+      events.push({ type: "attack", attackerId: adventurer.npcId, targetId: target.id, damage: adventurer.damage });
+      state.message = `${adventurerName(state, adventurer.npcId)}が${target.name}へ${adventurer.damage}ダメージ。`;
+      if (target.hp <= 0) {
+        run.enemies = run.enemies.filter((enemy) => enemy.id !== target.id);
+        events.push({ type: "defeated", actorId: target.id });
+        state.message = `${adventurerName(state, adventurer.npcId)}が${target.name}を倒した。`;
+      }
+      continue;
+    }
+    const from = { ...adventurer.pos };
+    const blocked = [run.player, ...run.enemies.map((enemy) => enemy.pos), ...run.adventurers.filter((other) => other.npcId !== adventurer.npcId).map((other) => other.pos)];
+    adventurer.pos = moveToward(adventurer.pos, target.pos, run, blocked, rng);
+    if (!samePosition(from, adventurer.pos)) events.push({ type: "move", actorId: adventurer.npcId, from, to: { ...adventurer.pos } });
+  }
+}
+
+function moveEnemy(enemy: Enemy, run: DungeonRun, rng: Rng, target: Vec = run.player): void {
   const dist = distance(enemy.pos, target);
   if (dist <= 6) {
     enemy.state = "chase";
@@ -659,7 +742,8 @@ function moveEnemy(enemy: Enemy, run: DungeonRun, rng: Rng): void {
   for (const direction of directions) {
     if (direction.x === 0 && direction.y === 0) continue;
     const next = { x: enemy.pos.x + direction.x, y: enemy.pos.y + direction.y };
-    const collision = run.enemies.some((other) => other.id !== enemy.id && samePosition(other.pos, next));
+    const collision = run.enemies.some((other) => other.id !== enemy.id && samePosition(other.pos, next))
+      || run.adventurers.some((adventurer) => samePosition(adventurer.pos, next));
     if (canTraverse(run.map, enemy.pos, next)
       && !collision
       && !samePosition(next, run.player)) {
@@ -711,6 +795,14 @@ function enemyPhase(state: GameState, events: DungeonEvent[]): void {
       }
       continue;
     }
+    const adjacentAdventurer = run.adventurers.find((adventurer) => distance(enemy.pos, adventurer.pos) === 1);
+    if (adjacentAdventurer) {
+      adjacentAdventurer.hp -= enemy.damage;
+      events.push({ type: "attack", attackerId: enemy.id, targetId: adjacentAdventurer.npcId, damage: enemy.damage });
+      state.message = `${enemy.name}が${adventurerName(state, adjacentAdventurer.npcId)}へ${enemy.damage}ダメージ。`;
+      if (adjacentAdventurer.hp <= 0) defeatDungeonAdventurer(state, adjacentAdventurer, events);
+      continue;
+    }
     if (distance(enemy.pos, run.player) === 1) {
       const damage = Math.max(1, enemy.damage - playerDefensePower(state));
       state.hp -= damage;
@@ -723,9 +815,29 @@ function enemyPhase(state: GameState, events: DungeonEvent[]): void {
       continue;
     }
     const from = { ...enemy.pos };
-    moveEnemy(enemy, run, rng);
+    const targets = [run.player, ...run.adventurers.map((adventurer) => adventurer.pos)];
+    const target = [...targets].sort((a, b) => distance(enemy.pos, a) - distance(enemy.pos, b))[0] ?? run.player;
+    moveEnemy(enemy, run, rng, target);
     if (!samePosition(from, enemy.pos)) events.push({ type: "move", actorId: enemy.id, from, to: { ...enemy.pos } });
   }
+}
+
+function defeatDungeonAdventurer(state: GameState, adventurer: DungeonAdventurer, events: DungeonEvent[]): void {
+  const run = state.run;
+  if (!run) return;
+  const npc = state.npcs.find((entry) => entry.id === adventurer.npcId);
+  if (!npc) return;
+  npc.status = "dead";
+  const loot = npc.inventoryIds.map((id) => state.itemsById[id]).filter((item): item is ItemInstance => Boolean(item));
+  for (const item of loot) {
+    item.location = { kind: "corpse", npcId: npc.id, floor: run.floor };
+    item.historyV2 ??= [];
+    item.historyV2.push({ day: state.day, type: "ownerDied", npcId: npc.id, detail: `${npc.name}が地下${run.floor}階で死亡` });
+  }
+  run.bodies.push({ id: `body-${npc.id}`, npcId: npc.id, name: `冒険者${npc.name}`, pos: { ...adventurer.pos }, loot, inspected: false });
+  run.adventurers = run.adventurers.filter((entry) => entry.npcId !== adventurer.npcId);
+  events.push({ type: "defeated", actorId: adventurer.npcId });
+  state.message = `${npc.name}は敵に倒され、所持品をその場に残した。`;
 }
 
 function updateGuardRecovery(state: GameState, events: DungeonEvent[]): void {
@@ -746,6 +858,7 @@ function finishTurn(state: GameState, events: DungeonEvent[], decrementCooldown 
   if (!run) return { consumedTurn: true, events };
   if (decrementCooldown && run.shoveCooldown > 0) run.shoveCooldown -= 1;
   guardPhase(state, events);
+  adventurerPhase(state, events);
   enemyPhase(state, events);
   updateGuardRecovery(state, events);
   if (state.run) {
@@ -784,6 +897,11 @@ function performMove(state: GameState, direction: Vec): TurnResult {
   if (enemy) {
     state.story.early.shoveTutorialSeen = true;
     state.message = `${enemy.name}が進路を塞いでいる。Spaceから「押し返す」を選ぼう。`;
+    return emptyResult();
+  }
+  const adventurer = run.adventurers.find((candidate) => samePosition(candidate.pos, next));
+  if (adventurer) {
+    state.message = `${adventurerName(state, adventurer.npcId)}がいる。正面から調べると取引できる。`;
     return emptyResult();
   }
   if (!canTraverse(run.map, run.player, next)) {
@@ -850,18 +968,18 @@ function performShove(state: GameState, direction: Vec): TurnResult {
   return finishTurn(state, events, false);
 }
 
-function swapCandidate(state: GameState, incoming: ItemInstance, swapOutId?: string): ItemInstance | undefined | null {
-  if (currentBulk(state) + itemBulk(incoming) <= INVENTORY_CAPACITY) return undefined;
+function swapCandidate(state: GameState, swapOutId?: string): ItemInstance | undefined | null {
+  if (currentItemCount(state) < INVENTORY_CAPACITY) return undefined;
   if (!swapOutId) return null;
   const swap = state.inventory.find((item) => item.uuid === swapOutId);
-  if (!swap || currentBulk(state) - itemBulk(swap) + itemBulk(incoming) > INVENTORY_CAPACITY) return null;
+  if (!swap) return null;
   return swap;
 }
 
 function carryItem(state: GameState, incoming: ItemInstance, swapOutId: string | undefined, onSwap: (item: ItemInstance) => void): boolean {
-  const swap = swapCandidate(state, incoming, swapOutId);
+  const swap = swapCandidate(state, swapOutId);
   if (swap === null) {
-    state.message = "持ち物がいっぱいだ。十分な大きさの品と入れ替えよう。";
+    state.message = `持ち物が${INVENTORY_CAPACITY}個でいっぱいだ。1個置いて入れ替えよう。`;
     return false;
   }
   if (swap) {
@@ -914,7 +1032,7 @@ function performPickup(state: GameState, swapOutId?: string): TurnResult {
   const ground = run.items[groundIndex]!;
   if (!carryItem(state, ground.item, swapOutId, (item) => run.items.push({ item, pos: { ...run.player } }))) return emptyResult();
   run.items.splice(groundIndex, 1);
-  state.message = `${itemName(ground.item)}を拾った。容量 ${currentBulk(state)}/${INVENTORY_CAPACITY}`;
+  state.message = `${itemName(ground.item)}を拾った。所持数 ${currentItemCount(state)}/${INVENTORY_CAPACITY}`;
   return finishTurn(state, [{ type: "pickup", itemId: ground.item.uuid }]);
 }
 
@@ -978,6 +1096,81 @@ function performDrop(state: GameState, itemId: string): TurnResult {
   run.items.push({ item, pos: { ...run.player } });
   syncQuestCarryProgress(state, item.definitionId);
   state.message = `${itemName(item)}を足元に置いた。`;
+  return finishTurn(state, [{ type: "message", text: state.message }]);
+}
+
+function nearbyAdventurer(state: GameState, npcId: string): DungeonAdventurer | undefined {
+  const run = state.run;
+  return run?.adventurers.find((entry) => entry.npcId === npcId && distance(entry.pos, run.player) === 1);
+}
+
+function performUseMedicine(state: GameState, itemId: string, target: "player" | "guard"): TurnResult {
+  const item = state.inventory.find((entry) => entry.uuid === itemId);
+  const healing = item ? itemDefinition(item).healing ?? 0 : 0;
+  const guard = target === "guard" ? state.run?.guard : undefined;
+  const actor = target === "guard" ? guard : state;
+  if (!item || healing <= 0 || !actor) {
+    state.message = target === "guard" ? "回復できる護衛がいない。" : "その品は回復に使えない。";
+    return emptyResult();
+  }
+  if (actor.hp >= actor.maxHp) {
+    state.message = target === "guard" ? "護衛は負傷していない。" : "体力は満タンだ。";
+    return emptyResult();
+  }
+  const recovered = Math.min(healing, actor.maxHp - actor.hp);
+  actor.hp += recovered;
+  state.inventory = state.inventory.filter((entry) => entry.uuid !== item.uuid);
+  unequipIfNeeded(state, item.uuid);
+  syncQuestCarryProgress(state, item.definitionId);
+  item.location = { kind: "consumed", actorId: guard?.guardId ?? "player" };
+  state.message = `${itemName(item)}を${guard ? activeGuardName(state, guard.guardId) : "自分"}に使い、HPを${recovered}回復した。`;
+  return finishTurn(state, [{ type: "message", text: state.message }]);
+}
+
+export function dungeonAdventurerSellPrice(item: ItemInstance): number {
+  return Math.max(1, Math.ceil(itemDefinition(item).baseValue * 0.8));
+}
+
+export function dungeonAdventurerBuyPrice(item: ItemInstance): number {
+  return Math.max(1, Math.floor(itemDefinition(item).baseValue * 0.6));
+}
+
+function performBuyFromAdventurer(state: GameState, npcId: string, itemId: string, swapOutId?: string): TurnResult {
+  const adventurer = nearbyAdventurer(state, npcId);
+  const npc = state.npcs.find((entry) => entry.id === npcId);
+  const item = npc?.inventoryIds.includes(itemId) ? state.itemsById[itemId] : undefined;
+  if (!adventurer || !npc || !item) return emptyResult();
+  const price = dungeonAdventurerSellPrice(item);
+  if (state.gold < price) { state.message = "所持金が足りない。"; return emptyResult(); }
+  if (!carryItem(state, item, swapOutId, (dropped) => state.run?.items.push({ item: dropped, pos: { ...state.run!.player } }))) return emptyResult();
+  state.gold -= price;
+  adventurer.gold += price;
+  npc.inventoryIds = npc.inventoryIds.filter((id) => id !== item.uuid);
+  item.history.push({ day: state.day, type: "found", detail: `${npc.name}から${price}Gで購入` });
+  state.message = `${npc.name}から${itemName(item)}を${price}Gで買った。`;
+  return finishTurn(state, [{ type: "pickup", itemId: item.uuid }]);
+}
+
+function performSellToAdventurer(state: GameState, npcId: string, itemId: string): TurnResult {
+  const adventurer = nearbyAdventurer(state, npcId);
+  const npc = state.npcs.find((entry) => entry.id === npcId);
+  const item = state.inventory.find((entry) => entry.uuid === itemId);
+  if (!adventurer || !npc || !item) return emptyResult();
+  if (isQuestItemProtected(state, item)) { state.message = "依頼に関わる品は売れない。"; return emptyResult(); }
+  const definition = itemDefinition(item);
+  const needsMedicine = adventurer.hp < adventurer.maxHp && (definition.healing ?? 0) > 0;
+  if (!npc.interests.includes(definition.category) && !needsMedicine) { state.message = `${npc.name}はその品を探していない。`; return emptyResult(); }
+  const price = dungeonAdventurerBuyPrice(item);
+  if (adventurer.gold < price) { state.message = `${npc.name}の手持ちでは買い取れない。`; return emptyResult(); }
+  state.inventory = state.inventory.filter((entry) => entry.uuid !== item.uuid);
+  unequipIfNeeded(state, item.uuid);
+  state.gold += price;
+  adventurer.gold -= price;
+  npc.inventoryIds.push(item.uuid);
+  item.owner = npc.id;
+  item.location = { kind: "npcInventory", npcId: npc.id };
+  item.history.push({ day: state.day, type: "sold", detail: `${npc.name}へダンジョン内で売却`, value: price });
+  state.message = `${npc.name}へ${itemName(item)}を${price}Gで売った。`;
   return finishTurn(state, [{ type: "message", text: state.message }]);
 }
 
@@ -1046,6 +1239,9 @@ export function performDungeonCommand(state: GameState, command: DungeonCommand)
     case "inspectBody": return performInspectBody(state, command.bodyId);
     case "lootBody": return performLootBody(state, command.bodyId, command.itemId, command.swapOutId);
     case "drop": return performDrop(state, command.itemId);
+    case "useMedicine": return performUseMedicine(state, command.itemId, command.target);
+    case "buyFromAdventurer": return performBuyFromAdventurer(state, command.npcId, command.itemId, command.swapOutId);
+    case "sellToAdventurer": return performSellToAdventurer(state, command.npcId, command.itemId);
     case "stairs": return performStairs(state);
   }
 }
@@ -1105,6 +1301,13 @@ export function merchantGameOver(state: GameState, cause: string): void {
 export function returnHome(state: GameState, rescued: boolean, arrival: "homeSpawn" | "dungeonEntrance" = "homeSpawn"): void {
   settleShortExpedition(state);
   const completedRun = state.run;
+  if (completedRun) {
+    const survivorIds = new Set([
+      ...completedRun.adventurers.map((entry) => entry.npcId),
+      ...Object.values(completedRun.floorStates).flatMap((floor) => floor.adventurers.map((entry) => entry.npcId)),
+    ]);
+    for (const npc of state.npcs) if (survivorIds.has(npc.id) && npc.status === "dungeon") npc.status = "departed";
+  }
   if (rescued) {
     const protectedDefinitions = new Set(state.quests
       .filter((quest) => quest.status === "active" || quest.status === "readyToReport")
@@ -1382,6 +1585,21 @@ export function moveToStore(state: GameState, item: ItemInstance): void {
   state.message = `${itemName(item)}を店の保管庫へ移した。`;
 }
 
+export function moveInventoryItems(state: GameState, itemIds: readonly string[], destination: "storage" | "display"): number {
+  const selectedIds = new Set(itemIds);
+  const selected = state.inventory.filter((item) => selectedIds.has(item.uuid));
+  if (destination === "display" && selected.length > 4 - state.display.length) {
+    state.message = `展示台の空きは${Math.max(0, 4 - state.display.length)}枠だ。`;
+    return 0;
+  }
+  for (const item of selected) {
+    moveToStore(state, item);
+    if (destination === "display") toggleDisplay(state, item);
+  }
+  if (selected.length) state.message = `${selected.length}点を${destination === "display" ? "販売品として店頭へ出した" : "保管庫へ移した"}。`;
+  return selected.length;
+}
+
 export function toggleDisplay(state: GameState, item: ItemInstance): void {
   if (!state.store.some((entry) => entry.uuid === item.uuid)) return;
   const showing = state.display.includes(item.uuid);
@@ -1402,6 +1620,26 @@ export function toggleDisplay(state: GameState, item: ItemInstance): void {
     }
     state.message = `${itemName(item)}を店頭に展示した。`;
   }
+}
+
+export function setDisplayedItems(state: GameState, itemIds: readonly string[]): number {
+  const validStoreIds = new Set(state.store.map((item) => item.uuid));
+  const desiredIds = new Set(itemIds.filter((id) => validStoreIds.has(id)));
+  if (desiredIds.size > 4) {
+    state.message = "展示台は4枠までだ。";
+    return 0;
+  }
+  state.display = state.display.filter((id) => validStoreIds.has(id));
+  let changed = 0;
+  for (const item of state.store) {
+    const showing = state.display.includes(item.uuid);
+    const shouldShow = desiredIds.has(item.uuid);
+    if (showing === shouldShow) continue;
+    toggleDisplay(state, item);
+    changed += 1;
+  }
+  state.message = `陳列を更新した。販売品 ${state.display.length}点。`;
+  return changed;
 }
 
 export function acceptQuest(state: GameState, questId: string): void {

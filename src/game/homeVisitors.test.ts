@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createManualMap } from "./mapDocument";
-import { assignHomeVisitorCells } from "./homeVisitors";
+import { assignHomeVisitorCells, findHomeVisitorPath } from "./homeVisitors";
 
 describe("home visitor placement", () => {
   it("uses only unique unreserved walkable cells and omits excess visitors", () => {
@@ -28,5 +28,31 @@ describe("home visitor placement", () => {
     expect(assignHomeVisitorCells(map, ["outer"], [])).toEqual([
       { visitorId: "outer", pos: { x: 0, y: 2 } },
     ]);
+  });
+
+  it("routes visitors around blocked cells without diagonal steps", () => {
+    const map = createManualMap("home", { width: 6, height: 5, tileSize: 16 });
+    map.collision.fill(true);
+    map.collision[1 * map.width + 2] = false;
+    map.collision[2 * map.width + 2] = false;
+    map.collision[3 * map.width + 2] = false;
+
+    const path = findHomeVisitorPath(map, { x: 1, y: 2 }, { x: 4, y: 2 });
+
+    expect(path[0]).toEqual({ x: 1, y: 2 });
+    expect(path.at(-1)).toEqual({ x: 4, y: 2 });
+    expect(path.every((cell) => map.collision[cell.y * map.width + cell.x])).toBe(true);
+    expect(path.slice(1).every((cell, index) => {
+      const prior = path[index]!;
+      return Math.abs(cell.x - prior.x) + Math.abs(cell.y - prior.y) === 1;
+    })).toBe(true);
+  });
+
+  it("returns no route when the destination is unreachable", () => {
+    const map = createManualMap("home", { width: 4, height: 4, tileSize: 16 });
+    map.collision.fill(false);
+    map.collision[map.width + 1] = true;
+    map.collision[2 * map.width + 2] = true;
+    expect(findHomeVisitorPath(map, { x: 1, y: 1 }, { x: 2, y: 2 })).toEqual([]);
   });
 });

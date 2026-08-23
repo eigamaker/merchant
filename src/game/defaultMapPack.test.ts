@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createDefaultMapPack } from "./defaultMapPack";
+import { findHomeVisitorPath } from "./homeVisitors";
 import { validateTrialMapPack } from "./mapDocument";
 
 describe("authored default map pack", () => {
@@ -7,6 +8,10 @@ describe("authored default map pack", () => {
     const pack = createDefaultMapPack();
     expect(validateTrialMapPack(pack)).toEqual([]);
     expect(pack.dungeons.map((map) => map.floor)).toEqual([1]);
+    expect(pack.home.markers.some((marker) => marker.kind === "homeStorage")).toBe(false);
+    const visitorEntry = pack.home.markers.find((marker) => marker.kind === "homeVisitors")!;
+    const customerCounter = pack.home.markers.find((marker) => marker.kind === "customerCounter")!;
+    expect(findHomeVisitorPath(pack.home, visitorEntry, customerCounter).length).toBeGreaterThan(1);
     for (const map of [pack.home, ...pack.dungeons]) {
       for (const marker of map.markers) expect(map.collision[marker.y * map.width + marker.x]).toBe(true);
     }

@@ -44,9 +44,9 @@ const specs: Array<[string, ItemCategory, string, string, string, number, 1 | 2 
 ];
 
 export const ITEM_DEFINITIONS: Record<string, ItemDefinition> = Object.fromEntries(
-  specs.map(([id, category, unknownName, suspectedName, trueName, baseValue, bulk, description, unique, preferredBuyer]) => [
+  specs.map(([id, category, unknownName, suspectedName, trueName, baseValue, , description, unique, preferredBuyer]) => [
     id,
-    { id, category, unknownName, suspectedName, trueName, baseValue, bulk, description, unique, preferredBuyer },
+    { id, category, unknownName, suspectedName, trueName, baseValue, description, unique, preferredBuyer, healing: id === "herb" ? 2 : undefined },
   ]),
 );
 

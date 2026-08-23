@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { beginExpedition, createItem, createNewGame, performDungeonCommand } from "./engine";
+import { beginExpedition, createItem, createNewGame, moveInventoryItems, performDungeonCommand, setDisplayedItems } from "./engine";
 import {
   buySupply,
   canOpenShop,
   closeShopSession,
   consumeDungeonTime,
+  dungeonTimeUntilNextMeal,
   equipItem,
   finishCurrentCustomer,
   isShopSessionActive,
@@ -13,19 +14,21 @@ import {
   restUntilMorning,
   startShopSession,
   summonNextCustomer,
-  totalBulk,
+  inventoryItemCount,
+  SHOP_CUSTOMER_MAX,
+  SHOP_CUSTOMER_MIN,
 } from "./merchantSystems";
 
 describe("v6 merchant systems", () => {
-  it("counts supplies in bag bulk and buys them from daily supplier stock", () => {
+  it("keeps supplies outside the twenty-four-item inventory", () => {
     const state = createNewGame();
-    expect(totalBulk(state)).toBe(3);
+    expect(inventoryItemCount(state)).toBe(0);
     const gold = state.gold;
     expect(buySupply(state, "provisions")).toBe(true);
     expect(state.provisions).toBe(4);
     expect(state.gold).toBe(gold - 15);
     expect(state.dailySupplyStock.provisions).toBe(5);
-    expect(totalBulk(state)).toBe(4);
+    expect(inventoryItemCount(state)).toBe(0);
   });
 
   it("equips one weapon and armor and exposes their combat values", () => {
@@ -37,6 +40,36 @@ describe("v6 merchant systems", () => {
     expect(equipItem(state, armor.uuid)).toBe(true);
     expect(playerAttackPower(state)).toBe(2);
     expect(playerDefensePower(state)).toBe(1);
+  });
+
+  it("moves checked inventory items in bulk and applies a checked display set", () => {
+    const state = createNewGame();
+    const items = Array.from({ length: 5 }, () => createItem(state, "iron-sword", 1));
+    state.inventory.push(...items);
+
+    expect(moveInventoryItems(state, items.slice(0, 3).map((item) => item.uuid), "display")).toBe(3);
+    expect(state.inventory).toEqual(items.slice(3));
+    expect(state.store).toEqual(items.slice(0, 3));
+    expect(state.display).toEqual(items.slice(0, 3).map((item) => item.uuid));
+
+    expect(moveInventoryItems(state, items.slice(3).map((item) => item.uuid), "storage")).toBe(2);
+    expect(setDisplayedItems(state, [items[1]!.uuid, items[4]!.uuid])).toBe(3);
+    expect(state.display).toEqual([items[1]!.uuid, items[4]!.uuid]);
+    expect(items[0]!.location).toEqual({ kind: "homeStorage" });
+    expect(items[4]!.location).toEqual({ kind: "shopStock" });
+  });
+
+  it("does not partially move a bulk selection when the display lacks space", () => {
+    const state = createNewGame();
+    const stored = Array.from({ length: 4 }, () => createItem(state, "iron-sword", 1));
+    state.inventory.push(...stored);
+    moveInventoryItems(state, stored.map((item) => item.uuid), "display");
+    const incoming = createItem(state, "old-ring", 1);
+    state.inventory.push(incoming);
+
+    expect(moveInventoryItems(state, [incoming.uuid], "display")).toBe(0);
+    expect(state.inventory).toContain(incoming);
+    expect(state.display).toHaveLength(4);
   });
 
   it("attacks only the front tile and consumes a turn when a target exists", () => {
@@ -71,8 +104,12 @@ describe("v6 merchant systems", () => {
     const first = summonNextCustomer(state);
     expect(first).toBeTruthy();
     expect(state.visitorNpcIds).toEqual([first]);
+    expect(state.shopSession.requestedItemId).toBe(item.uuid);
+    expect(state.shopSession.requestedPrice).toBeGreaterThan(0);
     finishCurrentCustomer(state);
     expect(state.visitorNpcIds).toEqual([]);
+    expect(state.shopSession.requestedItemId).toBeUndefined();
+    expect(state.shopSession.requestedPrice).toBeUndefined();
     closeShopSession(state);
     expect(state.timeSlot).toBe("night");
     expect(state.shopSession.status).toBe("finished");
@@ -81,16 +118,40 @@ describe("v6 merchant systems", () => {
     expect(state.timeSlot).toBe("morning");
   });
 
+  it("varies the daily customer count between three and six", () => {
+    const counts = new Set<number>();
+    for (let day = 1; day <= 12; day += 1) {
+      const state = createNewGame();
+      const item = createItem(state, "iron-sword", 1);
+      state.day = day;
+      state.shopSession.day = day;
+      state.store.push(item);
+      item.location = { kind: "shopStock" };
+      state.display = [item.uuid];
+      expect(startShopSession(state)).toBe(true);
+      counts.add(state.shopSession.queueNpcIds.length);
+      expect(state.shopSession.queueNpcIds.length).toBeGreaterThanOrEqual(SHOP_CUSTOMER_MIN);
+      expect(state.shopSession.queueNpcIds.length).toBeLessThanOrEqual(SHOP_CUSTOMER_MAX);
+    }
+    expect(counts.size).toBeGreaterThan(1);
+  });
+
   it("consumes food each dungeon time band, damages starvation, and resting heals", () => {
     const state = createNewGame();
     beginExpedition(state);
     state.provisions = 1;
-    consumeDungeonTime(state, 25);
+    expect(dungeonTimeUntilNextMeal(state)).toBe(25);
+    consumeDungeonTime(state, 10);
+    expect(dungeonTimeUntilNextMeal(state)).toBe(15);
+    consumeDungeonTime(state, 15);
     expect(state.provisions).toBe(0);
     expect(state.timeSlot).toBe("afternoon");
+    expect(state.message).toContain("食料が尽きた");
+    expect(dungeonTimeUntilNextMeal(state)).toBe(25);
     const hp = state.hp;
     consumeDungeonTime(state, 25);
     expect(state.hp).toBe(hp - 2);
+    expect(state.message).toContain("空腹で2ダメージ");
     state.location = "home";
     state.run = undefined;
     state.timeSlot = "evening";

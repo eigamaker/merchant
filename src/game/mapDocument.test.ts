@@ -10,13 +10,12 @@ describe("MapDocument v6", () => {
   it("compiles canonical up/down markers with dedicated fallback visuals", () => { const map=createBlankMap("dungeon"); for(let y=1;y<4;y++)for(let x=1;x<4;x++)placeTile(map,x,y,"dungeon.floor"); addMarker(map,{id:"up",kind:"stairsUp",x:1,y:1}); addMarker(map,{id:"down",kind:"stairsDown",x:2,y:2}); const compiled=compileMap(map); expect(compiled.stairsUp).toEqual({x:1,y:1}); expect(compiled.stairsDown).toEqual({x:2,y:2}); expect(compiled.stairsUpVisual).toEqual({assetId:"dungeon.stairs-up",frame:0}); expect(compiled.stairsDownVisual).toEqual({assetId:"dungeon.stairs-down",frame:0}); });
   it("rejects unknown input with an explicit error", () => { expect(() => normalizeMap(null)).toThrow(/MapDocument v3/); });
   it("reports missing markers", () => { const map=createBlankMap("home"); expect(validateMap(map)).toEqual(expect.arrayContaining(["marker homeSpawn","marker dungeonEntrance"])); });
-  it.each(["dungeonEntrance", "homeStorage", "homePreparation", "homeVisitors"] as const)("reports an isolated %s marker", (isolatedKind) => {
+  it.each(["dungeonEntrance", "homePreparation", "homeVisitors"] as const)("reports an isolated %s marker", (isolatedKind) => {
     const map = createManualMap("home", { width: 7, height: 7 });
     map.collision.fill(true);
     const markerPositions = {
       homeSpawn: { x: 1, y: 1 },
       dungeonEntrance: { x: 5, y: 1 },
-      homeStorage: { x: 1, y: 5 },
       homePreparation: { x: 3, y: 5 },
       homeVisitors: { x: 5, y: 5 },
     } as const;
@@ -25,6 +24,7 @@ describe("MapDocument v6", () => {
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) map.collision[mapIndex(map, isolated.x + dx, isolated.y + dy)] = false;
     expect(validateMap(map)).toContain(`marker ${isolatedKind} unreachable`);
   });
+  it("removes the retired home storage marker while normalizing old maps", () => { const map=createManualMap("home"); addMarker(map,{id:"old-storage",kind:"homeStorage",x:1,y:1}); expect(normalizeMap(map).markers.some((entry)=>entry.kind==="homeStorage")).toBe(false); });
   it("stores a selected frame and explicit collision without neighbour-based changes", () => { const map=createBlankMap("dungeon"); map.terrain.fill("dungeon.floor"); placeManualTile(map,1,1,"dungeon.wall","structure",7); placeManualTile(map,2,1,"dungeon.wall","structure",3); map.collision = map.terrain.map((id) => id === "dungeon.floor"); const compiled = compileMap(map); expect(map.layers.structure[mapIndex(map,1,1)]).toEqual({ assetId:"dungeon.wall", frame:7 }); expect(map.layers.structure[mapIndex(map,2,1)]).toEqual({ assetId:"dungeon.wall", frame:3 }); expect(compiled.tiles[1]?.[1]).toBe(1); expect(compiled.authoredLayers?.structure?.[mapIndex(map,1,1)]).toEqual({ assetId:"dungeon.wall", frame:7 }); });
   it("clears compatibility terrain when the last manual layer is erased", () => { const map=createManualMap("home",{width:4,height:4}); placeManualTile(map,1,1,"home.floor","ground",0); const index=mapIndex(map,1,1); expect(map.terrain[index]).toBe("home.floor"); placeManualTile(map,1,1,null,"ground"); expect(map.layers.ground[index]).toBeNull(); expect(map.terrain[index]).toBeNull(); });
   it("provides explicit layers for a fresh manual document", () => { const map = createManualMap("home"); expect(map.collision).toHaveLength(map.width * map.height); expect(map.layers?.ground).toHaveLength(map.width * map.height); });

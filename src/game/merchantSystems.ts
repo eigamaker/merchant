@@ -1,5 +1,6 @@
 import { ITEM_DEFINITIONS } from "./content";
 import { MERCHANT_ITEM_DEFINITIONS } from "./merchantContent";
+import { prepareCustomerPurchaseRequest } from "./merchantEconomy";
 import type { GameState, ItemInstance, SupplyKind, TimeSlot } from "./types";
 
 export const SUPPLY_RULES: Record<SupplyKind, { label: string; supplier: string; price: number; dailyStock: number }> = {
@@ -7,6 +8,9 @@ export const SUPPLY_RULES: Record<SupplyKind, { label: string; supplier: string;
   returnStones: { label: "帰還石", supplier: "冒険者ギルド", price: 150, dailyStock: 1 },
   provisions: { label: "携行食料", supplier: "食品商", price: 15, dailyStock: 6 },
 };
+
+export const SHOP_CUSTOMER_MIN = 3;
+export const SHOP_CUSTOMER_MAX = 6;
 
 const TIME_ORDER: TimeSlot[] = ["morning", "afternoon", "evening", "night"];
 
@@ -32,12 +36,8 @@ function hash(value: string): number {
   return result >>> 0;
 }
 
-export function supplyBulk(state: GameState): number {
-  return state.smokeBombs + state.returnStones + Math.ceil(state.provisions / 3);
-}
-
-export function totalBulk(state: GameState): number {
-  return state.inventory.reduce((total, item) => total + (definition(item)?.bulk ?? 0), 0) + supplyBulk(state);
+export function inventoryItemCount(state: GameState): number {
+  return state.inventory.length;
 }
 
 export function playerAttackPower(state: GameState): number {
@@ -107,23 +107,14 @@ export function restUntilMorning(state: GameState): boolean {
   return true;
 }
 
-function prospectiveSupplyBulk(state: GameState, kind: SupplyKind, amount: number): number {
-  const smoke = state.smokeBombs + (kind === "smokeBombs" ? amount : 0);
-  const stones = state.returnStones + (kind === "returnStones" ? amount : 0);
-  const provisions = state.provisions + (kind === "provisions" ? amount : 0);
-  return smoke + stones + Math.ceil(provisions / 3);
-}
-
-export function buySupply(state: GameState, kind: SupplyKind, amount = 1, capacity = 12): boolean {
+export function buySupply(state: GameState, kind: SupplyKind, amount = 1): boolean {
   const quantity = Math.max(1, Math.floor(amount));
   const rule = SUPPLY_RULES[kind];
   const available = state.dailySupplyStock[kind];
   const price = rule.price * quantity;
-  const itemBulk = state.inventory.reduce((total, item) => total + (definition(item)?.bulk ?? 0), 0);
   if (state.location !== "home") return false;
   if (available < quantity) { state.message = `${rule.label}は本日分が売り切れている。`; return false; }
   if (state.gold < price) { state.message = `${price}Gを支払えない。`; return false; }
-  if (itemBulk + prospectiveSupplyBulk(state, kind, quantity) > capacity) { state.message = "鞄に探索用品を入れる余裕がない。"; return false; }
   state.gold -= price;
   state.dailySupplyStock[kind] -= quantity;
   state[kind] += quantity;
@@ -156,7 +147,8 @@ export function startShopSession(state: GameState): boolean {
   const ordered = candidates
     .map((npc) => ({ npc, order: hash(`${state.campaignId}:${state.day}:shop:${npc.id}`) }))
     .sort((a, b) => a.order - b.order);
-  const count = Math.min(ordered.length, 1 + hash(`${state.campaignId}:${state.day}:shop-count`) % 3);
+  const countRange = SHOP_CUSTOMER_MAX - SHOP_CUSTOMER_MIN + 1;
+  const count = Math.min(ordered.length, SHOP_CUSTOMER_MIN + hash(`${state.campaignId}:${state.day}:shop-count`) % countRange);
   state.shopSession = {
     day: state.day,
     status: "movingToCounter",
@@ -164,7 +156,7 @@ export function startShopSession(state: GameState): boolean {
     servedNpcIds: [],
   };
   state.visitorNpcIds = [];
-  state.message = "開店準備を始めた。カウンターへ向かう。";
+  state.message = `開店準備を始めた。本日の来客予定は${count}人。カウンターへ向かう。`;
   return true;
 }
 
@@ -178,7 +170,8 @@ export function summonNextCustomer(state: GameState): string | undefined {
   state.shopSession.currentNpcId = npc.id;
   state.shopSession.status = "serving";
   state.visitorNpcIds = [npc.id];
-  state.message = "扉が開いた。客がカウンターへ向かっている。";
+  prepareCustomerPurchaseRequest(state, npc.id);
+  state.message = "扉が開いた。客が棚から商品を選び、カウンターへ向かっている。";
   return npc.id;
 }
 
@@ -190,6 +183,8 @@ export function finishCurrentCustomer(state: GameState): void {
     state.shopSession.servedNpcIds.push(npcId);
   }
   state.shopSession.currentNpcId = undefined;
+  state.shopSession.requestedItemId = undefined;
+  state.shopSession.requestedPrice = undefined;
   state.visitorNpcIds = [];
   state.shopSession.status = "waiting";
   state.message = state.shopSession.queueNpcIds.length ? "客が帰った。次の客を待っている。" : "本日の来客はこれで終わりのようだ。";
@@ -202,6 +197,8 @@ export function closeShopSession(state: GameState): void {
     if (npc?.status === "visiting") npc.status = "inTown";
   }
   state.shopSession.currentNpcId = undefined;
+  state.shopSession.requestedItemId = undefined;
+  state.shopSession.requestedPrice = undefined;
   state.shopSession.queueNpcIds = [];
   state.shopSession.status = "finished";
   state.visitorNpcIds = [];
@@ -217,7 +214,12 @@ export function consumeDungeonTime(state: GameState, units: number): void {
   while (run.settledTimeBands < dueBands && state.status !== "gameOver") {
     run.settledTimeBands += 1;
     advanceTime(state, 1);
-    if (state.provisions > 0) state.provisions -= 1;
+    if (state.provisions > 0) {
+      state.provisions -= 1;
+      state.message = state.provisions > 0
+        ? `携行食料を1つ食べた。残り${state.provisions}。`
+        : "携行食料を1つ食べた。食料が尽きたため、次の消費時から空腹ダメージを受ける。";
+    }
     else {
       state.hp -= 2;
       state.message = "携行食料が尽き、空腹で2ダメージを受けた。";
@@ -228,6 +230,12 @@ export function consumeDungeonTime(state: GameState, units: number): void {
       }
     }
   }
+}
+
+export function dungeonTimeUntilNextMeal(state: GameState): number | undefined {
+  const run = state.run;
+  if (!run) return undefined;
+  return Math.max(0, (run.settledTimeBands + 1) * 25 - run.timeUnits);
 }
 
 export function settleShortExpedition(state: GameState): void {

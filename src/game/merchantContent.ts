@@ -1,11 +1,11 @@
-import type { ItemDefinition, NpcRecord } from "./types";
+import type { AdventurerRank, ItemDefinition, NpcRecord } from "./types";
 
 const item = (
   id: string,
   category: ItemDefinition["category"],
   name: string,
   baseValue: number,
-  bulk: ItemDefinition["bulk"],
+  _legacySize: number,
   rarity: NonNullable<ItemDefinition["rarity"]>,
   description: string,
   stats: Partial<Pick<ItemDefinition, "attack" | "defense" | "healing" | "cures" | "singular">> = {},
@@ -16,7 +16,6 @@ const item = (
   suspectedName: name,
   trueName: name,
   baseValue,
-  bulk,
   rarity,
   visualId: `item.${id}`,
   description,
@@ -47,10 +46,43 @@ export const ITEM_VISUALS: Record<string, string> = Object.fromEntries(
 
 type NpcSeed = Omit<NpcRecord, "status" | "relation" | "inventoryIds">;
 
+export interface AdventurerRankDefinition {
+  rank: AdventurerRank;
+  escortFee: number;
+  baseHp: number;
+  baseDamage: number;
+  recommendedFloor: number;
+}
+
+export const ADVENTURER_RANKS: Record<AdventurerRank, AdventurerRankDefinition> = {
+  E: { rank: "E", escortFee: 100, baseHp: 10, baseDamage: 3, recommendedFloor: 2 },
+  D: { rank: "D", escortFee: 180, baseHp: 15, baseDamage: 4, recommendedFloor: 3 },
+  C: { rank: "C", escortFee: 320, baseHp: 21, baseDamage: 6, recommendedFloor: 5 },
+  B: { rank: "B", escortFee: 550, baseHp: 29, baseDamage: 8, recommendedFloor: 6 },
+  A: { rank: "A", escortFee: 900, baseHp: 40, baseDamage: 11, recommendedFloor: 8 },
+};
+
+export const ADVENTURER_RANK_ORDER: readonly AdventurerRank[] = ["E", "D", "C", "B", "A"];
+
+export function adventurerRankForFloor(floor: number): AdventurerRank {
+  if (floor >= 7) return "A";
+  if (floor >= 6) return "B";
+  if (floor >= 4) return "C";
+  if (floor >= 3) return "D";
+  return "E";
+}
+
 export const NPC_SEEDS: readonly NpcSeed[] = [
-  { id: "rolf", name: "ロルフ", profession: "swordsman", appearanceId: "profession.adventurer.swordsman.01", adventurer: true, interests: ["weapon", "armor"], budget: 450, baseFee: 100, maxHp: 8, damage: 2, trait: "standard", retreatHpRatio: 0.3 },
-  { id: "mina", name: "ミナ", profession: "scout", appearanceId: "profession.adventurer.scout.01", adventurer: true, interests: ["medicine", "material"], budget: 350, baseFee: 140, maxHp: 6, damage: 1, trait: "scout", retreatHpRatio: 0.5 },
-  { id: "bastian", name: "バスティアン", profession: "mercenary", appearanceId: "profession.adventurer.mercenary.01", adventurer: true, interests: ["weapon", "medicine"], budget: 700, baseFee: 180, maxHp: 10, damage: 3, trait: "standard", retreatHpRatio: 0.2 },
+  { id: "mina", name: "ミナ", profession: "scout", appearanceId: "profession.adventurer.scout.01", adventurer: true, rank: "E", interests: ["medicine", "material"], budget: 350, baseFee: 100, maxHp: 10, damage: 3, trait: "scout", retreatHpRatio: 0.5 },
+  { id: "toma", name: "トーマ", profession: "swordsman", appearanceId: "profession.adventurer.swordsman.01", adventurer: true, rank: "E", interests: ["weapon", "armor"], budget: 380, baseFee: 100, maxHp: 13, damage: 4, trait: "standard", retreatHpRatio: 0.35 },
+  { id: "lise", name: "リーゼ", profession: "scout", appearanceId: "profession.adventurer.scout.01", adventurer: true, rank: "E", interests: ["medicine", "curio"], budget: 420, baseFee: 100, maxHp: 11, damage: 3, trait: "scout", retreatHpRatio: 0.45 },
+  { id: "rolf", name: "ロルフ", profession: "swordsman", appearanceId: "profession.adventurer.swordsman.01", adventurer: true, rank: "D", interests: ["weapon", "armor"], budget: 520, baseFee: 180, maxHp: 16, damage: 4, trait: "standard", retreatHpRatio: 0.3 },
+  { id: "juno", name: "ユーノ", profession: "mercenary", appearanceId: "profession.adventurer.mercenary.01", adventurer: true, rank: "D", interests: ["weapon", "medicine"], budget: 600, baseFee: 180, maxHp: 14, damage: 5, trait: "standard", retreatHpRatio: 0.4 },
+  { id: "bastian", name: "バスティアン", profession: "mercenary", appearanceId: "profession.adventurer.mercenary.01", adventurer: true, rank: "C", interests: ["weapon", "medicine"], budget: 800, baseFee: 320, maxHp: 22, damage: 7, trait: "standard", retreatHpRatio: 0.2 },
+  { id: "kael", name: "カイル", profession: "swordsman", appearanceId: "profession.adventurer.swordsman.01", adventurer: true, rank: "C", interests: ["armor", "curio"], budget: 900, baseFee: 320, maxHp: 25, damage: 6, trait: "standard", retreatHpRatio: 0.3 },
+  { id: "freya", name: "フレイヤ", profession: "scout", appearanceId: "profession.adventurer.scout.01", adventurer: true, rank: "B", interests: ["medicine", "material"], budget: 1200, baseFee: 550, maxHp: 30, damage: 9, trait: "scout", retreatHpRatio: 0.35 },
+  { id: "doran", name: "ドラン", profession: "swordsman", appearanceId: "profession.adventurer.swordsman.01", adventurer: true, rank: "B", interests: ["weapon", "armor"], budget: 1400, baseFee: 550, maxHp: 34, damage: 8, trait: "standard", retreatHpRatio: 0.25 },
+  { id: "astrid", name: "アストリッド", profession: "mercenary", appearanceId: "profession.adventurer.mercenary.01", adventurer: true, rank: "A", interests: ["weapon", "curio"], budget: 2200, baseFee: 900, maxHp: 44, damage: 12, trait: "standard", retreatHpRatio: 0.2 },
   { id: "mira", name: "ミラ", profession: "merchant", appearanceId: "profession.merchant.01", adventurer: false, interests: ["material", "curio"], budget: 700 },
   { id: "godwin", name: "ゴドウィン", profession: "blacksmith", appearanceId: "profession.blacksmith.01", adventurer: false, interests: ["weapon", "armor"], budget: 1400 },
   { id: "neva", name: "ネヴァ", profession: "apothecary", appearanceId: "profession.apothecary.01", adventurer: false, interests: ["medicine", "material"], budget: 900 },

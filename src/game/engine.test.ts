@@ -15,6 +15,7 @@ import {
   hireGuard,
   initialOffer,
   movePlayer,
+  performDungeonCommand,
   reportQuest,
   resolveRing,
   returnHome,
@@ -36,7 +37,7 @@ function compactDungeonMap(width: number, height: number, stairsUp: { x: number;
 }
 
 function emptyFloorSnapshot(floor: number, map: DungeonMap): DungeonFloorSnapshot {
-  return { floor, map, player: { ...map.stairsUp }, enemies: [], items: [], chests: [], traps: [], bodies: [], shoveCooldown: 0, turn: 0 };
+  return { floor, map, player: { ...map.stairsUp }, enemies: [], items: [], chests: [], traps: [], bodies: [], adventurers: [], shoveCooldown: 0, turn: 0 };
 }
 
 function reachableTiles(map: ReturnType<typeof generateDungeon>): Set<string> {
@@ -177,7 +178,10 @@ describe("dungeon generator", () => {
       ...run.chests.map((chest) => chest.pos),
       ...run.traps,
       ...run.bodies.map((body) => body.pos),
+      ...run.adventurers.map((adventurer) => adventurer.pos),
     ];
+    expect(run.adventurers).toHaveLength(2);
+    expect(run.adventurers.every((adventurer) => state.npcs.find((npc) => npc.id === adventurer.npcId)?.rank === "E")).toBe(true);
     const keys = positions.map((position) => `${position.x},${position.y}`);
     expect(new Set(keys).size).toBe(keys.length);
     positions.forEach((position) => expect(run.map.tiles[position.y]?.[position.x]).toBe(0));
@@ -330,7 +334,7 @@ describe("automatic guards", () => {
 
     waitTurn(state);
 
-    expect(enemy.hp).toBe(8);
+    expect(enemy.hp).toBe(10 - guard.damage);
     expect(guard.hp).toBe(guardHp - enemy.damage);
     expect(state.hp).toBe(playerHp);
   });
@@ -481,17 +485,125 @@ describe("automatic guards", () => {
     expect(threshold("bastian", 10)).toBe(2);
     expect(threshold("future-adventurer", 8)).toBe(2);
   });
+
+  it("uses a healing item on the active guard and consumes one dungeon turn", () => {
+    const state = createNewGame();
+    unlockAndHire(state);
+    beginExpedition(state);
+    const guard = state.run!.guard!;
+    state.run!.enemies = [];
+    guard.hp = 1;
+    const potion = createItem(state, "minor-healing-potion");
+    state.inventory.push(potion);
+    const beforeTurn = state.run!.turn;
+
+    const result = performDungeonCommand(state, { type: "useMedicine", itemId: potion.uuid, target: "guard" });
+
+    expect(result.consumedTurn).toBe(true);
+    expect(guard.hp).toBe(5);
+    expect(state.run!.turn).toBe(beforeTurn + 1);
+    expect(state.inventory).not.toContain(potion);
+    expect(potion.location).toEqual({ kind: "consumed", actorId: guard.guardId });
+  });
+});
+
+describe("independent dungeon adventurers", () => {
+  function placeBesidePlayer(state: ReturnType<typeof createNewGame>): NonNullable<typeof state.run>["adventurers"][number] {
+    beginExpedition(state);
+    const run = state.run!;
+    const adventurer = run.adventurers[0]!;
+    run.player = { x: 5, y: 5 };
+    adventurer.pos = { x: 6, y: 5 };
+    run.map.tiles[5]![5] = run.map.tiles[5]![6] = run.map.tiles[5]![7] = 0;
+    run.enemies = [];
+    return adventurer;
+  }
+
+  it("lets the merchant buy and sell with a nearby adventurer", () => {
+    const state = createNewGame();
+    const adventurer = placeBesidePlayer(state);
+    const npc = state.npcs.find((entry) => entry.id === adventurer.npcId)!;
+    const stock = state.itemsById[npc.inventoryIds[0]!]!;
+    const startingGold = state.gold;
+
+    performDungeonCommand(state, { type: "buyFromAdventurer", npcId: npc.id, itemId: stock.uuid });
+    expect(state.inventory).toContain(stock);
+    expect(npc.inventoryIds).not.toContain(stock.uuid);
+    expect(state.gold).toBeLessThan(startingGold);
+
+    const wantedDefinition = ({ weapon: "iron-sword", armor: "leather-armor", medicine: "minor-healing-potion", material: "moon-fungus", curio: "old-ring" } as const)[npc.interests[0] as "weapon" | "armor" | "medicine" | "material" | "curio"];
+    const wanted = createItem(state, wantedDefinition);
+    state.inventory.push(wanted);
+    const resaleGold = state.gold;
+    performDungeonCommand(state, { type: "sellToAdventurer", npcId: npc.id, itemId: wanted.uuid });
+    expect(state.inventory).not.toContain(wanted);
+    expect(npc.inventoryIds).toContain(wanted.uuid);
+    expect(state.gold).toBeGreaterThan(resaleGold);
+  });
+
+  it("allows an adventurer to die in combat and leaves their remaining inventory on the body", () => {
+    const state = createNewGame();
+    const adventurer = placeBesidePlayer(state);
+    const run = state.run!;
+    const npc = state.npcs.find((entry) => entry.id === adventurer.npcId)!;
+    const enemy = { ...run.enemies[0] } as NonNullable<typeof run.enemies[number]>;
+    const template = createNewGame();
+    beginExpedition(template);
+    const sourceEnemy = template.run!.enemies[0]!;
+    Object.assign(enemy, sourceEnemy, { pos: { x: 7, y: 5 }, hp: 99, maxHp: 99, damage: adventurer.maxHp, staggerTurns: 0 });
+    adventurer.hp = adventurer.maxHp;
+    run.enemies = [enemy];
+    const lootIds = [...npc.inventoryIds];
+
+    waitTurn(state);
+
+    expect(run.adventurers.some((entry) => entry.npcId === npc.id)).toBe(false);
+    expect(npc.status).toBe("dead");
+    const body = run.bodies.find((entry) => entry.npcId === npc.id);
+    expect(body?.loot.map((item) => item.uuid).sort()).toEqual(lootIds.sort());
+  });
+
+  it("uses a healing item sold to a wounded adventurer on that turn", () => {
+    const state = createNewGame();
+    const adventurer = placeBesidePlayer(state);
+    const npc = state.npcs.find((entry) => entry.id === adventurer.npcId)!;
+    npc.inventoryIds = npc.inventoryIds.filter((id) => state.itemsById[id]?.definitionId !== "minor-healing-potion");
+    adventurer.hp = Math.max(1, adventurer.maxHp - 10);
+    const potion = createItem(state, "major-healing-potion");
+    state.inventory.push(potion);
+
+    performDungeonCommand(state, { type: "sellToAdventurer", npcId: npc.id, itemId: potion.uuid });
+
+    expect(adventurer.hp).toBe(adventurer.maxHp);
+    expect(potion.location).toEqual({ kind: "consumed", actorId: npc.id });
+    expect(npc.inventoryIds).not.toContain(potion.uuid);
+  });
 });
 
 describe("inventory choices and early story", () => {
-  it("swaps a large carried item for a ground quest item when full", () => {
+  it("holds twenty-four items regardless of item type", () => {
+    const state = createNewGame();
+    beginExpedition(state);
+    const run = state.run!;
+    state.inventory = Array.from({ length: 23 }, () => createItem(state, "bronze-spear", 1));
+    const ground = run.items[0]!;
+    run.player = { ...ground.pos };
+
+    const result = tryPickup(state);
+
+    expect(result.consumedTurn).toBe(true);
+    expect(state.inventory).toHaveLength(24);
+    expect(state.inventory).toContain(ground.item);
+  });
+
+  it("swaps one carried item for a ground quest item when all twenty-four slots are full", () => {
     const state = createNewGame();
     beginExpedition(state);
     const run = state.run!;
     state.smokeBombs = 0;
     state.returnStones = 0;
     state.provisions = 0;
-    state.inventory = Array.from({ length: 4 }, () => createItem(state, "bronze-spear", 1));
+    state.inventory = Array.from({ length: 24 }, () => createItem(state, "bronze-spear", 1));
     const herb = run.items.find((entry) => entry.item.definitionId === "herb")!;
     run.player = { ...herb.pos };
     const swap = state.inventory[0]!;

@@ -37,7 +37,7 @@ Sprite sheets and matching `.tileset.json` definitions under `assets-src/map-til
 1. Select `家` or `ダンジョン`. There is one home; use `新規` or `複製` to create additional dungeon floors.
 2. Select `ground`, `structure`, or `decoration`, choose a palette tile and its frame number, then paint a cell. Rectangle and drag painting repeat the same placement; no auto-connection runs.
 3. Use `通行可` / `通行不可` to edit the explicit collision layer. The green/red overlay visualises that array.
-4. Place the required markers. A home needs `homeSpawn`, `dungeonEntrance`, `homeStorage`, `homePreparation`, and `homeVisitors`. Every dungeon floor needs `stairsUp`; a floor with a following floor also needs `stairsDown`. First-floor `stairsUp` targets the home's `dungeonEntrance`, while return stones and rescue target `homeSpawn`.
+4. Place the required markers. A home needs `homeSpawn`, `dungeonEntrance`, `homePreparation`, and `homeVisitors`; shop traffic also uses `shopkeeperCounter` and `customerCounter`. Storage and display are menu actions and have no map marker. Every dungeon floor needs `stairsUp`; a floor with a following floor also needs `stairsDown`. First-floor `stairsUp` targets the home's `dungeonEntrance`, while return stones and rescue target `homeSpawn`.
 5. Export JSON or use 試遊. `compileMap` converts the collision layer to runtime 0/1 cells and passes authored layers through unchanged for rendering.
 
 ## Runtime rules

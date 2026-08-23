@@ -4,6 +4,7 @@ import { HOME_SPAWN, createHomeMap } from "./homeMap";
 import { loadTrialMapPack, type MapDocument } from "./mapDocument";
 import { isMapPositionWalkable } from "./mapTiles";
 import { initializeMerchantWorld } from "./merchantEconomy";
+import { createInitialNpcs } from "./merchantContent";
 /** v1-v3 saves always used the fixed 32x20, 16px home. */
 const HOME_SPAWN_PIXEL = { x: HOME_SPAWN.x * 16 + 8, y: HOME_SPAWN.y * 16 + 8 };
 
@@ -125,6 +126,26 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
   state.refusedOffers ??= {};
   state.singularItemIds ??= [];
   if (state.npcs.length === 0) initializeMerchantWorld(state);
+  else {
+    for (const template of createInitialNpcs()) {
+      const existing = state.npcs.find((npc) => npc.id === template.id);
+      if (!existing) state.npcs.push(template);
+      else if (template.adventurer) {
+        existing.rank = template.rank;
+        existing.baseFee = template.baseFee;
+        existing.maxHp = template.maxHp;
+        existing.damage = template.damage;
+        existing.trait = template.trait;
+        existing.retreatHpRatio = template.retreatHpRatio;
+      }
+    }
+  }
+  for (const npc of state.npcs) if (npc.adventurer && !npc.rank) {
+    npc.rank = (npc.baseFee ?? 0) >= 900 ? "A" : (npc.baseFee ?? 0) >= 550 ? "B" : (npc.baseFee ?? 0) >= 320 ? "C" : (npc.baseFee ?? 0) >= 180 ? "D" : "E";
+  }
+  if (state.escortCommission?.npcId && !state.escortCommission.rank) {
+    state.escortCommission.rank = state.npcs.find((npc) => npc.id === state.escortCommission?.npcId)?.rank ?? "E";
+  }
   if (sourceVersion < 4) {
     // Only legacy fixed-home saves use the historical 16px constants.
     state.homePos = { ...HOME_SPAWN_PIXEL };
@@ -207,6 +228,7 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
     };
     if (state.run) {
       state.run.enemies.forEach((enemy) => { enemy.staggerTurns ??= 0; });
+      state.run.adventurers ??= [];
       if (state.run.guard) {
         state.run.guard.mode ??= "covering";
         state.run.guard.safeTurns ??= 0;
@@ -221,6 +243,7 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
     }
   }
   if (state.run) {
+    state.run.adventurers ??= [];
     state.run.timeUnits ??= 0;
     state.run.settledTimeBands ??= 0;
     state.run.floorStates ??= {};
@@ -231,6 +254,7 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
       state.run.guard.pos = { ...state.run.player };
     }
     for (const snapshot of Object.values(state.run.floorStates ?? {})) {
+      snapshot.adventurers ??= [];
       migrateDungeonMap(snapshot.map);
       snapshot.shoveCooldown ??= 0;
       snapshot.turn ??= 0;
@@ -281,7 +305,7 @@ export class SaveRepository {
     database.close();
     if (!result) return undefined;
     const version = (result.state as { version?: number }).version;
-    if (version !== 5 && version !== 6) return undefined;
+    if (version !== 5 && version !== 6 && version !== 7) return undefined;
     result.state = migrateSaveState(result.state);
     if (isCampaignDead(result.state.campaignId) || result.state.status === "gameOver") return undefined;
     return result as StoredSave & { state: GameState };
