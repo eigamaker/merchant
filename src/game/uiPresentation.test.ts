@@ -20,9 +20,37 @@ describe("readable canvas presentation", () => {
 
   it("exposes the context action and system menus with mouse-selectable choices", () => {
     const scene = readFileSync(resolve(process.cwd(), "src/scenes/MerchantScene.ts"), "utf8");
-    expect(scene).toContain('if (this.just("space")) { this.openDungeonActionMenu()');
+    expect(scene).toContain('if (this.just("space")) { events.push(...performDungeonCommand(this.state, { type: "attack"');
+    expect(scene).toContain('label: "攻撃"');
+    expect(scene).toContain('label: "インベントリ"');
     expect(scene).toContain("this.openSystemMenu()");
+    expect(scene).not.toContain('label: "メニュー"');
+    expect(scene).not.toContain("KeyCodes.F1");
+    expect(scene).toContain('label: "手動保存 1"');
     expect(scene).toContain("setInteractive({ useHandCursor: !choice.disabled })");
     expect(scene).toContain('hit.on("pointerdown"');
+  });
+
+  it("uses one WASD-adjacent shortcut definition in the help and map HUD", () => {
+    const scene = readFileSync(resolve(process.cwd(), "src/scenes/MerchantScene.ts"), "utf8");
+    expect(scene).toContain('investigate: "E"');
+    expect(scene).toContain('inventory: "R"');
+    expect(scene).toContain('talk: "T"');
+    expect(scene).toContain('shop: "F"');
+    expect(scene).toContain('menu: "Tab / Esc"');
+    expect(scene).toContain('const controls = this.state.location === "home" ? HOME_CONTROL_LINES : DUNGEON_CONTROL_LINES');
+    expect(scene).toContain('const hint = this.state.location === "home" ? HOME_SHORTCUT_HINT : DUNGEON_SHORTCUT_HINT');
+    expect(scene).not.toMatch(/KeyCodes\.(?:I|O|M|L|H|Z)\b/);
+    expect(scene).not.toContain("E/Enter");
+    expect(scene).not.toContain("M/Esc");
+  });
+
+  it("renders the opening separately and keeps location headings out of the map", () => {
+    const scene = readFileSync(resolve(process.cwd(), "src/scenes/MerchantScene.ts"), "utf8");
+    expect(scene).toContain("if (!this.gameStarted) {");
+    expect(scene).toContain("this.renderSplashScreen()");
+    expect(scene).not.toContain("自宅兼店舗 — ${this.state.day}日目");
+    expect(scene).not.toContain("深層ダンジョン 地下${run.floor}階");
+    expect(scene).toContain("this.add.rectangle(320, 180, 640, 360, 0x07060b, 0.88).setInteractive()");
   });
 });

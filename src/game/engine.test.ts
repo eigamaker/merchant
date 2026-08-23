@@ -11,6 +11,7 @@ import {
   dropItem,
   generateDungeon,
   guardFee,
+  guardRetreatThreshold,
   hireGuard,
   initialOffer,
   movePlayer,
@@ -25,6 +26,7 @@ import {
   waitTurn,
 } from "./engine";
 import { migrateSaveState } from "./save";
+import { restUntilMorning } from "./merchantSystems";
 import { DUNGEON_ENTRANCE } from "./homeMap";
 import type { DungeonFloorSnapshot, DungeonMap } from "./types";
 
@@ -89,11 +91,11 @@ describe("canonical dungeon stairs", () => {
     expect(state.run?.turn).toBe(7);
   });
 
-  it("repositions a carried guard beside the down-stair landing on a smaller visited floor", () => {
+  it("keeps a carried guard in the party cell at the down-stair landing", () => {
     const state = createNewGame();
     beginExpedition(state);
     const run = state.run!;
-    run.guard = { guardId: "rolf", pos: { x: 47, y: 35 }, hp: 3, maxHp: 8, damage: 2 };
+    run.guard = { guardId: "rolf", pos: { x: 47, y: 35 }, hp: 3, maxHp: 8, damage: 2, mode: "covering", safeTurns: 0 };
     const targetMap = compactDungeonMap(6, 5, { x: 1, y: 1 }, { x: 4, y: 3 });
     run.floorStates["2"] = emptyFloorSnapshot(2, targetMap);
 
@@ -101,27 +103,27 @@ describe("canonical dungeon stairs", () => {
 
     expect(state.run?.map.width).toBe(6);
     expect(state.run?.player).toEqual(targetMap.stairsUp);
-    expect(state.run?.guard).toMatchObject({ hp: 3, maxHp: 8, damage: 2, pos: { x: 1, y: 2 } });
-    expect(state.run?.guard?.pos).not.toEqual(state.run?.player);
+    expect(state.run?.guard).toMatchObject({ hp: 3, maxHp: 8, damage: 2, pos: targetMap.stairsUp });
+    expect(state.run?.guard?.pos).toEqual(state.run?.player);
   });
 
-  it("repositions a carried guard beside the up-stair landing when restoring a differently sized floor", () => {
+  it("keeps a carried guard in the party cell at the up-stair landing", () => {
     const state = createNewGame();
     beginExpedition(state);
     descend(state);
     const run = state.run!;
-    run.guard = { guardId: "rolf", pos: { x: 47, y: 35 }, hp: 2, maxHp: 8, damage: 2 };
+    run.guard = { guardId: "rolf", pos: { x: 47, y: 35 }, hp: 2, maxHp: 8, damage: 2, mode: "covering", safeTurns: 0 };
     const targetMap = compactDungeonMap(8, 6, { x: 1, y: 1 }, { x: 6, y: 4 });
     const target = emptyFloorSnapshot(1, targetMap);
-    target.guard = { guardId: "rolf", pos: { x: 2, y: 2 }, hp: 8, maxHp: 8, damage: 2 };
+    target.guard = { guardId: "rolf", pos: { x: 2, y: 2 }, hp: 8, maxHp: 8, damage: 2, mode: "covering", safeTurns: 0 };
     run.floorStates["1"] = target;
 
     ascend(state);
 
     expect(state.run?.map.width).toBe(8);
     expect(state.run?.player).toEqual(targetMap.stairsDown);
-    expect(state.run?.guard).toMatchObject({ hp: 2, maxHp: 8, damage: 2, pos: { x: 6, y: 3 } });
-    expect(state.run?.guard?.pos).not.toEqual(state.run?.player);
+    expect(state.run?.guard).toMatchObject({ hp: 2, maxHp: 8, damage: 2, pos: targetMap.stairsDown });
+    expect(state.run?.guard?.pos).toEqual(state.run?.player);
   });
 });
 
@@ -156,6 +158,7 @@ describe("dungeon generator", () => {
       if (!run) throw new Error("run missing");
       signatures.add(`${run.seed}:${run.map.tiles.flat().join("")}`);
       returnHome(state, false);
+      state.timeSlot = "morning";
     }
     expect(state.expeditionSerial).toBe(30);
     expect(signatures.size).toBe(30);
@@ -206,6 +209,8 @@ describe("merchant story loop", () => {
     expect(state.events.some((event) => event.id === "black-sword-incident")).toBe(true);
 
     returnHome(state, false);
+    state.timeSlot = "evening";
+    restUntilMorning(state);
     expect(state.story.blackSword).toBe("incident");
     expect(state.quests.find((quest) => quest.id === "black-tomb")?.status).toBe("active");
   });
@@ -316,9 +321,9 @@ describe("automatic guards", () => {
     const enemy = run.enemies[0]!;
     run.enemies = [enemy];
     run.player = { x: 5, y: 5 };
-    guard.pos = { x: 8, y: 5 };
-    enemy.pos = { x: 9, y: 5 };
-    run.map.tiles[5]![5] = run.map.tiles[5]![8] = run.map.tiles[5]![9] = 0;
+    guard.pos = { ...run.player };
+    enemy.pos = { x: 6, y: 5 };
+    run.map.tiles[5]![5] = run.map.tiles[5]![6] = 0;
     enemy.hp = 10;
     const playerHp = state.hp;
     const guardHp = guard.hp;
@@ -330,6 +335,30 @@ describe("automatic guards", () => {
     expect(state.hp).toBe(playerHp);
   });
 
+  it("prioritizes an adjacent enemy the guard can defeat", () => {
+    const state = createNewGame();
+    unlockAndHire(state);
+    beginExpedition(state);
+    const run = state.run!;
+    const guard = run.guard!;
+    const [killable, dangerous] = run.enemies;
+    if (!killable || !dangerous) throw new Error("test setup failed");
+    run.player = { x: 5, y: 5 };
+    guard.pos = { ...run.player };
+    killable.pos = { x: 6, y: 5 };
+    killable.hp = guard.damage;
+    killable.damage = 1;
+    dangerous.pos = { x: 5, y: 6 };
+    dangerous.hp = 20;
+    dangerous.damage = 5;
+    run.enemies = [dangerous, killable];
+
+    waitTurn(state);
+
+    expect(run.enemies.some((enemy) => enemy.id === killable.id)).toBe(false);
+    expect(run.enemies.some((enemy) => enemy.id === dangerous.id)).toBe(true);
+  });
+
   it("removes a defeated guard for two full town days", () => {
     const state = createNewGame();
     unlockAndHire(state);
@@ -339,12 +368,12 @@ describe("automatic guards", () => {
     const enemy = run.enemies[0]!;
     run.enemies = [enemy];
     run.player = { x: 5, y: 5 };
-    guard.pos = { x: 8, y: 5 };
+    guard.pos = { ...run.player };
     guard.hp = 1;
-    enemy.pos = { x: 9, y: 5 };
+    enemy.pos = { x: 6, y: 5 };
     enemy.hp = 20;
     enemy.damage = 2;
-    run.map.tiles[5]![5] = run.map.tiles[5]![8] = run.map.tiles[5]![9] = 0;
+    run.map.tiles[5]![5] = run.map.tiles[5]![6] = 0;
 
     waitTurn(state);
 
@@ -376,6 +405,82 @@ describe("automatic guards", () => {
     state.guildReputation = 2;
     expect(guardFee(state, "rolf")).toBe(80);
   });
+
+  it("moves the guard in the same party cell as the merchant", () => {
+    const state = createNewGame();
+    unlockAndHire(state);
+    beginExpedition(state);
+    const run = state.run!;
+    run.enemies = [];
+    run.player = { x: 5, y: 5 };
+    run.guard!.pos = { x: 9, y: 9 };
+    run.map.tiles[5]![5] = run.map.tiles[5]![6] = 0;
+
+    movePlayer(state, { x: 1, y: 0 });
+
+    expect(run.player).toEqual({ x: 6, y: 5 });
+    expect(run.guard?.pos).toEqual(run.player);
+  });
+
+  it("retreats immediately at the NPC threshold and sends later attacks to the merchant", () => {
+    const state = createNewGame();
+    unlockAndHire(state);
+    beginExpedition(state);
+    const run = state.run!;
+    const guard = run.guard!;
+    const [first, second] = run.enemies;
+    if (!first || !second) throw new Error("test setup failed");
+    run.player = { x: 5, y: 5 };
+    guard.pos = { ...run.player };
+    guard.hp = 4;
+    first.pos = { x: 6, y: 5 };
+    second.pos = { x: 5, y: 6 };
+    first.hp = second.hp = 20;
+    first.damage = second.damage = 1;
+    first.staggerTurns = second.staggerTurns = 0;
+    run.enemies = [first, second];
+    const playerHp = state.hp;
+
+    waitTurn(state);
+
+    expect(guard.hp).toBe(3);
+    expect(guard.mode).toBe("retreated");
+    expect(state.hp).toBe(playerHp - 1);
+  });
+
+  it("resets unsafe recovery and resumes cover after two safe turns", () => {
+    const state = createNewGame();
+    unlockAndHire(state);
+    beginExpedition(state);
+    const run = state.run!;
+    const guard = run.guard!;
+    guard.mode = "retreated";
+    guard.safeTurns = 1;
+    const enemy = run.enemies[0]!;
+    enemy.pos = { x: run.player.x + 4, y: run.player.y };
+    enemy.staggerTurns = 2;
+    run.enemies = [enemy];
+
+    waitTurn(state);
+    expect(guard.safeTurns).toBe(0);
+    expect(guard.mode).toBe("retreated");
+
+    run.enemies = [];
+    waitTurn(state);
+    expect(guard.safeTurns).toBe(1);
+    waitTurn(state);
+    expect(guard.mode).toBe("covering");
+    expect(guard.safeTurns).toBe(0);
+  });
+
+  it("uses the configured retreat threshold for each named adventurer", () => {
+    const state = createNewGame();
+    const threshold = (guardId: string, maxHp: number) => guardRetreatThreshold(state, { guardId, pos: { x: 1, y: 1 }, hp: maxHp, maxHp, damage: 1, mode: "covering", safeTurns: 0 });
+    expect(threshold("mina", 6)).toBe(3);
+    expect(threshold("rolf", 8)).toBe(3);
+    expect(threshold("bastian", 10)).toBe(2);
+    expect(threshold("future-adventurer", 8)).toBe(2);
+  });
 });
 
 describe("inventory choices and early story", () => {
@@ -383,6 +488,9 @@ describe("inventory choices and early story", () => {
     const state = createNewGame();
     beginExpedition(state);
     const run = state.run!;
+    state.smokeBombs = 0;
+    state.returnStones = 0;
+    state.provisions = 0;
     state.inventory = Array.from({ length: 4 }, () => createItem(state, "bronze-spear", 1));
     const herb = run.items.find((entry) => entry.item.definitionId === "herb")!;
     run.player = { ...herb.pos };
@@ -525,7 +633,7 @@ describe("save migration", () => {
 
     const migrated = migrateSaveState(legacy as never);
 
-    expect(migrated.version).toBe(5);
+    expect(migrated.version).toBe(7);
     expect(migrated.guildReputation).toBe(0);
     expect(migrated.guards).toHaveLength(2);
     expect(migrated.story.early.stage).toBe("lostSword");
@@ -546,7 +654,7 @@ describe("escape tools", () => {
 
     useSmokeBomb(state);
 
-    expect(state.smokeBombs).toBe(1);
+    expect(state.smokeBombs).toBe(0);
     expect(enemy.state).toBe("patrol");
   });
 });

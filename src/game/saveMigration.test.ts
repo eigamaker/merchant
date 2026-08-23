@@ -7,7 +7,7 @@ describe("save migration", () => {
   it.each([1,2,3])("migrates v%d town/interior saves to home", (version) => {
     const state:any = createNewGame(); state.version=version; state.location=version===2?"interior":"town"; state.townPos={x:4,y:4}; delete state.homePos; delete state.homeMapRevision;
     const migrated=migrateSaveState(state);
-    expect(migrated.version).toBe(5); expect(migrated.location).toBe("home"); expect(migrated.homePos).toEqual({x:HOME_SPAWN.x*16+8,y:HOME_SPAWN.y*16+8});
+    expect(migrated.version).toBe(7); expect(migrated.location).toBe("home"); expect(migrated.homePos).toEqual({x:HOME_SPAWN.x*16+8,y:HOME_SPAWN.y*16+8});
   });
   it("migrates legacy dungeon connector fields and adds the floor snapshot dictionary", () => {
     const state:any = createNewGame(); beginExpedition(state);
@@ -16,6 +16,21 @@ describe("save migration", () => {
     expect(migrated.run?.map.stairsUp).toEqual({x:2,y:2});
     expect(migrated.run?.map.stairsDown).toEqual({x:3,y:3});
     expect(migrated.run?.floorStates).toEqual({});
+  });
+  it("migrates separated guards into the merchant party cell", () => {
+    const state:any = createNewGame();
+    state.version = 6;
+    beginExpedition(state);
+    state.run.player = { x: 5, y: 5 };
+    state.run.guard = { guardId: "rolf", pos: { x: 9, y: 9 }, hp: 4, maxHp: 8, damage: 2 };
+    state.run.floorStates = {
+      "1": { floor: 1, map: structuredClone(state.run.map), player: { x: 3, y: 4 }, enemies: [], items: [], chests: [], traps: [], bodies: [], guard: { guardId: "rolf", pos: { x: 2, y: 2 }, hp: 4, maxHp: 8, damage: 2 }, shoveCooldown: 0, turn: 0 },
+    };
+
+    const migrated = migrateSaveState(state);
+
+    expect(migrated.run?.guard).toMatchObject({ pos: { x: 5, y: 5 }, mode: "covering", safeTurns: 0 });
+    expect(migrated.run?.floorStates["1"]?.guard).toMatchObject({ pos: { x: 3, y: 4 }, mode: "covering", safeTurns: 0 });
   });
   it("normalizes current positions using a custom 32px home grid and marker", () => {
     const map=createManualMap("home",{width:4,height:4,tileSize:32}); map.collision.fill(true); addMarker(map,{id:"spawn",kind:"homeSpawn",x:2,y:2});

@@ -13,23 +13,15 @@ export function initializeMerchantWorld(state: GameState): void {
   state.nextNpcId = 1;
   state.refusedOffers = {};
   state.singularItemIds = [];
-  refreshDailyVisitors(state);
+  state.visitorNpcIds = [];
 }
 
 export function refreshDailyVisitors(state: GameState): void {
-  // A visitor from the previous day returns to the general town pool before
-  // today's deterministic draw is made.
   for (const npc of state.npcs) {
     if (npc.status === "visiting") npc.status = "inTown";
   }
-  const candidates = state.npcs.filter((npc) => npc.status === "inTown");
-  const ranked = candidates
-    .map((npc) => ({ npc, order: hash(`${state.campaignId}:${state.day}:${npc.id}`) }))
-    .sort((a, b) => a.order - b.order);
-  state.visitorNpcIds = ranked.slice(0, 2).map(({ npc }) => npc.id);
-  for (const npc of state.npcs) {
-    if (state.visitorNpcIds.includes(npc.id) && npc.status === "inTown") npc.status = "visiting";
-  }
+  // Visitors are intentionally unknown until an opened shop summons them.
+  state.visitorNpcIds = [];
 }
 
 export function registerWorldItem(state: GameState, instance: ItemInstance): ItemInstance {
@@ -107,7 +99,8 @@ export function offerShopItem(state: GameState, itemId: string, npcId: string, a
   const npc = state.npcs.find((entry) => entry.id === npcId);
   const price = Math.max(1, Math.min(99_999, Math.floor(askingPrice)));
   const refusalKey = `${npcId}:${itemId}`;
-  if (!item || !npc || item.location?.kind !== "shopStock" || !state.visitorNpcIds.includes(npcId)) return { accepted: false, message: "その取引はできない。" };
+  const isCurrentCustomer = state.shopSession.currentNpcId === npcId && state.shopSession.status === "serving";
+  if (!item || !npc || item.location?.kind !== "shopStock" || (!isCurrentCustomer && !state.visitorNpcIds.includes(npcId))) return { accepted: false, message: "その取引はできない。" };
   if (state.refusedOffers[refusalKey] === state.day) return { accepted: false, message: `${npc.name}には明日まで同じ品を提示できない。` };
   if (price > saleLimit(npc, item)) {
     state.refusedOffers[refusalKey] = state.day;

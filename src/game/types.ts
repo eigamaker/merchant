@@ -5,6 +5,8 @@ export type MapKind = "home" | "dungeon";
 export type Location = MapKind;
 export type QuestStatus = "locked" | "available" | "active" | "readyToReport" | "complete";
 export type Facing = "up" | "down" | "left" | "right";
+export type TimeSlot = "morning" | "afternoon" | "evening" | "night";
+export type SupplyKind = "smokeBombs" | "returnStones" | "provisions";
 
 export interface Vec {
   x: number;
@@ -114,6 +116,7 @@ export interface GuardDefinition {
   baseMaxHp: number;
   damage: number;
   trait: "standard" | "scout";
+  retreatHpRatio: number;
   textureKey: string;
   description: string;
 }
@@ -133,6 +136,8 @@ export interface ActiveGuard {
   hp: number;
   maxHp: number;
   damage: number;
+  mode: "covering" | "retreated";
+  safeTurns: number;
 }
 
 export type NpcProfession = "swordsman" | "scout" | "mercenary" | "merchant" | "blacksmith" | "apothecary" | "noble" | "townsperson";
@@ -153,6 +158,7 @@ export interface NpcRecord {
   maxHp?: number;
   damage?: number;
   trait?: "standard" | "scout";
+  retreatHpRatio?: number;
 }
 
 export interface EscortCommission {
@@ -247,8 +253,33 @@ export interface DungeonRun {
   shoveCooldown: number;
   highestFloor: number;
   turn: number;
+  /** One unit per normal dungeon action; stairs cost five. */
+  timeUnits: number;
+  /** Number of 25-unit bands already charged for food and world time. */
+  settledTimeBands: number;
   /** Keyed by floor number. The current floor is stored just before moving away. */
   floorStates: Record<string, DungeonFloorSnapshot>;
+}
+
+export interface EquipmentState {
+  weaponItemId?: string;
+  armorItemId?: string;
+}
+
+export interface ShopSession {
+  day: number;
+  status: "closed" | "movingToCounter" | "waiting" | "serving" | "finished";
+  /** Persisted for reloads, but never displayed before each NPC enters. */
+  queueNpcIds: string[];
+  currentNpcId?: string;
+  servedNpcIds: string[];
+}
+
+export interface DailySupplyStock {
+  day: number;
+  smokeBombs: number;
+  returnStones: number;
+  provisions: number;
 }
 
 export interface Customer {
@@ -284,15 +315,20 @@ export interface TimedEvent {
 }
 
 export interface GameState {
-  version: 5;
+  version: 7;
   campaignId: string;
   status: "active" | "gameOver";
   day: number;
+  timeSlot: TimeSlot;
   gold: number;
   hp: number;
   maxHp: number;
   returnStones: number;
   smokeBombs: number;
+  provisions: number;
+  equipment: EquipmentState;
+  shopSession: ShopSession;
+  dailySupplyStock: DailySupplyStock;
   location: Location;
   homePos: Vec;
   /** Legacy editor revision retained only for save migration compatibility. */
@@ -338,6 +374,7 @@ export type DungeonEvent =
   | { type: "shove"; enemyId: string; from: Vec; to: Vec; success: boolean }
   | { type: "attack"; attackerId: string; targetId: string; damage: number }
   | { type: "defeated"; actorId: string }
+  | { type: "guardMode"; guardId: string; mode: ActiveGuard["mode"] }
   | { type: "pickup"; itemId: string }
   | { type: "message"; text: string };
 
@@ -348,6 +385,7 @@ export interface TurnResult {
 
 export type DungeonCommand =
   | { type: "move"; direction: Vec }
+  | { type: "attack"; direction: Vec }
   | { type: "shove"; direction: Vec }
   | { type: "wait" }
   | { type: "smoke" }

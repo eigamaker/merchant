@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { beginExpedition, createItem, createNewGame, waitTurn } from "./engine";
 import { ITEM_VISUALS, MERCHANT_ITEM_DEFINITIONS, NPC_APPEARANCES } from "./merchantContent";
-import { cancelEscortCommission, createGeneratedDeadAdventurer, offerShopItem, postEscortCommission, refreshDailyVisitors } from "./merchantEconomy";
+import { cancelEscortCommission, createGeneratedDeadAdventurer, offerShopItem, postEscortCommission } from "./merchantEconomy";
+import { startShopSession, summonNextCustomer } from "./merchantSystems";
 
-describe("v5 merchant world", () => {
+describe("v6 merchant world", () => {
   it("defines 15 replaceable item visuals and eight stable NPC appearances", () => {
     expect(Object.keys(MERCHANT_ITEM_DEFINITIONS)).toHaveLength(15);
     expect(new Set(Object.values(MERCHANT_ITEM_DEFINITIONS).map((item) => item.category))).toEqual(
@@ -13,21 +14,27 @@ describe("v5 merchant world", () => {
 
     const state = createNewGame();
     expect(state.npcs).toHaveLength(8);
-    expect(state.visitorNpcIds).toHaveLength(2);
+    expect(state.visitorNpcIds).toHaveLength(0);
     expect(state.npcs.every((npc) => Boolean(NPC_APPEARANCES[npc.appearanceId]))).toBe(true);
     expect(Object.keys(state.itemsById)).toHaveLength(3);
   });
 
-  it("refreshes exactly two visitors and excludes unavailable NPCs", () => {
+  it("keeps customers hidden until opening and excludes unavailable NPCs", () => {
     const state = createNewGame();
     const unavailable = state.npcs[0]!;
     unavailable.status = "dead";
-    state.day += 1;
-    refreshDailyVisitors(state);
+    const stock = createItem(state, "iron-sword", 1);
+    state.store.push(stock);
+    state.display.push(stock.uuid);
+    stock.location = { kind: "shopStock" };
+    expect(startShopSession(state)).toBe(true);
+    expect(state.visitorNpcIds).toEqual([]);
+    state.shopSession.status = "waiting";
+    const customerId = summonNextCustomer(state);
 
-    expect(state.visitorNpcIds).toHaveLength(2);
+    expect(state.visitorNpcIds).toEqual([customerId]);
     expect(state.visitorNpcIds).not.toContain(unavailable.id);
-    expect(state.npcs.filter((npc) => npc.status === "visiting").map((npc) => npc.id).sort()).toEqual([...state.visitorNpcIds].sort());
+    expect(state.npcs.find((npc) => npc.id === customerId)?.status).toBe("visiting");
   });
 
   it("accepts and refunds an immediate escort commission", () => {

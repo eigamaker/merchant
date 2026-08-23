@@ -39,7 +39,8 @@ export interface CraftpixActorDefinition {
   enemyStats?: { baseHp: number; hpPerFloor: number; damage: number };
 }
 
-const directions = ["down", "left", "right", "up"] as const;
+// Craftpix top-down sheets are authored front, back, left, right.
+const directions = ["down", "up", "left", "right"] as const;
 const clip = (action: ActorAction, path: string, columns: number, frameRate: number, repeat = -1, frameWidth = 64, frameHeight = 64): CraftpixActorClip => ({
   action,
   path,

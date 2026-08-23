@@ -8,7 +8,7 @@ import {
   DUNGEON_OBJECT_FRAMES,
 } from "../game/assets";
 import { CRAFTPIX_ENEMY_ACTORS, CRAFTPIX_PLAYER_ACTOR, actorFrame, type ActorAction, type ActorDirection, type CraftpixActorDefinition } from "../game/craftpixActors";
-import { ACTOR_CATALOG, actorDefinition } from "../game/actorCatalog";
+import { ACTOR_CATALOG, actorDefinition, actorSupportsDirectionalMovement } from "../game/actorCatalog";
 import { CRAFTPIX_UI } from "../game/craftpixUi";
 import {
   DIRECTION,
@@ -22,6 +22,8 @@ import {
   dropItem,
   guardDefinition,
   guardFee,
+  guardRetreatRatio,
+  guardRetreatThreshold,
   hireGuard,
   inspectBody,
   isQuestItemProtected,
@@ -39,7 +41,6 @@ import {
   tryOpenChest,
   tryPickup,
   tryStairs,
-  useSmokeBomb,
 } from "../game/engine";
 import { SaveRepository, type SaveSlot } from "../game/save";
 import { HOME_POI, HOME_SPAWN, createHomeMap } from "../game/homeMap";
@@ -49,6 +50,21 @@ import { compileMap, loadTrialMap, loadTrialMapPack } from "../game/mapDocument"
 import { MAP_ASSET_CATALOG } from "../game/mapAssetCatalog.generated";
 import { MISSING_MAP_ASSET_TEXTURE, resolveMapAssetFrame } from "../game/mapAssetRuntime";
 import { cancelEscortCommission, merchantItemName, offerShopItem, postEscortCommission } from "../game/merchantEconomy";
+import {
+  SUPPLY_RULES,
+  buySupply,
+  canOpenShop,
+  closeShopSession,
+  equipItem,
+  finishCurrentCustomer,
+  isShopSessionActive,
+  playerAttackPower,
+  playerDefensePower,
+  restUntilMorning,
+  startShopSession,
+  summonNextCustomer,
+  unequipItem,
+} from "../game/merchantSystems";
 import { ITEM_VISUALS, MERCHANT_ITEM_DEFINITIONS, NPC_APPEARANCES } from "../game/merchantContent";
 import type { DungeonCommand, DungeonEvent, GameState, ItemInstance, MenuChoice, NpcRecord, Vec } from "../game/types";
 const ALL_CRAFTPIX_ACTORS: readonly CraftpixActorDefinition[] = Object.values(ACTOR_CATALOG);
@@ -58,10 +74,40 @@ const PLACEHOLDER_TILE = 16;
 const DUNGEON_LEGACY_TILE = 16;
 const LEGACY_ACTOR_SCALE = 0.9;
 const LEGACY_ACTOR_ORIGIN_Y = 0.94;
-const GRID_W = 21;
-const GRID_H = 12;
-const MAP_W = GRID_W * VIEWPORT_BASE_TILE;
-const MAP_H = GRID_H * VIEWPORT_BASE_TILE;
+const MAP_W = 448;
+const MAP_H = 288;
+const LOG_Y = 288;
+const LOG_H = 72;
+const PANEL_X = 448;
+const PANEL_W = 192;
+
+const SHORTCUTS = {
+  investigate: "E",
+  inventory: "R",
+  talk: "T",
+  shop: "F",
+  menu: "Tab / Esc",
+  attack: "Space",
+  shove: "Q",
+} as const;
+const HOME_CONTROL_LINES = [
+  "移動: 矢印 / WASD",
+  `${SHORTCUTS.investigate}: 調べる`,
+  `${SHORTCUTS.talk}: 話す`,
+  `${SHORTCUTS.inventory}: インベントリ`,
+  `${SHORTCUTS.shop}: 開店・閉店`,
+  `${SHORTCUTS.menu}: メニュー`,
+];
+const DUNGEON_CONTROL_LINES = [
+  "移動・向き変更: 矢印 / WASD",
+  `${SHORTCUTS.investigate}: 足元を調べる`,
+  `${SHORTCUTS.attack}: 正面を攻撃`,
+  `${SHORTCUTS.shove}: 正面を押し返す`,
+  `${SHORTCUTS.inventory}: インベントリ`,
+  `${SHORTCUTS.menu}: メニュー`,
+];
+const HOME_SHORTCUT_HINT = `${SHORTCUTS.investigate} 調べる　${SHORTCUTS.talk} 話す　${SHORTCUTS.inventory} インベントリ　${SHORTCUTS.shop} 開店　${SHORTCUTS.menu} メニュー`;
+const DUNGEON_SHORTCUT_HINT = `${SHORTCUTS.investigate} 調べる　${SHORTCUTS.attack} 攻撃　${SHORTCUTS.shove} 押し返し　${SHORTCUTS.inventory} インベントリ　${SHORTCUTS.menu} メニュー`;
 
 type HomePoint = { id: string; name: string; kind: "entrance" | "shop" | "guild" | "visitors" | "customer"; pos: { x: number; y: number }; customerId?: string };
 const HOME_POINTS: HomePoint[] = [
@@ -70,7 +116,7 @@ const HOME_POINTS: HomePoint[] = [
   { id: "guild", name: "依頼・探索準備", kind: "guild", pos: HOME_POI.preparation },
   { id: "visitors", name: "来客", kind: "visitors", pos: HOME_POI.visitors },
 ];
-const PANEL_X = MAP_W + 8;
+type InventoryTab = "bag" | "equipment" | "storage" | "display";
 
 type Modal = {
   title: string;
@@ -102,6 +148,7 @@ export class MerchantScene extends Phaser.Scene {
   private state: GameState = createNewGame();
   private homeMap = createHomeMap();
   private modal?: Modal;
+  private inventoryView?: { tab: InventoryTab; selectedId?: string };
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private readonly saves = new SaveRepository();
   private gameStarted = false;
@@ -171,17 +218,14 @@ export class MerchantScene extends Phaser.Scene {
       s: Phaser.Input.Keyboard.KeyCodes.S,
       d: Phaser.Input.Keyboard.KeyCodes.D,
       enter: Phaser.Input.Keyboard.KeyCodes.ENTER,
+      e: Phaser.Input.Keyboard.KeyCodes.E,
+      f: Phaser.Input.Keyboard.KeyCodes.F,
+      r: Phaser.Input.Keyboard.KeyCodes.R,
+      t: Phaser.Input.Keyboard.KeyCodes.T,
+      tab: Phaser.Input.Keyboard.KeyCodes.TAB,
       space: Phaser.Input.Keyboard.KeyCodes.SPACE,
       escape: Phaser.Input.Keyboard.KeyCodes.ESC,
-      i: Phaser.Input.Keyboard.KeyCodes.I,
-      l: Phaser.Input.Keyboard.KeyCodes.L,
       q: Phaser.Input.Keyboard.KeyCodes.Q,
-      r: Phaser.Input.Keyboard.KeyCodes.R,
-      h: Phaser.Input.Keyboard.KeyCodes.H,
-      z: Phaser.Input.Keyboard.KeyCodes.Z,
-      f1: Phaser.Input.Keyboard.KeyCodes.F1,
-      f2: Phaser.Input.Keyboard.KeyCodes.F2,
-      f3: Phaser.Input.Keyboard.KeyCodes.F3,
     }) as Record<string, Phaser.Input.Keyboard.Key>;
     this.createPlaceholderTextures();
     this.createActorAnimations();
@@ -203,7 +247,7 @@ export class MerchantScene extends Phaser.Scene {
         const entrance = trial.markers.find((marker) => marker.kind === "stairsUp");
         this.state = createNewGame();
         this.state.location = "dungeon";
-        this.state.run = { seed: Date.now(), floor: trial.floor, map, player: { x: entrance?.x ?? map.stairsUp.x, y: entrance?.y ?? map.stairsUp.y }, enemies: [], items: [], chests: [], traps: [], bodies: [], shoveCooldown: 0, highestFloor: trial.floor, turn: 0, floorStates: {} };
+        this.state.run = { seed: Date.now(), floor: trial.floor, map, player: { x: entrance?.x ?? map.stairsUp.x, y: entrance?.y ?? map.stairsUp.y }, enemies: [], items: [], chests: [], traps: [], bodies: [], shoveCooldown: 0, highestFloor: trial.floor, turn: 0, timeUnits: 0, settledTimeBands: 0, floorStates: {} };
         this.gameStarted = true;
         this.render();
         return;
@@ -224,7 +268,19 @@ export class MerchantScene extends Phaser.Scene {
       if (!this.gameOverHandled) this.showGameOver();
       return;
     }
-    if (this.gameStarted && this.just("escape")) {
+    if (this.gameStarted && this.inventoryView && (this.just("escape") || this.just("r"))) {
+      this.inventoryView = undefined;
+      this.render();
+      return;
+    }
+    if (this.gameStarted && this.inventoryView && this.just("tab")) {
+      this.inventoryView = undefined;
+      this.openSystemMenu();
+      this.render();
+      return;
+    }
+    if (this.gameStarted && this.inventoryView) return;
+    if (this.gameStarted && (this.just("escape") || this.just("tab"))) {
       if (this.modal) {
         this.modal = undefined;
         this.render();
@@ -355,6 +411,11 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private updateHome(delta: number): void {
+    if (isShopSessionActive(this.state)) {
+      if (this.just("r")) this.openInventory();
+      if (this.just("f")) this.closeActiveShop();
+      return;
+    }
     let moved = false;
     const tapHorizontal = Number(this.just("right") || this.just("d")) - Number(this.just("left") || this.just("a"));
     const tapVertical = Number(this.just("down") || this.just("s")) - Number(this.just("up") || this.just("w"));
@@ -377,19 +438,14 @@ export class MerchantScene extends Phaser.Scene {
       moved = next.x !== this.state.homePos.x || next.y !== this.state.homePos.y;
       this.state.homePos = next;
     }
-    const interact = this.just("enter") || this.just("space");
-    const inventory = this.just("i");
-    const ledger = this.just("l");
-    const quest = this.just("q");
-    const help = this.just("h");
-    if (interact) this.interactHome();
+    const investigate = this.just("e");
+    const talk = this.just("t");
+    const inventory = this.just("r");
+    const shop = this.just("f");
+    if (investigate) this.investigateHome();
+    if (talk) this.talkHome();
     if (inventory) this.openInventory();
-    if (ledger) this.openLedger();
-    if (quest) this.openQuestBoard();
-    if (help) this.openHelp();
-    if (this.just("f1")) void this.saveManual("manual-1");
-    if (this.just("f2")) void this.saveManual("manual-2");
-    if (this.just("f3")) void this.saveManual("manual-3");
+    if (shop) this.openShopForDay();
     if (moved) {
       this.playHomePlayerMotion(horizontal, vertical);
       this.updateHomePresentation();
@@ -398,7 +454,7 @@ export class MerchantScene extends Phaser.Scene {
       if (!this.playCraftpixActor(this.homePlayer, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing, true, this.homeScale())) this.homePlayer.play(`player.idle-${this.playerFacing}`, true);
     }
     this.updateHomeNpcs(delta);
-    if (interact || inventory || ledger || quest || help) this.render();
+    if (investigate || talk || inventory || shop) this.render();
   }
 
   private updateDungeon(): void {
@@ -411,18 +467,13 @@ export class MerchantScene extends Phaser.Scene {
     else if (this.just("down") || this.just("s")) { this.playerFacing = "down"; events.push(...movePlayer(this.state, DIRECTION.down).events); acted = true; }
     else if (this.just("left") || this.just("a")) { this.playerFacing = "left"; events.push(...movePlayer(this.state, DIRECTION.left).events); acted = true; }
     else if (this.just("right") || this.just("d")) { this.playerFacing = "right"; events.push(...movePlayer(this.state, DIRECTION.right).events); acted = true; }
-    if (this.just("enter")) { this.interactDungeon(); acted = true; }
-    if (this.just("space")) { this.openDungeonActionMenu(); acted = true; }
-    if (this.just("r")) {
-      events.push(...performDungeonCommand(this.state, { type: "return" }).events);
-      acted = true;
-    }
-    if (this.just("z")) { events.push(...useSmokeBomb(this.state).events); acted = true; }
-    if (this.just("i")) this.openInventory();
-    if (this.just("l")) this.openLedger();
-    if (this.just("h")) this.openHelp();
+    if (this.just("e")) { this.interactDungeon(); acted = true; }
+    if (this.just("space")) { events.push(...performDungeonCommand(this.state, { type: "attack", direction: this.facingDirection() }).events); acted = true; }
+    if (this.just("q")) { events.push(...performDungeonCommand(this.state, { type: "shove", direction: this.facingDirection() }).events); acted = true; }
+    const inventory = this.just("r");
+    if (inventory) this.openInventory();
     if (acted) this.captureDungeonWalkAnimations(beforePlayer, beforeEnemies, beforeGuard);
-    if (acted || this.just("i") || this.just("l") || this.just("h")) {
+    if (acted || inventory) {
       this.render();
       this.animateDungeonEvents(events);
     }
@@ -458,11 +509,24 @@ export class MerchantScene extends Phaser.Scene {
     }
   }
 
-  private interactHome(): void {
+  private nearbyHomePoint(filter: (point: HomePoint) => boolean): HomePoint | undefined {
     const interactionDistance = 30 * this.homeScale();
-    const poi = this.homePoints().find((entry) => distanceSquared(this.poiPosition(entry), this.state.homePos) <= interactionDistance * interactionDistance);
+    return this.homePoints().filter(filter).find((entry) => distanceSquared(this.poiPosition(entry), this.state.homePos) <= interactionDistance * interactionDistance);
+  }
+
+  private talkHome(): void {
+    const npc = this.nearbyHomePoint((point) => point.kind === "customer");
+    if (npc?.customerId) {
+      this.openNpcVisitor(npc.customerId);
+      return;
+    }
+    this.state.message = "近くに話せる相手はいない。";
+  }
+
+  private investigateHome(): void {
+    const poi = this.nearbyHomePoint((point) => point.kind !== "customer");
     if (!poi) {
-      this.state.message = "近くに話せる相手や施設はない。";
+      this.state.message = "近くに調べられる施設はない。";
       return;
     }
     switch (poi.kind) {
@@ -482,7 +546,6 @@ export class MerchantScene extends Phaser.Scene {
         ], [{ label: "閉じる", action: () => this.closeMenu() }]);
         return;
       case "customer":
-        if (poi.customerId) this.openNpcVisitor(poi.customerId);
         return;
     }
   }
@@ -565,17 +628,20 @@ export class MerchantScene extends Phaser.Scene {
     const active = this.state.run?.guard;
     if (!active) {
       this.openMenu("護衛状態", ["この遠征に同行している護衛はいない。", "落とした剣の依頼後、ギルドで雇用できる。"], [
-        { label: "戻る", action: () => this.openDungeonActionMenu() },
+        { label: "閉じる", action: () => this.closeMenu() },
       ]);
       return;
     }
     const npc = this.state.npcs.find((entry) => entry.id === active.guardId);
     const definition = guardDefinition(active.guardId);
+    const retreatPercent = Math.round(guardRetreatRatio(this.state, active.guardId) * 100);
+    const mode = active.mode === "covering" ? "カバー中" : `後退中（安全確認 ${active.safeTurns}/2）`;
     this.openMenu("護衛状態", [
       `${npc?.name ?? definition?.name ?? active.guardId} — ${npc ? this.professionLabel(npc) : definition?.title ?? "護衛"}`,
-      `HP ${active.hp}/${active.maxHp}　攻撃 ${active.damage}`,
-      npc ? "主人公に同行し、近くの敵と自動で戦う。HPが0になると死亡する。" : definition?.description ?? "主人公を自動で守る。",
-    ], [{ label: "戻る", action: () => this.openDungeonActionMenu() }]);
+      `HP ${active.hp}/${active.maxHp}　攻撃 ${active.damage}　${mode}`,
+      `HPが${guardRetreatThreshold(this.state, active)}（${retreatPercent}%）以下になると後退。敵が6マス外に2ターンいれば復帰する。`,
+      npc ? "主人公と同じ隊列で近くの敵を自動攻撃する。致命傷を受けると死亡する。" : definition?.description ?? "主人公を自動で守る。",
+    ], [{ label: "閉じる", action: () => this.closeMenu() }]);
   }
 
   private openBodyMenu(bodyId: string): void {
@@ -634,8 +700,7 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private async openTitle(): Promise<void> {
-    const available = await this.saves.availableSlots();
-    const choices: MenuChoice[] = [
+    const choices = (available: SaveSlot[]): MenuChoice[] => [
       { label: "新しい商人として始める", action: () => { this.state = createNewGame(); this.gameOverHandled = false; this.gameStarted = true; this.closeMenu(); } },
       ...(["autosave", "manual-1", "manual-2", "manual-3"] as SaveSlot[]).map((slot) => ({
         label: slot === "autosave" ? "自動保存を再開" : `手動保存 ${slot.at(-1)} を読み込む`,
@@ -643,7 +708,11 @@ export class MerchantScene extends Phaser.Scene {
         action: () => { void this.loadSlot(slot); },
       })),
     ];
-    this.openMenu("Dungeon Curio Merchant", ["命懸けで珍品を持ち帰り、価値を見抜く商人RPG。", "自動保存1枠・手動保存3枠。"], choices);
+    this.openMenu("Dungeon Curio Merchant", [], choices([]));
+    this.render();
+    const available = await this.saves.availableSlots();
+    if (this.gameStarted) return;
+    this.openMenu("Dungeon Curio Merchant", [], choices(available));
     this.render();
   }
 
@@ -688,40 +757,87 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private openHelp(): void {
-    const controls = this.state.location === "home"
-      ? ["移動: 矢印 / WASD", "決定・会話: Enter / Space", "Esc: メニュー", "I: 持ち物  L: 商人の記録", "Q: 護衛募集  F1〜F3: 手動保存"]
-      : ["移動・向き変更: 矢印 / WASD", "Enter: 足元を調べる", "Space: 行動（押し返す・道具・待機）", "Z: 煙玉  R: 帰還石", "Esc: メニュー  I: 持ち物"];
+    const controls = this.state.location === "home" ? HOME_CONTROL_LINES : DUNGEON_CONTROL_LINES;
     this.openMenu("操作", controls, [{ label: "閉じる", action: () => this.closeMenu() }]);
   }
 
   private openInventory(): void {
-    const items = this.state.inventory;
-    if (items.length === 0) {
-      this.openMenu("持ち物", ["持ち物は空だ。", `容量 ${currentBulk(this.state)} / ${INVENTORY_CAPACITY}`], [{ label: "閉じる", action: () => this.closeMenu() }]);
-      return;
-    }
-    this.openMenu("持ち物", [`容量 ${currentBulk(this.state)} / ${INVENTORY_CAPACITY}`, "品を選ぶと詳細を確認できる。"], [
-      ...items.map((item) => ({ label: `${isQuestItemProtected(this.state, item) ? "◆" : ""}${itemName(item)} [${itemBulk(item)}]`, action: () => this.openItemMenu(item) })),
-      { label: "閉じる", action: () => this.closeMenu() },
-    ]);
+    this.modal = undefined;
+    this.inventoryView = { tab: this.inventoryView?.tab ?? "bag", selectedId: this.inventoryView?.selectedId ?? this.state.inventory[0]?.uuid };
+    this.render();
   }
 
-  private openItemMenu(item: ItemInstance): void {
-    const definition = MERCHANT_ITEM_DEFINITIONS[item.definitionId];
-    const lines = [
-      itemName(item),
-      `分類: ${definition ? this.categoryLabel(definition.category) : item.definitionId}`,
-      `希少度: ${definition?.rarity ?? "旧商品"}　容量: ${itemBulk(item)}`,
-      definition?.description ?? "",
-    ];
-    const choices: MenuChoice[] = [];
-    if (this.state.location === "home") {
-      choices.push({ label: "店へ保管する", action: () => { moveToStore(this.state, item); this.openStore(); } });
-    } else {
-      choices.push({ label: "足元に置く", action: () => { dropItem(this.state, item.uuid); this.openInventory(); } });
+  private openShopForDay(): void {
+    if (!startShopSession(this.state)) {
+      const reason = this.state.message;
+      this.openMenu("開店できません", [
+        reason,
+        "開店できる時間は朝または昼。保管庫の品を店頭商品に設定しておく必要がある。",
+      ], [
+        {
+          label: "在庫・店頭商品を確認する",
+          action: () => {
+            this.modal = undefined;
+            this.inventoryView = { tab: this.state.store.length ? "storage" : "bag", selectedId: this.state.store[0]?.uuid ?? this.state.inventory[0]?.uuid };
+            this.render();
+          },
+        },
+        { label: "閉じる", action: () => this.closeMenu() },
+      ]);
+      this.render();
+      return;
     }
-    choices.push({ label: "戻る", action: () => this.openInventory() });
-    this.openMenu("品物の詳細", lines, choices);
+    const counter = this.homeMap.markers.find((marker) => marker.kind === "shopkeeperCounter")
+      ?? this.homeMap.markers.find((marker) => marker.kind === "homeStorage");
+    this.render();
+    const target = counter ? { x: counter.x * this.homeMap.tileSize + this.homeMap.tileSize / 2, y: counter.y * this.homeMap.tileSize + this.homeMap.tileSize / 2 } : { ...this.state.homePos };
+    const ready = (): void => {
+      this.state.homePos = target;
+      this.state.shopSession.status = "waiting";
+      this.render();
+      this.time.delayedCall(900, () => this.callNextCustomer());
+    };
+    if (this.homePlayer) this.tweens.add({ targets: this.homePlayer, x: target.x, y: target.y + this.homeMap.tileSize / 2, duration: 550, ease: "Sine.InOut", onComplete: ready });
+    else ready();
+  }
+
+  private callNextCustomer(): void {
+    const npcId = summonNextCustomer(this.state);
+    if (!npcId) this.state.message = "本日の来客はこれで終わりだ。閉店して在庫整理をしよう。";
+    this.render();
+    if (npcId) {
+      const sprite = this.homeWorld?.getByName(`customer:${npcId}`) as Phaser.GameObjects.Sprite | undefined;
+      const entry = this.homeMap.markers.find((marker) => marker.kind === "homeVisitors");
+      if (sprite && entry) {
+        sprite.setPosition(entry.x * this.homeMap.tileSize + this.homeMap.tileSize / 2, entry.y * this.homeMap.tileSize + this.homeMap.tileSize * 1.5);
+        this.tweens.add({ targets: sprite, x: this.poiPosition(this.homePoints().find((point) => point.customerId === npcId)!).x, y: this.poiPosition(this.homePoints().find((point) => point.customerId === npcId)!).y + this.homeMap.tileSize / 2, duration: 700, ease: "Sine.InOut", onComplete: () => { this.openNpcVisitor(npcId); this.render(); } });
+      } else this.time.delayedCall(350, () => { this.openNpcVisitor(npcId); this.render(); });
+    }
+  }
+
+  private finishCustomerAndContinue(): void {
+    finishCurrentCustomer(this.state);
+    this.modal = undefined;
+    if (this.state.display.length === 0) { this.closeActiveShop(); return; }
+    this.render();
+    this.time.delayedCall(900, () => this.callNextCustomer());
+  }
+
+  private closeActiveShop(): void {
+    closeShopSession(this.state);
+    this.modal = undefined;
+    this.render();
+  }
+
+  private openSupplyShop(): void {
+    this.openMenu("街の仕入先", ["探索用品も鞄容量を使う。携行食料は3食で容量1。", `所持金 ${this.state.gold}G`], [
+      ...(["provisions", "smokeBombs", "returnStones"] as const).map((kind) => ({
+        label: `${SUPPLY_RULES[kind].supplier}: ${SUPPLY_RULES[kind].label} ${SUPPLY_RULES[kind].price}G（残${this.state.dailySupplyStock[kind]}）`,
+        disabled: this.state.dailySupplyStock[kind] <= 0,
+        action: () => { buySupply(this.state, kind, 1, INVENTORY_CAPACITY); this.openSupplyShop(); },
+      })),
+      { label: "閉じる", action: () => this.closeMenu() },
+    ]);
   }
 
   private openStore(): void {
@@ -763,6 +879,7 @@ export class MerchantScene extends Phaser.Scene {
     if (this.state.escortCommission?.npcId === npcId && this.state.escortCommission.status === "accepted") {
       this.openMenu(`${npc.name} — ${this.professionLabel(npc)}`, [
         `護衛料 ${this.state.escortCommission.offeredFee}G 支払済み`,
+        `危険時の後退基準: HP ${Math.round(guardRetreatRatio(this.state, npc.id) * 100)}%以下`,
         "出発すると契約の取消と返金はできない。",
       ], [
         { label: "一緒にダンジョンへ出発", action: () => { beginExpedition(this.state); this.closeMenu(); } },
@@ -778,7 +895,7 @@ export class MerchantScene extends Phaser.Scene {
       stock.length ? "商品を選び、こちらから販売価格を提示する。" : "店頭に販売品がない。",
     ], [
       ...stock.map((item) => ({ label: `見せる: ${merchantItemName(item) ?? itemName(item)}`, action: () => this.openPriceOffer(item, npc, MERCHANT_ITEM_DEFINITIONS[item.definitionId]?.baseValue ?? 100) })),
-      { label: "閉じる", action: () => this.closeMenu() },
+      { label: this.state.shopSession.currentNpcId === npc.id ? "接客を終える" : "閉じる", action: () => this.state.shopSession.currentNpcId === npc.id ? this.finishCustomerAndContinue() : this.closeMenu() },
     ]);
   }
 
@@ -798,7 +915,7 @@ export class MerchantScene extends Phaser.Scene {
       { label: `${adjusted}Gで提示`, action: () => {
         const result = offerShopItem(this.state, item.uuid, npc.id, adjusted);
         this.state.message = result.message;
-        this.openMenu(result.accepted ? "売買成立" : "交渉不成立", [result.message], [{ label: "閉じる", action: () => this.closeMenu() }]);
+        this.openMenu(result.accepted ? "売買成立" : "交渉不成立", [result.message], [{ label: "接客を終える", action: () => this.finishCustomerAndContinue() }]);
       } },
       { label: "戻る", action: () => this.openNpcVisitor(npc.id) },
     ]);
@@ -828,7 +945,7 @@ export class MerchantScene extends Phaser.Scene {
     const current = this.state.escortCommission;
     if (current?.status === "accepted" && current.npcId) {
       const npc = this.state.npcs.find((entry) => entry.id === current.npcId)!;
-      this.openMenu("護衛依頼", [`${npc.name}が${current.offeredFee}Gで受注済み。`, "店内の本人へ話しかけると一緒に出発できる。"], [
+      this.openMenu("護衛依頼", [`${npc.name}が${current.offeredFee}Gで受注済み。`, `後退基準: HP ${Math.round(guardRetreatRatio(this.state, npc.id) * 100)}%以下`, "店内の本人へ話しかけると一緒に出発できる。"], [
         { label: "依頼を取り消して返金", action: () => { cancelEscortCommission(this.state); this.openGuildMenu(); } },
         { label: "戻る", action: () => this.openGuildMenu() },
       ]);
@@ -900,7 +1017,7 @@ export class MerchantScene extends Phaser.Scene {
         const definition = guardDefinition(guard.id)!;
         const injured = (guard.injuredUntilDay ?? 0) > this.state.day;
         return {
-          label: `${definition.name} Lv${guard.level} HP${definition.baseMaxHp + guard.level - 1} 攻${definition.damage} — ${injured ? `${guard.injuredUntilDay}日目まで療養` : `${guardFee(this.state, guard.id)}G`}`,
+          label: `${definition.name} Lv${guard.level} HP${definition.baseMaxHp + guard.level - 1} 攻${definition.damage} 後退${Math.round(definition.retreatHpRatio * 100)}% — ${injured ? `${guard.injuredUntilDay}日目まで療養` : `${guardFee(this.state, guard.id)}G`}`,
           disabled: injured || this.state.hiredGuardId === guard.id,
           action: () => { hireGuard(this.state, guard.id); this.openGuardRoster(); },
         };
@@ -930,12 +1047,47 @@ export class MerchantScene extends Phaser.Scene {
     this.homeBackdrop = undefined;
     this.homeWorld = undefined;
     this.homePlayer = undefined;
+    if (!this.gameStarted) {
+      this.renderSplashScreen();
+      this.polishText();
+      return;
+    }
     if (this.state.location === "home") this.renderHome();
     else this.renderDungeon();
     this.renderHud();
-    if (this.modal) this.renderModal();
+    if (this.inventoryView) this.renderInventoryView();
+    else if (this.modal) this.renderModal();
     this.polishText();
     this.saveAuto();
+  }
+
+  private renderSplashScreen(): void {
+    const modal = this.modal;
+    this.add.rectangle(320, 180, 640, 360, 0x0d0b13);
+    this.add.rectangle(16, 16, 608, 328, 0x15111d).setOrigin(0).setStrokeStyle(2, 0xc49a66);
+    this.add.rectangle(154, 180, 246, 292, 0x211927).setStrokeStyle(1, 0x6d4d3e);
+    for (let index = 0; index < 7; index += 1) {
+      this.add.rectangle(50 + index * 34, 292 - (index % 3) * 9, 24, 52 + (index % 3) * 18, index % 2 ? 0x372535 : 0x493027).setOrigin(0.5, 1);
+    }
+    this.add.circle(80, 73, 33, 0xd3a75b, 0.12);
+    this.add.circle(80, 73, 22, 0xd3a75b, 0.16);
+    const playerTexture = this.craftpixActorTexture(CRAFTPIX_PLAYER_ACTOR) ?? ASSET_MANIFEST.player.textureKey;
+    const player = this.add.sprite(154, 244, playerTexture, 0);
+    if (!this.playCraftpixActor(player, CRAFTPIX_PLAYER_ACTOR, "idle", "down", true, 2.05)) player.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(1.8).play("player.idle-down");
+    this.add.text(304, 48, "DUNGEON", { fontSize: "14px", color: "#c8a76a", letterSpacing: 4 });
+    this.add.text(304, 70, "CURIO MERCHANT", { fontSize: "24px", color: "#ffe7ad" });
+    this.add.text(306, 105, "迷宮から珍品を持ち帰り、\n自宅兼店舗で価値をつけて売る。", { fontSize: "11px", color: "#cfc5bd", lineSpacing: 5 });
+    this.add.text(306, 148, "商人の物語を始める", { fontSize: "12px", color: "#e6c582" });
+    if (modal) modal.choices.forEach((choice, index) => {
+      const selected = index === modal.index;
+      const y = 177 + index * 29;
+      const hit = this.add.rectangle(304, y, 286, 24, selected ? 0xa76f49 : 0x2a202b).setOrigin(0).setStrokeStyle(1, choice.disabled ? 0x4e4652 : 0x8f6c51)
+        .setInteractive({ useHandCursor: !choice.disabled });
+      this.add.text(314, y + 5, `${selected ? "▶ " : "　"}${choice.label}`, { fontSize: "10px", color: choice.disabled ? "#69616e" : selected ? "#171119" : "#eee0ca" });
+      hit.on("pointerover", () => { if (this.modal && !choice.disabled) { this.modal.index = index; this.render(); } });
+      hit.on("pointerdown", () => { if (this.modal && !choice.disabled) choice.action(); });
+    });
+    this.add.text(306, 322, "↑↓ / マウスで選択　Enter / クリックで決定", { fontSize: "10px", color: "#918798" });
   }
 
   private polishText(): void {
@@ -971,8 +1123,12 @@ export class MerchantScene extends Phaser.Scene {
       world.add(label);
     }
     this.homeWorld = world;
+    this.dungeonMaskShape = this.make.graphics({ x: 0, y: 0 });
+    this.dungeonMaskShape.fillStyle(0xffffff).fillRect(0, 0, MAP_W, MAP_H);
+    const mask = this.dungeonMaskShape.createGeometryMask();
+    world.setMask(mask);
+    this.homeBackdrop?.setMask(mask);
     this.updateHomePresentation(true);
-    this.add.text(8, 8, `自宅兼店舗 — ${this.state.day}日目`, { fontSize: "12px", color: "#fff2d7", stroke: "#1b1620", strokeThickness: 1 });
   }
 
   private renderDungeon(): void {
@@ -984,12 +1140,20 @@ export class MerchantScene extends Phaser.Scene {
     this.updateDungeonPresentation();
   }
 
+  private dungeonPartyOffsets(mode: "covering" | "retreated" = "covering"): { player: Vec; guard: Vec } {
+    const facing = DIRECTION[this.playerFacing];
+    const front = { x: facing.x * 4, y: facing.y * 4 };
+    const back = { x: -front.x, y: -front.y };
+    return mode === "covering" ? { player: back, guard: front } : { player: front, guard: back };
+  }
+
   private renderDungeonAssets(world: Phaser.GameObjects.Container): void {
     const run = this.state.run;
     if (!run) return;
     const add = <T extends Phaser.GameObjects.GameObject>(object: T): T => { world.add(object); return object; };
     const tile = run.map.tileSize ?? DUNGEON_LEGACY_TILE;
     const center = tile / 2;
+    const partyOffsets = this.dungeonPartyOffsets(run.guard?.mode);
     const place = (x: number, y: number, texture: string, frame: number, alpha = 1): Phaser.GameObjects.Image => {
       const image = this.add.image(x * tile + center, y * tile + center, texture, frame).setDisplaySize(tile, tile).setAlpha(alpha);
       return add(image);
@@ -1062,24 +1226,47 @@ export class MerchantScene extends Phaser.Scene {
       const definition = guardDefinition(run.guard.guardId);
       const textureKey = craftpix ? (this.craftpixActorTexture(craftpix) ?? ASSET_MANIFEST.npc.textureKey) : definition?.textureKey ?? "actor.npc.scout";
       const direction = this.dungeonWalkAnimations.get(run.guard.guardId) ?? "down";
-      const sprite = this.add.sprite(run.guard.pos.x * tile + center, run.guard.pos.y * tile + tile, textureKey, 0).setName(`actor:${run.guard.guardId}`);
+      const sprite = this.add.sprite(run.guard.pos.x * tile + center + partyOffsets.guard.x, run.guard.pos.y * tile + tile + partyOffsets.guard.y, textureKey, 0).setName(`actor:${run.guard.guardId}`);
       if (!craftpix || !this.playCraftpixActor(sprite, craftpix, "idle", direction)) sprite.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE).play(`${textureKey}.idle-${direction}`);
+      if (run.guard.mode === "retreated") sprite.setTint(0x8b8791).setAlpha(0.72);
       add(sprite);
     }
     const playerTexture = this.craftpixActorTexture(CRAFTPIX_PLAYER_ACTOR) ?? ASSET_MANIFEST.player.textureKey;
-    const player = this.add.sprite(run.player.x * tile + center, run.player.y * tile + tile, playerTexture, 0).setName("actor:player");
+    const player = this.add.sprite(run.player.x * tile + center + (run.guard ? partyOffsets.player.x : 0), run.player.y * tile + tile + (run.guard ? partyOffsets.player.y : 0), playerTexture, 0).setName("actor:player");
     if (!this.playCraftpixActor(player, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing)) player.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE).play(`player.idle-${this.playerFacing}`);
     add(player);
+    if (run.guard?.mode === "covering") {
+      const guardSprite = world.getByName(`actor:${run.guard.guardId}`);
+      if (guardSprite) world.bringToTop(guardSprite);
+    }
     this.dungeonMaskShape = this.make.graphics({ x: 0, y: 0 });
     this.dungeonMaskShape.fillStyle(0xffffff).fillRect(0, 0, MAP_W, MAP_H);
     world.setMask(this.dungeonMaskShape.createGeometryMask());
-    this.add.text(8, 8, `深層ダンジョン 地下${run.floor}階 / ${run.turn}手 / 押返${run.shoveCooldown === 0 ? "可" : run.shoveCooldown}`, { fontSize: "12px", color: "#fff2d7", stroke: "#1b1620", strokeThickness: 1 });
   }
 
   private animateDungeonEvents(events: DungeonEvent[]): void {
     const world = this.dungeonWorld;
     if (!world || this.state.location !== "dungeon") return;
     const actor = (id: string): Phaser.GameObjects.Sprite | undefined => world.getByName(`actor:${id}`) as Phaser.GameObjects.Sprite | undefined;
+    const actorDefinitionFor = (id: string): CraftpixActorDefinition | undefined => {
+      if (id === "player") return CRAFTPIX_PLAYER_ACTOR;
+      const guard = this.state.run?.guard;
+      if (guard?.guardId === id) {
+        const npc = this.state.npcs.find((entry) => entry.id === id);
+        const appearance = npc ? NPC_APPEARANCES[npc.appearanceId] : undefined;
+        return appearance ? actorDefinition(appearance) : undefined;
+      }
+      const enemy = this.state.run?.enemies.find((entry) => entry.id === id);
+      return this.craftpixEnemyActor(id, enemy?.actorId);
+    };
+    const actorOffset = (id: string): Vec => {
+      const guard = this.state.run?.guard;
+      if (!guard) return { x: 0, y: 0 };
+      const offsets = this.dungeonPartyOffsets(guard.mode);
+      if (id === "player") return offsets.player;
+      if (id === guard.guardId) return offsets.guard;
+      return { x: 0, y: 0 };
+    };
     for (const event of events) {
       if (event.type === "move" || (event.type === "shove" && event.success)) {
         const sprite = actor(event.type === "move" ? event.actorId : event.enemyId);
@@ -1088,17 +1275,21 @@ export class MerchantScene extends Phaser.Scene {
         const to = event.to;
         const tile = this.state.run?.map.tileSize ?? DUNGEON_LEGACY_TILE;
         const center = tile / 2;
-        sprite.setPosition(from.x * tile + center, from.y * tile + tile);
-        this.tweens.add({ targets: sprite, x: to.x * tile + center, y: to.y * tile + tile, duration: event.type === "shove" ? 130 : 90, ease: "Quad.Out" });
+        const offset = actorOffset(event.type === "move" ? event.actorId : event.enemyId);
+        sprite.setPosition(from.x * tile + center + offset.x, from.y * tile + tile + offset.y);
+        this.tweens.add({ targets: sprite, x: to.x * tile + center + offset.x, y: to.y * tile + tile + offset.y, duration: event.type === "shove" ? 130 : 90, ease: "Quad.Out" });
       } else if (event.type === "shove" && !event.success) {
         const sprite = actor(event.enemyId);
         if (sprite) this.tweens.add({ targets: sprite, x: sprite.x + 2, duration: 45, yoyo: true, repeat: 1 });
+      } else if (event.type === "guardMode") {
+        const sprite = actor(event.guardId);
+        if (sprite) this.tweens.add({ targets: sprite, alpha: event.mode === "retreated" ? 0.72 : 1, duration: 160, yoyo: true, repeat: 1 });
       } else if (event.type === "attack") {
         const attacker = actor(event.attackerId);
         const target = actor(event.targetId);
         if (!attacker || !target) continue;
-        const attackerDefinition = event.attackerId === "player" ? CRAFTPIX_PLAYER_ACTOR : this.craftpixEnemyActor(event.attackerId, this.state.run?.enemies.find((enemy) => enemy.id === event.attackerId)?.actorId);
-        const targetDefinition = event.targetId === "player" ? CRAFTPIX_PLAYER_ACTOR : this.craftpixEnemyActor(event.targetId, this.state.run?.enemies.find((enemy) => enemy.id === event.targetId)?.actorId);
+        const attackerDefinition = actorDefinitionFor(event.attackerId);
+        const targetDefinition = actorDefinitionFor(event.targetId);
         const attackerDirection = this.dungeonWalkAnimations.get(event.attackerId) ?? this.playerFacing;
         const targetDirection = this.dungeonWalkAnimations.get(event.targetId) ?? "down";
         if (attackerDefinition) this.playCraftpixActor(attacker, attackerDefinition, "attack", attackerDirection, false);
@@ -1129,7 +1320,7 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private homePoints(): HomePoint[] {
-    const markerPosition = (kind: "homeSpawn" | "dungeonEntrance" | "homeStorage" | "homePreparation" | "homeVisitors", fallback: { x: number; y: number }) => {
+    const markerPosition = (kind: "homeSpawn" | "dungeonEntrance" | "homeStorage" | "homePreparation" | "homeVisitors" | "customerCounter", fallback: { x: number; y: number }) => {
       const marker = this.homeMap.markers.find((candidate) => candidate.kind === kind);
       return marker ? { x: marker.x, y: marker.y } : fallback;
     };
@@ -1150,6 +1341,7 @@ export class MerchantScene extends Phaser.Scene {
       ...(this.state.escortCommission?.status === "accepted" && this.state.escortCommission.npcId ? [this.state.escortCommission.npcId] : []),
     ])];
     const npcById = new Map(this.state.npcs.map((npc) => [npc.id, npc]));
+    const customerCounter = markerPosition("customerCounter", visitors);
     const customers = assignHomeVisitorCells(this.homeMap, visibleNpcIds, occupied).map(({ visitorId, pos }) => {
       const customer = npcById.get(visitorId)!;
       return {
@@ -1157,7 +1349,7 @@ export class MerchantScene extends Phaser.Scene {
         name: customer.name,
         kind: "customer" as const,
         customerId: customer.id,
-        pos,
+        pos: this.state.shopSession.currentNpcId === visitorId ? customerCounter : pos,
       };
     });
     const points = HOME_POINTS.map((point) => point.id === "entrance" ? { ...point, pos: entrance } : point.id === "shop" ? { ...point, pos: storage } : point.id === "guild" ? { ...point, pos: preparation } : point.id === "visitors" ? { ...point, pos: visitors } : point);
@@ -1188,7 +1380,10 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private craftpixEnemyActor(enemyId: string, actorId?: string): CraftpixActorDefinition | undefined {
-    if (actorId) return actorDefinition(actorId);
+    if (actorId) {
+      const actor = actorDefinition(actorId);
+      return actorSupportsDirectionalMovement(actor) ? actor : undefined;
+    }
     const ids = Object.keys(CRAFTPIX_ENEMY_ACTORS) as (keyof typeof CRAFTPIX_ENEMY_ACTORS)[];
     const hash = Array.from(enemyId).reduce((total, character) => total + character.charCodeAt(0), 0);
     const actor = CRAFTPIX_ENEMY_ACTORS[ids[hash % ids.length]!];
@@ -1255,7 +1450,7 @@ export class MerchantScene extends Phaser.Scene {
       const craftpix = visual ? actorDefinition(visual) : undefined;
       if (craftpix) {
         const texture = this.craftpixActorTexture(craftpix) ?? ASSET_MANIFEST.npc.textureKey;
-        const sprite = this.add.sprite(center.x, center.y + this.homeMap.tileSize / 2, texture, 0);
+        const sprite = this.add.sprite(center.x, center.y + this.homeMap.tileSize / 2, texture, 0).setName(poi.customerId ? `customer:${poi.customerId}` : "");
         if (!this.playCraftpixActor(sprite, craftpix, "idle", "down", true, homeScale)) sprite.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE * homeScale);
         world.add(sprite);
         return;
@@ -1269,7 +1464,7 @@ export class MerchantScene extends Phaser.Scene {
         "legacy.npc.scout": "actor.npc.scout",
       };
       const textureKey = legacyTexture[visual ?? ""] ?? NPC_ASSET_VARIANTS[index % NPC_ASSET_VARIANTS.length]!.textureKey;
-      const sprite = this.add.sprite(center.x, center.y + this.homeMap.tileSize / 2, textureKey, 0).setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE * homeScale);
+      const sprite = this.add.sprite(center.x, center.y + this.homeMap.tileSize / 2, textureKey, 0).setName(poi.customerId ? `customer:${poi.customerId}` : "").setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE * homeScale);
       sprite.play(`${textureKey}.idle-down`);
       world.add(sprite);
       const staticResident = poi.kind === "customer" || poi.kind === "entrance";
@@ -1307,47 +1502,172 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private renderHud(): void {
-    this.addUiPanel(PANEL_X + 62, 180, 128, 360, 0x201a2a);
-    const hpWidth = Math.max(0, Math.floor((this.state.hp / this.state.maxHp) * 96));
-    this.add.text(PANEL_X + 8, 14, "珍品商", { fontSize: "12px", color: "#ffe4a0" });
-    this.add.text(PANEL_X + 8, 34, `HP ${this.state.hp}/${this.state.maxHp}`, { fontSize: "10px", color: "#f5ddd6" });
-    this.add.rectangle(PANEL_X + 56, 50, 98, 7, 0x4c3741).setOrigin(0.5);
-    this.add.rectangle(PANEL_X + 7 + hpWidth / 2, 50, hpWidth, 5, 0xbc5866).setOrigin(0.5);
-    this.add.text(PANEL_X + 8, 65, `${this.state.gold}G`, { fontSize: "12px", color: "#f7cf75" });
-    this.add.text(PANEL_X + 8, 84, `所持 ${currentBulk(this.state)}/${INVENTORY_CAPACITY}`, { fontSize: "10px", color: "#cdd8df" });
-    this.add.text(PANEL_X + 8, 100, `帰還石 ${this.state.returnStones}`, { fontSize: "10px", color: "#b7d8e8" });
-    this.add.text(PANEL_X + 8, 114, `煙玉 ${this.state.smokeBombs}`, { fontSize: "10px", color: "#d2b5e8" });
-    this.add.text(PANEL_X + 8, 134, this.state.location === "home" ? "今日の来客" : "同行者", { fontSize: "10px", color: "#bca7d8" });
-    if (this.state.location === "home") this.state.visitorNpcIds.slice(0, 2).forEach((id, index) => {
-      const npc = this.state.npcs.find((entry) => entry.id === id);
-      this.add.text(PANEL_X + 8, 151 + index * 18, npc?.name ?? id, { fontSize: "10px", color: "#eee5d1", wordWrap: { width: 110 } });
-    });
-    else if (this.state.run?.guard) {
+    this.addUiPanel(PANEL_X + PANEL_W / 2, 180, PANEL_W, 360, 0x201a2a);
+    this.add.rectangle(MAP_W / 2, LOG_Y + LOG_H / 2, MAP_W, LOG_H, 0x17131e).setStrokeStyle(1, 0x78624b);
+    const time = ({ morning: "朝", afternoon: "昼", evening: "夕", night: "夜" } as const)[this.state.timeSlot];
+    this.add.text(PANEL_X + 10, 10, `第${this.state.day}日・${time}`, { fontSize: "13px", color: "#ffe4a0" });
+    this.add.text(PANEL_X + 10, 31, `HP ${this.state.hp}/${this.state.maxHp}  ${this.state.gold}G`, { fontSize: "11px", color: "#f5ddd6" });
+    this.add.text(PANEL_X + 10, 49, `鞄 ${currentBulk(this.state)}/${INVENTORY_CAPACITY}`, { fontSize: "10px", color: "#cdd8df" });
+    this.add.text(PANEL_X + 96, 49, `攻${playerAttackPower(this.state)} 防${playerDefensePower(this.state)}`, { fontSize: "10px", color: "#ffd88a" });
+    this.add.text(PANEL_X + 10, 65, `食料 ${this.state.provisions}  煙 ${this.state.smokeBombs}  石 ${this.state.returnStones}`, { fontSize: "10px", color: "#b7d8e8" });
+    const location = this.state.location === "home"
+      ? "自宅兼店舗"
+      : `地下${this.state.run?.floor ?? 1}階・${this.state.run?.turn ?? 0}手・押返${this.state.run?.shoveCooldown === 0 ? "可" : this.state.run?.shoveCooldown}`;
+    this.add.text(PANEL_X + 10, 83, location, { fontSize: "10px", color: "#d9c89e" });
+    if (this.state.run?.guard) {
       const npc = this.state.npcs.find((entry) => entry.id === this.state.run?.guard?.guardId);
-      this.add.text(PANEL_X + 8, 151, `${npc?.name ?? "護衛"} HP ${this.state.run.guard.hp}/${this.state.run.guard.maxHp}`, { fontSize: "10px", color: "#eee5d1", wordWrap: { width: 110 } });
+      const guard = this.state.run.guard;
+      const status = guard.mode === "covering" ? "護衛中" : `後退 ${guard.safeTurns}/2`;
+      this.add.text(PANEL_X + 10, 98, `護衛 ${npc?.name ?? "同行者"} HP${guard.hp} ${status}`, { fontSize: "10px", color: guard.mode === "covering" ? "#eee5d1" : "#d6a5a5" });
     }
-    this.add.rectangle(MAP_W / 2, 323, MAP_W, 72, 0x17131e).setStrokeStyle(1, 0x78624b);
-    this.add.text(10, 299, this.state.message, { fontSize: "11px", color: "#f6ecd5", lineSpacing: 2, wordWrap: { width: 485, useAdvancedWrap: true } });
-    const hint = this.state.location === "home" ? "Enter: 話す  Esc:メニュー  Q:護衛募集  H:操作" : "Enter: 調べる  Space:行動  Z:煙玉  R:帰還  Esc:メニュー";
-    this.add.text(10, 340, hint, { fontSize: "10px", color: "#ad9eb1" });
+    this.add.text(PANEL_X + 10, 110, "アクション", { fontSize: "11px", color: "#ffe4a0" });
+    if (!this.modal && !this.inventoryView) this.renderActionButtons(128);
+    this.add.text(10, LOG_Y + 10, this.state.message, { fontSize: "11px", color: "#f6ecd5", lineSpacing: 2, wordWrap: { width: MAP_W - 20, useAdvancedWrap: true } });
+    const hint = this.state.location === "home" ? HOME_SHORTCUT_HINT : DUNGEON_SHORTCUT_HINT;
+    this.add.text(10, LOG_Y + 51, hint, { fontSize: "10px", color: "#ad9eb1" });
+  }
+
+  private renderActionButtons(startY: number): void {
+    const buttons: Array<{ label: string; key: string; action: () => void; disabled?: boolean }> = this.state.location === "home"
+      ? isShopSessionActive(this.state)
+        ? [
+          { label: "接客中", key: "", action: () => { const id = this.state.shopSession.currentNpcId; if (id) this.openNpcVisitor(id); }, disabled: !this.state.shopSession.currentNpcId },
+          { label: "閉店", key: SHORTCUTS.shop, action: () => this.closeActiveShop() },
+          { label: "在庫", key: SHORTCUTS.inventory, action: () => this.openInventory() },
+        ]
+        : [
+          { label: "調べる", key: SHORTCUTS.investigate, action: () => { this.investigateHome(); this.render(); } },
+          { label: "話す", key: SHORTCUTS.talk, action: () => { this.talkHome(); this.render(); } },
+          { label: canOpenShop(this.state) ? "開店" : "開店準備", key: SHORTCUTS.shop, action: () => this.openShopForDay() },
+          { label: "インベントリ", key: SHORTCUTS.inventory, action: () => this.openInventory() },
+          { label: "保管・陳列", key: "", action: () => this.openStore() },
+          { label: "探索用品", key: "", action: () => this.openSupplyShop() },
+          { label: "護衛依頼", key: "", action: () => this.openQuestBoard() },
+          { label: "ダンジョン", key: "", action: () => { beginExpedition(this.state); this.render(); }, disabled: this.state.timeSlot === "night" },
+          { label: "休む", key: "", action: () => { restUntilMorning(this.state); this.render(); }, disabled: this.state.timeSlot === "morning" || this.state.timeSlot === "afternoon" },
+        ]
+      : [
+        { label: "攻撃", key: SHORTCUTS.attack, action: () => this.executeDungeonCommand({ type: "attack", direction: this.facingDirection() }), disabled: !this.facingEnemy() },
+        { label: "調べる", key: SHORTCUTS.investigate, action: () => { this.interactDungeon(); this.render(); } },
+        { label: "押し返し", key: SHORTCUTS.shove, action: () => this.executeDungeonCommand({ type: "shove", direction: this.facingDirection() }), disabled: !this.facingEnemy() || (this.state.run?.shoveCooldown ?? 0) > 0 },
+        { label: `煙玉 (${this.state.smokeBombs})`, key: "", action: () => this.executeDungeonCommand({ type: "smoke" }), disabled: this.state.smokeBombs <= 0 },
+        { label: `帰還石 (${this.state.returnStones})`, key: "", action: () => this.executeDungeonCommand({ type: "return" }), disabled: this.state.returnStones <= 0 },
+        { label: "待機", key: "", action: () => this.executeDungeonCommand({ type: "wait" }) },
+        { label: "護衛状態", key: "", action: () => this.openActiveGuardStatus(), disabled: !this.state.run?.guard },
+        { label: "インベントリ", key: SHORTCUTS.inventory, action: () => this.openInventory() },
+      ];
+    buttons.forEach((button, index) => this.addActionButton(PANEL_X + 10, startY + index * 25, PANEL_W - 20, 21, button.label, button.key, button.action, Boolean(button.disabled)));
+  }
+
+  private facingEnemy(): boolean {
+    const run = this.state.run;
+    if (!run) return false;
+    const direction = this.facingDirection();
+    return run.enemies.some((enemy) => enemy.pos.x === run.player.x + direction.x && enemy.pos.y === run.player.y + direction.y);
+  }
+
+  private addActionButton(x: number, y: number, width: number, height: number, label: string, key: string, action: () => void, disabled = false): void {
+    const fill = disabled ? 0x302b33 : 0x5b3e32;
+    const hit = this.add.rectangle(x, y, width, height, fill).setOrigin(0).setStrokeStyle(1, disabled ? 0x615966 : 0xc49a66);
+    this.add.text(x + 7, y + 4, label, { fontSize: "10px", color: disabled ? "#817986" : "#fff0d0" });
+    if (key) this.add.text(x + width - 6, y + 4, key, { fontSize: "10px", color: disabled ? "#817986" : "#c8b6d0" }).setOrigin(1, 0);
+    if (!disabled) hit.setInteractive({ useHandCursor: true }).on("pointerdown", () => {
+      action();
+      if (this.modal && !this.inventoryView) this.render();
+    }).on("pointerover", () => hit.setFillStyle(0x8a6047)).on("pointerout", () => hit.setFillStyle(fill));
+  }
+
+  private renderInventoryView(): void {
+    const view = this.inventoryView;
+    if (!view) return;
+    this.add.rectangle(320, 180, 640, 360, 0x08070c, 0.94);
+    this.addUiPanel(320, 180, 620, 340, 0x0c0a11, 1);
+    this.add.text(24, 20, "インベントリ", { fontSize: "17px", color: "#ffe8ab" });
+    this.add.text(185, 24, `鞄 ${currentBulk(this.state)}/${INVENTORY_CAPACITY}　食料${this.state.provisions} 煙玉${this.state.smokeBombs} 帰還石${this.state.returnStones}`, { fontSize: "10px", color: "#cdd8df" });
+    const tabs: Array<[InventoryTab, string]> = [["bag", "鞄"], ["equipment", "装備"], ["storage", "保管庫"], ["display", "店頭商品"]];
+    tabs.forEach(([tab, label], index) => this.addActionButton(24 + index * 145, 50, 135, 24, label, "", () => {
+      if (!this.inventoryView) return;
+      this.inventoryView.tab = tab;
+      this.inventoryView.selectedId = this.inventoryItems(tab)[0]?.uuid;
+      this.render();
+    }, false));
+    const items = this.inventoryItems(view.tab);
+    const selected = items.find((item) => item.uuid === view.selectedId) ?? items[0];
+    if (selected && view.selectedId !== selected.uuid) view.selectedId = selected.uuid;
+    this.add.rectangle(177, 207, 306, 244, 0x17131e, 0.94).setStrokeStyle(1, 0x6e5a50);
+    if (!items.length) this.add.text(44, 96, "ここには品物がない。", { fontSize: "12px", color: "#9e94a2" });
+    items.slice(0, 9).forEach((item, index) => {
+      const chosen = item.uuid === selected?.uuid;
+      const row = this.add.rectangle(34, 84 + index * 25, 286, 22, chosen ? 0x8a6047 : 0x29212c).setOrigin(0).setInteractive({ useHandCursor: true });
+      this.add.text(42, 89 + index * 25, `${isQuestItemProtected(this.state, item) ? "◆" : ""}${itemName(item)}　[${itemBulk(item)}]`, { fontSize: "10px", color: chosen ? "#fff1cf" : "#ddd4c8" });
+      row.on("pointerdown", () => { if (this.inventoryView) this.inventoryView.selectedId = item.uuid; this.render(); });
+    });
+    this.add.rectangle(474, 207, 270, 244, 0x17131e, 0.94).setStrokeStyle(1, 0x6e5a50);
+    if (selected) {
+      const definition = MERCHANT_ITEM_DEFINITIONS[selected.definitionId];
+      this.add.text(354, 90, itemName(selected), { fontSize: "14px", color: "#ffe8ab", wordWrap: { width: 240 } });
+      this.add.text(354, 119, `分類 ${definition ? this.categoryLabel(definition.category) : selected.definitionId}\n希少度 ${definition?.rarity ?? "-"}　容量 ${itemBulk(selected)}\n攻撃 ${definition?.attack ?? 0}　防御 ${definition?.defense ?? 0}\n\n${definition?.description ?? ""}`, { fontSize: "10px", color: "#ddd4c8", lineSpacing: 4, wordWrap: { width: 240 } });
+      this.renderInventoryActions(selected, 354, 239);
+    } else if (view.tab === "equipment") {
+      this.add.text(354, 96, `武器: ${this.equippedName("weapon")}\n防具: ${this.equippedName("armor")}\n\n攻撃 ${playerAttackPower(this.state)}　防御 ${playerDefensePower(this.state)}`, { fontSize: "11px", color: "#ddd4c8", lineSpacing: 7 });
+    }
+    this.add.text(24, 337, `${SHORTCUTS.inventory} / Esc で閉じる。装備品も鞄の容量を使う。`, { fontSize: "10px", color: "#a89cad" });
+  }
+
+  private inventoryItems(tab: InventoryTab): ItemInstance[] {
+    if (tab === "bag") return this.state.inventory;
+    if (tab === "storage") return this.state.store;
+    if (tab === "display") return this.state.display.map((id) => this.state.itemsById[id]).filter((item): item is ItemInstance => Boolean(item));
+    const ids = [this.state.equipment.weaponItemId, this.state.equipment.armorItemId].filter((id): id is string => Boolean(id));
+    return ids.map((id) => this.state.itemsById[id] ?? this.state.inventory.find((item) => item.uuid === id)).filter((item): item is ItemInstance => Boolean(item));
+  }
+
+  private equippedName(slot: "weapon" | "armor"): string {
+    const id = slot === "weapon" ? this.state.equipment.weaponItemId : this.state.equipment.armorItemId;
+    const item = id ? this.state.inventory.find((entry) => entry.uuid === id) : undefined;
+    return item ? itemName(item) : "なし";
+  }
+
+  private renderInventoryActions(item: ItemInstance, x: number, y: number): void {
+    const tab = this.inventoryView?.tab;
+    const definition = MERCHANT_ITEM_DEFINITIONS[item.definitionId];
+    const button = (label: string, action: () => void, disabled = false, row = 0) => this.addActionButton(x, y + row * 28, 238, 23, label, "", action, disabled);
+    if (tab === "bag") {
+      const equipSlot = definition?.category === "weapon" ? "weapon" : definition?.category === "armor" ? "armor" : undefined;
+      button(equipSlot ? "装備する" : "装備できない", () => { equipItem(this.state, item.uuid); this.render(); }, !equipSlot, 0);
+      button(this.state.location === "home" ? "保管庫へ移す" : "足元に置く", () => {
+        if (this.state.location === "home") moveToStore(this.state, item); else dropItem(this.state, item.uuid);
+        if (this.inventoryView) this.inventoryView.selectedId = this.inventoryItems("bag")[0]?.uuid;
+        this.render();
+      }, isQuestItemProtected(this.state, item), 1);
+    } else if (tab === "equipment") {
+      const slot = this.state.equipment.weaponItemId === item.uuid ? "weapon" : "armor";
+      button("装備を外す", () => { unequipItem(this.state, slot); if (this.inventoryView) this.inventoryView.selectedId = this.inventoryItems("equipment")[0]?.uuid; this.render(); });
+    } else if (tab === "storage") {
+      button(this.state.display.includes(item.uuid) ? "店頭から下げる" : "店頭商品にする", () => { toggleDisplay(this.state, item); this.render(); });
+      button("鞄へ戻す", () => { this.retrieveItemToInventory(item); this.render(); }, currentBulk(this.state) + itemBulk(item) > INVENTORY_CAPACITY, 1);
+    } else if (tab === "display") button("店頭から下げる", () => { toggleDisplay(this.state, item); if (this.inventoryView) this.inventoryView.selectedId = this.inventoryItems("display")[0]?.uuid; this.render(); });
+  }
+
+  private retrieveItemToInventory(item: ItemInstance): void {
+    if (currentBulk(this.state) + itemBulk(item) > INVENTORY_CAPACITY) return;
+    this.state.store = this.state.store.filter((entry) => entry.uuid !== item.uuid);
+    this.state.display = this.state.display.filter((id) => id !== item.uuid);
+    item.owner = "player";
+    item.location = { kind: "playerBag" };
+    this.state.inventory.push(item);
+    this.state.message = `${itemName(item)}を鞄へ戻した。`;
   }
 
   private addUiPanel(x: number, y: number, width: number, height: number, fallbackColor: number, alpha = 1): void {
-    if (this.textures.exists("ui.craftpix.panel")) {
-      // Main_tiles is an atlas. Crop one neutral brown panel tile before
-      // stretching it; drawing the entire atlas makes the UI look like a
-      // bookshelf instead of a window.
-      this.add.image(x, y, "ui.craftpix.panel").setCrop(0, 0, 96, 96).setDisplaySize(width, height).setAlpha(alpha).setOrigin(0.5);
-      this.add.rectangle(x, y, width, height, 0x0c0a11, 0.12).setStrokeStyle(2, 0xd4af72);
-      return;
-    }
     this.add.rectangle(x, y, width, height, fallbackColor, alpha).setStrokeStyle(2, 0xd4af72);
   }
 
   private renderModal(): void {
     const modal = this.modal;
     if (!modal) return;
-    this.addUiPanel(320, 180, 560, 320, 0x0c0a11, 0.92);
+    this.add.rectangle(320, 180, 640, 360, 0x07060b, 0.88).setInteractive();
+    this.addUiPanel(320, 180, 560, 320, 0x100d16, 1);
     this.add.text(52, 34, modal.title, { fontSize: "16px", color: "#ffe8ab" });
     modal.body.forEach((line, index) => this.add.text(52, 62 + index * 18, line, { fontSize: "11px", color: "#e8e0d1", lineSpacing: 2, wordWrap: { width: 536 } }));
     const choiceStart = Math.max(142, 72 + modal.body.length * 18 + 10);

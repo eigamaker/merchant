@@ -40,10 +40,18 @@ export function actorDefinition(id: string): CraftpixActorDefinition | undefined
 }
 
 export function enemyActorIds(): string[] {
-  return Object.values(ACTOR_CATALOG).filter((actor) => actor.roles?.includes("enemy") && actorHasEnemyStats(actor)).map((actor) => actor.id).sort();
+  return Object.values(ACTOR_CATALOG).filter((actor) => actor.roles?.includes("enemy") && actorHasEnemyStats(actor) && actorSupportsDirectionalMovement(actor)).map((actor) => actor.id).sort();
 }
 
 export function actorHasEnemyStats(actor: CraftpixActorDefinition | undefined): boolean {
   const stats = actor?.enemyStats;
   return Boolean(stats && Number.isFinite(stats.baseHp) && Number.isFinite(stats.hpPerFloor) && Number.isFinite(stats.damage));
+}
+
+/** Dungeon actors must not swap between a fallback sprite and an action-only sheet. */
+export function actorSupportsDirectionalMovement(actor: CraftpixActorDefinition | undefined): boolean {
+  const idle = actor?.clips.idle;
+  const walk = actor?.clips.walk;
+  return Boolean(idle && walk && idle.rows === 4 && walk.rows === 4
+    && idle.directions.length === 4 && walk.directions.length === 4);
 }

@@ -150,7 +150,7 @@ function actorClipFromImage(fileName, bytes, tmxTileSize, durationsMs) {
   const frameHeight = info.height % 4 === 0 ? info.height / 4 : undefined;
   const frameWidth = frameHeight && info.width % frameHeight === 0 ? frameHeight : undefined;
   const average = durationsMs?.length ? durationsMs.reduce((sum, duration) => sum + duration, 0) / durationsMs.length : 150;
-  return { action, path: fileName, width: info.width, height: info.height, frameWidth, frameHeight, columns: frameWidth ? info.width / frameWidth : undefined, rows: 4, tileSize: tmxTileSize, directions: ["down", "left", "right", "up"], frameRate: Math.round((1000 / average) * 100) / 100, durationsMs };
+  return { action, path: fileName, width: info.width, height: info.height, frameWidth, frameHeight, columns: frameWidth ? info.width / frameWidth : undefined, rows: 4, tileSize: tmxTileSize, directions: ["down", "up", "left", "right"], frameRate: Math.round((1000 / average) * 100) / 100, durationsMs };
 }
 
 function parseTmxFile(fileName, bytes, files) {

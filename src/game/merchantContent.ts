@@ -48,9 +48,9 @@ export const ITEM_VISUALS: Record<string, string> = Object.fromEntries(
 type NpcSeed = Omit<NpcRecord, "status" | "relation" | "inventoryIds">;
 
 export const NPC_SEEDS: readonly NpcSeed[] = [
-  { id: "rolf", name: "ロルフ", profession: "swordsman", appearanceId: "profession.adventurer.swordsman.01", adventurer: true, interests: ["weapon", "armor"], budget: 450, baseFee: 100, maxHp: 8, damage: 2, trait: "standard" },
-  { id: "mina", name: "ミナ", profession: "scout", appearanceId: "profession.adventurer.scout.01", adventurer: true, interests: ["medicine", "material"], budget: 350, baseFee: 140, maxHp: 6, damage: 1, trait: "scout" },
-  { id: "bastian", name: "バスティアン", profession: "mercenary", appearanceId: "profession.adventurer.mercenary.01", adventurer: true, interests: ["weapon", "medicine"], budget: 700, baseFee: 180, maxHp: 10, damage: 3, trait: "standard" },
+  { id: "rolf", name: "ロルフ", profession: "swordsman", appearanceId: "profession.adventurer.swordsman.01", adventurer: true, interests: ["weapon", "armor"], budget: 450, baseFee: 100, maxHp: 8, damage: 2, trait: "standard", retreatHpRatio: 0.3 },
+  { id: "mina", name: "ミナ", profession: "scout", appearanceId: "profession.adventurer.scout.01", adventurer: true, interests: ["medicine", "material"], budget: 350, baseFee: 140, maxHp: 6, damage: 1, trait: "scout", retreatHpRatio: 0.5 },
+  { id: "bastian", name: "バスティアン", profession: "mercenary", appearanceId: "profession.adventurer.mercenary.01", adventurer: true, interests: ["weapon", "medicine"], budget: 700, baseFee: 180, maxHp: 10, damage: 3, trait: "standard", retreatHpRatio: 0.2 },
   { id: "mira", name: "ミラ", profession: "merchant", appearanceId: "profession.merchant.01", adventurer: false, interests: ["material", "curio"], budget: 700 },
   { id: "godwin", name: "ゴドウィン", profession: "blacksmith", appearanceId: "profession.blacksmith.01", adventurer: false, interests: ["weapon", "armor"], budget: 1400 },
   { id: "neva", name: "ネヴァ", profession: "apothecary", appearanceId: "profession.apothecary.01", adventurer: false, interests: ["medicine", "material"], budget: 900 },

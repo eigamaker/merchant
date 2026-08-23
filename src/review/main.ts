@@ -6,7 +6,7 @@ import { MAX_PALETTE_DIMENSION, PaletteHistory, addPalettePage, clonePaletteLayo
 import { fitEditorCanvas, sparseGridExtent } from "./canvasSizing";
 import { applyMapSettingsAtomically } from "./mapSettings";
 import { applyDungeonFloorUpdates, planDungeonFloorCompaction, planDungeonFloorMove, smallestMissingDungeonFloor } from "./floorSequence";
-import { ACTOR_CATALOG, applyActorSettings, currentActorSettings } from "../game/actorCatalog";
+import { ACTOR_CATALOG, actorSupportsDirectionalMovement, applyActorSettings, currentActorSettings } from "../game/actorCatalog";
 import type { ActorSettingsCatalog } from "../game/actorSettings";
 import type { CraftpixActorClip, CraftpixActorDefinition } from "../game/craftpixActors";
 import { advanceActorPreview, actorPreviewActions, actorPreviewDirections, actorPreviewFrameRect, actorPreviewPath, type ActorPreviewState } from "./actorPreview";
@@ -20,7 +20,7 @@ const assets: PaletteAsset[] = MAP_ASSET_CATALOG.map((asset) => ({ ...asset, map
 const assetById = new Map(assets.map((asset) => [asset.id, asset]));
 const repository = new MapRepository();
 const layers: ManualLayer[] = ["ground", "structure", "decoration"];
-const homeMarkers: MapMarkerKind[] = ["homeSpawn", "dungeonEntrance", "homeStorage", "homePreparation", "homeVisitors"];
+const homeMarkers: MapMarkerKind[] = ["homeSpawn", "dungeonEntrance", "homeStorage", "homePreparation", "homeVisitors", "shopkeeperCounter", "customerCounter"];
 const dungeonMarkers: MapMarkerKind[] = ["stairsUp", "stairsDown"];
 const sourceScale = 2;
 
@@ -40,7 +40,7 @@ root.innerHTML = `
       <main class="map-editor-layout">
         <aside class="map-editor-side"><div class="panel-heading"><h2>マップ</h2><span data-map-count></span></div><div class="map-list" data-map-list></div><div class="map-actions"><button data-action="export-map">現在JSON</button><button data-action="export-pack">試遊パックJSON</button><label class="file-button">JSON読込<input type="file" accept="application/json" data-import></label></div><hr>
           <h2>レイヤー</h2><label>作業対象 <select data-layer><option value="ground">ground（床）</option><option value="structure">structure（壁・構造物）</option><option value="decoration">decoration（装飾）</option></select></label><div class="layer-visibility" aria-label="レイヤーの可視設定"><label><input type="checkbox" data-layer-visible="ground" checked>groundを表示</label><label><input type="checkbox" data-layer-visible="structure" checked>structureを表示</label><label><input type="checkbox" data-layer-visible="decoration" checked>decorationを表示</label></div><p class="small">配置・消去・スポイトは作業対象レイヤーだけに作用します。表示チェックは編集データを消さず、キャンバス上の表示だけを切り替えます。</p><hr>
-          <h2>マーカー</h2><label>種類 <select data-marker></select></label><p class="small">マーカー道具でセルをクリックします。stairsUp / stairsDownには、パレットの単一セルを見た目として設定します。</p><div hidden data-enemy-roster></div><p hidden data-enemy-roster-status></p><hr>
+          <h2>マーカー</h2><label>種類 <select data-marker></select></label><p class="small">マーカー道具でセルをクリックします。店主の開店位置は「店主カウンター」、客の接客位置は「客カウンター」で指定します。stairsUp / stairsDownには、パレットの単一セルを見た目として設定します。</p><div hidden data-enemy-roster></div><p hidden data-enemy-roster-status></p><hr>
           <h2>素材取込</h2><label class="file-button">ZIP／TMX／PNGを解析<input type="file" accept=".zip,.tmx,.tsx,.png" multiple data-asset-import></label><div data-import-report></div><p class="save-status" data-status>読み込み中…</p></aside>
         <section class="map-canvas-panel"><div class="panel-heading"><h2 data-map-title>マップ</h2><span data-stamp-info>スタンプ未選択</span></div><p class="canvas-fit-warning" data-canvas-fit hidden></p><div class="map-canvas-wrap"><canvas data-map-canvas></canvas></div><div class="map-canvas-help">パレットの画像セルをクリックして選び、マップへ配置します。鉛筆は選択矩形の左上を配置、矩形は選択パターンを繰り返します。素材がマップ外へ出る操作は全体を拒否します。</div><div class="map-validation" data-validation></div></section>
         <div class="palette-host" data-palette-host="map"><aside class="map-editor-side palette-panel"><div class="panel-heading"><h2>自由配置パレット</h2><div class="palette-heading-actions"><span data-palette-dirty></span><button class="palette-add-current" data-action="palette-add-current" type="button">新規パレット</button><button class="palette-save-current primary" data-action="palette-save" type="button">変更を保存</button><button class="palette-delete-current" data-action="palette-delete" type="button">このパレットを削除</button></div></div><div class="palette-tabs" data-palette-tabs role="listbox" aria-label="パレット"></div><details class="palette-menu"><summary>パレットの管理</summary><div class="palette-actions"><button data-action="palette-add">ページ追加</button><button data-action="palette-rename">改名</button><button data-action="palette-resize">拡縮</button><button data-action="palette-undo">戻す</button><button data-action="palette-redo">やり直し</button><button data-action="palette-reload">再読込</button><button data-action="palette-export">JSON書出し</button></div></details><div class="palette-wrap"><canvas data-palette-canvas></canvas></div>
@@ -109,7 +109,7 @@ function ensurePalettePage(): PalettePage | undefined { if (!active) return unde
 function syncFloorControls(): void { const dungeon = mapKind.value === "dungeon"; floorField.hidden = !dungeon; applyFloorButton.hidden = !dungeon || active?.kind !== "dungeon"; if (!dungeon) return; const count = maps.filter((map) => map.kind === "dungeon").length; mapFloor.max = String(Math.max(1, count)); mapFloor.value = String(active?.kind === "dungeon" ? active.floor : Math.max(1, count + 1)); }
 function setActive(map: MapDocument): void { active = cloneMap(map); kind.value = active.kind; mapKind.value = active.kind; mapFloor.value = String(active.floor); mapWidth.value = String(active.width); mapHeight.value = String(active.height); tileSize.value = String(active.tileSize); syncFloorControls(); selectPageForMap(); updateMarkerOptions(); render(); }
 function missingAssetIds(map: MapDocument): string[] { const values = new Set<string>(); for (const currentLayer of layers) for (const cell of map.layers[currentLayer]) if (cell && !assetById.has(cell.assetId)) values.add(cell.assetId); for (const entry of map.markers) if (entry.visual && !assetById.has(entry.visual.assetId)) values.add(entry.visual.assetId); return [...values]; }
-function updateMarkerOptions(): void { if (!active) return; const kinds = active.kind === "home" ? homeMarkers : dungeonMarkers; marker.innerHTML = kinds.map((value) => `<option value="${value}">${value}</option>`).join(""); }
+function updateMarkerOptions(): void { if (!active) return; const kinds = active.kind === "home" ? homeMarkers : dungeonMarkers; const labels: Record<MapMarkerKind, string> = { homeSpawn: "開始位置", dungeonEntrance: "ダンジョン入口", homeStorage: "保管・陳列", homePreparation: "探索準備", homeVisitors: "客の入口", shopkeeperCounter: "店主カウンター", customerCounter: "客カウンター", stairsUp: "上り階段", stairsDown: "下り階段" }; marker.innerHTML = kinds.map((value) => `<option value="${value}">${labels[value]} (${value})</option>`).join(""); }
 function escapeHtml(value: string): string { const element = document.createElement("span"); element.textContent = value; return element.innerHTML; }
 function renderList(): void { if (!active) return; const filtered = maps.filter((map) => map.kind === kind.value).sort((a, b) => a.floor - b.floor); mapCount.textContent = `${filtered.length} 枚`; mapList.innerHTML = filtered.map((map) => `<button class="map-list-item${map.id === active?.id ? " active" : ""}" data-map-id="${map.id}"><span>${escapeHtml(map.name)}</span><small>${map.kind === "home" ? "家" : `地下${map.floor}階`} / ${map.width}×${map.height} / ${map.tileSize}px</small></button>`).join("") || `<p class="small">この種類のマップはありません。</p>`; mapList.querySelectorAll<HTMLButtonElement>("[data-map-id]").forEach((button) => button.onclick = () => { const map = maps.find((value) => value.id === button.dataset.mapId); if (map) setActive(map); }); }
 function renderPaletteTabs(): void {
@@ -133,7 +133,7 @@ function renderAssetOptions(): void {
 }
 function renderEnemyRoster(): void {
   if (!active || active.kind !== "dungeon") { enemyRoster.innerHTML = `<p class="small">家では敵ロスターを使用しません。</p>`; enemyRosterStatus.textContent = ""; return; }
-  const actors = Object.values(ACTOR_CATALOG).filter((actor) => actor.roles?.includes("enemy") && actor.enemyStats);
+  const actors = Object.values(ACTOR_CATALOG).filter((actor) => actor.roles?.includes("enemy") && actor.enemyStats && actorSupportsDirectionalMovement(actor));
   enemyRoster.innerHTML = actors.length ? actors.map((actor) => {
     const stats = actor.enemyStats!;
     return `<label class="enemy-roster-item"><input type="checkbox" data-enemy-id="${escapeHtml(actor.id)}" ${active!.enemyRoster.includes(actor.id) ? "checked" : ""}><span>${escapeHtml(actor.label)}</span><small>HP ${stats.baseHp}+${stats.hpPerFloor}/F / 攻撃 ${stats.damage}</small></label>`;
@@ -157,7 +157,7 @@ function drawActorThumbnail(canvas: HTMLCanvasElement, actor: CraftpixActorDefin
 function renderMapActorStrip(): void {
   if (!active || active.kind !== "dungeon") { paletteActorStrip.hidden = true; paletteActorStripList.innerHTML = ""; paletteActorStripStatus.textContent = ""; return; }
   paletteActorStrip.hidden = false;
-  const actors = Object.values(ACTOR_CATALOG).filter((actor) => actor.roles?.includes("enemy") && actor.enemyStats).sort((a, b) => a.label.localeCompare(b.label));
+  const actors = Object.values(ACTOR_CATALOG).filter((actor) => actor.roles?.includes("enemy") && actor.enemyStats && actorSupportsDirectionalMovement(actor)).sort((a, b) => a.label.localeCompare(b.label));
   paletteActorStripStatus.textContent = `${active.enemyRoster.length}体候補を選択中`;
   paletteActorStripList.innerHTML = actors.map((actor) => {
     const selected = active!.enemyRoster.includes(actor.id);

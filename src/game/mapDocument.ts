@@ -1,14 +1,14 @@
 import type { DungeonMap, MapKind } from "./types";
 import { tileWalkable } from "./mapTiles";
 import { MAP_ASSET_CATALOG } from "./mapAssetCatalog.generated";
-import { actorDefinition, actorHasEnemyStats } from "./actorCatalog";
+import { actorDefinition, actorHasEnemyStats, actorSupportsDirectionalMovement } from "./actorCatalog";
 
 export const MAP_DOCUMENT_VERSION = 6 as const;
 export const MAP_SIZE_MIN = 4;
 export const MAP_SIZE_MAX = 256;
 export type TileSize = 16 | 32;
 export type ManualLayer = "ground" | "structure" | "decoration";
-export type MapMarkerKind = "homeSpawn" | "dungeonEntrance" | "homeStorage" | "homePreparation" | "homeVisitors" | "stairsUp" | "stairsDown";
+export type MapMarkerKind = "homeSpawn" | "dungeonEntrance" | "homeStorage" | "homePreparation" | "homeVisitors" | "shopkeeperCounter" | "customerCounter" | "stairsUp" | "stairsDown";
 export interface ManualTilePlacement { assetId: string; frame: number; }
 export interface MapMarkerVisual { assetId: string; frame: number; }
 export interface MapMarker { id: string; kind: MapMarkerKind; x: number; y: number; visual?: MapMarkerVisual; }
@@ -28,7 +28,7 @@ export interface TrialMapPack { home: MapDocument; dungeons: MapDocument[]; }
 const LAYERS: readonly ManualLayer[] = ["ground", "structure", "decoration"];
 const ASSETS = new Map<string, typeof MAP_ASSET_CATALOG[number]>(MAP_ASSET_CATALOG.map((asset) => [asset.id, asset]));
 const STAIR_KINDS = new Set<MapMarkerKind>(["stairsUp", "stairsDown"]);
-const MARKER_KINDS = new Set<MapMarkerKind>(["homeSpawn", "dungeonEntrance", "homeStorage", "homePreparation", "homeVisitors", "stairsUp", "stairsDown"]);
+const MARKER_KINDS = new Set<MapMarkerKind>(["homeSpawn", "dungeonEntrance", "homeStorage", "homePreparation", "homeVisitors", "shopkeeperCounter", "customerCounter", "stairsUp", "stairsDown"]);
 const inside = (map: Pick<MapDocument, "width" | "height">, x: number, y: number): boolean => x >= 0 && y >= 0 && x < map.width && y < map.height;
 export function mapIndex(map: Pick<MapDocument, "width">, x: number, y: number): number { return y * map.width + x; }
 const touch = (map: MapDocument): void => { map.updatedAt = new Date().toISOString(); };
@@ -95,17 +95,18 @@ export function validateStructure(value: unknown): string[] {
   const size = (map.width ?? 0) * (map.height ?? 0); if (!Array.isArray(map.terrain) || map.terrain.length !== size || map.terrain.some((assetId) => assetId !== null && (typeof assetId !== "string" || !assetId.trim()))) errors.push("terrain size"); if (!Array.isArray(map.collision) || map.collision.length !== size || map.collision.some((value) => typeof value !== "boolean")) errors.push("collision size");
   if (!map.layers || typeof map.layers !== "object") errors.push("layers"); else for (const layer of LAYERS) { const cells = map.layers[layer]; if (!Array.isArray(cells) || cells.length !== size) errors.push(`layer ${layer} size`); else if (cells.some((cell) => cell !== null && !isPlacement(cell))) errors.push(`layer ${layer} tile`); }
   if (!Array.isArray(map.markers)) errors.push("markers"); else if (map.markers.some((marker) => !isMarker(marker))) errors.push("invalid marker");
-  if (!Array.isArray(map.enemyRoster) || map.enemyRoster.some((id) => typeof id !== "string" || !id.trim() || !actorHasEnemyStats(actorDefinition(id)))) errors.push("enemy roster");
+  if (!Array.isArray(map.enemyRoster) || map.enemyRoster.some((id) => typeof id !== "string" || !id.trim() || !actorHasEnemyStats(actorDefinition(id)) || !actorSupportsDirectionalMovement(actorDefinition(id)))) errors.push("enemy roster");
   return [...new Set(errors)];
 }
 export function validateMap(map: MapDocument): string[] {
-  const errors = validateStructure(map); if (errors.length) return errors; if (map.kind === "home" && map.enemyRoster.length) errors.push("home enemy roster"); const allowed = map.kind === "home" ? ["homeSpawn", "dungeonEntrance", "homeStorage", "homePreparation", "homeVisitors"] as const : ["stairsUp", "stairsDown"] as const, ids = new Set<string>();
+  const errors = validateStructure(map); if (errors.length) return errors; if (map.kind === "home" && map.enemyRoster.length) errors.push("home enemy roster"); const allowed = map.kind === "home" ? ["homeSpawn", "dungeonEntrance", "homeStorage", "homePreparation", "homeVisitors", "shopkeeperCounter", "customerCounter"] as const : ["stairsUp", "stairsDown"] as const, required = map.kind === "home" ? ["homeSpawn", "dungeonEntrance", "homeStorage", "homePreparation", "homeVisitors"] as const : ["stairsUp", "stairsDown"] as const, ids = new Set<string>();
   map.terrain.forEach((assetId) => { if (assetId) { const issue = assetIssue(assetId, map.kind, map.tileSize); if (issue) errors.push(issue); } }); LAYERS.forEach((layer) => map.layers[layer].forEach((cell) => { if (cell) { const issue = assetIssue(cell.assetId, map.kind, map.tileSize, cell.frame); if (issue) errors.push(issue); } }));
   for (const marker of map.markers) { if (ids.has(marker.id)) errors.push("duplicate marker"); ids.add(marker.id); if (!allowed.includes(marker.kind as never)) errors.push("marker kind"); if (!inside(map, marker.x, marker.y)) errors.push("marker bounds"); else if (!cellWalkable(map, marker.x, marker.y)) errors.push("marker on blocked cell"); if (STAIR_KINDS.has(marker.kind) && !marker.visual) errors.push(`marker ${marker.kind} visual`); if (marker.visual) { const issue = assetIssue(marker.visual.assetId, map.kind, map.tileSize, marker.visual.frame); if (issue) errors.push(issue); } }
-  for (const kind of allowed) if (!(map.kind === "dungeon" && kind === "stairsDown") && map.markers.filter((marker) => marker.kind === kind).length !== 1) errors.push(`marker ${kind}`);
+  for (const kind of required) if (!(map.kind === "dungeon" && kind === "stairsDown") && map.markers.filter((marker) => marker.kind === kind).length !== 1) errors.push(`marker ${kind}`);
+  for (const kind of ["shopkeeperCounter", "customerCounter"] as const) if (map.markers.filter((marker) => marker.kind === kind).length > 1) errors.push(`marker ${kind}`);
   if (map.kind === "home") {
     const spawn = map.markers.find((marker) => marker.kind === "homeSpawn");
-    for (const kind of ["dungeonEntrance", "homeStorage", "homePreparation", "homeVisitors"] as const) {
+    for (const kind of ["dungeonEntrance", "homeStorage", "homePreparation", "homeVisitors", "shopkeeperCounter", "customerCounter"] as const) {
       const target = map.markers.find((marker) => marker.kind === kind);
       if (spawn && target && !reachable(map, spawn, target)) errors.push(`marker ${kind} unreachable`);
     }

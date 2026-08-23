@@ -98,17 +98,22 @@ function migrateDungeonMap(map: DungeonMap | LegacyDungeonMap): void {
 }
 
 export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGameState): GameState {
-  const sourceVersion = raw.version;
+  const sourceVersion = raw.version as number;
   const legacyVersion = sourceVersion === 1;
   const state = raw as unknown as GameState;
   const oldLocation = (state as unknown as { location?: string }).location;
   if (oldLocation === "town" || oldLocation === "interior") state.location = "home";
-  state.version = 5;
+  state.version = 7;
   state.campaignId ??= `legacy-${Date.now()}`;
   state.status ??= "active";
   // 追加した任意項目を補い、既存のブラウザ保存を壊さない。
   state.returnStones ??= 1;
-  state.smokeBombs ??= 2;
+  state.smokeBombs ??= 1;
+  state.provisions ??= 3;
+  state.timeSlot ??= "morning";
+  state.equipment ??= {};
+  state.shopSession ??= { day: state.day, status: "closed", queueNpcIds: [], servedNpcIds: [] };
+  state.dailySupplyStock ??= { day: state.day, smokeBombs: 2, returnStones: 1, provisions: 6 };
   state.archive ??= [];
   state.expeditionSerial ??= 0;
   state.guildReputation ??= 0;
@@ -202,22 +207,41 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
     };
     if (state.run) {
       state.run.enemies.forEach((enemy) => { enemy.staggerTurns ??= 0; });
+      if (state.run.guard) {
+        state.run.guard.mode ??= "covering";
+        state.run.guard.safeTurns ??= 0;
+        state.run.guard.pos = { ...state.run.player };
+      }
       state.run.shoveCooldown ??= 0;
       state.run.highestFloor ??= state.run.floor;
       state.run.floorStates ??= {};
+      state.run.timeUnits ??= 0;
+      state.run.settledTimeBands ??= 0;
       migrateDungeonMap(state.run.map);
     }
   }
   if (state.run) {
+    state.run.timeUnits ??= 0;
+    state.run.settledTimeBands ??= 0;
     state.run.floorStates ??= {};
     migrateDungeonMap(state.run.map);
+    if (state.run.guard) {
+      state.run.guard.mode ??= "covering";
+      state.run.guard.safeTurns ??= 0;
+      state.run.guard.pos = { ...state.run.player };
+    }
     for (const snapshot of Object.values(state.run.floorStates ?? {})) {
       migrateDungeonMap(snapshot.map);
       snapshot.shoveCooldown ??= 0;
       snapshot.turn ??= 0;
+      if (snapshot.guard) {
+        snapshot.guard.mode ??= "covering";
+        snapshot.guard.safeTurns ??= 0;
+        snapshot.guard.pos = { ...snapshot.player };
+      }
     }
   }
-  (state as { version: number }).version = 5;
+  (state as { version: number }).version = 7;
   return state;
 }
 
@@ -256,7 +280,8 @@ export class SaveRepository {
     });
     database.close();
     if (!result) return undefined;
-    if ((result.state as { version?: number }).version !== 5) return undefined;
+    const version = (result.state as { version?: number }).version;
+    if (version !== 5 && version !== 6) return undefined;
     result.state = migrateSaveState(result.state);
     if (isCampaignDead(result.state.campaignId) || result.state.status === "gameOver") return undefined;
     return result as StoredSave & { state: GameState };

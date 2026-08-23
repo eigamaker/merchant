@@ -21,9 +21,9 @@ export const GENERATED_ACTORS: readonly CraftpixActorDefinition[] = [
         "tileSize": 16,
         "directions": [
           "down",
+          "up",
           "left",
-          "right",
-          "up"
+          "right"
         ],
         "frameRate": 6.67,
         "durationsMs": [
@@ -125,9 +125,9 @@ export const GENERATED_ACTORS: readonly CraftpixActorDefinition[] = [
         "tileSize": 16,
         "directions": [
           "down",
+          "up",
           "left",
-          "right",
-          "up"
+          "right"
         ],
         "frameRate": 6.67
       }
