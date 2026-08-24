@@ -34,6 +34,7 @@ import {
   lootBodyItem,
   moveInventoryItems,
   movePlayer,
+  moveStoreItemsToInventory,
   moveToStore,
   performDungeonCommand,
   questProgressText,
@@ -59,6 +60,7 @@ import {
   buySupply,
   canOpenShop,
   closeShopSession,
+  dungeonMealProvisionCost,
   dungeonTimeUntilNextMeal,
   equipItem,
   finishCurrentCustomer,
@@ -119,7 +121,7 @@ const HOME_CONTROL_LINES = [
   "移動: 矢印 / WASD",
   `${SHORTCUTS.investigate}: 調べる`,
   `${SHORTCUTS.talk}: 話す`,
-  `${SHORTCUTS.inventory}: インベントリ`,
+  `${SHORTCUTS.inventory}: 在庫管理`,
   `${SHORTCUTS.shop}: 開店・閉店`,
   `${SHORTCUTS.menu}: メニュー`,
 ];
@@ -131,7 +133,7 @@ const DUNGEON_CONTROL_LINES = [
   `${SHORTCUTS.inventory}: インベントリ`,
   `${SHORTCUTS.menu}: メニュー`,
 ];
-const HOME_SHORTCUT_HINT = `${SHORTCUTS.investigate} 調べる　${SHORTCUTS.talk} 話す　${SHORTCUTS.inventory} インベントリ　${SHORTCUTS.shop} 開店　${SHORTCUTS.menu} メニュー`;
+const HOME_SHORTCUT_HINT = `${SHORTCUTS.investigate} 調べる　${SHORTCUTS.talk} 話す　${SHORTCUTS.inventory} 在庫管理　${SHORTCUTS.shop} 開店　${SHORTCUTS.menu} メニュー`;
 const DUNGEON_SHORTCUT_HINT = `${SHORTCUTS.investigate} 調べる　${SHORTCUTS.attack} 攻撃　${SHORTCUTS.shove} 押し返し　${SHORTCUTS.inventory} インベントリ　${SHORTCUTS.menu} メニュー`;
 
 type HomePoint = { id: string; name: string; kind: "entrance" | "guild" | "visitors" | "customer"; pos: { x: number; y: number }; customerId?: string };
@@ -141,6 +143,7 @@ const HOME_POINTS: HomePoint[] = [
   { id: "visitors", name: "来客", kind: "visitors", pos: HOME_POI.visitors },
 ];
 type InventoryTab = "bag" | "equipment" | "storage" | "display";
+const INVENTORY_PAGE_SIZE = 22;
 
 type Modal = {
   title: string;
@@ -172,7 +175,7 @@ export class MerchantScene extends Phaser.Scene {
   private state: GameState = createNewGame();
   private homeMap = createHomeMap();
   private modal?: Modal;
-  private inventoryView?: { tab: InventoryTab; selectedId?: string };
+  private inventoryView?: { tab: InventoryTab; selectedId?: string; checkedIds: Set<string>; page: number };
   private keys!: Record<string, Phaser.Input.Keyboard.Key>;
   private readonly saves = new SaveRepository();
   private gameStarted = false;
@@ -784,7 +787,7 @@ export class MerchantScene extends Phaser.Scene {
       this.state.location === "dungeon" ? "探索中はメニューを開いてもターンは進まない。" : `自宅兼店舗 ${this.state.day}日目`,
       `所持金 ${this.state.gold}G　所持数 ${currentItemCount(this.state)}/${INVENTORY_CAPACITY}`,
     ], [
-      { label: "持ち物", action: () => this.openInventory() },
+      { label: this.state.location === "home" ? "在庫管理" : "持ち物", action: () => this.openInventory() },
       { label: "護衛募集", action: () => this.openEscortCommission() },
       { label: "商人の記録", action: () => this.openLedger() },
       { label: "操作", action: () => this.openHelp() },
@@ -802,7 +805,12 @@ export class MerchantScene extends Phaser.Scene {
 
   private openInventory(): void {
     this.modal = undefined;
-    this.inventoryView = { tab: this.inventoryView?.tab ?? "bag", selectedId: this.inventoryView?.selectedId ?? this.state.inventory[0]?.uuid };
+    this.inventoryView = {
+      tab: this.inventoryView?.tab ?? "bag",
+      selectedId: this.inventoryView?.selectedId ?? this.state.inventory[0]?.uuid,
+      checkedIds: this.inventoryView?.checkedIds ?? new Set(),
+      page: this.inventoryView?.page ?? 0,
+    };
     this.windowRevision += 1;
     this.render();
   }
@@ -818,7 +826,7 @@ export class MerchantScene extends Phaser.Scene {
           label: "在庫・店頭商品を確認する",
           action: () => {
             this.modal = undefined;
-            this.inventoryView = { tab: this.state.store.length ? "storage" : "bag", selectedId: this.state.store[0]?.uuid ?? this.state.inventory[0]?.uuid };
+            this.inventoryView = { tab: this.state.store.length ? "storage" : "bag", selectedId: this.state.store[0]?.uuid ?? this.state.inventory[0]?.uuid, checkedIds: new Set(), page: 0 };
             this.render();
           },
         },
@@ -926,96 +934,6 @@ export class MerchantScene extends Phaser.Scene {
       })),
       { label: "閉じる", action: () => this.closeMenu() },
     ]);
-  }
-
-  private openStore(): void {
-    const lines = [`保管品 ${this.state.store.length}点 / 販売品 ${this.state.display.length}点`, "客は棚の販売品から欲しい物を選び、希望購入額を提示する。"];
-    const choices: MenuChoice[] = [
-      { label: "☑ 鞄の品をまとめて移動", disabled: this.state.inventory.length === 0, action: () => { this.openInventoryBatch(); this.render(); } },
-      { label: "☑ 陳列品をチェックで編集", disabled: this.state.store.length === 0, action: () => { this.openDisplayChecklist(); this.render(); } },
-      ...this.state.inventory.map((item) => ({ label: `保管する: ${itemName(item)}`, action: () => { moveToStore(this.state, item); this.openStore(); } })),
-      ...this.state.store.map((item) => ({ label: `保管品: ${itemName(item)}${this.state.display.includes(item.uuid) ? " ★販売中" : ""}`, action: () => this.openStoredItem(item) })),
-      { label: "閉じる", action: () => this.closeMenu() },
-    ];
-    this.openMenu("珍品店", lines, choices);
-  }
-
-  private openInventoryBatch(selectedIds: ReadonlySet<string> = new Set(), focusIndex = 0): void {
-    const items = [...this.state.inventory];
-    const selected = new Set([...selectedIds].filter((id) => items.some((item) => item.uuid === id)));
-    const reopen = (next: Set<string>, index: number): void => {
-      this.openInventoryBatch(next, index);
-      this.render();
-    };
-    const availableDisplaySlots = Math.max(0, 4 - this.state.display.length);
-    const choices: MenuChoice[] = [
-      ...items.map((item, index) => ({
-        label: `${selected.has(item.uuid) ? "☑" : "☐"} ${itemName(item)}`,
-        action: () => {
-          const next = new Set(selected);
-          if (next.has(item.uuid)) next.delete(item.uuid); else next.add(item.uuid);
-          reopen(next, index);
-        },
-      })),
-      { label: "すべて選択", disabled: selected.size === items.length, action: () => reopen(new Set(items.map((item) => item.uuid)), items.length) },
-      { label: "選択解除", disabled: selected.size === 0, action: () => reopen(new Set(), items.length + 1) },
-      { label: `選択した${selected.size}点を保管庫へ`, disabled: selected.size === 0, action: () => { moveInventoryItems(this.state, [...selected], "storage"); this.openStore(); this.render(); } },
-      { label: `選択した${selected.size}点をそのまま陳列（空き${availableDisplaySlots}）`, disabled: selected.size === 0 || selected.size > availableDisplaySlots, action: () => { moveInventoryItems(this.state, [...selected], "display"); this.openStore(); this.render(); } },
-      { label: "戻る", action: () => { this.openStore(); this.render(); } },
-    ];
-    this.openMenu("鞄の品をまとめて移動", [`${selected.size}/${items.length}点を選択中`, "チェック後、保管するか店頭へ出すかを選ぶ。"], choices);
-    if (this.modal) this.modal.index = Phaser.Math.Clamp(focusIndex, 0, choices.length - 1);
-  }
-
-  private openDisplayChecklist(selectedIds: ReadonlySet<string> = new Set(this.state.display), focusIndex = 0): void {
-    const items = [...this.state.store];
-    const selected = new Set([...selectedIds].filter((id) => items.some((item) => item.uuid === id)));
-    const firstFourIds = items.slice(0, 4).map((item) => item.uuid);
-    const firstFourSelected = selected.size === firstFourIds.length && firstFourIds.every((id) => selected.has(id));
-    const reopen = (next: Set<string>, index: number): void => {
-      this.openDisplayChecklist(next, index);
-      this.render();
-    };
-    const choices: MenuChoice[] = [
-      ...items.map((item, index) => ({
-        label: `${selected.has(item.uuid) ? "☑ 販売" : "☐ 保管"} ${itemName(item)}`,
-        disabled: !selected.has(item.uuid) && selected.size >= 4,
-        action: () => {
-          const next = new Set(selected);
-          if (next.has(item.uuid)) next.delete(item.uuid); else next.add(item.uuid);
-          reopen(next, index);
-        },
-      })),
-      { label: "先頭4点を陳列", disabled: firstFourSelected, action: () => reopen(new Set(firstFourIds), items.length) },
-      { label: "すべて保管", disabled: selected.size === 0, action: () => reopen(new Set(), items.length + 1) },
-      { label: `この状態を反映（販売品 ${selected.size}/4点）`, action: () => { setDisplayedItems(this.state, [...selected]); this.openStore(); this.render(); } },
-      { label: "変更せず戻る", action: () => { this.openStore(); this.render(); } },
-    ];
-    this.openMenu("陳列品をチェックで編集", [`販売する品にチェックを付ける。現在 ${selected.size}/${items.length}点。`, "チェックを外した品は保管庫へ戻る。店頭は最大4点。"], choices);
-    if (this.modal) this.modal.index = Phaser.Math.Clamp(focusIndex, 0, choices.length - 1);
-  }
-
-  private openStoredItem(item: ItemInstance): void {
-    const showing = this.state.display.includes(item.uuid);
-    this.openMenu(itemName(item), ["店の保管庫にある商品。", `現在: ${showing ? "販売中" : "保管中"}`], [
-      { label: showing ? "販売品から下げる" : "販売品として店頭へ出す", action: () => { toggleDisplay(this.state, item); this.openStore(); } },
-      { label: "持ち物へ戻す", action: () => this.retrieveItem(item) },
-      { label: "戻る", action: () => this.openStore() },
-    ]);
-  }
-
-  private retrieveItem(item: ItemInstance): void {
-    if (currentItemCount(this.state) >= INVENTORY_CAPACITY) {
-      this.openMenu("持ち物がいっぱい", ["アイテムを1個預けるか置いてから取り出そう。"], [{ label: "戻る", action: () => this.openStoredItem(item) }]);
-      return;
-    }
-    this.state.store = this.state.store.filter((entry) => entry.uuid !== item.uuid);
-    this.state.display = this.state.display.filter((uuid) => uuid !== item.uuid);
-    item.owner = "player";
-    item.location = { kind: "playerBag" };
-    this.state.inventory.push(item);
-    this.state.message = `${itemName(item)}を持ち物へ戻した。`;
-    this.openStore();
   }
 
   private openNpcVisitor(npcId: string): void {
@@ -1793,10 +1711,12 @@ export class MerchantScene extends Phaser.Scene {
 
     const inDungeon = this.state.location === "dungeon";
     const nextMeal = dungeonTimeUntilNextMeal(this.state);
-    const provisionColor = this.state.provisions === 0 ? "#ff8b62" : this.state.provisions === 1 ? "#ffd166" : "#b7d8e8";
-    const provisionText = this.state.provisions === 0
-      ? `食料 0　空腹ダメージまであと${nextMeal ?? "-"}`
-      : `食料 ${this.state.provisions}　次の消費まであと${nextMeal ?? "-"}`;
+    const mealCost = dungeonMealProvisionCost(this.state);
+    const provisionShortage = this.state.provisions < mealCost;
+    const provisionColor = provisionShortage ? "#ff8b62" : this.state.provisions === mealCost ? "#ffd166" : "#b7d8e8";
+    const provisionText = provisionShortage
+      ? `食料${this.state.provisions}　次回要${mealCost}（不足）あと${nextMeal ?? "-"}行動`
+      : `食料${this.state.provisions}　次回${mealCost}個　あと${nextMeal ?? "-"}行動`;
     this.add.text(x, 101, inDungeon ? provisionText : `食料 ${this.state.provisions}　煙玉 ${this.state.smokeBombs}　帰還石 ${this.state.returnStones}`, { fontSize: "10px", color: inDungeon ? provisionColor : "#b7d8e8" });
     if (inDungeon) this.add.text(x, 115, `煙玉 ${this.state.smokeBombs}　帰還石 ${this.state.returnStones}`, { fontSize: "10px", color: "#b7d8e8" });
     const location = this.state.location === "home"
@@ -1829,14 +1749,13 @@ export class MerchantScene extends Phaser.Scene {
         ? [
           { label: "接客中", key: "", action: () => { const id = this.state.shopSession.currentNpcId; if (id) this.openNpcVisitor(id); }, disabled: !this.state.shopSession.currentNpcId },
           { label: "閉店", key: SHORTCUTS.shop, action: () => this.closeActiveShop() },
-          { label: "在庫", key: SHORTCUTS.inventory, action: () => this.openInventory() },
+          { label: "在庫管理", key: SHORTCUTS.inventory, action: () => this.openInventory() },
         ]
         : [
           { label: "調べる", key: SHORTCUTS.investigate, action: () => { this.investigateHome(); this.render(); } },
           { label: "話す", key: SHORTCUTS.talk, action: () => { this.talkHome(); this.render(); } },
           { label: canOpenShop(this.state) ? "開店" : "開店準備", key: SHORTCUTS.shop, action: () => this.openShopForDay() },
-          { label: "インベントリ", key: SHORTCUTS.inventory, action: () => this.openInventory() },
-          { label: "保管・陳列", key: "", action: () => this.openStore() },
+          { label: "在庫管理", key: SHORTCUTS.inventory, action: () => this.openInventory() },
           { label: "探索用品", key: "", action: () => this.openSupplyShop() },
           { label: "護衛依頼", key: "", action: () => this.openQuestBoard() },
           { label: "ダンジョン", key: "", action: () => { beginExpedition(this.state); this.render(); }, disabled: this.state.timeSlot === "night" },
@@ -1880,32 +1799,74 @@ export class MerchantScene extends Phaser.Scene {
     if (!view) return;
     this.add.rectangle(320, 180, 640, 360, 0x08070c, 0.94);
     addWindow(this, 10, 10, 620, 340, { shadow: 4 });
-    this.add.text(26, 20, "インベントリ", { fontSize: "17px", color: UI_INK.title });
+    this.add.text(26, 20, this.state.location === "home" ? "在庫管理" : "インベントリ", { fontSize: "17px", color: UI_INK.title });
     this.add.text(614, 26, `鞄 ${currentItemCount(this.state)}/${INVENTORY_CAPACITY}個　食料${this.state.provisions} 煙玉${this.state.smokeBombs} 帰還石${this.state.returnStones}`, { fontSize: "10px", color: "#cdd8df" }).setOrigin(1, 0);
     addDivider(this, 26, 46, 588);
-    const tabs: Array<[InventoryTab, string]> = [["bag", "鞄"], ["equipment", "装備"], ["storage", "保管庫"], ["display", "店頭商品"]];
+    const equipmentCount = [this.state.equipment.weaponItemId, this.state.equipment.armorItemId].filter(Boolean).length;
+    const tabs: Array<[InventoryTab, string]> = [
+      ["bag", `鞄 ${this.state.inventory.length}`],
+      ["equipment", `装備 ${equipmentCount}`],
+      ["storage", `保管庫 ${this.state.store.length}`],
+      ["display", `店頭 ${this.state.display.length}/4`],
+    ];
     tabs.forEach(([tab, label], index) => this.addActionButton(26 + index * 146, 54, 140, 22, label, "", () => {
       if (!this.inventoryView) return;
       this.inventoryView.tab = tab;
       this.inventoryView.selectedId = this.inventoryItems(tab)[0]?.uuid;
+      this.inventoryView.checkedIds.clear();
+      this.inventoryView.page = 0;
       this.render();
     }, false, view.tab === tab));
     const items = this.inventoryItems(view.tab);
+    const itemIds = new Set(items.map((item) => item.uuid));
+    view.checkedIds = new Set([...view.checkedIds].filter((id) => itemIds.has(id)));
+    const pageCount = Math.max(1, Math.ceil(items.length / INVENTORY_PAGE_SIZE));
+    view.page = Phaser.Math.Clamp(view.page, 0, pageCount - 1);
+    const pageItems = items.slice(view.page * INVENTORY_PAGE_SIZE, (view.page + 1) * INVENTORY_PAGE_SIZE);
     const selected = items.find((item) => item.uuid === view.selectedId) ?? items[0];
     if (selected && view.selectedId !== selected.uuid) view.selectedId = selected.uuid;
     addWindow(this, 26, 84, 300, 240, { variant: "inset" });
-    if (!items.length) this.add.text(40, 96, "ここには品物がない。", { fontSize: "12px", color: "#9e94a2" });
-    items.slice(0, INVENTORY_CAPACITY).forEach((item, index) => {
+    this.add.text(40, 90, this.state.location === "home" && view.tab !== "equipment" ? "□で複数選択" : `${items.length}点`, { fontSize: "10px", color: UI_INK.dim });
+    if (pageCount > 1) {
+      this.add.text(220, 90, `${view.page + 1}/${pageCount}`, { fontSize: "10px", color: UI_INK.dim }).setOrigin(0.5, 0);
+      this.addActionButton(246, 87, 32, 16, "◀", "", () => {
+        if (!this.inventoryView) return;
+        this.inventoryView.page = Math.max(0, this.inventoryView.page - 1);
+        this.inventoryView.selectedId = this.inventoryItems(this.inventoryView.tab)[this.inventoryView.page * INVENTORY_PAGE_SIZE]?.uuid;
+        this.render();
+      }, view.page === 0);
+      this.addActionButton(282, 87, 32, 16, "▶", "", () => {
+        if (!this.inventoryView) return;
+        this.inventoryView.page = Math.min(pageCount - 1, this.inventoryView.page + 1);
+        this.inventoryView.selectedId = this.inventoryItems(this.inventoryView.tab)[this.inventoryView.page * INVENTORY_PAGE_SIZE]?.uuid;
+        this.render();
+      }, view.page === pageCount - 1);
+    }
+    if (!items.length) this.add.text(40, 112, "ここには品物がない。", { fontSize: "12px", color: "#9e94a2" });
+    pageItems.forEach((item, index) => {
       const chosen = item.uuid === selected?.uuid;
       const definition = itemDefinition(item);
-      const column = Math.floor(index / 12);
-      const rowIndex = index % 12;
+      const column = Math.floor(index / 11);
+      const rowIndex = index % 11;
       const left = 30 + column * 146;
-      const top = 90 + rowIndex * 19;
+      const top = 106 + rowIndex * 19;
       if (chosen) addSelectionBar(this, left, top, 144, 17);
-      const row = this.add.rectangle(left, top, 144, 17, 0xffffff, 0.001).setOrigin(0).setInteractive({ useHandCursor: true });
-      this.drawRarityPip(left + 8, top + 8, definition?.rarity);
-      this.add.text(left + 18, top + 2, `${isQuestItemProtected(this.state, item) ? "◆" : ""}${itemName(item)}`, { fontSize: "10px", color: chosen ? UI_INK.onSelection : rarityInk(definition?.rarity) });
+      const batchEnabled = this.state.location === "home" && view.tab !== "equipment";
+      const protectedItem = view.tab === "bag" && isQuestItemProtected(this.state, item);
+      const rowLeft = batchEnabled ? left + 18 : left;
+      const row = this.add.rectangle(rowLeft, top, batchEnabled ? 126 : 144, 17, 0xffffff, 0.001).setOrigin(0).setInteractive({ useHandCursor: true });
+      if (batchEnabled) {
+        const checked = view.checkedIds.has(item.uuid);
+        const checkbox = this.add.text(left + 3, top + 1, protectedItem ? "◆" : checked ? "☑" : "☐", { fontSize: "11px", color: protectedItem ? UI_INK.dim : checked ? UI_INK.accent : UI_INK.body });
+        if (!protectedItem) checkbox.setInteractive({ useHandCursor: true }).on("pointerdown", () => {
+          if (!this.inventoryView) return;
+          if (this.inventoryView.checkedIds.has(item.uuid)) this.inventoryView.checkedIds.delete(item.uuid); else this.inventoryView.checkedIds.add(item.uuid);
+          this.inventoryView.selectedId = item.uuid;
+          this.render();
+        });
+      }
+      this.drawRarityPip(left + (batchEnabled ? 26 : 8), top + 8, definition?.rarity);
+      this.add.text(left + (batchEnabled ? 36 : 18), top + 2, `${protectedItem && !batchEnabled ? "◆" : ""}${itemName(item)}${view.tab === "storage" && this.state.display.includes(item.uuid) ? " ★" : ""}`, { fontSize: "10px", color: chosen ? UI_INK.onSelection : rarityInk(definition?.rarity) });
       row.on("pointerdown", () => { if (this.inventoryView) this.inventoryView.selectedId = item.uuid; this.render(); });
     });
     addWindow(this, 336, 84, 278, 240, { variant: "inset" });
@@ -1926,7 +1887,50 @@ export class MerchantScene extends Phaser.Scene {
     } else if (view.tab === "equipment") {
       this.add.text(348, 98, `武器: ${this.equippedName("weapon")}\n防具: ${this.equippedName("armor")}\n\n攻撃 ${playerAttackPower(this.state)}　防御 ${playerDefensePower(this.state)}`, { fontSize: "11px", color: UI_INK.body, lineSpacing: 7 });
     }
-    this.add.text(26, 328, `${SHORTCUTS.inventory} / Esc で閉じる。どのアイテムも1個で1枠。`, { fontSize: "10px", color: UI_INK.dim });
+    if (this.state.location === "home" && view.tab !== "equipment") this.renderInventoryBatchToolbar(items);
+    else this.add.text(26, 328, `${SHORTCUTS.inventory} / Esc で閉じる。どのアイテムも1個で1枠。`, { fontSize: "10px", color: UI_INK.dim });
+  }
+
+  private renderInventoryBatchToolbar(items: ItemInstance[]): void {
+    const view = this.inventoryView;
+    if (!view) return;
+    const selectable = items.filter((item) => view.tab !== "bag" || !isQuestItemProtected(this.state, item));
+    const selected = selectable.filter((item) => view.checkedIds.has(item.uuid));
+    const allSelected = selectable.length > 0 && selected.length === selectable.length;
+    const finish = (): void => {
+      if (!this.inventoryView) return;
+      this.inventoryView.checkedIds.clear();
+      const remaining = this.inventoryItems(this.inventoryView.tab);
+      this.inventoryView.page = Math.min(this.inventoryView.page, Math.max(0, Math.ceil(remaining.length / INVENTORY_PAGE_SIZE) - 1));
+      this.inventoryView.selectedId = remaining[this.inventoryView.page * INVENTORY_PAGE_SIZE]?.uuid;
+      this.render();
+    };
+    this.add.text(26, 332, `選択 ${selected.length}`, { fontSize: "10px", color: selected.length ? UI_INK.accent : UI_INK.dim });
+    this.addActionButton(82, 327, 74, 18, allSelected ? "全解除" : "全選択", "", () => {
+      if (!this.inventoryView) return;
+      this.inventoryView.checkedIds = allSelected ? new Set() : new Set(selectable.map((item) => item.uuid));
+      this.render();
+    }, selectable.length === 0);
+
+    const ids = selected.map((item) => item.uuid);
+    if (view.tab === "bag") {
+      const displaySlots = Math.max(0, 4 - this.state.display.length);
+      this.addActionButton(160, 327, 122, 18, "保管庫へ", "", () => { moveInventoryItems(this.state, ids, "storage"); finish(); }, selected.length === 0);
+      this.addActionButton(286, 327, 122, 18, `店頭へ（空${displaySlots}）`, "", () => { moveInventoryItems(this.state, ids, "display"); finish(); }, selected.length === 0 || selected.length > displaySlots);
+    } else if (view.tab === "storage") {
+      const newDisplayItems = selected.filter((item) => !this.state.display.includes(item.uuid));
+      const displaySlots = Math.max(0, 4 - this.state.display.length);
+      const bagSlots = INVENTORY_CAPACITY - currentItemCount(this.state);
+      this.addActionButton(160, 327, 122, 18, `鞄へ（空${bagSlots}）`, "", () => { moveStoreItemsToInventory(this.state, ids); finish(); }, selected.length === 0 || selected.length > bagSlots);
+      this.addActionButton(286, 327, 122, 18, `店頭へ（空${displaySlots}）`, "", () => { setDisplayedItems(this.state, [...this.state.display, ...ids]); finish(); }, newDisplayItems.length === 0 || newDisplayItems.length > displaySlots);
+    } else if (view.tab === "display") {
+      this.addActionButton(160, 327, 122, 18, "保管庫へ戻す", "", () => {
+        const selectedIds = new Set(ids);
+        setDisplayedItems(this.state, this.state.display.filter((id) => !selectedIds.has(id)));
+        finish();
+      }, selected.length === 0);
+    }
+    this.add.text(422, 332, "R/Esc 閉じる", { fontSize: "10px", color: UI_INK.dim });
   }
 
   /** 一覧の左端に置く希少度の印。名前の文字色と同じ色で揃える。 */
@@ -1979,13 +1983,7 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private retrieveItemToInventory(item: ItemInstance): void {
-    if (currentItemCount(this.state) >= INVENTORY_CAPACITY) return;
-    this.state.store = this.state.store.filter((entry) => entry.uuid !== item.uuid);
-    this.state.display = this.state.display.filter((id) => id !== item.uuid);
-    item.owner = "player";
-    item.location = { kind: "playerBag" };
-    this.state.inventory.push(item);
-    this.state.message = `${itemName(item)}を鞄へ戻した。`;
+    moveStoreItemsToInventory(this.state, [item.uuid]);
   }
 
   private renderModal(): void {

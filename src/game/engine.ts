@@ -7,7 +7,7 @@ import { createDefaultMapPack } from "./defaultMapPack";
 import { actorDefinition } from "./actorCatalog";
 import { MERCHANT_ITEM_DEFINITIONS } from "./merchantContent";
 import { createGeneratedAdventurer, createGeneratedDeadAdventurer, initializeMerchantWorld, registerWorldItem } from "./merchantEconomy";
-import { consumeDungeonTime, inventoryItemCount, playerAttackPower, playerDefensePower, resetDailySystems, settleShortExpedition, unequipIfNeeded } from "./merchantSystems";
+import { consumeDungeonTime, inventoryItemCount, playerAttackPower, playerDefensePower, resetDailySystems, unequipIfNeeded } from "./merchantSystems";
 import type {
   ActiveGuard,
   Customer,
@@ -618,8 +618,7 @@ export function ascend(state: GameState): void {
   const run = state.run;
   if (!run) return;
   if (run.floor === 1) {
-    settleShortExpedition(state);
-    if (state.status !== "gameOver") returnHome(state, false, "dungeonEntrance");
+    returnHome(state, false, "dungeonEntrance");
     return;
   }
   const nextFloor = run.floor - 1;
@@ -1199,8 +1198,6 @@ function performReturnStone(state: GameState): TurnResult {
     return emptyResult();
   }
   state.returnStones -= 1;
-  settleShortExpedition(state);
-  if (state.status === "gameOver") return { consumedTurn: true, events: [{ type: "message", text: state.message }] };
   returnHome(state, false);
   return { consumedTurn: true, events: [{ type: "message", text: state.message }] };
 }
@@ -1209,13 +1206,13 @@ function performStairs(state: GameState): TurnResult {
   const run = state.run;
   if (!run) return emptyResult();
   if (run.map.stairsDown && samePosition(run.player, run.map.stairsDown)) {
-    consumeDungeonTime(state, 5);
+    consumeDungeonTime(state, 1);
     if (state.status === "gameOver") return { consumedTurn: true, events: [{ type: "message", text: state.message }] };
     descend(state);
     return { consumedTurn: true, events: [{ type: "message", text: state.message }] };
   }
   if (samePosition(run.player, run.map.stairsUp)) {
-    consumeDungeonTime(state, 5);
+    consumeDungeonTime(state, 1);
     if (state.status === "gameOver") return { consumedTurn: true, events: [{ type: "message", text: state.message }] };
     ascend(state);
     return { consumedTurn: true, events: [{ type: "message", text: state.message }] };
@@ -1299,7 +1296,6 @@ export function merchantGameOver(state: GameState, cause: string): void {
 
 /** Return stones and rescue use homeSpawn; the first-floor up stair arrives at dungeonEntrance. */
 export function returnHome(state: GameState, rescued: boolean, arrival: "homeSpawn" | "dungeonEntrance" = "homeSpawn"): void {
-  settleShortExpedition(state);
   const completedRun = state.run;
   if (completedRun) {
     const survivorIds = new Set([
@@ -1597,6 +1593,26 @@ export function moveInventoryItems(state: GameState, itemIds: readonly string[],
     if (destination === "display") toggleDisplay(state, item);
   }
   if (selected.length) state.message = `${selected.length}点を${destination === "display" ? "販売品として店頭へ出した" : "保管庫へ移した"}。`;
+  return selected.length;
+}
+
+export function moveStoreItemsToInventory(state: GameState, itemIds: readonly string[]): number {
+  const selectedIds = new Set(itemIds);
+  const selected = state.store.filter((item) => selectedIds.has(item.uuid));
+  const available = INVENTORY_CAPACITY - inventoryItemCount(state);
+  if (selected.length > available) {
+    state.message = `鞄の空きは${Math.max(0, available)}枠だ。`;
+    return 0;
+  }
+  for (const item of selected) {
+    state.store = state.store.filter((entry) => entry.uuid !== item.uuid);
+    state.display = state.display.filter((id) => id !== item.uuid);
+    item.owner = "player";
+    item.location = { kind: "playerBag" };
+    item.history.push({ day: state.day, type: "recovered", detail: "自宅保管庫から鞄へ移動" });
+    state.inventory.push(item);
+  }
+  if (selected.length) state.message = `${selected.length}点を保管庫から鞄へ戻した。`;
   return selected.length;
 }
 

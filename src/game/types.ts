@@ -268,9 +268,9 @@ export interface DungeonRun {
   shoveCooldown: number;
   highestFloor: number;
   turn: number;
-  /** One unit per normal dungeon action; stairs cost five. */
+  /** One unit per dungeon action, including stair travel. */
   timeUnits: number;
-  /** Number of 25-unit bands already charged for food and world time. */
+  /** Number of 30-action bands already charged for food and world time. */
   settledTimeBands: number;
   /** Keyed by floor number. The current floor is stored just before moving away. */
   floorStates: Record<string, DungeonFloorSnapshot>;

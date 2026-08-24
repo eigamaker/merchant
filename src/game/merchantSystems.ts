@@ -11,6 +11,7 @@ export const SUPPLY_RULES: Record<SupplyKind, { label: string; supplier: string;
 
 export const SHOP_CUSTOMER_MIN = 3;
 export const SHOP_CUSTOMER_MAX = 6;
+export const DUNGEON_ACTIONS_PER_MEAL = 30;
 
 const TIME_ORDER: TimeSlot[] = ["morning", "afternoon", "evening", "night"];
 
@@ -210,19 +211,22 @@ export function consumeDungeonTime(state: GameState, units: number): void {
   const run = state.run;
   if (!run || state.status === "gameOver") return;
   run.timeUnits += units;
-  const dueBands = Math.floor(run.timeUnits / 25);
+  const dueBands = Math.floor(run.timeUnits / DUNGEON_ACTIONS_PER_MEAL);
   while (run.settledTimeBands < dueBands && state.status !== "gameOver") {
     run.settledTimeBands += 1;
     advanceTime(state, 1);
-    if (state.provisions > 0) {
-      state.provisions -= 1;
+    const required = dungeonMealProvisionCost(state);
+    const consumed = Math.min(state.provisions, required);
+    state.provisions -= consumed;
+    if (consumed === required) {
       state.message = state.provisions > 0
-        ? `携行食料を1つ食べた。残り${state.provisions}。`
-        : "携行食料を1つ食べた。食料が尽きたため、次の消費時から空腹ダメージを受ける。";
+        ? `一行で携行食料を${required}個食べた。残り${state.provisions}。`
+        : `一行で携行食料を${required}個食べた。食料が尽きたため、次の消費時から空腹ダメージを受ける。`;
     }
     else {
       state.hp -= 2;
-      state.message = "携行食料が尽き、空腹で2ダメージを受けた。";
+      const shortage = required - consumed;
+      state.message = `一行${required}人分の携行食料が${shortage}個不足し、空腹で2ダメージを受けた。`;
       if (state.hp <= 0) {
         state.hp = 0;
         state.status = "gameOver";
@@ -235,12 +239,9 @@ export function consumeDungeonTime(state: GameState, units: number): void {
 export function dungeonTimeUntilNextMeal(state: GameState): number | undefined {
   const run = state.run;
   if (!run) return undefined;
-  return Math.max(0, (run.settledTimeBands + 1) * 25 - run.timeUnits);
+  return Math.max(0, (run.settledTimeBands + 1) * DUNGEON_ACTIONS_PER_MEAL - run.timeUnits);
 }
 
-export function settleShortExpedition(state: GameState): void {
-  const run = state.run;
-  if (!run || run.settledTimeBands > 0) return;
-  run.timeUnits = Math.max(run.timeUnits, 25);
-  consumeDungeonTime(state, 0);
+export function dungeonMealProvisionCost(state: GameState): number {
+  return state.run?.guard ? 2 : 1;
 }

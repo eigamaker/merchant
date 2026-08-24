@@ -77,6 +77,33 @@ describe("canonical dungeon stairs", () => {
     expect(state.homePos).toEqual({ x: DUNGEON_ENTRANCE.x * 16 + 8, y: DUNGEON_ENTRANCE.y * 16 + 8 });
   });
 
+  it("counts stair travel as one of the thirty actions before a meal", () => {
+    const state = createNewGame();
+    beginExpedition(state);
+    state.provisions = 1;
+    state.run!.timeUnits = 29;
+    state.run!.settledTimeBands = 0;
+    state.run!.player = { ...state.run!.map.stairsDown! };
+
+    tryStairs(state);
+
+    expect(state.run?.timeUnits).toBe(30);
+    expect(state.run?.settledTimeBands).toBe(1);
+    expect(state.provisions).toBe(0);
+  });
+
+  it("does not charge a partial meal when returning before thirty actions", () => {
+    const state = createNewGame();
+    beginExpedition(state);
+    state.provisions = 3;
+    state.run!.timeUnits = 29;
+
+    performDungeonCommand(state, { type: "return" });
+
+    expect(state.location).toBe("home");
+    expect(state.provisions).toBe(3);
+  });
+
   it("snapshots a floor and restores defeated enemies after travelling back", () => {
     const state = createNewGame();
     beginExpedition(state);

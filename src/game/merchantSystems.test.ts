@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { beginExpedition, createItem, createNewGame, moveInventoryItems, performDungeonCommand, setDisplayedItems } from "./engine";
+import { INVENTORY_CAPACITY, beginExpedition, createItem, createNewGame, moveInventoryItems, moveStoreItemsToInventory, performDungeonCommand, setDisplayedItems } from "./engine";
 import {
   buySupply,
   canOpenShop,
   closeShopSession,
   consumeDungeonTime,
+  dungeonMealProvisionCost,
   dungeonTimeUntilNextMeal,
   equipItem,
   finishCurrentCustomer,
@@ -72,6 +73,22 @@ describe("v6 merchant systems", () => {
     expect(state.display).toHaveLength(4);
   });
 
+  it("returns checked stored items to the bag without partially exceeding capacity", () => {
+    const state = createNewGame();
+    const stored = Array.from({ length: 3 }, () => createItem(state, "iron-sword", 1));
+    state.inventory.push(...stored);
+    moveInventoryItems(state, stored.map((item) => item.uuid), "storage");
+
+    expect(moveStoreItemsToInventory(state, stored.slice(0, 2).map((item) => item.uuid))).toBe(2);
+    expect(state.inventory).toEqual(stored.slice(0, 2));
+    expect(state.store).toEqual(stored.slice(2));
+
+    const fillers = Array.from({ length: INVENTORY_CAPACITY - state.inventory.length }, () => createItem(state, "old-ring", 1));
+    state.inventory.push(...fillers);
+    expect(moveStoreItemsToInventory(state, [stored[2]!.uuid])).toBe(0);
+    expect(state.store).toContain(stored[2]);
+  });
+
   it("attacks only the front tile and consumes a turn when a target exists", () => {
     const state = createNewGame();
     beginExpedition(state);
@@ -136,22 +153,31 @@ describe("v6 merchant systems", () => {
     expect(counts.size).toBeGreaterThan(1);
   });
 
-  it("consumes food each dungeon time band, damages starvation, and resting heals", () => {
+  it("consumes one provision per party member every thirty actions and damages shortages", () => {
     const state = createNewGame();
     beginExpedition(state);
-    state.provisions = 1;
-    expect(dungeonTimeUntilNextMeal(state)).toBe(25);
+    state.provisions = 3;
+    expect(dungeonMealProvisionCost(state)).toBe(1);
+    expect(dungeonTimeUntilNextMeal(state)).toBe(30);
     consumeDungeonTime(state, 10);
-    expect(dungeonTimeUntilNextMeal(state)).toBe(15);
-    consumeDungeonTime(state, 15);
-    expect(state.provisions).toBe(0);
+    expect(dungeonTimeUntilNextMeal(state)).toBe(20);
+    consumeDungeonTime(state, 20);
+    expect(state.provisions).toBe(2);
     expect(state.timeSlot).toBe("afternoon");
-    expect(state.message).toContain("食料が尽きた");
-    expect(dungeonTimeUntilNextMeal(state)).toBe(25);
+    expect(state.message).toContain("食料を1個");
+    expect(dungeonTimeUntilNextMeal(state)).toBe(30);
+
+    state.run!.guard = { guardId: "test-guard", pos: { ...state.run!.player }, hp: 10, maxHp: 10, damage: 2, mode: "covering", safeTurns: 0 };
+    expect(dungeonMealProvisionCost(state)).toBe(2);
     const hp = state.hp;
-    consumeDungeonTime(state, 25);
+    consumeDungeonTime(state, 30);
+    expect(state.provisions).toBe(0);
+    expect(state.hp).toBe(hp);
+    expect(state.message).toContain("食料を2個");
+    consumeDungeonTime(state, 30);
     expect(state.hp).toBe(hp - 2);
-    expect(state.message).toContain("空腹で2ダメージ");
+    expect(state.message).toContain("2人分");
+    expect(state.message).toContain("2個不足");
     state.location = "home";
     state.run = undefined;
     state.timeSlot = "evening";
