@@ -112,6 +112,9 @@ export interface ActiveGuard {
   damage: number;
   mode: "covering" | "retreated";
   safeTurns: number;
+  /** Trust earned from medicine is capped per expedition. */
+  healingTrustGained: number;
+  retreatCount: number;
 }
 
 /** An adventurer who explores the current floor independently of the party. */
@@ -127,6 +130,58 @@ export interface DungeonAdventurer {
 export type NpcProfession = "swordsman" | "scout" | "mercenary" | "merchant" | "blacksmith" | "apothecary" | "noble" | "townsperson";
 export type NpcStatus = "inTown" | "visiting" | "contracted" | "dungeon" | "dead" | "departed";
 export type AdventurerRank = "E" | "D" | "C" | "B" | "A";
+
+export type GuardArchetype = "steadfast" | "cautious" | "bold" | "mercenary" | "compassionate";
+
+export interface GuardPersonality {
+  /** Internal values are never rendered directly. */
+  archetype: GuardArchetype;
+  courage: number;
+  discipline: number;
+  empathy: number;
+  integrity: number;
+  greed: number;
+}
+
+export type GuardCareerEventType =
+  | "hired"
+  | "returned"
+  | "kill"
+  | "covered"
+  | "retreated"
+  | "healed"
+  | "warningIgnored"
+  | "leftEarly"
+  | "starved"
+  | "died";
+
+export interface GuardCareerEvent {
+  day: number;
+  type: GuardCareerEventType;
+  detail: string;
+  floor?: number;
+}
+
+export interface GuardCareer {
+  hireCount: number;
+  successfulReturns: number;
+  deepestFloor: number;
+  enemiesDefeated: number;
+  damageCovered: number;
+  retreatCount: number;
+  warningsIgnored: number;
+  earlyDepartures: number;
+  deathDay?: number;
+  deathFloor?: number;
+  events: GuardCareerEvent[];
+}
+
+export interface GuardProfile {
+  personality: GuardPersonality;
+  trust: number;
+  stress: number;
+  career: GuardCareer;
+}
 
 export interface NpcRecord {
   id: string;
@@ -144,6 +199,7 @@ export interface NpcRecord {
   maxHp?: number;
   damage?: number;
   retreatHpRatio?: number;
+  guardProfile?: GuardProfile;
 }
 
 export interface EscortCommission {
@@ -226,6 +282,7 @@ export interface DungeonFloorSnapshot {
 
 export interface DungeonRun {
   seed: number;
+  startedDay: number;
   floor: number;
   map: DungeonMap;
   player: Vec;
@@ -277,7 +334,7 @@ export interface TimedEvent {
 }
 
 export interface GameState {
-  version: 8;
+  version: 9;
   campaignId: string;
   status: "active" | "gameOver";
   day: number;
@@ -295,6 +352,8 @@ export interface GameState {
   homePos: Vec;
   /** Number of expeditions started. Persisted so a new visit never reuses the previous seed. */
   expeditionSerial: number;
+  /** The current day is unavailable when it equals this value. */
+  lastExpeditionDay: number;
   hiredGuardId?: string;
   hiredGuardFee?: number;
   inventory: ItemInstance[];
@@ -325,6 +384,15 @@ export type DungeonEvent =
 export interface TurnResult {
   consumedTurn: boolean;
   events: DungeonEvent[];
+  guardDescent?: GuardDescentAssessment;
+}
+
+export interface GuardDescentAssessment {
+  severity: "allow" | "warn" | "refuse";
+  guardId: string;
+  nextFloor: number;
+  risk: number;
+  reason: string;
 }
 
 export type DungeonCommand =
@@ -342,7 +410,7 @@ export type DungeonCommand =
   | { type: "useMedicine"; itemId: string; target: "player" | "guard" }
   | { type: "buyFromAdventurer"; npcId: string; itemId: string; swapOutId?: string }
   | { type: "sellToAdventurer"; npcId: string; itemId: string }
-  | { type: "stairs" };
+  | { type: "stairs"; guardResponse?: "continue" | "dismiss" };
 
 export type MenuAction = () => void;
 

@@ -4,9 +4,10 @@ import { HOME_SPAWN, createHomeMap } from "./homeMap";
 import { compileMap, loadTrialMapPack } from "./mapDocument";
 import { createDefaultMapPack } from "./defaultMapPack";
 import { actorDefinition } from "./actorCatalog";
-import { MERCHANT_ITEM_DEFINITIONS } from "./merchantContent";
+import { ADVENTURER_RANKS, MERCHANT_ITEM_DEFINITIONS } from "./merchantContent";
 import { createGeneratedAdventurer, createGeneratedDeadAdventurer, initializeMerchantWorld, pruneCampaignRecords, registerWorldItem } from "./merchantEconomy";
-import { consumeDungeonTime, inventoryItemCount, playerAttackPower, playerDefensePower, resetDailySystems, unequipIfNeeded } from "./merchantSystems";
+import { adjustGuardProfile, ensureGuardProfile, recordGuardEvent } from "./guardProfiles";
+import { advanceTime, canReorganizeHomeInventory, consumeDungeonTime, inventoryItemCount, playerAttackPower, playerDefensePower, resetDailySystems, unequipIfNeeded } from "./merchantSystems";
 import type {
   ActiveGuard,
   DungeonBody,
@@ -18,6 +19,7 @@ import type {
   Enemy,
   GameState,
   GroundItem,
+  GuardDescentAssessment,
   ItemDefinition,
   ItemInstance,
   TurnResult,
@@ -66,7 +68,7 @@ export const DIRECTION: Record<"up" | "down" | "left" | "right", Vec> = {
 
 export function createNewGame(): GameState {
   const state: GameState = {
-    version: 8,
+    version: 9,
     campaignId: typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `campaign-${Date.now()}`,
     status: "active",
     day: 1,
@@ -83,6 +85,7 @@ export function createNewGame(): GameState {
     location: "home",
     homePos: { x: HOME_SPAWN.x * 16 + 8, y: HOME_SPAWN.y * 16 + 8 },
     expeditionSerial: 0,
+    lastExpeditionDay: 0,
     inventory: [],
     store: [],
     archive: [],
@@ -346,11 +349,11 @@ function initialGuard(state: GameState, map: DungeonMap): ActiveGuard | undefine
   const npc = state.npcs.find((entry) => entry.id === state.hiredGuardId && entry.adventurer && entry.status !== "dead");
   if (!npc) return undefined;
   const maxHp = npc.maxHp ?? 6;
-  return { guardId: npc.id, pos: { ...map.stairsUp }, hp: maxHp, maxHp, damage: npc.damage ?? 1, mode: "covering", safeTurns: 0 };
+  return { guardId: npc.id, pos: { ...map.stairsUp }, hp: maxHp, maxHp, damage: npc.damage ?? 1, mode: "covering", safeTurns: 0, healingTrustGained: 0, retreatCount: 0 };
 }
 
 
-function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: ActiveGuard | null, highestFloor = floor, floorStates: NonNullable<DungeonRun["floorStates"]> = {}): DungeonRun {
+function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: ActiveGuard | null, highestFloor = floor, floorStates: NonNullable<DungeonRun["floorStates"]> = {}, startedDay = state.day): DungeonRun {
   const map = createDungeonMap(dungeonGenerationMode(), seed, floor);
   const rng = new Rng(seed + floor * 997);
   const occupied: Vec[] = [map.stairsUp, ...(map.stairsDown ? [map.stairsDown] : [])];
@@ -423,6 +426,7 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
 
   return {
     seed,
+    startedDay,
     floor,
     map,
     player: { ...map.stairsUp },
@@ -441,29 +445,51 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
   };
 }
 
-export function beginExpedition(state: GameState): void {
-  if (state.location !== "home" || state.timeSlot === "night" || state.shopSession.status === "movingToCounter" || state.shopSession.status === "waiting" || state.shopSession.status === "serving") {
-    state.message = state.timeSlot === "night" ? "夜はダンジョンへ出発できない。休んで朝を待とう。" : "今はダンジョンへ出発できない。";
-    return;
+export interface ExpeditionAvailability { allowed: boolean; reason?: "wrongLocation" | "night" | "shopActive" | "alreadyExplored" | "inactive"; message: string }
+
+export function canBeginExpedition(state: GameState): ExpeditionAvailability {
+  if (state.status !== "active") return { allowed: false, reason: "inactive", message: "このキャンペーンでは出発できない。" };
+  if (state.location !== "home") return { allowed: false, reason: "wrongLocation", message: "自宅から出発する必要がある。" };
+  if (state.lastExpeditionDay === state.day) return { allowed: false, reason: "alreadyExplored", message: "今日はすでにダンジョンへ入った。次の遠征は翌日にしよう。" };
+  if (state.timeSlot === "night") return { allowed: false, reason: "night", message: "夜はダンジョンへ出発できない。休んで朝を待とう。" };
+  if (["movingToCounter", "waiting", "serving"].includes(state.shopSession.status)) return { allowed: false, reason: "shopActive", message: "営業中はダンジョンへ出発できない。" };
+  return { allowed: true, message: "出発できる。" };
+}
+
+export function beginExpedition(state: GameState): boolean {
+  const availability = canBeginExpedition(state);
+  if (!availability.allowed) {
+    state.message = availability.message;
+    return false;
   }
+  const startedDay = state.day;
   state.expeditionSerial += 1;
   const params = typeof window === "undefined" ? undefined : new URLSearchParams(window.location.search);
   const querySeed = Number.parseInt(params?.get("dungeonSeed") ?? "", 10);
   const queryFloor = Number.parseInt(params?.get("dungeonFloor") ?? "", 10);
   const seed = Number.isFinite(querySeed) && querySeed > 0
     ? querySeed
-    : Math.imul(state.day, 104729) ^ Math.imul(state.expeditionSerial, 0x9e3779b1);
+    : Math.imul(startedDay, 104729) ^ Math.imul(state.expeditionSerial, 0x9e3779b1);
   const floor = Number.isFinite(queryFloor) ? Math.min(8, Math.max(1, queryFloor)) : 1;
+  state.lastExpeditionDay = startedDay;
   state.location = "dungeon";
-  state.run = buildRun(state, floor, seed, undefined, floor);
+  state.run = buildRun(state, floor, seed, undefined, floor, {}, startedDay);
   if (state.escortCommission?.status === "accepted" && state.escortCommission.npcId) {
     state.escortCommission.status = "active";
     const npc = state.npcs.find((entry) => entry.id === state.escortCommission?.npcId);
-    if (npc) npc.status = "dungeon";
+    if (npc) {
+      npc.status = "dungeon";
+      const profile = ensureGuardProfile(state, npc);
+      profile.career.hireCount += 1;
+      profile.career.deepestFloor = Math.max(profile.career.deepestFloor, floor);
+      recordGuardEvent(state, npc, "hired", `地下迷宮の護衛を開始`, floor);
+    }
   }
+  advanceTime(state, 1);
   state.message = state.run.guard
     ? `${activeGuardName(state, state.run.guard.guardId)}とダンジョンへ入った。護衛は同じ隊列で敵を自動的にカバーする。`
     : "ダンジョンへ入った。Spaceで正面の敵を攻撃し、Qで押し返せる。";
+  return true;
 }
 
 function snapshotFloor(run: DungeonRun): import("./types").DungeonFloorSnapshot {
@@ -482,10 +508,10 @@ function snapshotFloor(run: DungeonRun): import("./types").DungeonFloorSnapshot 
   };
 }
 
-function restoreFloor(snapshot: import("./types").DungeonFloorSnapshot, seed: number, floorStates: NonNullable<DungeonRun["floorStates"]>, highestFloor: number, player: Vec, carriedGuard: ActiveGuard | undefined, timeUnits: number, settledTimeBands: number): DungeonRun {
+function restoreFloor(snapshot: import("./types").DungeonFloorSnapshot, seed: number, floorStates: NonNullable<DungeonRun["floorStates"]>, highestFloor: number, player: Vec, carriedGuard: ActiveGuard | undefined, timeUnits: number, settledTimeBands: number, startedDay: number): DungeonRun {
   const restored = clone(snapshot);
   return {
-    ...restored, seed,
+    ...restored, seed, startedDay,
     player: { ...player },
     guard: carriedGuard ? { ...clone(carriedGuard), pos: { ...player } } : undefined,
     highestFloor,
@@ -497,6 +523,34 @@ function restoreFloor(snapshot: import("./types").DungeonFloorSnapshot, seed: nu
 
 function manualFloorExists(floor: number): boolean {
   return typeof window !== "undefined" && Boolean(loadTrialMapPack()?.dungeons.some((map) => map.floor === floor));
+}
+
+export function assessGuardDescent(state: GameState, nextFloor: number): GuardDescentAssessment | undefined {
+  const guard = state.run?.guard;
+  if (!guard) return undefined;
+  const npc = state.npcs.find((entry) => entry.id === guard.guardId);
+  if (!npc) return undefined;
+  const profile = ensureGuardProfile(state, npc);
+  const recommended = ADVENTURER_RANKS[npc.rank ?? "E"].recommendedFloor;
+  const excess = Math.max(0, nextFloor - recommended);
+  if (excess === 0) return { severity: "allow", guardId: guard.guardId, nextFloor, risk: 0, reason: "この護衛の推奨範囲内だ。" };
+  const missingPercent = (hp: number, maxHp: number): number => Math.max(0, Math.min(100, (1 - hp / Math.max(1, maxHp)) * 100));
+  const guardMissing = missingPercent(guard.hp, guard.maxHp);
+  const playerMissing = missingPercent(state.hp, state.maxHp);
+  const risk = excess * 25
+    + guardMissing * 0.25
+    + playerMissing * 0.15
+    + profile.stress * 0.2
+    + (state.provisions < 2 ? 15 : 0)
+    - profile.personality.courage * 0.2
+    - profile.trust * 0.1;
+  const severity = risk >= 50 ? "refuse" : risk >= 15 ? "warn" : "allow";
+  const reason = severity === "refuse"
+    ? `${npc.name}は地下${nextFloor}階への同行を拒んでいる。`
+    : severity === "warn"
+      ? `${npc.name}は地下${nextFloor}階への降下に強い懸念を示している。`
+      : `${npc.name}は警戒しながらも同行するつもりだ。`;
+  return { severity, guardId: guard.guardId, nextFloor, risk, reason };
 }
 
 export function descend(state: GameState): void {
@@ -519,10 +573,17 @@ export function descend(state: GameState): void {
   const highestFloor = Math.max(run.highestFloor, nextFloor);
   const previous = floorStates[String(nextFloor)];
   state.run = previous
-    ? restoreFloor(previous, run.seed, floorStates, highestFloor, previous.map.stairsUp, run.guard, run.timeUnits, run.settledTimeBands)
-    : buildRun(state, nextFloor, run.seed, run.guard ?? null, highestFloor, floorStates);
+    ? restoreFloor(previous, run.seed, floorStates, highestFloor, previous.map.stairsUp, run.guard, run.timeUnits, run.settledTimeBands, run.startedDay)
+    : buildRun(state, nextFloor, run.seed, run.guard ?? null, highestFloor, floorStates, run.startedDay);
   state.run.timeUnits = run.timeUnits;
   state.run.settledTimeBands = run.settledTimeBands;
+  if (state.run.guard) {
+    const npc = state.npcs.find((entry) => entry.id === state.run?.guard?.guardId);
+    if (npc) {
+      const profile = ensureGuardProfile(state, npc);
+      profile.career.deepestFloor = Math.max(profile.career.deepestFloor, nextFloor);
+    }
+  }
   state.message = `地下${nextFloor}階へ降りた。`;
 }
 
@@ -538,10 +599,10 @@ export function ascend(state: GameState): void {
   const previous = floorStates[String(nextFloor)];
   if (previous) {
     const landing = previous.map.stairsDown ?? previous.map.stairsUp;
-    state.run = restoreFloor(previous, run.seed, floorStates, run.highestFloor, landing, run.guard, run.timeUnits, run.settledTimeBands);
+    state.run = restoreFloor(previous, run.seed, floorStates, run.highestFloor, landing, run.guard, run.timeUnits, run.settledTimeBands, run.startedDay);
   } else {
     const map = createDungeonMap(dungeonGenerationMode(), run.seed, nextFloor);
-    state.run = buildRun(state, nextFloor, run.seed, run.guard ?? null, run.highestFloor, floorStates);
+    state.run = buildRun(state, nextFloor, run.seed, run.guard ?? null, run.highestFloor, floorStates, run.startedDay);
     state.run.player = { ...(map.stairsDown ?? map.stairsUp) };
     if (state.run.guard) state.run.guard.pos = { ...state.run.player };
     state.run.timeUnits = run.timeUnits;
@@ -556,11 +617,16 @@ function guardPhase(state: GameState, events: DungeonEvent[]): void {
   if (!run || !guard) return;
   guard.pos = { ...run.player };
   if (guard.mode === "retreated") return;
+  const npc = state.npcs.find((entry) => entry.id === guard.guardId);
+  const profile = npc ? ensureGuardProfile(state, npc) : undefined;
+  const discipline = profile?.personality.discipline ?? 50;
   const adjacent = run.enemies
     .filter((enemy) => distance(enemy.pos, run.player) === 1)
     .sort((a, b) => {
       const aKillable = Number(a.hp <= guard.damage);
       const bKillable = Number(b.hp <= guard.damage);
+      if (discipline >= 65) return bKillable - aKillable || b.damage - a.damage || a.hp - b.hp || a.id.localeCompare(b.id);
+      if (discipline <= 35) return a.hp - b.hp || b.damage - a.damage || a.id.localeCompare(b.id);
       return bKillable - aKillable || b.damage - a.damage || a.hp - b.hp || a.id.localeCompare(b.id);
     });
   const target = adjacent[0];
@@ -571,6 +637,10 @@ function guardPhase(state: GameState, events: DungeonEvent[]): void {
     if (target.hp <= 0) {
       run.enemies = run.enemies.filter((enemy) => enemy.id !== target.id);
       events.push({ type: "defeated", actorId: target.id, pos: { ...target.pos } });
+      if (npc && profile) {
+        profile.career.enemiesDefeated += 1;
+        recordGuardEvent(state, npc, "kill", `${target.name}を倒した`, run.floor);
+      }
       state.message = `${activeGuardName(state, guard.guardId)}が${target.name}を退けた。`;
     }
   }
@@ -677,13 +747,24 @@ function enemyPhase(state: GameState, events: DungeonEvent[]): void {
     }
     const guard = run.guard;
     if (guard?.mode === "covering" && distance(enemy.pos, run.player) === 1) {
+      const covered = Math.min(guard.hp, enemy.damage);
       guard.hp -= enemy.damage;
       events.push({ type: "attack", attackerId: enemy.id, targetId: guard.guardId, damage: enemy.damage });
+      const guardNpc = state.npcs.find((entry) => entry.id === guard.guardId);
+      if (guardNpc) {
+        const profile = ensureGuardProfile(state, guardNpc);
+        profile.career.damageCovered += covered;
+        recordGuardEvent(state, guardNpc, "covered", `${enemy.name}から${covered}ダメージを肩代わり`, run.floor);
+      }
       state.message = `${enemy.name}が${activeGuardName(state, guard.guardId)}へ${enemy.damage}ダメージ。`;
       if (guard.hp <= 0) {
-        const npc = state.npcs.find((entry) => entry.id === guard.guardId);
+        const npc = guardNpc;
         if (npc) {
           npc.status = "dead";
+          const profile = ensureGuardProfile(state, npc);
+          profile.career.deathDay = state.day;
+          profile.career.deathFloor = run.floor;
+          recordGuardEvent(state, npc, "died", `地下${run.floor}階で死亡`, run.floor);
           const loot = npc.inventoryIds.map((id) => state.itemsById[id]).filter((item): item is ItemInstance => Boolean(item));
           for (const item of loot) {
             item.location = { kind: "corpse", npcId: npc.id, floor: run.floor };
@@ -698,6 +779,13 @@ function enemyPhase(state: GameState, events: DungeonEvent[]): void {
       } else if (guard.hp <= guardRetreatThreshold(state, guard)) {
         guard.mode = "retreated";
         guard.safeTurns = 0;
+        guard.retreatCount += 1;
+        if (guardNpc) {
+          const profile = ensureGuardProfile(state, guardNpc);
+          profile.career.retreatCount += 1;
+          adjustGuardProfile(profile, 0, 8);
+          recordGuardEvent(state, guardNpc, "retreated", `HP${guard.hp}で後退`, run.floor);
+        }
         events.push({ type: "guardMode", guardId: guard.guardId, mode: "retreated" });
         state.message = `${activeGuardName(state, guard.guardId)}は危険を感じ、隊列の後方へ下がった。`;
       }
@@ -754,7 +842,8 @@ function updateGuardRecovery(state: GameState, events: DungeonEvent[]): void {
   if (!run || !guard || guard.mode !== "retreated") return;
   const safe = run.enemies.every((enemy) => distance(enemy.pos, run.player) > 6);
   guard.safeTurns = safe ? guard.safeTurns + 1 : 0;
-  if (guard.safeTurns < 2) return;
+  const requiredSafeTurns = guardRecoveryTurns(state, guard.guardId);
+  if (guard.safeTurns < requiredSafeTurns) return;
   guard.mode = "covering";
   guard.safeTurns = 0;
   events.push({ type: "guardMode", guardId: guard.guardId, mode: "covering" });
@@ -981,6 +1070,16 @@ function performUseMedicine(state: GameState, itemId: string, target: "player" |
   state.inventory = state.inventory.filter((entry) => entry.uuid !== item.uuid);
   unequipIfNeeded(state, item.uuid);
   item.location = { kind: "consumed", actorId: guard?.guardId ?? "player" };
+  if (guard) {
+    const npc = state.npcs.find((entry) => entry.id === guard.guardId);
+    if (npc) {
+      const profile = ensureGuardProfile(state, npc);
+      const trustGain = Math.min(2, Math.max(0, 4 - guard.healingTrustGained));
+      guard.healingTrustGained += trustGain;
+      adjustGuardProfile(profile, trustGain, 0);
+      recordGuardEvent(state, npc, "healed", `${itemName(item)}でHPを${recovered}回復`, state.run?.floor);
+    }
+  }
   state.message = `${itemName(item)}を${guard ? activeGuardName(state, guard.guardId) : "自分"}に使い、HPを${recovered}回復した。`;
   return finishTurn(state, [{ type: "message", text: state.message }]);
 }
@@ -1060,13 +1159,53 @@ function performReturnStone(state: GameState): TurnResult {
   return { consumedTurn: true, events: [{ type: "message", text: state.message }] };
 }
 
-function performStairs(state: GameState): TurnResult {
+function dismissGuardForDescent(state: GameState): string | undefined {
+  const guard = state.run?.guard;
+  if (!guard) return undefined;
+  const npc = state.npcs.find((entry) => entry.id === guard.guardId);
+  if (npc) {
+    const profile = ensureGuardProfile(state, npc);
+    profile.career.earlyDepartures += 1;
+    adjustGuardProfile(profile, -5, 0);
+    recordGuardEvent(state, npc, "leftEarly", `深層への同行を断り単独帰還`, state.run?.floor);
+    if (npc.status !== "dead") npc.status = "inTown";
+  }
+  state.run!.guard = undefined;
+  state.hiredGuardId = undefined;
+  state.hiredGuardFee = undefined;
+  state.escortCommission = undefined;
+  return npc?.name;
+}
+
+function performStairs(state: GameState, guardResponse?: "continue" | "dismiss"): TurnResult {
   const run = state.run;
   if (!run) return emptyResult();
   if (run.map.stairsDown && samePosition(run.player, run.map.stairsDown)) {
+    const assessment = assessGuardDescent(state, run.floor + 1);
+    if (assessment?.severity === "warn" && guardResponse !== "continue") {
+      state.message = assessment.reason;
+      return { consumedTurn: false, events: [], guardDescent: assessment };
+    }
+    if (assessment?.severity === "refuse" && guardResponse !== "dismiss") {
+      state.message = assessment.reason;
+      return { consumedTurn: false, events: [], guardDescent: assessment };
+    }
+    let dismissedName: string | undefined;
+    if (assessment?.severity === "warn" && guardResponse === "continue") {
+      const npc = state.npcs.find((entry) => entry.id === assessment.guardId);
+      if (npc) {
+        const profile = ensureGuardProfile(state, npc);
+        profile.career.warningsIgnored += 1;
+        adjustGuardProfile(profile, -2, 5);
+        recordGuardEvent(state, npc, "warningIgnored", `地下${assessment.nextFloor}階への警告を押して同行`, assessment.nextFloor);
+      }
+    } else if (assessment?.severity === "refuse" && guardResponse === "dismiss") {
+      dismissedName = dismissGuardForDescent(state);
+    }
     consumeDungeonTime(state, 1);
     if (state.status === "gameOver") return { consumedTurn: true, events: [{ type: "message", text: state.message }] };
     descend(state);
+    if (dismissedName) state.message = `${dismissedName}を町へ帰し、ひとりで地下${state.run?.floor ?? assessment?.nextFloor}階へ降りた。`;
     return { consumedTurn: true, events: [{ type: "message", text: state.message }] };
   }
   if (samePosition(run.player, run.map.stairsUp)) {
@@ -1097,7 +1236,7 @@ export function performDungeonCommand(state: GameState, command: DungeonCommand)
     case "useMedicine": return performUseMedicine(state, command.itemId, command.target);
     case "buyFromAdventurer": return performBuyFromAdventurer(state, command.npcId, command.itemId, command.swapOutId);
     case "sellToAdventurer": return performSellToAdventurer(state, command.npcId, command.itemId);
-    case "stairs": return performStairs(state);
+    case "stairs": return performStairs(state, command.guardResponse);
   }
 }
 
@@ -1141,8 +1280,8 @@ export function useSmokeBomb(state: GameState): TurnResult {
   return performDungeonCommand(state, { type: "smoke" });
 }
 
-export function tryStairs(state: GameState): TurnResult {
-  return performDungeonCommand(state, { type: "stairs" });
+export function tryStairs(state: GameState, guardResponse?: "continue" | "dismiss"): TurnResult {
+  return performDungeonCommand(state, { type: "stairs", guardResponse });
 }
 
 export function merchantGameOver(state: GameState, cause: string): void {
@@ -1168,8 +1307,14 @@ export function returnHome(state: GameState, arrival: "homeSpawn" | "dungeonEntr
     if (npc && npc.status !== "dead") {
       npc.status = "inTown";
       npc.relation = Math.min(100, npc.relation + 1);
+      const profile = ensureGuardProfile(state, npc);
+      profile.career.successfulReturns += 1;
+      profile.career.deepestFloor = Math.max(profile.career.deepestFloor, completedRun.highestFloor);
+      adjustGuardProfile(profile, 8, -10);
+      recordGuardEvent(state, npc, "returned", `地下${completedRun.highestFloor}階から契約を完遂して生還`, completedRun.highestFloor);
     }
   }
+  state.lastExpeditionDay = Math.max(state.lastExpeditionDay, state.day);
   state.location = "home";
   const home = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("autostart") === "world"
     ? loadTrialMapPack()?.home ?? createHomeMap()
@@ -1187,11 +1332,24 @@ export function returnHome(state: GameState, arrival: "homeSpawn" | "dungeonEntr
 
 
 export function guardRetreatRatio(state: GameState, guardId: string): number {
-  return state.npcs.find((entry) => entry.id === guardId)?.retreatHpRatio ?? 0.25;
+  const npc = state.npcs.find((entry) => entry.id === guardId);
+  const base = npc?.retreatHpRatio ?? 0.25;
+  if (!npc) return base;
+  const profile = ensureGuardProfile(state, npc);
+  const commitment = Math.max(0, profile.personality.empathy + profile.trust - 100) / 500;
+  return Math.max(0.15, Math.min(0.65,
+    base + (50 - profile.personality.courage) / 250 + profile.stress / 500 - commitment,
+  ));
 }
 
 export function guardRetreatThreshold(state: GameState, guard: ActiveGuard): number {
   return Math.max(1, Math.ceil(guard.maxHp * guardRetreatRatio(state, guard.guardId)));
+}
+
+export function guardRecoveryTurns(state: GameState, guardId: string): number {
+  const npc = state.npcs.find((entry) => entry.id === guardId);
+  const courage = npc ? ensureGuardProfile(state, npc).personality.courage : 50;
+  return courage >= 70 ? 1 : courage <= 30 ? 3 : 2;
 }
 
 
@@ -1207,6 +1365,10 @@ export function guardRetreatThreshold(state: GameState, guard: ActiveGuard): num
 
 
 export function moveToStore(state: GameState, item: ItemInstance): void {
+  if (!canReorganizeHomeInventory(state)) {
+    state.message = "営業中は在庫整理できない。";
+    return;
+  }
   unequipIfNeeded(state, item.uuid);
   state.inventory = state.inventory.filter((entry) => entry.uuid !== item.uuid);
   item.owner = "store";
@@ -1218,6 +1380,10 @@ export function moveToStore(state: GameState, item: ItemInstance): void {
 }
 
 export function moveInventoryItems(state: GameState, itemIds: readonly string[], destination: "storage" | "display"): number {
+  if (!canReorganizeHomeInventory(state)) {
+    state.message = "営業中は在庫整理できない。";
+    return 0;
+  }
   const selectedIds = new Set(itemIds);
   const selected = state.inventory.filter((item) => selectedIds.has(item.uuid));
   if (destination === "display" && selected.length > DISPLAY_CAPACITY - state.display.length) {
@@ -1233,6 +1399,10 @@ export function moveInventoryItems(state: GameState, itemIds: readonly string[],
 }
 
 export function moveStoreItemsToInventory(state: GameState, itemIds: readonly string[]): number {
+  if (!canReorganizeHomeInventory(state)) {
+    state.message = "営業中は在庫整理できない。";
+    return 0;
+  }
   const selectedIds = new Set(itemIds);
   const selected = state.store.filter((item) => selectedIds.has(item.uuid));
   const available = INVENTORY_CAPACITY - inventoryItemCount(state);
@@ -1253,6 +1423,10 @@ export function moveStoreItemsToInventory(state: GameState, itemIds: readonly st
 }
 
 export function toggleDisplay(state: GameState, item: ItemInstance): void {
+  if (!canReorganizeHomeInventory(state)) {
+    state.message = "営業中は在庫整理できない。";
+    return;
+  }
   if (!state.store.some((entry) => entry.uuid === item.uuid)) return;
   const showing = state.display.includes(item.uuid);
   if (showing) {
@@ -1275,6 +1449,10 @@ export function toggleDisplay(state: GameState, item: ItemInstance): void {
 }
 
 export function setDisplayedItems(state: GameState, itemIds: readonly string[]): number {
+  if (!canReorganizeHomeInventory(state)) {
+    state.message = "営業中は在庫整理できない。";
+    return 0;
+  }
   const validStoreIds = new Set(state.store.map((item) => item.uuid));
   const desiredIds = new Set(itemIds.filter((id) => validStoreIds.has(id)));
   if (desiredIds.size > DISPLAY_CAPACITY) {

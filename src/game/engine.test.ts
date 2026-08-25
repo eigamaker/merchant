@@ -114,7 +114,7 @@ describe("canonical dungeon stairs", () => {
     const state = createNewGame();
     beginExpedition(state);
     const run = state.run!;
-    run.guard = { guardId: "rolf", pos: { x: 47, y: 35 }, hp: 3, maxHp: 8, damage: 2, mode: "covering", safeTurns: 0 };
+    run.guard = { guardId: "rolf", pos: { x: 47, y: 35 }, hp: 3, maxHp: 8, damage: 2, mode: "covering", safeTurns: 0, healingTrustGained: 0, retreatCount: 0 };
     const targetMap = compactDungeonMap(6, 5, { x: 1, y: 1 }, { x: 4, y: 3 });
     run.floorStates["2"] = emptyFloorSnapshot(2, targetMap);
 
@@ -131,10 +131,10 @@ describe("canonical dungeon stairs", () => {
     beginExpedition(state);
     descend(state);
     const run = state.run!;
-    run.guard = { guardId: "rolf", pos: { x: 47, y: 35 }, hp: 2, maxHp: 8, damage: 2, mode: "covering", safeTurns: 0 };
+    run.guard = { guardId: "rolf", pos: { x: 47, y: 35 }, hp: 2, maxHp: 8, damage: 2, mode: "covering", safeTurns: 0, healingTrustGained: 0, retreatCount: 0 };
     const targetMap = compactDungeonMap(8, 6, { x: 1, y: 1 }, { x: 6, y: 4 });
     const target = emptyFloorSnapshot(1, targetMap);
-    target.guard = { guardId: "rolf", pos: { x: 2, y: 2 }, hp: 8, maxHp: 8, damage: 2, mode: "covering", safeTurns: 0 };
+    target.guard = { guardId: "rolf", pos: { x: 2, y: 2 }, hp: 8, maxHp: 8, damage: 2, mode: "covering", safeTurns: 0, healingTrustGained: 0, retreatCount: 0 };
     run.floorStates["1"] = target;
 
     ascend(state);
@@ -176,6 +176,7 @@ describe("dungeon generator", () => {
       if (!run) throw new Error("run missing");
       signatures.add(`${run.seed}:${run.map.tiles.flat().join("")}`);
       returnHome(state);
+      state.day += 1;
       state.timeSlot = "morning";
     }
     expect(state.expeditionSerial).toBe(30);
@@ -293,6 +294,9 @@ describe("automatic guards", () => {
     expect(enemy.hp).toBe(10 - guard.damage);
     expect(guard.hp).toBe(guardHp - enemy.damage);
     expect(state.hp).toBe(playerHp);
+    const career = state.npcs.find((npc) => npc.id === guard.guardId)!.guardProfile!.career;
+    expect(career.damageCovered).toBe(enemy.damage);
+    expect(career.events.at(-1)?.type).toBe("covered");
   });
 
   it("prioritizes an adjacent enemy the guard can defeat", () => {
@@ -301,6 +305,7 @@ describe("automatic guards", () => {
     beginExpedition(state);
     const run = state.run!;
     const guard = run.guard!;
+    state.npcs.find((npc) => npc.id === guard.guardId)!.guardProfile!.personality.discipline = 50;
     const [killable, dangerous] = run.enemies;
     if (!killable || !dangerous) throw new Error("test setup failed");
     run.player = { x: 5, y: 5 };
@@ -317,6 +322,9 @@ describe("automatic guards", () => {
 
     expect(run.enemies.some((enemy) => enemy.id === killable.id)).toBe(false);
     expect(run.enemies.some((enemy) => enemy.id === dangerous.id)).toBe(true);
+    const career = state.npcs.find((npc) => npc.id === guard.guardId)!.guardProfile!.career;
+    expect(career.enemiesDefeated).toBe(1);
+    expect(career.events.some((event) => event.type === "kill")).toBe(true);
   });
 
 
@@ -344,6 +352,8 @@ describe("automatic guards", () => {
     beginExpedition(state);
     const run = state.run!;
     const guard = run.guard!;
+    Object.assign(state.npcs.find((npc) => npc.id === guard.guardId)!.guardProfile!, { trust: 20, stress: 0 });
+    Object.assign(state.npcs.find((npc) => npc.id === guard.guardId)!.guardProfile!.personality, { courage: 50, empathy: 0 });
     const [first, second] = run.enemies;
     if (!first || !second) throw new Error("test setup failed");
     run.player = { x: 5, y: 5 };
@@ -361,7 +371,11 @@ describe("automatic guards", () => {
 
     expect(guard.hp).toBe(3);
     expect(guard.mode).toBe("retreated");
+    expect(guard.retreatCount).toBe(1);
     expect(state.hp).toBe(playerHp - 1);
+    const profile = state.npcs.find((npc) => npc.id === guard.guardId)!.guardProfile!;
+    expect(profile.stress).toBe(8);
+    expect(profile.career.retreatCount).toBe(1);
   });
 
   it("resets unsafe recovery and resumes cover after two safe turns", () => {
@@ -370,6 +384,7 @@ describe("automatic guards", () => {
     beginExpedition(state);
     const run = state.run!;
     const guard = run.guard!;
+    state.npcs.find((npc) => npc.id === guard.guardId)!.guardProfile!.personality.courage = 50;
     guard.mode = "retreated";
     guard.safeTurns = 1;
     const enemy = run.enemies[0]!;
@@ -391,7 +406,12 @@ describe("automatic guards", () => {
 
   it("uses the configured retreat threshold for each named adventurer", () => {
     const state = createNewGame();
-    const threshold = (guardId: string, maxHp: number) => guardRetreatThreshold(state, { guardId, pos: { x: 1, y: 1 }, hp: maxHp, maxHp, damage: 1, mode: "covering", safeTurns: 0 });
+    for (const guardId of ["mina", "rolf", "bastian"]) {
+      const profile = state.npcs.find((npc) => npc.id === guardId)!.guardProfile!;
+      Object.assign(profile.personality, { courage: 50, empathy: 0 });
+      Object.assign(profile, { trust: 0, stress: 0 });
+    }
+    const threshold = (guardId: string, maxHp: number) => guardRetreatThreshold(state, { guardId, pos: { x: 1, y: 1 }, hp: maxHp, maxHp, damage: 1, mode: "covering", safeTurns: 0, healingTrustGained: 0, retreatCount: 0 });
     expect(threshold("mina", 6)).toBe(3);
     expect(threshold("rolf", 8)).toBe(3);
     expect(threshold("bastian", 10)).toBe(2);
@@ -416,6 +436,50 @@ describe("automatic guards", () => {
     expect(state.run!.turn).toBe(beforeTurn + 1);
     expect(state.inventory).not.toContain(potion);
     expect(potion.location).toEqual({ kind: "consumed", actorId: guard.guardId });
+    const profile = state.npcs.find((npc) => npc.id === guard.guardId)!.guardProfile!;
+    expect(profile.trust).toBe(22);
+    expect(profile.career.events.at(-1)?.type).toBe("healed");
+  });
+
+  it("caps medicine trust at four per expedition", () => {
+    const state = createNewGame();
+    unlockAndHire(state);
+    beginExpedition(state);
+    const guard = state.run!.guard!;
+    state.run!.enemies = [];
+    const profile = state.npcs.find((npc) => npc.id === guard.guardId)!.guardProfile!;
+    for (let index = 0; index < 3; index += 1) {
+      guard.hp = 1;
+      const potion = createItem(state, "minor-healing-potion");
+      state.inventory.push(potion);
+      performDungeonCommand(state, { type: "useMedicine", itemId: potion.uuid, target: "guard" });
+    }
+    expect(profile.trust).toBe(24);
+    expect(guard.healingTrustGained).toBe(4);
+  });
+
+  it("records the active guard's death day and floor once", () => {
+    const state = createNewGame();
+    unlockAndHire(state);
+    beginExpedition(state);
+    const run = state.run!;
+    const guard = run.guard!;
+    const npc = state.npcs.find((entry) => entry.id === guard.guardId)!;
+    const enemy = run.enemies[0]!;
+    run.player = { x: 5, y: 5 };
+    guard.hp = 1;
+    enemy.pos = { x: 6, y: 5 };
+    enemy.hp = 99;
+    enemy.damage = 2;
+    run.enemies = [enemy];
+
+    waitTurn(state);
+
+    expect(run.guard).toBeUndefined();
+    expect(npc.status).toBe("dead");
+    expect(npc.guardProfile!.career.deathDay).toBe(state.day);
+    expect(npc.guardProfile!.career.deathFloor).toBe(run.floor);
+    expect(npc.guardProfile!.career.events.filter((event) => event.type === "died")).toHaveLength(1);
   });
 });
 
@@ -561,7 +625,7 @@ describe("save migration", () => {
     const migrated = migrateSaveState(legacy as never);
     const carried = migrated as unknown as Record<string, unknown>;
 
-    expect(migrated.version).toBe(8);
+    expect(migrated.version).toBe(9);
     for (const key of ["quests", "customers", "guards", "story", "refusedOffers", "guildReputation"]) {
       expect(carried[key]).toBeUndefined();
     }

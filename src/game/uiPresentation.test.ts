@@ -128,4 +128,25 @@ describe("readable canvas presentation", () => {
     expect(scene).not.toContain("深層ダンジョン 地下${run.floor}階");
     expect(scene).toContain("this.add.rectangle(320, 180, 640, 360, 0x07060b, 0.88).setInteractive()");
   });
+
+  it("exposes daily expedition, shop inventory lock, and guard reputation flows", () => {
+    const scene = readFileSync(resolve(process.cwd(), "src/scenes/MerchantScene.ts"), "utf8");
+    expect(scene).toContain("canBeginExpedition(this.state)");
+    expect(scene).toContain('"本日の探索済み"');
+    expect(scene).toContain("canReorganizeHomeInventory(this.state)");
+    expect(scene).toContain("営業中は在庫整理できない。");
+    expect(scene).toContain('"在庫管理（営業中）"');
+    expect(scene).toContain("private openEscortProfile");
+    expect(scene).toContain("private openEscortObservations");
+    expect(scene).toContain("private openEscortHistory");
+    expect(scene).toContain("private openGuardDescentPrompt");
+  });
+
+  it("starts customer exit immediately after a sale without redrawing away its tween", () => {
+    const scene = readFileSync(resolve(process.cwd(), "src/scenes/MerchantScene.ts"), "utf8");
+    expect(scene).toContain("if (result.accepted) this.finishCustomerAndContinue();");
+    expect(scene).not.toContain('this.openMenu(result.accepted ? "売買成立"');
+    expect(scene).toMatch(/if \(this\.just\("enter"\) \|\| this\.just\("space"\)\)[\s\S]*?if \(this\.modal\) this\.render\(\);\s*return;/);
+    expect(scene).toMatch(/hit\.on\("pointerdown"[\s\S]*?choice\.action\(\);\s*if \(this\.modal\) this\.render\(\);/);
+  });
 });

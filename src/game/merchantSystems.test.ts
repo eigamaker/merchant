@@ -163,11 +163,11 @@ describe("v6 merchant systems", () => {
     expect(dungeonTimeUntilNextMeal(state)).toBe(20);
     consumeDungeonTime(state, 20);
     expect(state.provisions).toBe(2);
-    expect(state.timeSlot).toBe("afternoon");
+    expect(state.timeSlot).toBe("evening");
     expect(state.message).toContain("食料を1個");
     expect(dungeonTimeUntilNextMeal(state)).toBe(30);
 
-    state.run!.guard = { guardId: "test-guard", pos: { ...state.run!.player }, hp: 10, maxHp: 10, damage: 2, mode: "covering", safeTurns: 0 };
+    state.run!.guard = { guardId: "test-guard", pos: { ...state.run!.player }, hp: 10, maxHp: 10, damage: 2, mode: "covering", safeTurns: 0, healingTrustGained: 0, retreatCount: 0 };
     expect(dungeonMealProvisionCost(state)).toBe(2);
     const hp = state.hp;
     consumeDungeonTime(state, 30);

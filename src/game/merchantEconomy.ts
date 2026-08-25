@@ -1,4 +1,5 @@
 import { ADVENTURER_RANKS, LEGENDARY_NAME_PREFIXES, MERCHANT_ITEM_DEFINITIONS, NPC_SEEDS, adventurerRankForFloor, createInitialNpcs, GENERATED_ADVENTURER_NAMES } from "./merchantContent";
+import { ensureGuardProfile, initializeGuardProfiles } from "./guardProfiles";
 import type { AdventurerRank, GameState, ItemInstance, NpcProfession, NpcRecord } from "./types";
 
 function hash(value: string): number {
@@ -13,6 +14,7 @@ export function initializeMerchantWorld(state: GameState): void {
   state.nextNpcId = 1;
   state.singularItemIds = [];
   state.visitorNpcIds = [];
+  initializeGuardProfiles(state);
 }
 
 const TOWN_NPC_IDS: ReadonlySet<string> = new Set(NPC_SEEDS.map((seed) => seed.id));
@@ -77,10 +79,13 @@ export function merchantItemName(item: ItemInstance): string | undefined {
   return MERCHANT_ITEM_DEFINITIONS[item.definitionId]?.trueName;
 }
 
-export function escortFeeForNpc(_state: GameState, npc: NpcRecord): number {
+export function escortFeeForNpc(state: GameState, npc: NpcRecord): number {
   const baseFee = ADVENTURER_RANKS[npc.rank ?? "E"].escortFee;
-  const relationDiscount = Math.min(0.2, npc.relation * 0.02);
-  return Math.max(1, Math.floor(baseFee * (1 - relationDiscount)));
+  const profile = ensureGuardProfile(state, npc);
+  const personalityMultiplier = 0.9 + profile.personality.greed / 500;
+  const reputationPremium = Math.min(0.25, profile.career.deepestFloor * 0.02 + profile.career.successfulReturns * 0.01);
+  const trustDiscount = Math.min(0.2, profile.trust * 0.002);
+  return Math.max(1, Math.floor(baseFee * personalityMultiplier * (1 + reputationPremium) * (1 - trustDiscount)));
 }
 
 export function postEscortCommission(state: GameState, npcId: string): NpcRecord | undefined {
@@ -242,6 +247,7 @@ export function createGeneratedAdventurer(state: GameState, floor: number): NpcR
     interests: [...template.interests],
     inventoryIds: [],
   };
+  npc.guardProfile = ensureGuardProfile(state, npc);
   state.npcs.push(npc);
   return npc;
 }

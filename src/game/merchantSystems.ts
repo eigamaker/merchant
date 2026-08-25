@@ -1,5 +1,6 @@
 import { MERCHANT_ITEM_DEFINITIONS } from "./merchantContent";
 import { prepareCustomerPurchaseRequest } from "./merchantEconomy";
+import { adjustGuardProfile, ensureGuardProfile, recordGuardEvent } from "./guardProfiles";
 import type { GameState, ItemInstance, SupplyKind, TimeSlot } from "./types";
 
 export const SUPPLY_RULES: Record<SupplyKind, { label: string; supplier: string; price: number; dailyStock: number }> = {
@@ -46,6 +47,10 @@ export function playerDefensePower(state: GameState): number {
 }
 
 export function equipItem(state: GameState, itemId: string): boolean {
+  if (!canReorganizeHomeInventory(state)) {
+    state.message = "営業中は在庫整理できない。";
+    return false;
+  }
   const item = state.inventory.find((entry) => entry.uuid === itemId);
   const itemDefinition = item ? definition(item) : undefined;
   if (!item || !itemDefinition) return false;
@@ -57,6 +62,10 @@ export function equipItem(state: GameState, itemId: string): boolean {
 }
 
 export function unequipItem(state: GameState, slot: "weapon" | "armor"): void {
+  if (!canReorganizeHomeInventory(state)) {
+    state.message = "営業中は在庫整理できない。";
+    return;
+  }
   if (slot === "weapon") state.equipment.weaponItemId = undefined;
   else state.equipment.armorItemId = undefined;
   state.message = "装備を外した。";
@@ -77,6 +86,10 @@ export function resetDailySystems(state: GameState): void {
     returnStones: SUPPLY_RULES.returnStones.dailyStock,
     provisions: SUPPLY_RULES.provisions.dailyStock,
   };
+  for (const npc of state.npcs.filter((entry) => entry.adventurer && (entry.status === "inTown" || entry.status === "contracted"))) {
+    const profile = ensureGuardProfile(state, npc);
+    adjustGuardProfile(profile, 0, -12);
+  }
 }
 
 export function advanceTime(state: GameState, bands = 1): void {
@@ -129,6 +142,11 @@ export function isShopSessionActive(state: GameState): boolean {
   return state.shopSession.status === "movingToCounter"
     || state.shopSession.status === "waiting"
     || state.shopSession.status === "serving";
+}
+
+/** Home stock and equipment stay fixed from opening preparation through close. */
+export function canReorganizeHomeInventory(state: GameState): boolean {
+  return state.location !== "home" || !isShopSessionActive(state);
 }
 
 export function startShopSession(state: GameState): boolean {
@@ -220,6 +238,12 @@ export function consumeDungeonTime(state: GameState, units: number): void {
     else {
       state.hp -= 2;
       const shortage = required - consumed;
+      const guardNpc = state.run?.guard ? state.npcs.find((npc) => npc.id === state.run?.guard?.guardId) : undefined;
+      if (guardNpc) {
+        const profile = ensureGuardProfile(state, guardNpc);
+        adjustGuardProfile(profile, -6, 15);
+        recordGuardEvent(state, guardNpc, "starved", `地下${state.run!.floor}階で食料が不足した`, state.run!.floor);
+      }
       state.message = `一行${required}人分の携行食料が${shortage}個不足し、空腹で2ダメージを受けた。`;
       if (state.hp <= 0) {
         state.hp = 0;

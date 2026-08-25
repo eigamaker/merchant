@@ -4,6 +4,7 @@ import { loadTrialMapPack, type MapDocument } from "./mapDocument";
 import { isMapPositionWalkable } from "./mapTiles";
 import { initializeMerchantWorld, pruneCampaignRecords } from "./merchantEconomy";
 import { createInitialNpcs } from "./merchantContent";
+import { initializeGuardProfiles } from "./guardProfiles";
 /** v1-v3 saves always used the fixed 32x20, 16px home. */
 const HOME_SPAWN_PIXEL = { x: HOME_SPAWN.x * 16 + 8, y: HOME_SPAWN.y * 16 + 8 };
 
@@ -47,6 +48,10 @@ export function markCampaignDead(campaignId: string): void {
 
 export function isCampaignDead(campaignId: string): boolean {
   return deadCampaigns().has(campaignId);
+}
+
+export function isSupportedSaveVersion(version: unknown): version is number {
+  return typeof version === "number" && Number.isInteger(version) && version >= 5 && version <= 9;
 }
 
 function activeHomeMapForSave(): MapDocument {
@@ -114,7 +119,7 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
   const state = raw as unknown as GameState;
   const oldLocation = (state as unknown as { location?: string }).location;
   if (oldLocation === "town" || oldLocation === "interior") state.location = "home";
-  state.version = 8;
+  state.version = 9;
   state.campaignId ??= `legacy-${Date.now()}`;
   state.status ??= "active";
   // 追加した任意項目を補い、既存のブラウザ保存を壊さない。
@@ -127,6 +132,7 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
   state.dailySupplyStock ??= { day: state.day, smokeBombs: 2, returnStones: 1, provisions: 6 };
   state.archive ??= [];
   state.expeditionSerial ??= 0;
+  state.lastExpeditionDay ??= state.run ? state.day : 0;
   state.itemsById ??= {};
   state.npcs ??= [];
   state.visitorNpcIds ??= [];
@@ -149,6 +155,7 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
   for (const npc of state.npcs) if (npc.adventurer && !npc.rank) {
     npc.rank = (npc.baseFee ?? 0) >= 900 ? "A" : (npc.baseFee ?? 0) >= 550 ? "B" : (npc.baseFee ?? 0) >= 320 ? "C" : (npc.baseFee ?? 0) >= 180 ? "D" : "E";
   }
+  initializeGuardProfiles(state);
   if (state.escortCommission?.npcId && !state.escortCommission.rank) {
     state.escortCommission.rank = state.npcs.find((npc) => npc.id === state.escortCommission?.npcId)?.rank ?? "E";
   }
@@ -184,6 +191,7 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
         shoveCooldown: 0,
         highestFloor: floor,
         floorStates: {},
+        startedDay: state.day,
       };
     }
     state.hiredGuardId = undefined;
@@ -191,11 +199,14 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
   } else {
     if (state.run) {
       state.run.enemies.forEach((enemy) => { enemy.staggerTurns ??= 0; });
+      state.run.startedDay ??= state.day;
       state.run.adventurers ??= [];
       if (state.run.guard) {
         state.run.guard.mode ??= "covering";
         state.run.guard.safeTurns ??= 0;
         state.run.guard.pos = { ...state.run.player };
+        state.run.guard.healingTrustGained ??= 0;
+        state.run.guard.retreatCount ??= 0;
       }
       state.run.shoveCooldown ??= 0;
       state.run.highestFloor ??= state.run.floor;
@@ -207,6 +218,7 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
   }
   if (state.run) {
     state.run.adventurers ??= [];
+    state.run.startedDay ??= state.day;
     state.run.timeUnits ??= 0;
     state.run.settledTimeBands ??= 0;
     state.run.floorStates ??= {};
@@ -215,6 +227,8 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
       state.run.guard.mode ??= "covering";
       state.run.guard.safeTurns ??= 0;
       state.run.guard.pos = { ...state.run.player };
+      state.run.guard.healingTrustGained ??= 0;
+      state.run.guard.retreatCount ??= 0;
     }
     for (const snapshot of Object.values(state.run.floorStates ?? {})) {
       snapshot.adventurers ??= [];
@@ -225,13 +239,15 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
         snapshot.guard.mode ??= "covering";
         snapshot.guard.safeTurns ??= 0;
         snapshot.guard.pos = { ...snapshot.player };
+        snapshot.guard.healingTrustGained ??= 0;
+        snapshot.guard.retreatCount ??= 0;
       }
     }
   }
   stripRetiredFields(state);
   // 探索中でなければ、旧セーブに溜まった床の品と通りすがりの記録もここで捨てる。
   if (!state.run) pruneCampaignRecords(state);
-  (state as { version: number }).version = 8;
+  (state as { version: number }).version = 9;
   return state;
 }
 
@@ -271,7 +287,7 @@ export class SaveRepository {
     database.close();
     if (!result) return undefined;
     const version = (result.state as { version?: number }).version;
-    if (version !== 5 && version !== 6 && version !== 7) return undefined;
+    if (!isSupportedSaveVersion(version)) return undefined;
     result.state = migrateSaveState(result.state);
     if (isCampaignDead(result.state.campaignId) || result.state.status === "gameOver") return undefined;
     return result as StoredSave & { state: GameState };

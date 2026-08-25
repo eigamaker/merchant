@@ -42,12 +42,13 @@ describe("v6 merchant world", () => {
   it("accepts and refunds an immediate escort commission", () => {
     const state = createNewGame();
     const before = state.gold;
+    const fee = escortFeeForNpc(state, state.npcs.find((npc) => npc.id === "rolf")!);
     const selected = postEscortCommission(state, "rolf");
 
     expect(selected?.adventurer).toBe(true);
     expect(selected?.status).toBe("contracted");
-    expect(state.escortCommission).toMatchObject({ status: "accepted", npcId: selected?.id, offeredFee: 180 });
-    expect(state.gold).toBe(before - 180);
+    expect(state.escortCommission).toMatchObject({ status: "accepted", npcId: selected?.id, offeredFee: fee });
+    expect(state.gold).toBe(before - fee);
 
     cancelEscortCommission(state);
     expect(selected?.status).toBe("inTown");
@@ -60,17 +61,19 @@ describe("v6 merchant world", () => {
     const low = state.npcs.find((npc) => npc.id === "mina")!;
     const high = state.npcs.find((npc) => npc.id === "astrid")!;
 
-    expect(escortFeeForNpc(state, low)).toBe(ADVENTURER_RANKS.E.escortFee);
-    expect(escortFeeForNpc(state, high)).toBe(ADVENTURER_RANKS.A.escortFee);
+    expect(escortFeeForNpc(state, low)).toBeGreaterThanOrEqual(Math.floor(ADVENTURER_RANKS.E.escortFee * 0.88));
+    expect(escortFeeForNpc(state, high)).toBeGreaterThanOrEqual(Math.floor(ADVENTURER_RANKS.A.escortFee * 0.88));
     expect(high.maxHp).toBeGreaterThan(low.maxHp!);
     expect(high.damage).toBeGreaterThan(low.damage!);
     expect(postEscortCommission(state, high.id)).toBeUndefined();
-    expect(state.message).toContain("900G");
+    expect(state.message).toContain(`${escortFeeForNpc(state, high)}G`);
   });
 
   it("starts an expedition with the exact high-rank escort selected by the merchant", () => {
     const state = createNewGame();
-    state.gold = 1_000;
+    const high = state.npcs.find((npc) => npc.id === "astrid")!;
+    const fee = escortFeeForNpc(state, high);
+    state.gold = fee + 100;
 
     const selected = postEscortCommission(state, "astrid");
     beginExpedition(state);

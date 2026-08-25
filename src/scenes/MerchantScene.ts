@@ -15,6 +15,7 @@ import {
   DISPLAY_CAPACITY,
   INVENTORY_CAPACITY,
   beginExpedition,
+  canBeginExpedition,
   createNewGame,
   currentItemCount,
   dungeonAdventurerBuyPrice,
@@ -22,6 +23,7 @@ import {
   dropItem,
   guardRetreatRatio,
   guardRetreatThreshold,
+  guardRecoveryTurns,
   inspectBody,
   itemDefinition,
   itemName,
@@ -35,7 +37,6 @@ import {
   toggleDisplay,
   tryOpenChest,
   tryPickup,
-  tryStairs,
 } from "../game/engine";
 import { SaveRepository, type SaveSlot } from "../game/save";
 import { HOME_POI, HOME_SPAWN, createHomeMap } from "../game/homeMap";
@@ -45,10 +46,12 @@ import { compileMap, loadTrialMap, loadTrialMapPack } from "../game/mapDocument"
 import { MAP_ASSET_CATALOG } from "../game/mapAssetCatalog.generated";
 import { MISSING_MAP_ASSET_TEXTURE, resolveMapAssetFrame } from "../game/mapAssetRuntime";
 import { acceptCustomerPurchaseRequest, cancelEscortCommission, escortFeeForNpc, merchantItemName, postEscortCommission, prepareCustomerPurchaseRequest } from "../game/merchantEconomy";
+import { ensureGuardProfile, guardConditionLabel, guardObservationLines, guardTrustLabel } from "../game/guardProfiles";
 import {
   SUPPLY_RULES,
   buySupply,
   canOpenShop,
+  canReorganizeHomeInventory,
   closeShopSession,
   dungeonMealProvisionCost,
   dungeonTimeUntilNextMeal,
@@ -63,7 +66,7 @@ import {
   unequipItem,
 } from "../game/merchantSystems";
 import { ADVENTURER_RANK_ORDER, ADVENTURER_RANKS, ITEM_VISUALS, NPC_APPEARANCES } from "../game/merchantContent";
-import type { AdventurerRank, DungeonCommand, DungeonEvent, GameState, ItemInstance, ItemRarity, MenuChoice, NpcRecord, Vec } from "../game/types";
+import type { AdventurerRank, DungeonCommand, DungeonEvent, GameState, GuardDescentAssessment, ItemInstance, ItemRarity, MenuChoice, NpcRecord, Vec } from "../game/types";
 import {
   FLOATING_INK,
   UI_COLORS,
@@ -308,7 +311,7 @@ export class MerchantScene extends Phaser.Scene {
         const entrance = trial.markers.find((marker) => marker.kind === "stairsUp");
         this.state = createNewGame();
         this.state.location = "dungeon";
-        this.state.run = { seed: Date.now(), floor: trial.floor, map, player: { x: entrance?.x ?? map.stairsUp.x, y: entrance?.y ?? map.stairsUp.y }, enemies: [], items: [], chests: [], bodies: [], adventurers: [], shoveCooldown: 0, highestFloor: trial.floor, turn: 0, timeUnits: 0, settledTimeBands: 0, floorStates: {} };
+        this.state.run = { seed: Date.now(), startedDay: this.state.day, floor: trial.floor, map, player: { x: entrance?.x ?? map.stairsUp.x, y: entrance?.y ?? map.stairsUp.y }, enemies: [], items: [], chests: [], bodies: [], adventurers: [], shoveCooldown: 0, highestFloor: trial.floor, turn: 0, timeUnits: 0, settledTimeBands: 0, floorStates: {} };
         this.gameStarted = true;
         this.render();
         return;
@@ -370,21 +373,24 @@ export class MerchantScene extends Phaser.Scene {
 
   private updateModalInput(): void {
     if (!this.modal) return;
-    let changed = false;
+    let selectionChanged = false;
     if (this.just("up") || this.just("w")) {
       this.modal.index = (this.modal.index - 1 + this.modal.choices.length) % this.modal.choices.length;
-      changed = true;
+      selectionChanged = true;
     }
     if (this.just("down") || this.just("s")) {
       this.modal.index = (this.modal.index + 1) % this.modal.choices.length;
-      changed = true;
+      selectionChanged = true;
     }
     if (this.just("enter") || this.just("space")) {
       const choice = this.modal.choices[this.modal.index];
       if (choice && !choice.disabled) choice.action();
-      changed = true;
+      // メニュー遷移だけを描き直す。接客終了など、処理内で描画して
+      // Tweenを開始した操作を再描画すると、移動中のSpriteが破棄される。
+      if (this.modal) this.render();
+      return;
     }
-    if (changed) this.render();
+    if (selectionChanged) this.render();
   }
 
   private createPlaceholderTextures(): void {
@@ -479,8 +485,11 @@ export class MerchantScene extends Phaser.Scene {
 
   private updateHome(delta: number): void {
     if (isShopSessionActive(this.state)) {
+      if (this.just("r")) {
+        this.openInventory();
+        return;
+      }
       if (this.customerWalking) return;
-      if (this.just("r")) this.openInventory();
       if (this.just("f")) this.closeActiveShop();
       return;
     }
@@ -644,7 +653,7 @@ export class MerchantScene extends Phaser.Scene {
       return;
     }
     if ((run.map.stairsDown && same(run.player, run.map.stairsDown)) || same(run.player, run.map.stairsUp)) {
-      tryStairs(this.state);
+      this.executeDungeonCommand({ type: "stairs" });
       return;
     }
     this.state.message = "何も見つからない。";
@@ -661,8 +670,31 @@ export class MerchantScene extends Phaser.Scene {
     this.modal = undefined;
     const result = performDungeonCommand(this.state, command);
     this.captureDungeonWalkAnimations(beforePlayer, beforeEnemies, beforeGuard);
+    if (result.guardDescent) {
+      this.openGuardDescentPrompt(result.guardDescent);
+      this.render();
+      return;
+    }
     this.render();
     this.animateDungeonEvents(result.events);
+  }
+
+  private openGuardDescentPrompt(assessment: GuardDescentAssessment): void {
+    const npc = this.state.npcs.find((entry) => entry.id === assessment.guardId);
+    const name = npc?.name ?? "護衛";
+    const refusal = assessment.severity === "refuse";
+    this.openMenu(refusal ? "護衛が同行を拒んだ" : "護衛からの警告", [
+      assessment.reason,
+      refusal
+        ? `${name}を町へ帰せば、返金なしでひとりで降下できる。`
+        : "警告を押して進むと、護衛の信頼と平静を損なう。",
+    ], [
+      {
+        label: refusal ? "護衛を帰して単独で降りる" : "警告を押して降りる",
+        action: () => this.executeDungeonCommand({ type: "stairs", guardResponse: refusal ? "dismiss" : "continue" }),
+      },
+      { label: "降下しない", action: () => this.closeMenu() },
+    ]);
   }
 
   private openDungeonActionMenu(): void {
@@ -706,11 +738,14 @@ export class MerchantScene extends Phaser.Scene {
     }
     const npc = this.state.npcs.find((entry) => entry.id === active.guardId);
     const retreatPercent = Math.round(guardRetreatRatio(this.state, active.guardId) * 100);
-    const mode = active.mode === "covering" ? "カバー中" : `後退中（安全確認 ${active.safeTurns}/2）`;
+    const recoveryTurns = guardRecoveryTurns(this.state, active.guardId);
+    const profile = npc ? ensureGuardProfile(this.state, npc) : undefined;
+    const mode = active.mode === "covering" ? "カバー中" : `後退中（安全確認 ${active.safeTurns}/${recoveryTurns}）`;
     this.openMenu("護衛状態", [
       `${npc ? `${npc.rank ?? "E"}ランク ${npc.name}` : active.guardId}${npc ? ` — ${this.professionLabel(npc)}` : ""}`,
       `HP ${active.hp}/${active.maxHp}　攻撃 ${active.damage}　${mode}`,
-      `HPが${guardRetreatThreshold(this.state, active)}（${retreatPercent}%）以下になると後退。敵が6マス外に2ターンいれば復帰する。`,
+      ...(profile ? [`関係: ${guardTrustLabel(profile.trust)}　様子: ${guardConditionLabel(profile.stress)}`] : []),
+      `HPが${guardRetreatThreshold(this.state, active)}（${retreatPercent}%）以下になると後退。敵が6マス外に${recoveryTurns}ターンいれば復帰する。`,
       "主人公と同じ隊列で近くの敵を自動攻撃する。致命傷を受けると死亡する。",
     ], [{ label: "閉じる", action: () => this.closeMenu() }]);
   }
@@ -811,11 +846,12 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private openSystemMenu(): void {
+    const inventoryLocked = !canReorganizeHomeInventory(this.state);
     this.openMenu("メニュー", [
       this.state.location === "dungeon" ? "探索中はメニューを開いてもターンは進まない。" : `自宅兼店舗 ${this.state.day}日目`,
       `所持金 ${this.state.gold}G　所持数 ${currentItemCount(this.state)}/${INVENTORY_CAPACITY}`,
     ], [
-      { label: this.state.location === "home" ? "在庫管理" : "持ち物", action: () => this.openInventory() },
+      { label: inventoryLocked ? "在庫管理（営業中）" : this.state.location === "home" ? "在庫管理" : "持ち物", action: () => this.openInventory() },
       { label: "護衛募集", action: () => this.openEscortCommission() },
       { label: "商人の記録", action: () => this.openLedger() },
       { label: "操作", action: () => this.openHelp() },
@@ -832,6 +868,13 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private openInventory(): void {
+    if (!canReorganizeHomeInventory(this.state)) {
+      this.modal = undefined;
+      this.inventoryView = undefined;
+      this.state.message = "営業中は在庫整理できない。閉店してから行おう。";
+      this.render();
+      return;
+    }
     this.modal = undefined;
     this.inventoryView = {
       tab: this.inventoryView?.tab ?? "bag",
@@ -968,12 +1011,13 @@ export class MerchantScene extends Phaser.Scene {
     const npc = this.state.npcs.find((entry) => entry.id === npcId);
     if (!npc) return;
     if (this.state.escortCommission?.npcId === npcId && this.state.escortCommission.status === "accepted") {
+      const expedition = canBeginExpedition(this.state);
       this.openMenu(`${npc.name} — ${this.professionLabel(npc)}`, [
         `護衛料 ${this.state.escortCommission.offeredFee}G 支払済み`,
         `危険時の後退基準: HP ${Math.round(guardRetreatRatio(this.state, npc.id) * 100)}%以下`,
         "出発すると契約の取消と返金はできない。",
       ], [
-        { label: "一緒にダンジョンへ出発", action: () => { beginExpedition(this.state); this.closeMenu(); } },
+        { label: expedition.allowed ? "一緒にダンジョンへ出発" : "次の遠征を待つ", disabled: !expedition.allowed, action: () => { beginExpedition(this.state); this.closeMenu(); } },
         { label: "護衛依頼を取り消す", action: () => { cancelEscortCommission(this.state); this.closeMenu(); } },
         { label: "閉じる", action: () => this.closeMenu() },
       ]);
@@ -991,12 +1035,13 @@ export class MerchantScene extends Phaser.Scene {
         { label: `${request.price}Gで売る`, action: () => {
           const result = acceptCustomerPurchaseRequest(this.state);
           this.state.message = result.message;
-          this.openMenu(result.accepted ? "売買成立" : "取引できない", [result.message], [{ label: "接客を終える", action: () => this.finishCustomerAndContinue() }]);
+          if (result.accepted) this.finishCustomerAndContinue();
+          else this.openMenu("取引できない", [result.message], [{ label: "接客を終える", action: () => this.finishCustomerAndContinue() }]);
         } },
         { label: "今回は断る", action: () => {
           const message = `${npc.name}への売却を断った。`;
           this.state.message = message;
-          this.openMenu("売却を断った", [message], [{ label: "接客を終える", action: () => this.finishCustomerAndContinue() }]);
+          this.finishCustomerAndContinue();
         } },
       ] : []),
       { label: this.state.shopSession.currentNpcId === npc.id ? "接客を終える" : "閉じる", action: () => this.state.shopSession.currentNpcId === npc.id ? this.finishCustomerAndContinue() : this.closeMenu() },
@@ -1069,11 +1114,12 @@ export class MerchantScene extends Phaser.Scene {
 
   private openGuildMenu(): void {
     const contracted = this.state.escortCommission?.npcId ? this.state.npcs.find((npc) => npc.id === this.state.escortCommission?.npcId) : undefined;
+    const expedition = canBeginExpedition(this.state);
     this.openMenu("探索準備", [
       contracted ? `${contracted.rank ?? "E"}ランクの${contracted.name}が店で出発を待っている。` : "ランクを選び、能力を見比べて護衛を指定する。",
-      "護衛なしで出発することもできる。",
+      expedition.allowed ? "護衛なしで出発することもできる。" : expedition.message,
     ], [
-      { label: "地下迷宮へ入る", action: () => { beginExpedition(this.state); this.closeMenu(); } },
+      { label: expedition.allowed ? "地下迷宮へ入る" : "本日の探索済み", disabled: !expedition.allowed, action: () => { beginExpedition(this.state); this.closeMenu(); } },
       { label: contracted ? "護衛依頼を確認" : "護衛を指定する", action: () => this.openEscortCommission() },
       { label: "閉じる", action: () => this.closeMenu() },
     ]);
@@ -1107,12 +1153,62 @@ export class MerchantScene extends Phaser.Scene {
       ...candidates.map((npc) => {
         const fee = escortFeeForNpc(this.state, npc);
         return {
-          label: `${npc.name} HP${npc.maxHp ?? 0} 攻${npc.damage ?? 0} 後退${Math.round((npc.retreatHpRatio ?? 0.25) * 100)}% — ${fee}G`,
-          disabled: this.state.gold < fee,
-          action: () => { postEscortCommission(this.state, npc.id); this.openEscortCommission(); },
+          label: `${npc.name} HP${npc.maxHp ?? 0} 攻${npc.damage ?? 0} — ${fee}G`,
+          disabled: false,
+          action: () => this.openEscortProfile(npc.id),
         };
       }),
       { label: "ランク選択へ戻る", action: () => this.openEscortCommission() },
+    ]);
+  }
+
+  private openEscortProfile(npcId: string): void {
+    const npc = this.state.npcs.find((entry) => entry.id === npcId && entry.adventurer);
+    if (!npc) { this.openEscortCommission(); return; }
+    const profile = ensureGuardProfile(this.state, npc);
+    const career = profile.career;
+    const fee = escortFeeForNpc(this.state, npc);
+    const observations = guardObservationLines(npc);
+    const recent = career.events.slice(-3);
+    this.openMenu(`${npc.rank ?? "E"}ランク ${npc.name}`, [
+      `HP ${npc.maxHp ?? 0}　攻撃 ${npc.damage ?? 0}　護衛料 ${fee}G`,
+      `関係: ${guardTrustLabel(profile.trust)}　現在: ${guardConditionLabel(profile.stress)}`,
+      `雇用 ${career.hireCount}回　生還 ${career.successfulReturns}回　最深 地下${career.deepestFloor || "―"}階`,
+      `撃破 ${career.enemiesDefeated}体　肩代わり ${career.damageCovered}ダメージ　撤退 ${career.retreatCount}回`,
+      observations.length ? `観察記録: ${observations.length}件` : "まだ同行経験がなく、戦い方は分からない。",
+      ...(recent.length
+        ? ["直近3件の実績:", ...recent.reverse().map((event) => `第${event.day}日: ${event.detail}`)]
+        : ["遠征実績はまだない。"]),
+    ], [
+      {
+        label: `${fee}Gで護衛に指定する`,
+        disabled: this.state.gold < fee || (npc.status !== "inTown" && npc.status !== "visiting"),
+        action: () => { postEscortCommission(this.state, npc.id); this.openEscortCommission(); },
+      },
+      { label: "観察記録を読む", disabled: observations.length === 0, action: () => this.openEscortObservations(npc.id) },
+      { label: "遠征履歴を見る", disabled: career.events.length === 0, action: () => this.openEscortHistory(npc.id) },
+      { label: "候補一覧へ戻る", action: () => this.openEscortRank(npc.rank ?? "E") },
+    ]);
+  }
+
+  private openEscortObservations(npcId: string): void {
+    const npc = this.state.npcs.find((entry) => entry.id === npcId && entry.adventurer);
+    if (!npc) { this.openEscortCommission(); return; }
+    const observations = guardObservationLines(npc);
+    this.openMenu(`${npc.name}の観察記録`, observations.length > 0 ? observations : ["まだ同行経験がなく、戦い方は分からない。"], [
+      { label: "護衛詳細へ戻る", action: () => this.openEscortProfile(npc.id) },
+    ]);
+  }
+
+  private openEscortHistory(npcId: string): void {
+    const npc = this.state.npcs.find((entry) => entry.id === npcId && entry.adventurer);
+    if (!npc) { this.openEscortCommission(); return; }
+    const events = ensureGuardProfile(this.state, npc).career.events.slice(-8).reverse();
+    const lines = events.length > 0
+      ? events.map((event) => `第${event.day}日・地下${event.floor || "―"}階: ${event.detail}`)
+      : ["記録された遠征実績はない。"];
+    this.openMenu(`${npc.name}の遠征履歴`, lines, [
+      { label: "護衛詳細へ戻る", action: () => this.openEscortProfile(npc.id) },
     ]);
   }
 
@@ -1611,7 +1707,12 @@ export class MerchantScene extends Phaser.Scene {
         pos: this.state.shopSession.currentNpcId === visitorId ? customerCounter : pos,
       };
     });
-    const points = HOME_POINTS.map((point) => point.id === "entrance" ? { ...point, pos: entrance } : point.id === "guild" ? { ...point, pos: preparation } : point.id === "visitors" ? { ...point, pos: visitors } : point);
+    const expedition = canBeginExpedition(this.state);
+    const points = HOME_POINTS.map((point) => point.id === "entrance"
+      ? { ...point, name: expedition.reason === "alreadyExplored" ? "ダンジョン入口（本日の探索済み）" : point.name, pos: entrance }
+      : point.id === "guild" ? { ...point, pos: preparation }
+        : point.id === "visitors" ? { ...point, pos: visitors }
+          : point);
     return [...points, ...customers];
   }
 
@@ -1812,7 +1913,7 @@ export class MerchantScene extends Phaser.Scene {
     const guard = this.state.run?.guard;
     if (guard) {
       const npc = this.state.npcs.find((entry) => entry.id === guard.guardId);
-      const status = guard.mode === "covering" ? "護衛中" : `後退 ${guard.safeTurns}/2`;
+      const status = guard.mode === "covering" ? "護衛中" : `後退 ${guard.safeTurns}/${guardRecoveryTurns(this.state, guard.guardId)}`;
       this.add.text(x, inDungeon ? 143 : 129, `護衛 ${npc ? `${npc.rank ?? "E"} ${npc.name}` : "同行者"} HP${guard.hp} ${status}`, { fontSize: "10px", color: guard.mode === "covering" ? "#eee5d1" : "#d6a5a5" });
     }
     const actionTop = guard ? ACTION_BUTTON_TOP + 14 : ACTION_BUTTON_TOP;
@@ -1857,12 +1958,13 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private renderActionButtons(startY: number): void {
+    const expedition = canBeginExpedition(this.state);
     const buttons: Array<{ label: string; key: string; action: () => void; disabled?: boolean }> = this.state.location === "home"
       ? isShopSessionActive(this.state)
         ? [
           { label: "接客中", key: "", action: () => { const id = this.state.shopSession.currentNpcId; if (id) this.openNpcVisitor(id); }, disabled: !this.state.shopSession.currentNpcId },
           { label: "閉店", key: SHORTCUTS.shop, action: () => this.closeActiveShop() },
-          { label: "在庫管理", key: SHORTCUTS.inventory, action: () => this.openInventory() },
+          { label: "在庫管理（営業中）", key: SHORTCUTS.inventory, action: () => this.openInventory() },
         ]
         : [
           { label: "調べる", key: SHORTCUTS.investigate, action: () => { this.investigateHome(); this.render(); } },
@@ -1871,7 +1973,7 @@ export class MerchantScene extends Phaser.Scene {
           { label: "在庫管理", key: SHORTCUTS.inventory, action: () => this.openInventory() },
           { label: "探索用品", key: "", action: () => this.openSupplyShop() },
           { label: "護衛依頼", key: "", action: () => this.openEscortCommission() },
-          { label: "ダンジョン", key: "", action: () => { beginExpedition(this.state); this.render(); }, disabled: this.state.timeSlot === "night" },
+          { label: expedition.allowed ? "ダンジョン" : expedition.reason === "alreadyExplored" ? "本日の探索済み" : "ダンジョン", key: "", action: () => { beginExpedition(this.state); this.render(); }, disabled: !expedition.allowed },
           { label: "休む", key: "", action: () => { restUntilMorning(this.state); this.render(); }, disabled: this.state.timeSlot === "morning" || this.state.timeSlot === "afternoon" },
         ]
       : [
@@ -2127,7 +2229,10 @@ export class MerchantScene extends Phaser.Scene {
         }
       });
       hit.on("pointerdown", () => {
-        if (this.modal && !choice.disabled) choice.action();
+        if (this.modal && !choice.disabled) {
+          choice.action();
+          if (this.modal) this.render();
+        }
       });
     });
     addDivider(this, 56, 314, 528, false);

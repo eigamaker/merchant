@@ -1,13 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { beginExpedition, createNewGame } from "./engine";
-import { migrateSaveState, normalizeHomePositionForMap } from "./save";
+import { isSupportedSaveVersion, migrateSaveState, normalizeHomePositionForMap } from "./save";
 import { addMarker, createManualMap } from "./mapDocument";
 import { HOME_SPAWN } from "./homeMap";
 describe("save migration", () => {
+  it("accepts legacy v8 saves and the new v9 format at the repository boundary", () => {
+    expect(isSupportedSaveVersion(4)).toBe(false);
+    expect(isSupportedSaveVersion(5)).toBe(true);
+    expect(isSupportedSaveVersion(8)).toBe(true);
+    expect(isSupportedSaveVersion(9)).toBe(true);
+    expect(isSupportedSaveVersion(10)).toBe(false);
+  });
   it.each([1,2,3])("migrates v%d town/interior saves to home", (version) => {
     const state:any = createNewGame(); state.version=version; state.location=version===2?"interior":"town"; state.townPos={x:4,y:4}; delete state.homePos; delete state.homeMapRevision;
     const migrated=migrateSaveState(state);
-    expect(migrated.version).toBe(8); expect(migrated.location).toBe("home"); expect(migrated.homePos).toEqual({x:HOME_SPAWN.x*16+8,y:HOME_SPAWN.y*16+8});
+    expect(migrated.version).toBe(9); expect(migrated.location).toBe("home"); expect(migrated.homePos).toEqual({x:HOME_SPAWN.x*16+8,y:HOME_SPAWN.y*16+8});
   });
   it("migrates legacy dungeon connector fields and adds the floor snapshot dictionary", () => {
     const state:any = createNewGame(); beginExpedition(state);
@@ -16,6 +23,17 @@ describe("save migration", () => {
     expect(migrated.run?.map.stairsUp).toEqual({x:2,y:2});
     expect(migrated.run?.map.stairsDown).toEqual({x:3,y:3});
     expect(migrated.run?.floorStates).toEqual({});
+  });
+  it("adds daily expedition state and deterministic guard profiles to v8 saves", () => {
+    const home: any = createNewGame(); home.version = 8; delete home.lastExpeditionDay; for (const npc of home.npcs) delete npc.guardProfile;
+    const migratedHome = migrateSaveState(home);
+    expect(migratedHome.lastExpeditionDay).toBe(0);
+    expect(migratedHome.npcs.filter((npc) => npc.adventurer).every((npc) => npc.guardProfile)).toBe(true);
+
+    const active: any = createNewGame(); beginExpedition(active); active.version = 8; delete active.lastExpeditionDay; delete active.run.startedDay;
+    const migratedActive = migrateSaveState(active);
+    expect(migratedActive.lastExpeditionDay).toBe(migratedActive.day);
+    expect(migratedActive.run?.startedDay).toBe(migratedActive.day);
   });
   it("migrates separated guards into the merchant party cell", () => {
     const state:any = createNewGame();
