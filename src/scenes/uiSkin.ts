@@ -226,3 +226,124 @@ export function addSkinButton(
   }
   return hit;
 }
+
+/**
+ * 演出は自分の tween を自分で畳む。
+ *
+ * `render()` は毎行動で表示物を破棄するため、走ったままの tween が
+ * 破棄済みの対象へ書き込まないよう、破棄イベントで確実に止める。
+ */
+function selfCleaningTween(
+  scene: Phaser.Scene,
+  target: Phaser.GameObjects.GameObject,
+  config: Phaser.Types.Tweens.TweenBuilderConfig,
+): void {
+  const tween = scene.tweens.add(config);
+  target.once(Phaser.GameObjects.Events.DESTROY, () => tween.remove());
+}
+
+/**
+ * 打撃や増減をその場で読ませる、浮かんで消える数値。
+ *
+ * 生成した本人が後片付けまで持つ。`render()` がシーンごと作り直しても
+ * 破棄済みの対象へ触らないよう、完了時に生存を確かめてから消す。
+ */
+export function addFloatingValue(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  label: string,
+  color: string,
+): Phaser.GameObjects.Text {
+  const text = scene.add.text(x, y, label, {
+    fontSize: "11px",
+    color,
+    stroke: UI_INK.outline,
+    strokeThickness: 3,
+  }).setOrigin(0.5, 1);
+  selfCleaningTween(scene, text, {
+    targets: text,
+    y: y - 13,
+    duration: 620,
+    ease: "Quad.Out",
+    alpha: { from: 1, to: 0, delay: 240, duration: 380 },
+    onComplete: () => { if (text.scene) text.destroy(); },
+  } as Phaser.Types.Tweens.TweenBuilderConfig);
+  return text;
+}
+
+/** 主人公が傷ついたことを画面の縁で伝える。中央の絵は覆わない。 */
+export function addEdgeFlash(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  color: number,
+): Phaser.GameObjects.Graphics {
+  const graphics = scene.add.graphics();
+  const bands = [0.42, 0.26, 0.14, 0.07];
+  bands.forEach((alpha, index) => {
+    const inset = index * 2;
+    graphics.fillStyle(color, alpha);
+    graphics.fillRect(x + inset, y + inset, width - inset * 2, 2);
+    graphics.fillRect(x + inset, y + height - inset - 2, width - inset * 2, 2);
+    graphics.fillRect(x + inset, y + inset, 2, height - inset * 2);
+    graphics.fillRect(x + width - inset - 2, y + inset, 2, height - inset * 2);
+  });
+  selfCleaningTween(scene, graphics, {
+    targets: graphics,
+    alpha: 0,
+    duration: 340,
+    ease: "Quad.Out",
+    onComplete: () => { if (graphics.scene) graphics.destroy(); },
+  } as Phaser.Types.Tweens.TweenBuilderConfig);
+  return graphics;
+}
+
+/** 敵を退けた地点で弾ける光。倒れた本体は既に消えているので、跡だけを見せる。 */
+export function addDefeatBurst(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  tile: number,
+): Phaser.GameObjects.Graphics {
+  const graphics = scene.add.graphics();
+  const half = Math.max(3, Math.round(tile * 0.34));
+  graphics.fillStyle(UI_COLORS.rivet, 0.95);
+  graphics.fillRect(-half, -1, half * 2, 2).fillRect(-1, -half, 2, half * 2);
+  graphics.fillStyle(0xffffff, 0.85).fillRect(-2, -2, 4, 4);
+  graphics.setPosition(x, y);
+  selfCleaningTween(scene, graphics, {
+    targets: graphics,
+    scaleX: 1.9,
+    scaleY: 1.9,
+    alpha: 0,
+    duration: 280,
+    ease: "Quad.Out",
+    onComplete: () => { if (graphics.scene) graphics.destroy(); },
+  } as Phaser.Types.Tweens.TweenBuilderConfig);
+  return graphics;
+}
+
+/**
+ * はみ出す行を決められた枠に収める。ログのように高さが決まっている場所で使う。
+ *
+ * 折り返しを1行で打ち切ったうえで、描画面そのものを行の寸法へ固定する。
+ * 想定外に背の高い文字が来ても、隣の行や罫線を押し出さない。
+ */
+export function addSingleLineText(
+  scene: Phaser.Scene,
+  x: number,
+  y: number,
+  maxWidth: number,
+  maxHeight: number,
+  label: string,
+  style: Phaser.Types.GameObjects.Text.TextStyle,
+): Phaser.GameObjects.Text {
+  return scene.add.text(x, y, label, {
+    ...style,
+    wordWrap: { width: maxWidth, useAdvancedWrap: true },
+    maxLines: 1,
+  }).setFixedSize(maxWidth, maxHeight);
+}

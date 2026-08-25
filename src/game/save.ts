@@ -1,9 +1,8 @@
-import { GUARD_DEFINITIONS, INITIAL_QUESTS } from "./content";
-import type { DungeonBody, DungeonChest, DungeonHeight, DungeonMap, Enemy, GameState, ItemInstance, LegacyDungeonMap, Quest, Vec } from "./types";
+import type { DungeonBody, DungeonChest, DungeonHeight, DungeonMap, Enemy, GameState, ItemInstance, LegacyDungeonMap, Vec } from "./types";
 import { HOME_SPAWN, createHomeMap } from "./homeMap";
 import { loadTrialMapPack, type MapDocument } from "./mapDocument";
 import { isMapPositionWalkable } from "./mapTiles";
-import { initializeMerchantWorld } from "./merchantEconomy";
+import { initializeMerchantWorld, pruneCampaignRecords } from "./merchantEconomy";
 import { createInitialNpcs } from "./merchantContent";
 /** v1-v3 saves always used the fixed 32x20, 16px home. */
 const HOME_SPAWN_PIXEL = { x: HOME_SPAWN.x * 16 + 8, y: HOME_SPAWN.y * 16 + 8 };
@@ -16,10 +15,8 @@ interface StoredSave {
   state: GameState | LegacyGameState | VersionTwoGameState;
 }
 
-type LegacyGameState = Omit<GameState, "version" | "guildReputation" | "guards" | "story" | "quests" | "run"> & {
+type LegacyGameState = Omit<GameState, "version" | "run"> & {
   version: 1;
-  quests: Array<Omit<Quest, "status"> & { status: "available" | "active" | "complete" }>;
-  story: { blackSword: GameState["story"]["blackSword"] };
   run?: Omit<NonNullable<GameState["run"]>, "chests" | "bodies" | "guard" | "shoveCooldown" | "highestFloor"> & {
     chests: Vec[];
     bodies: Vec[];
@@ -98,13 +95,26 @@ function migrateDungeonMap(map: DungeonMap | LegacyDungeonMap): void {
   map.traversalLinks ??= [];
 }
 
+/** v8 で撤去した旧クエスト・旧護衛・罠の残骸を、読み込んだ時点で捨てる。 */
+function stripRetiredFields(state: GameState): void {
+  const legacy = state as unknown as Record<string, unknown>;
+  for (const key of ["quests", "customers", "guards", "story", "refusedOffers", "guildReputation"]) delete legacy[key];
+  const runs = [state.run, ...Object.values(state.run?.floorStates ?? {})];
+  for (const run of runs) {
+    if (!run) continue;
+    delete (run as unknown as Record<string, unknown>).traps;
+    delete (run.map as unknown as Record<string, unknown>).specialRoom;
+  }
+  for (const npc of state.npcs ?? []) delete (npc as unknown as Record<string, unknown>).trait;
+}
+
 export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGameState): GameState {
   const sourceVersion = raw.version as number;
   const legacyVersion = sourceVersion === 1;
   const state = raw as unknown as GameState;
   const oldLocation = (state as unknown as { location?: string }).location;
   if (oldLocation === "town" || oldLocation === "interior") state.location = "home";
-  state.version = 7;
+  state.version = 8;
   state.campaignId ??= `legacy-${Date.now()}`;
   state.status ??= "active";
   // 追加した任意項目を補い、既存のブラウザ保存を壊さない。
@@ -117,13 +127,10 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
   state.dailySupplyStock ??= { day: state.day, smokeBombs: 2, returnStones: 1, provisions: 6 };
   state.archive ??= [];
   state.expeditionSerial ??= 0;
-  state.guildReputation ??= 0;
-  state.guards ??= Object.keys(GUARD_DEFINITIONS).map((id) => ({ id, unlocked: false, relation: 0, experience: 0, level: 1 }));
   state.itemsById ??= {};
   state.npcs ??= [];
   state.visitorNpcIds ??= [];
   state.nextNpcId ??= 1;
-  state.refusedOffers ??= {};
   state.singularItemIds ??= [];
   if (state.npcs.length === 0) initializeMerchantWorld(state);
   else {
@@ -135,7 +142,6 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
         existing.baseFee = template.baseFee;
         existing.maxHp = template.maxHp;
         existing.damage = template.damage;
-        existing.trait = template.trait;
         existing.retreatHpRatio = template.retreatHpRatio;
       }
     }
@@ -155,42 +161,6 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
 
   if (legacyVersion) {
     const legacy = raw as LegacyGameState;
-    const existing = new Map(legacy.quests.map((quest) => [quest.id, quest]));
-    const completed = (id: string): boolean => existing.get(id)?.status === "complete";
-    const stage: GameState["story"]["early"]["stage"] = completed("old-ring")
-      ? "complete"
-      : completed("missing") ? "ring" : completed("lost-sword") ? "missing" : completed("herb") ? "lostSword" : "herb";
-    state.quests = structuredClone(INITIAL_QUESTS).map((template) => {
-      const old = existing.get(template.id);
-      if (old?.status === "complete" || old?.status === "active") return { ...template, status: old.status };
-      return template;
-    });
-    const earlyStatus = (id: string, requiredStage: typeof stage): void => {
-      const quest = state.quests.find((entry) => entry.id === id);
-      if (!quest || quest.status === "active" || quest.status === "complete") return;
-      quest.status = stage === requiredStage ? "available" : "locked";
-    };
-    earlyStatus("lost-sword", "lostSword");
-    earlyStatus("missing", "missing");
-    const ringQuest = state.quests.find((quest) => quest.id === "old-ring");
-    if (ringQuest && stage === "ring" && ringQuest.status !== "complete") ringQuest.status = "active";
-    if (stage === "complete") {
-      const blackSword = state.quests.find((quest) => quest.id === "black-sword");
-      if (blackSword?.status === "locked") blackSword.status = "available";
-    }
-    const guardHiringUnlocked = completed("lost-sword") || completed("missing") || completed("old-ring");
-    state.guards.forEach((guard) => { guard.unlocked = guardHiringUnlocked; });
-    state.story = {
-      blackSword: legacy.story.blackSword,
-      early: {
-        stage,
-        guardHiringUnlocked,
-        missingBodyInspected: completed("missing") || completed("old-ring"),
-        ringConsulted: completed("old-ring") ? ["scholar", "jeweler", "duke"] : [],
-        ringResolution: completed("old-ring") ? "family" : undefined,
-        shoveTutorialSeen: false,
-      },
-    };
     if (legacy.run) {
       const floor = legacy.run.floor;
       const chests: DungeonChest[] = legacy.run.chests.map((pos, index) => ({
@@ -219,13 +189,6 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
     state.hiredGuardId = undefined;
     state.hiredGuardFee = undefined;
   } else {
-    state.story.early ??= {
-      stage: "herb",
-      guardHiringUnlocked: false,
-      missingBodyInspected: false,
-      ringConsulted: [],
-      shoveTutorialSeen: false,
-    };
     if (state.run) {
       state.run.enemies.forEach((enemy) => { enemy.staggerTurns ??= 0; });
       state.run.adventurers ??= [];
@@ -265,7 +228,10 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
       }
     }
   }
-  (state as { version: number }).version = 7;
+  stripRetiredFields(state);
+  // 探索中でなければ、旧セーブに溜まった床の品と通りすがりの記録もここで捨てる。
+  if (!state.run) pruneCampaignRecords(state);
+  (state as { version: number }).version = 8;
   return state;
 }
 

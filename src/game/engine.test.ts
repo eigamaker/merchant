@@ -1,25 +1,16 @@
 import { describe, expect, it } from "vitest";
 import {
-  acceptQuest,
   ascend,
   beginExpedition,
   buildInitialEnemies,
-  consultRing,
   createItem,
   createNewGame,
   descend,
-  dropItem,
   generateDungeon,
-  guardFee,
   guardRetreatThreshold,
-  hireGuard,
-  initialOffer,
   movePlayer,
   performDungeonCommand,
-  reportQuest,
-  resolveRing,
   returnHome,
-  sellItem,
   shoveEnemy,
   tryPickup,
   tryStairs,
@@ -27,7 +18,7 @@ import {
   waitTurn,
 } from "./engine";
 import { migrateSaveState } from "./save";
-import { restUntilMorning } from "./merchantSystems";
+import { postEscortCommission } from "./merchantEconomy";
 import { DUNGEON_ENTRANCE } from "./homeMap";
 import type { DungeonFloorSnapshot, DungeonMap } from "./types";
 
@@ -37,7 +28,7 @@ function compactDungeonMap(width: number, height: number, stairsUp: { x: number;
 }
 
 function emptyFloorSnapshot(floor: number, map: DungeonMap): DungeonFloorSnapshot {
-  return { floor, map, player: { ...map.stairsUp }, enemies: [], items: [], chests: [], traps: [], bodies: [], adventurers: [], shoveCooldown: 0, turn: 0 };
+  return { floor, map, player: { ...map.stairsUp }, enemies: [], items: [], chests: [], bodies: [], adventurers: [], shoveCooldown: 0, turn: 0 };
 }
 
 function reachableTiles(map: ReturnType<typeof generateDungeon>): Set<string> {
@@ -170,10 +161,9 @@ describe("dungeon generator", () => {
 
   it("keeps the entrance and stairs connected across representative seeds", () => {
     for (let seed = 1; seed <= 120; seed += 1) {
-      const map = generateDungeon(seed, (seed % 8) + 1, seed % 3 === 0);
+      const map = generateDungeon(seed, (seed % 8) + 1);
       const reachable = reachableTiles(map);
       expect(reachable.has(`${map.stairsDown?.x},${map.stairsDown?.y}`)).toBe(true);
-      if (map.specialRoom) expect(reachable.has(`${map.specialRoom.x},${map.specialRoom.y}`)).toBe(true);
     }
   });
 
@@ -185,7 +175,7 @@ describe("dungeon generator", () => {
       const run = state.run;
       if (!run) throw new Error("run missing");
       signatures.add(`${run.seed}:${run.map.tiles.flat().join("")}`);
-      returnHome(state, false);
+      returnHome(state);
       state.timeSlot = "morning";
     }
     expect(state.expeditionSerial).toBe(30);
@@ -203,7 +193,6 @@ describe("dungeon generator", () => {
       ...run.enemies.map((enemy) => enemy.pos),
       ...run.items.map((item) => item.pos),
       ...run.chests.map((chest) => chest.pos),
-      ...run.traps,
       ...run.bodies.map((body) => body.pos),
       ...run.adventurers.map((adventurer) => adventurer.pos),
     ];
@@ -215,57 +204,6 @@ describe("dungeon generator", () => {
   });
 });
 
-describe("merchant story loop", () => {
-  it("schedules the black sword incident after selling to the duke", () => {
-    const state = createNewGame();
-    const blackSwordQuest = state.quests.find((quest) => quest.id === "black-sword");
-    if (blackSwordQuest) blackSwordQuest.status = "available";
-    acceptQuest(state, "black-sword");
-    beginExpedition(state);
-    descend(state);
-    descend(state);
-    const sword = state.run?.items.find((entry) => entry.item.definitionId === "black-sword")?.item;
-    const duke = state.customers.find((customer) => customer.id === "duke");
-
-    expect(sword).toBeDefined();
-    expect(duke).toBeDefined();
-    if (!sword || !duke) throw new Error("test setup failed");
-    state.inventory.push(sword);
-    state.story.blackSword = "found";
-    expect(initialOffer(state, sword, duke)).toBeGreaterThan(0);
-
-    const result = sellItem(state, sword, "duke");
-    expect(result).toContain("売却した");
-    expect(state.archive).toContain(sword);
-    expect(state.events.some((event) => event.id === "black-sword-incident")).toBe(true);
-
-    returnHome(state, false);
-    state.timeSlot = "evening";
-    restUntilMorning(state);
-    expect(state.story.blackSword).toBe("incident");
-    expect(state.quests.find((quest) => quest.id === "black-tomb")?.status).toBe("active");
-  });
-
-  it("does not lose unique or active-quest items during a rescue", () => {
-    const state = createNewGame();
-    const blackSwordQuest = state.quests.find((quest) => quest.id === "black-sword");
-    if (blackSwordQuest) blackSwordQuest.status = "available";
-    acceptQuest(state, "black-sword");
-    beginExpedition(state);
-    descend(state);
-    descend(state);
-    const runItems = state.run?.items.map((entry) => entry.item) ?? [];
-    const sword = runItems.find((item) => item.definitionId === "black-sword");
-    const ordinary = runItems.find((item) => item.definitionId !== "black-sword");
-    if (!sword || !ordinary) throw new Error("test setup failed");
-    state.inventory.push(sword, ordinary);
-
-    returnHome(state, true);
-
-    expect(state.inventory).toContain(sword);
-    expect(state.inventory).not.toContain(ordinary);
-  });
-});
 
 describe("merchant survival actions", () => {
   function lineUpEnemy(state: ReturnType<typeof createNewGame>, blocked = false): NonNullable<typeof state.run>["enemies"][number] {
@@ -329,19 +267,10 @@ describe("merchant survival actions", () => {
 
 describe("automatic guards", () => {
   function unlockAndHire(state: ReturnType<typeof createNewGame>, guardId = "rolf"): void {
-    state.story.early.guardHiringUnlocked = true;
-    state.guards.forEach((guard) => { guard.unlocked = true; });
-    expect(hireGuard(state, guardId)).toBe(true);
+    state.gold += 1000;
+    expect(postEscortCommission(state, guardId)?.id).toBe(guardId);
   }
 
-  it("hires one named guard and refunds the prior contract when switching", () => {
-    const state = createNewGame();
-    unlockAndHire(state);
-    expect(state.gold).toBe(200);
-    expect(hireGuard(state, "mina")).toBe(true);
-    expect(state.hiredGuardId).toBe("mina");
-    expect(state.gold).toBe(160);
-  });
 
   it("lets the guard attack first and draw adjacent enemy attacks", () => {
     const state = createNewGame();
@@ -390,52 +319,8 @@ describe("automatic guards", () => {
     expect(run.enemies.some((enemy) => enemy.id === dangerous.id)).toBe(true);
   });
 
-  it("removes a defeated guard for two full town days", () => {
-    const state = createNewGame();
-    unlockAndHire(state);
-    beginExpedition(state);
-    const run = state.run!;
-    const guard = run.guard!;
-    const enemy = run.enemies[0]!;
-    run.enemies = [enemy];
-    run.player = { x: 5, y: 5 };
-    guard.pos = { ...run.player };
-    guard.hp = 1;
-    enemy.pos = { x: 6, y: 5 };
-    enemy.hp = 20;
-    enemy.damage = 2;
-    run.map.tiles[5]![5] = run.map.tiles[5]![6] = 0;
 
-    waitTurn(state);
 
-    expect(run.guard).toBeUndefined();
-    expect(state.npcs.find((entry) => entry.id === "rolf")?.status).toBe("dead");
-    expect(run.bodies.some((body) => body.npcId === "rolf")).toBe(true);
-  });
-
-  it("gains relation and floor experience only after a safe return", () => {
-    const state = createNewGame();
-    unlockAndHire(state);
-    beginExpedition(state);
-    descend(state);
-    descend(state);
-
-    returnHome(state, false);
-
-    const record = state.guards.find((entry) => entry.id === "rolf")!;
-    expect(record.relation).toBe(1);
-    expect(record.experience).toBe(3);
-    expect(record.level).toBe(2);
-  });
-
-  it("applies the family guild discount to future contracts", () => {
-    const state = createNewGame();
-    state.story.early.guardHiringUnlocked = true;
-    state.guards[0]!.unlocked = true;
-    expect(guardFee(state, "rolf")).toBe(100);
-    state.guildReputation = 2;
-    expect(guardFee(state, "rolf")).toBe(80);
-  });
 
   it("moves the guard in the same party cell as the merchant", () => {
     const state = createNewGame();
@@ -623,7 +508,7 @@ describe("inventory choices and early story", () => {
     expect(state.inventory).toContain(ground.item);
   });
 
-  it("swaps one carried item for a ground quest item when all twenty-four slots are full", () => {
+  it("swaps one carried item for a ground item when all twenty-four slots are full", () => {
     const state = createNewGame();
     beginExpedition(state);
     const run = state.run!;
@@ -631,136 +516,39 @@ describe("inventory choices and early story", () => {
     state.returnStones = 0;
     state.provisions = 0;
     state.inventory = Array.from({ length: 24 }, () => createItem(state, "bronze-spear", 1));
-    const herb = run.items.find((entry) => entry.item.definitionId === "herb")!;
-    run.player = { ...herb.pos };
+    const ground = run.items[0]!;
+    run.player = { ...ground.pos };
     const swap = state.inventory[0]!;
 
     const result = tryPickup(state, swap.uuid);
 
     expect(result.consumedTurn).toBe(true);
-    expect(state.inventory.some((item) => item.definitionId === "herb")).toBe(true);
+    expect(state.inventory.some((item) => item.uuid === ground.item.uuid)).toBe(true);
     expect(state.inventory).not.toContain(swap);
     expect(run.items.some((entry) => entry.item.uuid === swap.uuid && entry.pos.x === run.player.x && entry.pos.y === run.player.y)).toBe(true);
   });
 
-  it("returns a dropped quest objective to active and makes it recoverable", () => {
-    const state = createNewGame();
-    beginExpedition(state);
-    const run = state.run!;
-    const herb = run.items.find((entry) => entry.item.definitionId === "herb")!;
-    run.player = { ...herb.pos };
-    tryPickup(state);
-    expect(state.quests.find((quest) => quest.id === "herb")?.status).toBe("readyToReport");
 
-    dropItem(state, herb.item.uuid);
 
-    expect(state.quests.find((quest) => quest.id === "herb")?.status).toBe("active");
-    expect(run.items.some((entry) => entry.item.uuid === herb.item.uuid)).toBe(true);
-  });
 
-  it("keeps Aron's body reachable and respawns unclaimed heirlooms on a new map", () => {
-    const state = createNewGame();
-    const missing = state.quests.find((quest) => quest.id === "missing")!;
-    missing.status = "active";
-    beginExpedition(state);
-    descend(state);
-    const first = state.run!.bodies.find((body) => body.id === "aron")!;
-    expect(reachableTiles(state.run!.map).has(`${first.pos.x},${first.pos.y}`)).toBe(true);
-    expect(first.loot.map((item) => item.definitionId).sort()).toEqual(["adventurer-badge", "old-ring"]);
-    const firstSeed = state.run!.seed;
-
-    returnHome(state, false);
-    beginExpedition(state);
-    descend(state);
-    const second = state.run!.bodies.find((body) => body.id === "aron")!;
-    expect(state.run!.seed).not.toBe(firstSeed);
-    expect(second.loot.map((item) => item.definitionId).sort()).toEqual(["adventurer-badge", "old-ring"]);
-  });
-
-  it("plays the four early quests in order and unlocks the black sword", () => {
-    const state = createNewGame();
-    const completeCollection = (questId: string, itemId: string): void => {
-      const quest = state.quests.find((entry) => entry.id === questId)!;
-      quest.status = "readyToReport";
-      state.inventory.push(createItem(state, itemId, quest.targetFloor));
-      expect(reportQuest(state, questId)).toBe(true);
-    };
-
-    completeCollection("herb", "herb");
-    expect(state.gold).toBe(380);
-    expect(state.quests.find((quest) => quest.id === "lost-sword")?.status).toBe("available");
-    acceptQuest(state, "lost-sword");
-    completeCollection("lost-sword", "rusted-sword");
-    expect(state.gold).toBe(500);
-    expect(state.story.early.guardHiringUnlocked).toBe(true);
-    expect(state.quests.find((quest) => quest.id === "missing")?.status).toBe("available");
-    acceptQuest(state, "missing");
-    completeCollection("missing", "adventurer-badge");
-    expect(state.gold).toBe(700);
-    expect(state.quests.find((quest) => quest.id === "old-ring")?.status).toBe("active");
-
-    state.inventory.push(createItem(state, "old-ring", 2));
-    consultRing(state, "scholar");
-    consultRing(state, "jeweler");
-    consultRing(state, "duke");
-    expect(state.quests.find((quest) => quest.id === "old-ring")?.status).toBe("readyToReport");
-    resolveRing(state, "family");
-
-    expect(state.guildReputation).toBe(2);
-    expect(state.gold).toBe(950);
-    expect(state.story.early.stage).toBe("complete");
-    expect(state.quests.find((quest) => quest.id === "black-sword")?.status).toBe("available");
-  });
-
-  it.each([
-    ["family", 250, "guild"],
-    ["scholar", 700, "scholar"],
-    ["jeweler", 1300, "jeweler"],
-  ] as const)("resolves the ring once via %s", (resolution, reward, effect) => {
-    const state = createNewGame();
-    const quest = state.quests.find((entry) => entry.id === "old-ring")!;
-    quest.status = "readyToReport";
-    state.story.early.ringConsulted = ["scholar", "jeweler", "duke"];
-    state.inventory.push(createItem(state, "old-ring", 2));
-    const before = state.gold;
-
-    resolveRing(state, resolution);
-    const repeat = resolveRing(state, resolution);
-
-    expect(state.gold).toBe(before + reward);
-    expect(repeat).toContain("まだ決められない");
-    if (effect === "guild") expect(state.guildReputation).toBe(2);
-    else expect(state.customers.find((customer) => customer.id === effect)?.relation).toBe(2);
-  });
-
-  it("prevents normal sale of active quest items", () => {
-    const state = createNewGame();
-    const herb = createItem(state, "herb", 1);
-    state.inventory.push(herb);
-    const before = state.gold;
-
-    const result = sellItem(state, herb, "merchant");
-
-    expect(result).toContain("通常売却できない");
-    expect(state.gold).toBe(before);
-    expect(state.inventory).toContain(herb);
-  });
 });
 
 describe("save migration", () => {
-  it("migrates a version 1 run and supplements all version 2 fields", () => {
+  it("migrates a version 1 run and drops the retired campaign fields", () => {
     const current = createNewGame();
     beginExpedition(current);
     const run = current.run!;
     const legacy = {
       ...current,
       version: 1 as const,
-      guildReputation: undefined,
-      guards: undefined,
+      guildReputation: 3,
+      guards: [{ id: "rolf", unlocked: true, relation: 0, experience: 0, level: 1 }],
       story: { blackSword: "locked" as const },
-      quests: current.quests.map((quest) => ({ ...quest, status: quest.id === "herb" ? "complete" as const : "available" as const })),
+      quests: [{ id: "herb", status: "complete" as const }],
+      refusedOffers: { mina: 2 },
       run: {
         ...run,
+        traps: [{ x: 2, y: 2 }],
         enemies: run.enemies.map(({ staggerTurns: _staggerTurns, ...enemy }) => enemy),
         chests: run.chests.map((chest) => chest.pos),
         bodies: run.bodies.map((body) => body.pos),
@@ -771,17 +559,18 @@ describe("save migration", () => {
     };
 
     const migrated = migrateSaveState(legacy as never);
+    const carried = migrated as unknown as Record<string, unknown>;
 
-    expect(migrated.version).toBe(7);
-    expect(migrated.guildReputation).toBe(0);
-    expect(migrated.guards).toHaveLength(2);
-    expect(migrated.story.early.stage).toBe("lostSword");
+    expect(migrated.version).toBe(8);
+    for (const key of ["quests", "customers", "guards", "story", "refusedOffers", "guildReputation"]) {
+      expect(carried[key]).toBeUndefined();
+    }
+    expect((migrated.run as unknown as Record<string, unknown>).traps).toBeUndefined();
     expect(migrated.run?.shoveCooldown).toBe(0);
     expect(migrated.run?.enemies.every((enemy) => enemy.staggerTurns === 0)).toBe(true);
     expect(migrated.run?.chests[0]?.pos).toBeDefined();
   });
 });
-
 describe("escape tools", () => {
   it("breaks pursuit with a smoke bomb", () => {
     const state = createNewGame();

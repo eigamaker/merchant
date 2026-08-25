@@ -31,6 +31,11 @@ describe("readable canvas presentation", () => {
     expect(scene).toContain('hit.on("pointerdown"');
   });
 
+  it("keeps keyboard input active in the game-over menu", () => {
+    const scene = readFileSync(resolve(process.cwd(), "src/scenes/MerchantScene.ts"), "utf8");
+    expect(scene).toMatch(/state\.status === "gameOver"[\s\S]*?showGameOver\(\);[\s\S]*?updateModalInput\(\);[\s\S]*?return;/);
+  });
+
   it("uses one WASD-adjacent shortcut definition in the help and map HUD", () => {
     const scene = readFileSync(resolve(process.cwd(), "src/scenes/MerchantScene.ts"), "utf8");
     expect(scene).toContain('investigate: "E"');
@@ -69,6 +74,50 @@ describe("readable canvas presentation", () => {
     // 自宅の9件と、護衛行で14px下がるダンジョンの8件がどちらも枠の内側に収まる。
     expect(top + 8 * pitch + height).toBeLessThanOrEqual(353);
     expect(top + 14 + 7 * pitch + height).toBeLessThanOrEqual(353);
+  });
+
+  it("fits the message log rows, divider and hint inside the log window", () => {
+    const scene = readFileSync(resolve(process.cwd(), "src/scenes/MerchantScene.ts"), "utf8");
+    const value = (name: string): number => Number(new RegExp(`const ${name} = (\\d+);`).exec(scene)?.[1]);
+    const logHeight = value("LOG_H");
+    const rows = value("LOG_ROW_COUNT");
+    const top = value("LOG_ROW_TOP");
+    const pitch = value("LOG_ROW_PITCH");
+    const rowHeight = value("LOG_ROW_H");
+    const dividerY = value("LOG_DIVIDER_Y");
+    const hintY = value("LOG_HINT_Y");
+    const hintHeight = value("LOG_HINT_H");
+    // 窓枠は7px。本文はその内側から始まり、ヒントの下端も内側で終わる。
+    const border = 7;
+    expect(rows).toBeGreaterThanOrEqual(2);
+    expect(top).toBeGreaterThanOrEqual(border);
+    expect(pitch).toBeGreaterThanOrEqual(rowHeight);
+    // 最終行が罫線に食い込まない。
+    expect(top + (rows - 1) * pitch + rowHeight).toBeLessThanOrEqual(dividerY);
+    // ヒストリの保持数と行数が一致する。
+    expect(scene).toContain("this.messageLog.length > LOG_ROW_COUNT");
+    expect(scene).toContain("this.messageLog.slice(-LOG_ROW_COUNT)");
+    // ヒントの下端が窓の内側に収まる。
+    expect(hintY).toBeGreaterThan(dividerY);
+    expect(hintY + hintHeight).toBeLessThanOrEqual(logHeight - border);
+  });
+
+  it("shows a context prompt and a context-labelled investigate button", () => {
+    const scene = readFileSync(resolve(process.cwd(), "src/scenes/MerchantScene.ts"), "utf8");
+    expect(scene).toContain("private investigateContext()");
+    expect(scene).toContain("this.renderDungeonPrompt()");
+    // プロンプトと右のボタンは同じ判断から作る。
+    expect(scene).toContain("label: this.investigateContext() ?? \"調べる\"");
+    expect(scene).toContain("disabled: !this.investigateContext()");
+  });
+
+  it("feeds combat back with floating values, a defeat burst and an edge flash", () => {
+    const scene = readFileSync(resolve(process.cwd(), "src/scenes/MerchantScene.ts"), "utf8");
+    expect(scene).toContain("addFloatingValue");
+    expect(scene).toContain("addDefeatBurst");
+    expect(scene).toContain("addEdgeFlash(this, 0, 0, MAP_W, MAP_H");
+    // 倒された相手はスプライトが消えているので、撃破地点から数値を出す。
+    expect(scene).toContain("defeatedAt.set(event.actorId, event.pos)");
   });
 
   it("renders the opening separately and keeps location headings out of the map", () => {

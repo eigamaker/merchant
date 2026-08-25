@@ -1,4 +1,3 @@
-import { CUSTOMERS, GUARD_DEFINITIONS, INITIAL_QUESTS, ITEM_DEFINITIONS } from "./content";
 import { canTraverse, isWalkableCell, samePosition } from "./dungeonRules";
 import { Rng } from "./rng";
 import { HOME_SPAWN, createHomeMap } from "./homeMap";
@@ -6,11 +5,10 @@ import { compileMap, loadTrialMapPack } from "./mapDocument";
 import { createDefaultMapPack } from "./defaultMapPack";
 import { actorDefinition } from "./actorCatalog";
 import { MERCHANT_ITEM_DEFINITIONS } from "./merchantContent";
-import { createGeneratedAdventurer, createGeneratedDeadAdventurer, initializeMerchantWorld, registerWorldItem } from "./merchantEconomy";
+import { createGeneratedAdventurer, createGeneratedDeadAdventurer, initializeMerchantWorld, pruneCampaignRecords, registerWorldItem } from "./merchantEconomy";
 import { consumeDungeonTime, inventoryItemCount, playerAttackPower, playerDefensePower, resetDailySystems, unequipIfNeeded } from "./merchantSystems";
 import type {
   ActiveGuard,
-  Customer,
   DungeonBody,
   DungeonAdventurer,
   DungeonCommand,
@@ -20,12 +18,8 @@ import type {
   Enemy,
   GameState,
   GroundItem,
-  GuardDefinition,
-  GuardRecord,
   ItemDefinition,
   ItemInstance,
-  KnowledgeLevel,
-  Quest,
   TurnResult,
   Vec,
 } from "./types";
@@ -33,6 +27,7 @@ import type {
 export const DUNGEON_WIDTH = 48;
 export const DUNGEON_HEIGHT = 36;
 export const INVENTORY_CAPACITY = 24;
+export const DISPLAY_CAPACITY = 8;
 const FLOOR = 0;
 const WALL = 1;
 
@@ -47,7 +42,7 @@ export function dungeonGenerationMode(): DungeonGenerationMode {
   return new URLSearchParams(window.location.search).get("autostart") === "world" && loadTrialMapPack() ? "manual" : "fixed";
 }
 
-export function createDungeonMap(mode: DungeonGenerationMode, seed: number, floor: number, requiresTomb = false): DungeonMap {
+export function createDungeonMap(mode: DungeonGenerationMode, seed: number, floor: number): DungeonMap {
   if (mode === "manual") {
     const trial = typeof window !== "undefined" ? loadTrialMapPack()?.dungeons.find((map) => map.floor === floor) : undefined;
     if (trial) return compileMap(trial);
@@ -56,7 +51,7 @@ export function createDungeonMap(mode: DungeonGenerationMode, seed: number, floo
     const authored = createDefaultMapPack().dungeons.find((map) => map.floor === floor);
     if (authored) return compileMap(authored);
   }
-  return generateDungeon(seed, floor, requiresTomb);
+  return generateDungeon(seed, floor);
 }
 
 const clone = <T>(value: T): T => structuredClone(value);
@@ -71,7 +66,7 @@ export const DIRECTION: Record<"up" | "down" | "left" | "right", Vec> = {
 
 export function createNewGame(): GameState {
   const state: GameState = {
-    version: 7,
+    version: 8,
     campaignId: typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `campaign-${Date.now()}`,
     status: "active",
     day: 1,
@@ -88,16 +83,10 @@ export function createNewGame(): GameState {
     location: "home",
     homePos: { x: HOME_SPAWN.x * 16 + 8, y: HOME_SPAWN.y * 16 + 8 },
     expeditionSerial: 0,
-    guildReputation: 0,
-    guards: Object.keys(GUARD_DEFINITIONS).map((id) => ({ id, unlocked: false, relation: 0, experience: 0, level: 1 })),
     inventory: [],
     store: [],
     archive: [],
     display: [],
-    customers: clone(CUSTOMERS),
-    // Retained as compatibility data for the existing story helpers. The v5
-    // home UI exposes merchant-authored commissions instead of this board.
-    quests: clone(INITIAL_QUESTS),
     events: [],
     message: "商品を探しにダンジョンへ向かおう。護衛は探索準備から募集できる。",
     nextItemId: 1,
@@ -105,18 +94,7 @@ export function createNewGame(): GameState {
     itemsById: {},
     npcs: [],
     visitorNpcIds: [],
-    refusedOffers: {},
     singularItemIds: [],
-    story: {
-      blackSword: "locked",
-      early: {
-        stage: "herb",
-        guardHiringUnlocked: false,
-        missingBodyInspected: false,
-        ringConsulted: [],
-        shoveTutorialSeen: false,
-      },
-    },
   };
   initializeMerchantWorld(state);
   resetDailySystems(state);
@@ -131,7 +109,7 @@ export function createNewGame(): GameState {
 }
 
 export function itemDefinition(item: ItemInstance): ItemDefinition {
-  const definition = MERCHANT_ITEM_DEFINITIONS[item.definitionId] ?? ITEM_DEFINITIONS[item.definitionId];
+  const definition = MERCHANT_ITEM_DEFINITIONS[item.definitionId];
   if (!definition) throw new Error(`未定義アイテム: ${item.definitionId}`);
   return definition;
 }
@@ -150,7 +128,7 @@ export function currentItemCount(state: GameState): number {
 }
 
 export function createItem(state: GameState, definitionId: string, floor?: number): ItemInstance {
-  const definition = MERCHANT_ITEM_DEFINITIONS[definitionId] ?? ITEM_DEFINITIONS[definitionId];
+  const definition = MERCHANT_ITEM_DEFINITIONS[definitionId];
   if (!definition) throw new Error(`未定義アイテム: ${definitionId}`);
   if (definition.singular && state.singularItemIds.includes(definitionId)) throw new Error(`一点ものは既に生成済み: ${definitionId}`);
   const instance: ItemInstance = {
@@ -270,7 +248,7 @@ function freeFloor(map: DungeonMap, rng: Rng, occupied: Vec[]): Vec {
   return fallback ? fallback.pos : { ...map.stairsUp };
 }
 
-export function generateDungeon(seed: number, floor: number, requiresTomb = false): DungeonMap {
+export function generateDungeon(seed: number, floor: number): DungeonMap {
   const rng = new Rng(seed + floor * 7919);
   const tiles = Array.from({ length: DUNGEON_HEIGHT }, () => Array.from({ length: DUNGEON_WIDTH }, () => WALL));
   const rooms = createRooms(tiles, rng);
@@ -280,7 +258,6 @@ export function generateDungeon(seed: number, floor: number, requiresTomb = fals
   const entrance = { ...entranceRoom.center };
   const byDistance = [...rooms].sort((a, b) => distance(b.center, entrance) - distance(a.center, entrance));
   const stairs = { ...(byDistance[0]?.center ?? entrance) };
-  const specialCandidate = byDistance.find((room) => !samePosition(room.center, stairs));
   return {
     width: DUNGEON_WIDTH,
     height: DUNGEON_HEIGHT,
@@ -292,7 +269,7 @@ export function generateDungeon(seed: number, floor: number, requiresTomb = fals
     traversalLinks: [],
     stairsUp: entrance,
     stairsDown: stairs,
-    specialRoom: requiresTomb && specialCandidate ? { ...specialCandidate.center } : undefined,
+    enemyRoster: [...defaultEnemyRoster(floor)],
   };
 }
 
@@ -300,20 +277,8 @@ function distance(a: Vec, b: Vec): number {
   return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 }
 
-function questById(state: GameState, id: string): Quest | undefined {
-  return state.quests.find((quest) => quest.id === id);
-}
 
-function ownsDefinition(state: GameState, definitionId: string): boolean {
-  return [...state.inventory, ...state.store, ...state.archive].some((item) => item.definitionId === definitionId);
-}
 
-function activeCollectQuests(state: GameState, floor: number): Quest[] {
-  return state.quests.filter((quest) => quest.status === "active"
-    && quest.targetFloor === floor
-    && quest.targetItemId
-    && quest.objective?.kind === "collect");
-}
 
 function randomItemId(state: GameState, rng: Rng, floor: number): string {
   const definitions = Object.values(MERCHANT_ITEM_DEFINITIONS).filter((definition) => {
@@ -331,44 +296,36 @@ function randomItemId(state: GameState, rng: Rng, floor: number): string {
   return rng.pick(weighted);
 }
 
+/**
+ * 手描きの階が用意されるまで、手続き生成の階も同じ craftpix の敵を使う。
+ * 深いほど種類が入れ替わり、1階と2階で敵の系統が変わらない。
+ */
+export function defaultEnemyRoster(floor: number): readonly string[] {
+  if (floor >= 7) return ["plant3", "vampire2", "vampire3", "orc3"];
+  if (floor >= 5) return ["orc3", "plant2", "vampire1"];
+  if (floor >= 3) return ["slime2", "orc2", "plant1"];
+  return ["slime1", "orc1"];
+}
+
 function buildEnemies(rng: Rng, map: DungeonMap, floor: number, occupied: Vec[]): Enemy[] {
-  if (Array.isArray(map.enemyRoster)) {
-    const authored = map.enemyRoster.map((actorId) => ({ actorId, actor: actorDefinition(actorId) })).filter((entry) => entry.actor?.enemyStats);
-    if (!authored.length) return [];
-    return Array.from({ length: 6 + Math.min(floor, 6) }, (_, index) => {
-      const selected = rng.pick(authored);
-      const stats = selected.actor!.enemyStats!;
-      const pos = freeFloor(map, rng, occupied);
-      occupied.push(pos);
-      return {
-        id: `${selected.actorId}-${floor}-${index}`,
-        actorId: selected.actorId,
-        name: selected.actor!.label,
-        hp: stats.baseHp + floor * stats.hpPerFloor,
-        maxHp: stats.baseHp + floor * stats.hpPerFloor,
-        damage: stats.damage,
-        state: "patrol" as const,
-        staggerTurns: 0,
-        pos,
-      };
-    });
-  }
-  const variants = [
-    { id: "slime", name: "深青スライム", hp: 3 + floor, damage: 1 },
-    { id: "bat", name: "影蝙蝠", hp: 2 + floor, damage: 1 },
-    { id: "crawler", name: "岩穿ち獣", hp: 4 + floor, damage: 2 },
-  ];
+  const roster = Array.isArray(map.enemyRoster) && map.enemyRoster.length ? map.enemyRoster : defaultEnemyRoster(floor);
+  const authored = roster.map((actorId) => ({ actorId, actor: actorDefinition(actorId) })).filter((entry) => entry.actor?.enemyStats);
+  if (!authored.length) return [];
   return Array.from({ length: 6 + Math.min(floor, 6) }, (_, index) => {
-    const variant = rng.pick(variants);
+    const selected = rng.pick(authored);
+    const stats = selected.actor!.enemyStats!;
     const pos = freeFloor(map, rng, occupied);
     occupied.push(pos);
     return {
-      ...variant,
-      id: `${variant.id}-${floor}-${index}`,
-      pos,
-      maxHp: variant.hp,
+      id: `${selected.actorId}-${floor}-${index}`,
+      actorId: selected.actorId,
+      name: selected.actor!.label,
+      hp: stats.baseHp + floor * stats.hpPerFloor,
+      maxHp: stats.baseHp + floor * stats.hpPerFloor,
+      damage: stats.damage,
       state: "patrol" as const,
       staggerTurns: 0,
+      pos,
     };
   });
 }
@@ -379,50 +336,26 @@ export function buildInitialEnemies(map: DungeonMap, floor: number, seed = 1): E
   return buildEnemies(new Rng(seed + floor * 997), map, floor, occupied);
 }
 
-function guardMaxHp(record: GuardRecord, definition: GuardDefinition): number {
-  return definition.baseMaxHp + Math.max(0, record.level - 1);
-}
 
 function activeGuardName(state: GameState, guardId: string): string {
-  return state.npcs.find((entry) => entry.id === guardId)?.name ?? guardDefinition(guardId)?.name ?? "護衛";
+  return state.npcs.find((entry) => entry.id === guardId)?.name ?? "護衛";
 }
 
-function initialGuard(state: GameState, map: DungeonMap, _occupied: Vec[]): ActiveGuard | undefined {
+function initialGuard(state: GameState, map: DungeonMap): ActiveGuard | undefined {
   if (!state.hiredGuardId) return undefined;
   const npc = state.npcs.find((entry) => entry.id === state.hiredGuardId && entry.adventurer && entry.status !== "dead");
-  if (npc) {
-    const maxHp = npc.maxHp ?? 6;
-    return { guardId: npc.id, pos: { ...map.stairsUp }, hp: maxHp, maxHp, damage: npc.damage ?? 1, mode: "covering", safeTurns: 0 };
-  }
-  const record = state.guards.find((guard) => guard.id === state.hiredGuardId);
-  const definition = GUARD_DEFINITIONS[state.hiredGuardId];
-  if (!record || !definition || (record.injuredUntilDay ?? 0) > state.day) return undefined;
-  const maxHp = guardMaxHp(record, definition);
-  return { guardId: definition.id, pos: { ...map.stairsUp }, hp: maxHp, maxHp, damage: definition.damage, mode: "covering", safeTurns: 0 };
+  if (!npc) return undefined;
+  const maxHp = npc.maxHp ?? 6;
+  return { guardId: npc.id, pos: { ...map.stairsUp }, hp: maxHp, maxHp, damage: npc.damage ?? 1, mode: "covering", safeTurns: 0 };
 }
 
-function shouldPlaceAronBody(state: GameState, floor: number): boolean {
-  if (floor !== 2) return false;
-  const missing = questById(state, "missing");
-  const ring = questById(state, "old-ring");
-  return missing?.status === "active"
-    || missing?.status === "readyToReport"
-    || (ring?.status === "active" && !ownsDefinition(state, "old-ring"));
-}
 
-function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: ActiveGuard | null, highestFloor = floor, forceTomb = false, floorStates: NonNullable<DungeonRun["floorStates"]> = {}): DungeonRun {
-  const needsTomb = forceTomb || (state.story.blackSword === "incident" && floor === 3);
-  const map = createDungeonMap(dungeonGenerationMode(), seed, floor, needsTomb);
+function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: ActiveGuard | null, highestFloor = floor, floorStates: NonNullable<DungeonRun["floorStates"]> = {}): DungeonRun {
+  const map = createDungeonMap(dungeonGenerationMode(), seed, floor);
   const rng = new Rng(seed + floor * 997);
   const occupied: Vec[] = [map.stairsUp, ...(map.stairsDown ? [map.stairsDown] : [])];
   const items: GroundItem[] = [];
 
-  for (const quest of activeCollectQuests(state, floor)) {
-    if (!quest.targetItemId || ownsDefinition(state, quest.targetItemId)) continue;
-    const pos = freeFloor(map, rng, occupied);
-    occupied.push(pos);
-    items.push({ item: createItem(state, quest.targetItemId, floor), pos });
-  }
   for (let index = items.length; index < 7; index += 1) {
     const pos = freeFloor(map, rng, occupied);
     occupied.push(pos);
@@ -435,7 +368,7 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
     ? undefined
     : carriedGuard
       ? { ...carriedGuard, pos: { ...map.stairsUp } }
-      : initialGuard(state, map, occupied);
+      : initialGuard(state, map);
 
   const enemies = buildEnemies(rng, map, floor, occupied);
   const occupiedEntities = [...occupied, ...enemies.map((enemy) => enemy.pos)];
@@ -444,26 +377,8 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
     occupiedEntities.push(pos);
     return { id: `chest-${floor}-${index}`, pos, item: createItem(state, randomItemId(state, rng, floor), floor) };
   });
-  const traps = Array.from({ length: rng.int(2, 4) }, () => {
-    const pos = freeFloor(map, rng, occupiedEntities);
-    occupiedEntities.push(pos);
-    return pos;
-  });
   const bodies: DungeonBody[] = [];
   const adventurers: DungeonAdventurer[] = [];
-  if (shouldPlaceAronBody(state, floor)) {
-    const pos = freeFloor(map, rng, occupiedEntities);
-    occupiedEntities.push(pos);
-    const lootIds = ["adventurer-badge", "old-ring"].filter((id) => !ownsDefinition(state, id));
-    bodies.push({
-      id: "aron",
-      name: "冒険者アロン",
-      pos,
-      loot: lootIds.map((id) => createItem(state, id, floor)),
-      inspected: state.story.early.missingBodyInspected,
-      questId: "missing",
-    });
-  }
   const corpseChance = Math.min(0.6, 0.25 + (floor - 1) * 0.05);
   if (rng.next() < corpseChance) {
     const deadNpc = createGeneratedDeadAdventurer(state, floor);
@@ -514,7 +429,6 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
     enemies,
     items,
     chests,
-    traps,
     bodies,
     adventurers,
     guard,
@@ -540,9 +454,8 @@ export function beginExpedition(state: GameState): void {
     ? querySeed
     : Math.imul(state.day, 104729) ^ Math.imul(state.expeditionSerial, 0x9e3779b1);
   const floor = Number.isFinite(queryFloor) ? Math.min(8, Math.max(1, queryFloor)) : 1;
-  const forceTomb = params?.get("dungeonTomb") === "1";
   state.location = "dungeon";
-  state.run = buildRun(state, floor, seed, undefined, floor, forceTomb);
+  state.run = buildRun(state, floor, seed, undefined, floor);
   if (state.escortCommission?.status === "accepted" && state.escortCommission.npcId) {
     state.escortCommission.status = "active";
     const npc = state.npcs.find((entry) => entry.id === state.escortCommission?.npcId);
@@ -561,7 +474,6 @@ function snapshotFloor(run: DungeonRun): import("./types").DungeonFloorSnapshot 
     enemies: clone(run.enemies),
     items: clone(run.items),
     chests: clone(run.chests),
-    traps: clone(run.traps),
     bodies: clone(run.bodies),
     adventurers: clone(run.adventurers),
     guard: run.guard ? clone(run.guard) : undefined,
@@ -608,7 +520,7 @@ export function descend(state: GameState): void {
   const previous = floorStates[String(nextFloor)];
   state.run = previous
     ? restoreFloor(previous, run.seed, floorStates, highestFloor, previous.map.stairsUp, run.guard, run.timeUnits, run.settledTimeBands)
-    : buildRun(state, nextFloor, run.seed, run.guard ?? null, highestFloor, false, floorStates);
+    : buildRun(state, nextFloor, run.seed, run.guard ?? null, highestFloor, floorStates);
   state.run.timeUnits = run.timeUnits;
   state.run.settledTimeBands = run.settledTimeBands;
   state.message = `地下${nextFloor}階へ降りた。`;
@@ -618,7 +530,7 @@ export function ascend(state: GameState): void {
   const run = state.run;
   if (!run) return;
   if (run.floor === 1) {
-    returnHome(state, false, "dungeonEntrance");
+    returnHome(state, "dungeonEntrance");
     return;
   }
   const nextFloor = run.floor - 1;
@@ -629,7 +541,7 @@ export function ascend(state: GameState): void {
     state.run = restoreFloor(previous, run.seed, floorStates, run.highestFloor, landing, run.guard, run.timeUnits, run.settledTimeBands);
   } else {
     const map = createDungeonMap(dungeonGenerationMode(), run.seed, nextFloor);
-    state.run = buildRun(state, nextFloor, run.seed, run.guard ?? null, run.highestFloor, false, floorStates);
+    state.run = buildRun(state, nextFloor, run.seed, run.guard ?? null, run.highestFloor, floorStates);
     state.run.player = { ...(map.stairsDown ?? map.stairsUp) };
     if (state.run.guard) state.run.guard.pos = { ...state.run.player };
     state.run.timeUnits = run.timeUnits;
@@ -658,7 +570,7 @@ function guardPhase(state: GameState, events: DungeonEvent[]): void {
     state.message = `${activeGuardName(state, guard.guardId)}が${target.name}へ${guard.damage}ダメージ。`;
     if (target.hp <= 0) {
       run.enemies = run.enemies.filter((enemy) => enemy.id !== target.id);
-      events.push({ type: "defeated", actorId: target.id });
+      events.push({ type: "defeated", actorId: target.id, pos: { ...target.pos } });
       state.message = `${activeGuardName(state, guard.guardId)}が${target.name}を退けた。`;
     }
   }
@@ -710,7 +622,7 @@ function adventurerPhase(state: GameState, events: DungeonEvent[]): void {
       state.message = `${adventurerName(state, adventurer.npcId)}が${target.name}へ${adventurer.damage}ダメージ。`;
       if (target.hp <= 0) {
         run.enemies = run.enemies.filter((enemy) => enemy.id !== target.id);
-        events.push({ type: "defeated", actorId: target.id });
+        events.push({ type: "defeated", actorId: target.id, pos: { ...target.pos } });
         state.message = `${adventurerName(state, adventurer.npcId)}が${target.name}を倒した。`;
       }
       continue;
@@ -779,12 +691,9 @@ function enemyPhase(state: GameState, events: DungeonEvent[]): void {
             item.historyV2.push({ day: state.day, type: "ownerDied", npcId: npc.id, detail: `${npc.name}が地下${run.floor}階で死亡` });
           }
           run.bodies.push({ id: `body-${npc.id}`, npcId: npc.id, name: `冒険者${npc.name}`, pos: { ...guard.pos }, loot, inspected: false });
-        } else {
-          const record = state.guards.find((entry) => entry.id === guard.guardId);
-          if (record) record.injuredUntilDay = state.day + 3;
         }
-        events.push({ type: "defeated", actorId: guard.guardId });
-        state.message = npc ? `${npc.name}は死亡し、その場に所持品を残した。` : `${activeGuardName(state, guard.guardId)}は負傷して撤退した。`;
+        events.push({ type: "defeated", actorId: guard.guardId, pos: { ...guard.pos } });
+        state.message = npc ? `${npc.name}は死亡し、その場に所持品を残した。` : `${activeGuardName(state, guard.guardId)}は倒れた。`;
         run.guard = undefined;
       } else if (guard.hp <= guardRetreatThreshold(state, guard)) {
         guard.mode = "retreated";
@@ -835,7 +744,7 @@ function defeatDungeonAdventurer(state: GameState, adventurer: DungeonAdventurer
   }
   run.bodies.push({ id: `body-${npc.id}`, npcId: npc.id, name: `冒険者${npc.name}`, pos: { ...adventurer.pos }, loot, inspected: false });
   run.adventurers = run.adventurers.filter((entry) => entry.npcId !== adventurer.npcId);
-  events.push({ type: "defeated", actorId: adventurer.npcId });
+  events.push({ type: "defeated", actorId: adventurer.npcId, pos: { ...adventurer.pos } });
   state.message = `${npc.name}は敵に倒され、所持品をその場に残した。`;
 }
 
@@ -882,7 +791,7 @@ function performAttack(state: GameState, direction: Vec): TurnResult {
   state.message = `${enemy.name}へ${damage}ダメージ。`;
   if (enemy.hp <= 0) {
     run.enemies = run.enemies.filter((entry) => entry.id !== enemy.id);
-    events.push({ type: "defeated", actorId: enemy.id });
+    events.push({ type: "defeated", actorId: enemy.id, pos: { ...enemy.pos } });
     state.message = `${enemy.name}を倒した。`;
   }
   return finishTurn(state, events);
@@ -894,7 +803,6 @@ function performMove(state: GameState, direction: Vec): TurnResult {
   const next = { x: run.player.x + direction.x, y: run.player.y + direction.y };
   const enemy = run.enemies.find((candidate) => samePosition(candidate.pos, next));
   if (enemy) {
-    state.story.early.shoveTutorialSeen = true;
     state.message = `${enemy.name}が進路を塞いでいる。Spaceから「押し返す」を選ぼう。`;
     return emptyResult();
   }
@@ -915,22 +823,6 @@ function performMove(state: GameState, direction: Vec): TurnResult {
     events.push({ type: "move", actorId: run.guard.guardId, from, to: { ...next } });
   }
   state.message = "足音を殺して進む。";
-  const trapIndex = run.traps.findIndex((trap) => samePosition(trap, next));
-  if (trapIndex >= 0) {
-    run.traps.splice(trapIndex, 1);
-    state.hp -= 2;
-    state.message = "床の罠が作動した。2ダメージ。";
-    if (state.hp <= 0) {
-      merchantGameOver(state, "罠によって命を落とした。" );
-      return { consumedTurn: true, events };
-    }
-  }
-  if (run.map.specialRoom && samePosition(next, run.map.specialRoom) && state.story.blackSword === "incident") {
-    state.story.blackSword = "tomb";
-    state.message = "古い墓所を発見した。『アルベルト』という名が刻まれている。学者に相談しよう。";
-    const quest = questById(state, "black-tomb");
-    if (quest) quest.status = "active";
-  }
   return finishTurn(state, events);
 }
 
@@ -953,7 +845,6 @@ function performShove(state: GameState, direction: Vec): TurnResult {
     || run.enemies.some((candidate) => candidate.id !== enemy.id && samePosition(candidate.pos, destination))
     || samePosition(run.player, destination);
   run.shoveCooldown = 2;
-  state.story.early.shoveTutorialSeen = true;
   const events: DungeonEvent[] = [];
   if (blocked) {
     state.message = `${enemy.name}の後ろが塞がっている。押し返しに失敗した。`;
@@ -986,39 +877,14 @@ function carryItem(state: GameState, incoming: ItemInstance, swapOutId: string |
     swap.owner = "ground";
     if (state.run) swap.location = { kind: "dungeonGround", floor: state.run.floor, pos: { ...state.run.player } };
     onSwap(swap);
-    syncQuestCarryProgress(state, swap.definitionId);
   }
   incoming.owner = "player";
   incoming.location = { kind: "playerBag" };
   state.inventory.push(incoming);
-  completePickupObjective(state, incoming);
   return true;
 }
 
-function completePickupObjective(state: GameState, item: ItemInstance): void {
-  if (item.definitionId === "adventurer-badge") {
-    const missing = questById(state, "missing");
-    if (missing?.status === "active") missing.status = "readyToReport";
-    return;
-  }
-  if (item.definitionId === "old-ring") return;
-  const quest = state.quests.find((entry) => entry.status === "active" && entry.targetItemId === item.definitionId);
-  if (!quest) return;
-  if (quest.id === "black-sword") {
-    state.story.blackSword = "found";
-    state.message = "黒い長剣を持ち帰れる。誰に見せるかが重要だ。";
-    return;
-  }
-  quest.status = "readyToReport";
-}
 
-function syncQuestCarryProgress(state: GameState, definitionId: string): void {
-  const stillHeld = state.inventory.some((item) => item.definitionId === definitionId);
-  if (stillHeld) return;
-  for (const quest of state.quests) {
-    if (quest.status === "readyToReport" && quest.targetItemId === definitionId) quest.status = "active";
-  }
-}
 
 function performPickup(state: GameState, swapOutId?: string): TurnResult {
   const run = state.run;
@@ -1053,15 +919,10 @@ function performInspectBody(state: GameState, bodyId: string): TurnResult {
   if (!run || !body) return emptyResult();
   if (body.inspected) return emptyResult();
   body.inspected = true;
-  if (body.id === "aron") {
-    state.story.early.missingBodyInspected = true;
-    state.message = "認識票には『アロン』とある。傍らに古びた指輪も残されている。";
-  } else {
-    const deadNpc = body.npcId ? state.npcs.find((npc) => npc.id === body.npcId) : undefined;
-    state.message = deadNpc
-      ? `${deadNpc.name}という冒険者だ。${body.loot.length}個の所持品が残されている。`
-      : "古い遺体だ。身元を示す物は残っていない。";
-  }
+  const deadNpc = body.npcId ? state.npcs.find((npc) => npc.id === body.npcId) : undefined;
+  state.message = deadNpc
+    ? `${deadNpc.name}という冒険者だ。${body.loot.length}個の所持品が残されている。`
+    : "古い遺体だ。身元を示す物は残っていない。";
   return finishTurn(state, [{ type: "message", text: state.message }]);
 }
 
@@ -1093,7 +954,6 @@ function performDrop(state: GameState, itemId: string): TurnResult {
   item.owner = "ground";
   item.location = { kind: "dungeonGround", floor: run.floor, pos: { ...run.player } };
   run.items.push({ item, pos: { ...run.player } });
-  syncQuestCarryProgress(state, item.definitionId);
   state.message = `${itemName(item)}を足元に置いた。`;
   return finishTurn(state, [{ type: "message", text: state.message }]);
 }
@@ -1120,7 +980,6 @@ function performUseMedicine(state: GameState, itemId: string, target: "player" |
   actor.hp += recovered;
   state.inventory = state.inventory.filter((entry) => entry.uuid !== item.uuid);
   unequipIfNeeded(state, item.uuid);
-  syncQuestCarryProgress(state, item.definitionId);
   item.location = { kind: "consumed", actorId: guard?.guardId ?? "player" };
   state.message = `${itemName(item)}を${guard ? activeGuardName(state, guard.guardId) : "自分"}に使い、HPを${recovered}回復した。`;
   return finishTurn(state, [{ type: "message", text: state.message }]);
@@ -1155,7 +1014,6 @@ function performSellToAdventurer(state: GameState, npcId: string, itemId: string
   const npc = state.npcs.find((entry) => entry.id === npcId);
   const item = state.inventory.find((entry) => entry.uuid === itemId);
   if (!adventurer || !npc || !item) return emptyResult();
-  if (isQuestItemProtected(state, item)) { state.message = "依頼に関わる品は売れない。"; return emptyResult(); }
   const definition = itemDefinition(item);
   const needsMedicine = adventurer.hp < adventurer.maxHp && (definition.healing ?? 0) > 0;
   if (!npc.interests.includes(definition.category) && !needsMedicine) { state.message = `${npc.name}はその品を探していない。`; return emptyResult(); }
@@ -1198,7 +1056,7 @@ function performReturnStone(state: GameState): TurnResult {
     return emptyResult();
   }
   state.returnStones -= 1;
-  returnHome(state, false);
+  returnHome(state);
   return { consumedTurn: true, events: [{ type: "message", text: state.message }] };
 }
 
@@ -1294,8 +1152,8 @@ export function merchantGameOver(state: GameState, cause: string): void {
   state.message = `${cause} 商人の物語はここで終わった。`;
 }
 
-/** Return stones and rescue use homeSpawn; the first-floor up stair arrives at dungeonEntrance. */
-export function returnHome(state: GameState, rescued: boolean, arrival: "homeSpawn" | "dungeonEntrance" = "homeSpawn"): void {
+/** Return stones use homeSpawn; the first-floor up stair arrives at dungeonEntrance. */
+export function returnHome(state: GameState, arrival: "homeSpawn" | "dungeonEntrance" = "homeSpawn"): void {
   const completedRun = state.run;
   if (completedRun) {
     const survivorIds = new Set([
@@ -1304,31 +1162,12 @@ export function returnHome(state: GameState, rescued: boolean, arrival: "homeSpa
     ]);
     for (const npc of state.npcs) if (survivorIds.has(npc.id) && npc.status === "dungeon") npc.status = "departed";
   }
-  if (rescued) {
-    const protectedDefinitions = new Set(state.quests
-      .filter((quest) => quest.status === "active" || quest.status === "readyToReport")
-      .map((quest) => quest.targetItemId));
-    const recoverable = state.inventory.filter((item) => !itemDefinition(item).unique && !protectedDefinitions.has(item.definitionId));
-    const losses = [...recoverable].sort((a, b) => a.uuid.localeCompare(b.uuid)).slice(0, Math.ceil(recoverable.length / 2));
-    losses.forEach((item) => unequipIfNeeded(state, item.uuid));
-    state.inventory = state.inventory.filter((item) => !losses.includes(item));
-    const fee = Math.floor(state.gold * 0.1);
-    state.gold -= fee;
-    state.message = `救助された。戦利品${losses.length}点と救助費${fee}Gを失った。`;
-  } else {
-    state.message = "家へ帰還した。依頼の報告と護衛契約ができる。";
-    if (completedRun?.guard) {
-      const npc = state.npcs.find((entry) => entry.id === completedRun.guard?.guardId);
-      if (npc && npc.status !== "dead") {
-        npc.status = "inTown";
-        npc.relation = Math.min(100, npc.relation + 1);
-      }
-      const record = state.guards.find((entry) => entry.id === completedRun.guard?.guardId);
-      if (record) {
-        record.relation = Math.min(100, record.relation + 1);
-        record.experience += Math.max(1, completedRun.highestFloor);
-        record.level = record.experience >= 7 ? 3 : record.experience >= 3 ? 2 : 1;
-      }
+  state.message = "家へ帰還した。棚の商品を並べ替え、次の護衛を指定できる。";
+  if (completedRun?.guard) {
+    const npc = state.npcs.find((entry) => entry.id === completedRun.guard?.guardId);
+    if (npc && npc.status !== "dead") {
+      npc.status = "inTown";
+      npc.relation = Math.min(100, npc.relation + 1);
     }
   }
   state.location = "home";
@@ -1341,234 +1180,31 @@ export function returnHome(state: GameState, rescued: boolean, arrival: "homeSpa
   state.hiredGuardId = undefined;
   state.hiredGuardFee = undefined;
   state.escortCommission = undefined;
+  // 探索を1回終えるごとに、もう誰も参照しない床の品と通りすがりの冒険者を捨てる。
+  pruneCampaignRecords(state);
   processDayEvents(state);
 }
 
-export function guardDefinition(id: string): GuardDefinition | undefined {
-  return GUARD_DEFINITIONS[id];
-}
 
 export function guardRetreatRatio(state: GameState, guardId: string): number {
-  const npc = state.npcs.find((entry) => entry.id === guardId);
-  return npc?.retreatHpRatio ?? GUARD_DEFINITIONS[guardId]?.retreatHpRatio ?? 0.25;
+  return state.npcs.find((entry) => entry.id === guardId)?.retreatHpRatio ?? 0.25;
 }
 
 export function guardRetreatThreshold(state: GameState, guard: ActiveGuard): number {
   return Math.max(1, Math.ceil(guard.maxHp * guardRetreatRatio(state, guard.guardId)));
 }
 
-export function guardFee(state: GameState, guardId: string): number {
-  const definition = GUARD_DEFINITIONS[guardId];
-  const record = state.guards.find((guard) => guard.id === guardId);
-  if (!definition || !record) return 0;
-  const relationDiscount = Math.min(0.2, record.relation * 0.02);
-  const guildDiscount = state.guildReputation >= 2 ? 0.2 : 0;
-  return Math.max(1, Math.floor(definition.baseFee * (1 - relationDiscount) * (1 - guildDiscount)));
-}
 
-export function hireGuard(state: GameState, guardId: string): boolean {
-  if (state.location !== "home" || !state.story.early.guardHiringUnlocked) return false;
-  const definition = GUARD_DEFINITIONS[guardId];
-  const record = state.guards.find((guard) => guard.id === guardId);
-  if (!definition || !record?.unlocked) return false;
-  if ((record.injuredUntilDay ?? 0) > state.day) {
-    state.message = `${definition.name}は${record.injuredUntilDay}日目まで療養中だ。`;
-    return false;
-  }
-  const availableGold = state.gold + (state.hiredGuardFee ?? 0);
-  const fee = guardFee(state, guardId);
-  if (availableGold < fee) {
-    state.message = `契約には${fee}G必要だ。`;
-    return false;
-  }
-  state.gold = availableGold - fee;
-  state.hiredGuardId = guardId;
-  state.hiredGuardFee = fee;
-  state.message = `${definition.name}を次の遠征の護衛に雇った。契約料${fee}G。`;
-  return true;
-}
 
-export function cancelGuard(state: GameState): void {
-  if (!state.hiredGuardId) return;
-  state.gold += state.hiredGuardFee ?? 0;
-  state.hiredGuardId = undefined;
-  state.hiredGuardFee = undefined;
-  state.message = "護衛契約を取り消し、契約料を返金した。";
-}
 
-export function scoutRevealsTrap(state: GameState, trap: Vec): boolean {
-  const guard = state.run?.guard;
-  return Boolean(guard && GUARD_DEFINITIONS[guard.guardId]?.trait === "scout" && distance(guard.pos, trap) <= 3);
-}
 
-export function isQuestItemProtected(state: GameState, item: ItemInstance): boolean {
-  if (item.definitionId === "old-ring" && !state.story.early.ringResolution) return true;
-  // 黒い長剣編は「誰に売るか」が目的なので、発見後だけ通常取引へ渡す。
-  if (item.definitionId === "black-sword" && state.story.blackSword === "found") return false;
-  return state.quests.some((quest) => (quest.status === "active" || quest.status === "readyToReport")
-    && quest.targetItemId === item.definitionId);
-}
 
-function removeItemForTurnIn(state: GameState, definitionId: string, owner: string): ItemInstance | undefined {
-  const item = state.inventory.find((entry) => entry.definitionId === definitionId);
-  if (!item) return undefined;
-  state.inventory = state.inventory.filter((entry) => entry.uuid !== item.uuid);
-  item.owner = owner;
-  item.history.push({ day: state.day, type: "recovered", detail: "依頼主へ返却" });
-  state.archive.push(item);
-  return item;
-}
 
-export function reportQuest(state: GameState, questId: string): boolean {
-  const quest = questById(state, questId);
-  if (!quest || quest.status !== "readyToReport" || !quest.targetItemId) return false;
-  if (!removeItemForTurnIn(state, quest.targetItemId, `quest:${quest.id}`)) {
-    quest.status = "active";
-    state.message = "依頼品を持っていない。もう一度回収しよう。";
-    return false;
-  }
-  quest.status = "complete";
-  state.gold += quest.reward ?? 0;
-  if (quest.id === "herb") {
-    state.story.early.stage = "lostSword";
-    const next = questById(state, "lost-sword");
-    if (next) next.status = "available";
-  } else if (quest.id === "lost-sword") {
-    state.story.early.stage = "missing";
-    state.story.early.guardHiringUnlocked = true;
-    for (const guard of state.guards) guard.unlocked = true;
-    const next = questById(state, "missing");
-    if (next) next.status = "available";
-  } else if (quest.id === "missing") {
-    state.story.early.stage = "ring";
-    const ring = questById(state, "old-ring");
-    if (ring) ring.status = "active";
-  }
-  state.message = `依頼「${quest.title}」を報告した。報酬${quest.reward ?? 0}G。`;
-  return true;
-}
 
-export function consultRing(state: GameState, customerId: string): string {
-  const quest = questById(state, "old-ring");
-  const ring = state.inventory.find((item) => item.definitionId === "old-ring")
-    ?? state.store.find((item) => item.definitionId === "old-ring");
-  if (!ring || (quest?.status !== "active" && quest?.status !== "readyToReport")) return "相談できる指輪を持っていない。";
-  const allowed = quest.objective?.kind === "consult" ? quest.objective.customerIds : [];
-  if (!allowed.includes(customerId)) return "この人物からは指輪について新しい情報を得られそうにない。";
-  const messages: Record<string, string> = {
-    scholar: "エリス「冬塔家の誓約環です。家族の契約を示す、歴史的にも重要な品ですね」",
-    jeweler: "サフィ「宝石より内側の銘が希少ね。市場なら千Gを超える買い手がつくわ」",
-    duke: "ローデン「冬塔家の紋章だ。遺族のリナなら、ギルドが所在を知っているはずだ」",
-  };
-  if (!state.story.early.ringConsulted.includes(customerId)) {
-    state.story.early.ringConsulted.push(customerId);
-    ring.clues.push(messages[customerId]!);
-    ring.history.push({ day: state.day, type: "examined", detail: `${state.customers.find((customer) => customer.id === customerId)?.name ?? customerId}に指輪を見せた` });
-  }
-  if (state.story.early.ringConsulted.length >= allowed.length) {
-    ring.knowledge = "identified";
-    if (quest) quest.status = "readyToReport";
-  } else {
-    ring.knowledge = "suspected";
-  }
-  return `${messages[customerId]}（手掛かり ${state.story.early.ringConsulted.length}/${allowed.length}）`;
-}
 
-export function resolveRing(state: GameState, resolution: "family" | "scholar" | "jeweler"): string {
-  const quest = questById(state, "old-ring");
-  const ring = state.inventory.find((item) => item.definitionId === "old-ring")
-    ?? state.store.find((item) => item.definitionId === "old-ring");
-  if (state.story.early.ringResolution || quest?.status !== "readyToReport" || !ring) return "指輪の扱いはまだ決められない。";
-  const outcomes = {
-    family: { gold: 250, owner: "family", detail: "遺族のリナへ返却" },
-    scholar: { gold: 700, owner: "scholar", detail: "エリスの研究へ寄託" },
-    jeweler: { gold: 1300, owner: "jeweler", detail: "サフィへ売却" },
-  } as const;
-  const outcome = outcomes[resolution];
-  state.inventory = state.inventory.filter((item) => item.uuid !== ring.uuid);
-  state.store = state.store.filter((item) => item.uuid !== ring.uuid);
-  state.display = state.display.filter((uuid) => uuid !== ring.uuid);
-  ring.owner = outcome.owner;
-  ring.history.push({ day: state.day, type: resolution === "jeweler" ? "sold" : "recovered", detail: outcome.detail, value: outcome.gold });
-  state.archive.push(ring);
-  state.gold += outcome.gold;
-  if (resolution === "family") state.guildReputation += 2;
-  if (resolution === "scholar") {
-    const scholar = state.customers.find((customer) => customer.id === "scholar");
-    if (scholar) scholar.relation = Math.min(100, scholar.relation + 2);
-  }
-  if (resolution === "jeweler") {
-    const jeweler = state.customers.find((customer) => customer.id === "jeweler");
-    if (jeweler) jeweler.relation = Math.min(100, jeweler.relation + 2);
-  }
-  state.story.early.ringResolution = resolution;
-  state.story.early.stage = "complete";
-  quest.status = "complete";
-  const blackSword = questById(state, "black-sword");
-  if (blackSword?.status === "locked") blackSword.status = "available";
-  state.message = `古びた指輪の行方を決めた。${outcome.gold}Gを得た。序章完了。`;
-  return state.message;
-}
 
-export function appraiseItem(state: GameState, item: ItemInstance, customer: Customer): string {
-  if (item.definitionId === "old-ring" && ["scholar", "jeweler", "duke"].includes(customer.id)) return consultRing(state, customer.id);
-  const definition = itemDefinition(item);
-  if (!customer.knowledge.includes(definition.category)) return `${customer.name}「専門外だが、変わった品だね」`;
-  if (item.definitionId === "black-sword" && state.story.blackSword === "tomb" && customer.id === "scholar") {
-    item.knowledge = "identified";
-    item.clues.push("古い墓所の碑文と学者の照合により正体が判明した。");
-    item.history.push({ day: state.day, type: "examined", detail: "エリスが黒騎士アルベルトの記録と照合" });
-    state.story.blackSword = "revealed";
-    const quest = questById(state, "black-tomb");
-    if (quest) quest.status = "complete";
-    return "エリス「これは黒騎士アルベルトの呪剣です。売却先へ急ぎましょう」";
-  }
-  const next: KnowledgeLevel = item.knowledge === "unknown" ? "suspected" : item.knowledge;
-  item.knowledge = next;
-  item.clues.push(`${customer.name}は${definition.category}の品としての価値を示唆した。`);
-  item.history.push({ day: state.day, type: "examined", detail: `${customer.name}に見せた` });
-  const estimateLow = Math.floor(definition.baseValue * 0.65);
-  const estimateHigh = Math.floor(definition.baseValue * 1.35);
-  return `${customer.name}「${definition.suspectedName}だと思う。${estimateLow}〜${estimateHigh}Gほどの品かもしれない」`;
-}
 
-export function initialOffer(_state: GameState, item: ItemInstance, customer: Customer): number {
-  const definition = itemDefinition(item);
-  const affinity = customer.interests.includes(definition.category) ? 1.55 : 0.55;
-  const specialist = customer.id === definition.preferredBuyer ? 1.2 : 1;
-  const relationship = 1 + customer.relation / 200;
-  const story = item.definitionId === "black-sword" && customer.id === "duke" ? 1.25 : 1;
-  return Math.max(20, Math.min(customer.budget, Math.floor(definition.baseValue * affinity * specialist * relationship * story)));
-}
 
-export function sellItem(state: GameState, item: ItemInstance, customerId: string, askMultiplier = 1): string {
-  if (isQuestItemProtected(state, item)) return "依頼に関わる品は、結末を決めるまで通常売却できない。";
-  const customer = state.customers.find((entry) => entry.id === customerId);
-  if (!customer) return "その客は見つからない。";
-  const offer = initialOffer(state, item, customer);
-  const asked = Math.floor(offer * askMultiplier);
-  const max = Math.floor(customer.budget * (customer.interests.includes(itemDefinition(item).category) ? 1 : 0.75));
-  if (asked > max) {
-    customer.relation = Math.max(-10, customer.relation - 1);
-    return `${customer.name}「そこまでは出せない。今回は見送ろう」`;
-  }
-  const price = askMultiplier > 1 && asked <= offer * 1.25 ? asked : offer;
-  state.inventory = state.inventory.filter((entry) => entry.uuid !== item.uuid);
-  state.store = state.store.filter((entry) => entry.uuid !== item.uuid);
-  state.display = state.display.filter((uuid) => uuid !== item.uuid);
-  item.owner = customer.id;
-  item.history.push({ day: state.day, type: "sold", detail: `${customer.name}へ売却`, value: price });
-  state.archive.push(item);
-  state.gold += price;
-  customer.relation = Math.min(100, customer.relation + 2);
-  if (item.definitionId === "black-sword" && customer.id === "duke" && state.story.blackSword === "found") {
-    state.story.blackSword = "sold";
-    state.events.push({ id: "black-sword-incident", dueDay: state.day + 1, text: "ローデン公爵家から、黒い長剣について至急の使者が来ている。" });
-    const quest = questById(state, "black-sword");
-    if (quest) quest.status = "complete";
-  }
-  return `${customer.name}へ${itemName(item)}を${price}Gで売却した。`;
-}
 
 export function moveToStore(state: GameState, item: ItemInstance): void {
   unequipIfNeeded(state, item.uuid);
@@ -1584,8 +1220,8 @@ export function moveToStore(state: GameState, item: ItemInstance): void {
 export function moveInventoryItems(state: GameState, itemIds: readonly string[], destination: "storage" | "display"): number {
   const selectedIds = new Set(itemIds);
   const selected = state.inventory.filter((item) => selectedIds.has(item.uuid));
-  if (destination === "display" && selected.length > 4 - state.display.length) {
-    state.message = `展示台の空きは${Math.max(0, 4 - state.display.length)}枠だ。`;
+  if (destination === "display" && selected.length > DISPLAY_CAPACITY - state.display.length) {
+    state.message = `展示台の空きは${Math.max(0, DISPLAY_CAPACITY - state.display.length)}枠だ。`;
     return 0;
   }
   for (const item of selected) {
@@ -1623,15 +1259,15 @@ export function toggleDisplay(state: GameState, item: ItemInstance): void {
     state.display = state.display.filter((uuid) => uuid !== item.uuid);
     item.location = { kind: "homeStorage" };
     state.message = "展示を取り下げた。";
-  } else if (state.display.length >= 4) {
-    state.message = "展示台は4枠までだ。";
+  } else if (state.display.length >= DISPLAY_CAPACITY) {
+    state.message = `展示台は${DISPLAY_CAPACITY}枠までだ。`;
   } else {
     state.display.push(item.uuid);
     item.location = { kind: "shopStock" };
     item.historyV2 ??= [];
     item.historyV2.push({ day: state.day, type: "listed", detail: "販売品として店頭へ配置" });
     item.history.push({ day: state.day, type: "displayed", detail: "店頭に展示" });
-    if (itemDefinition(item).unique) {
+    if (item.singular) {
       state.events.push({ id: `showcase-${item.uuid}`, dueDay: state.day + 1, text: `${itemName(item)}の展示を見た、見知らぬ客が店を訪ねてきた。` });
     }
     state.message = `${itemName(item)}を店頭に展示した。`;
@@ -1641,8 +1277,8 @@ export function toggleDisplay(state: GameState, item: ItemInstance): void {
 export function setDisplayedItems(state: GameState, itemIds: readonly string[]): number {
   const validStoreIds = new Set(state.store.map((item) => item.uuid));
   const desiredIds = new Set(itemIds.filter((id) => validStoreIds.has(id)));
-  if (desiredIds.size > 4) {
-    state.message = "展示台は4枠までだ。";
+  if (desiredIds.size > DISPLAY_CAPACITY) {
+    state.message = `展示台は${DISPLAY_CAPACITY}枠までだ。`;
     return 0;
   }
   state.display = state.display.filter((id) => validStoreIds.has(id));
@@ -1658,51 +1294,13 @@ export function setDisplayedItems(state: GameState, itemIds: readonly string[]):
   return changed;
 }
 
-export function acceptQuest(state: GameState, questId: string): void {
-  const quest = questById(state, questId);
-  if (!quest || quest.status !== "available") return;
-  const activeCount = state.quests.filter((entry) => entry.status === "active" || entry.status === "readyToReport").length;
-  if (activeCount >= 3) {
-    state.message = "同時に受けられる依頼は3件までだ。";
-    return;
-  }
-  quest.status = "active";
-  if (quest.id === "black-sword") state.story.blackSword = "rumor";
-  state.message = `依頼「${quest.title}」を受けた。`;
-}
 
 function processDayEvents(state: GameState): void {
   const due = state.events.filter((event) => event.dueDay <= state.day);
   state.events = state.events.filter((event) => event.dueDay > state.day);
   if (due.length === 0) return;
   state.message = due.map((event) => event.text).join(" ");
-  if (due.some((event) => event.id === "black-sword-incident")) {
-    state.story.blackSword = "incident";
-    const quest = questById(state, "black-tomb");
-    if (quest) quest.status = "active";
-  }
 }
 
-export function questProgressText(state: GameState, quest: Quest): string {
-  if (quest.status === "locked") return "未解放";
-  if (quest.status === "available") return "受注可能";
-  if (quest.status === "readyToReport") {
-    if (quest.id === "old-ring") return "指輪の行方を決められる";
-    return "ギルドへ報告できる";
-  }
-  if (quest.status === "complete") return "完了";
-  if (quest.id === "old-ring") return `相談 ${state.story.early.ringConsulted.length}/3`;
-  if (quest.id === "missing" && state.story.early.missingBodyInspected) return "アロンの認識票を回収する";
-  return quest.description;
-}
 
-export function activeQuestSummary(state: GameState): string {
-  const active = state.quests.filter((quest) => quest.status === "active" || quest.status === "readyToReport");
-  return active.length > 0
-    ? active.map((quest) => `・${quest.title}：${questProgressText(state, quest)}`).join("\n")
-    : "現在受けている依頼はない。";
-}
 
-export function customerById(state: GameState, id: string): Customer | undefined {
-  return state.customers.find((customer) => customer.id === id);
-}

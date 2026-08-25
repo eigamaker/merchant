@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   BUTTON_BORDER_WIDTH,
   BUTTON_PALETTE,
+  FLOATING_INK,
   capacityGaugeColors,
+  messageTone,
+  toneInk,
+  type MessageTone,
   buttonFrameBands,
   frameBands,
   frameBorderWidth,
@@ -98,5 +102,38 @@ describe("希少度の表示", () => {
   it("希少度が無い品はcommonとして扱う", () => {
     expect(rarityInk(undefined)).toBe(rarityInk("common"));
     expect(rarityLabel(undefined)).toBe(rarityLabel("common"));
+  });
+});
+
+describe("message tone", () => {
+  it("colours real in-game lines by what happened", () => {
+    // ゲーム内で実際に出る文面をそのまま渡す。
+    expect(messageTone("スライムの攻撃。2ダメージ。")).toBe("damage");
+    expect(messageTone("Orc1を倒した。")).toBe("damage");
+    expect(messageTone("食料が尽き、ダンジョンで力尽きた。商人の物語はここで終わった。")).toBe("damage");
+    expect(messageTone("ミラへ円盾を442Gで売却した。")).toBe("trade");
+    expect(messageTone("薬師ネヴァから煙玉を1個、50Gで仕入れた。")).toBe("trade");
+    expect(messageTone("青い宝石を拾った。所持数 3/24")).toBe("gain");
+    expect(messageTone("小回復薬を自分に使い、HPを4回復した。")).toBe("gain");
+    expect(messageTone("持ち物が24個でいっぱいだ。1個置いて入れ替えよう。")).toBe("warn");
+    expect(messageTone("ここには拾えるものがない。")).toBe("warn");
+    expect(messageTone("足音を殺して進む。")).toBe("info");
+    expect(messageTone("地下2階へ降りた。")).toBe("info");
+  });
+
+  it("prefers the damage reading when a line mentions both harm and money", () => {
+    expect(messageTone("罠が作動し、200Gの品を落とした。")).toBe("damage");
+  });
+
+  it("gives every tone a distinct colour", () => {
+    const tones: MessageTone[] = ["info", "damage", "gain", "trade", "warn"];
+    const inks = tones.map((tone) => toneInk(tone));
+    expect(new Set(inks).size).toBe(tones.length);
+    expect(inks.every((ink) => /^#[0-9a-f]{6}$/i.test(ink))).toBe(true);
+  });
+
+  it("keeps the floating value colours distinct from one another", () => {
+    const inks = Object.values(FLOATING_INK);
+    expect(new Set(inks).size).toBe(inks.length);
   });
 });

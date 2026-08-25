@@ -183,3 +183,41 @@ export function rarityInk(rarity: ItemRarity | undefined): string {
 export function rarityLabel(rarity: ItemRarity | undefined): string {
   return RARITY_LABEL[rarity ?? "common"] ?? RARITY_LABEL.common;
 }
+
+/** ログ1行の調子。表示色だけを決め、ゲーム進行には影響しない。 */
+export type MessageTone = "info" | "damage" | "gain" | "trade" | "warn";
+
+const TONE_INK: Record<MessageTone, string> = {
+  info: "#e8e0d1",
+  damage: "#ff9a8f",
+  gain: "#8fd694",
+  trade: "#ffd88a",
+  warn: "#ffb45c",
+};
+
+export function toneInk(tone: MessageTone): string {
+  return TONE_INK[tone];
+}
+
+/**
+ * 本文からログの調子を決める。
+ *
+ * 判定順が意味を持つ。被害の報告は金額や入手の語を含むことがあるので先に見る。
+ */
+export function messageTone(text: string): MessageTone {
+  if (/ダメージ|倒した|退けた|死亡|力尽きた|空腹|物語はここで終わった|罠/.test(text)) return "damage";
+  if (/売却|売った|買った|仕入れた|報酬|G[でを]/.test(text)) return "trade";
+  if (/拾った|回収した|見つけた|回復した|得た/.test(text)) return "gain";
+  if (/できない|足りない|いっぱい|売り切れ|不足|残っていない|塞いで|ない。/.test(text)) return "warn";
+  return "info";
+}
+
+/** 浮かぶ数値の色。敵への打撃と味方の被弾を取り違えないための対応表。 */
+export const FLOATING_INK = {
+  enemy: "#ffe6a8",
+  ally: "#ff8f80",
+  heal: "#96e39b",
+  gold: "#ffd166",
+} as const;
+
+export type FloatingKind = keyof typeof FLOATING_INK;

@@ -3,7 +3,6 @@ export type ItemRarity = "common" | "uncommon" | "rare" | "legendary" | "unique"
 export type KnowledgeLevel = "unknown" | "suspected" | "identified";
 export type MapKind = "home" | "dungeon";
 export type Location = MapKind;
-export type QuestStatus = "locked" | "available" | "active" | "readyToReport" | "complete";
 export type Facing = "up" | "down" | "left" | "right";
 export type TimeSlot = "morning" | "afternoon" | "evening" | "night";
 export type SupplyKind = "smokeBombs" | "returnStones" | "provisions";
@@ -21,8 +20,6 @@ export interface ItemDefinition {
   trueName: string;
   baseValue: number;
   description: string;
-  unique?: boolean;
-  preferredBuyer?: string;
   visualId?: string;
   rarity?: ItemRarity;
   attack?: number;
@@ -104,30 +101,7 @@ export interface DungeonBody {
   pos: Vec;
   loot: ItemInstance[];
   inspected: boolean;
-  questId?: string;
   npcId?: string;
-}
-
-export interface GuardDefinition {
-  id: string;
-  name: string;
-  title: string;
-  baseFee: number;
-  baseMaxHp: number;
-  damage: number;
-  trait: "standard" | "scout";
-  retreatHpRatio: number;
-  textureKey: string;
-  description: string;
-}
-
-export interface GuardRecord {
-  id: string;
-  unlocked: boolean;
-  relation: number;
-  experience: number;
-  level: number;
-  injuredUntilDay?: number;
 }
 
 export interface ActiveGuard {
@@ -169,7 +143,6 @@ export interface NpcRecord {
   baseFee?: number;
   maxHp?: number;
   damage?: number;
-  trait?: "standard" | "scout";
   retreatHpRatio?: number;
 }
 
@@ -228,7 +201,6 @@ export interface DungeonMap {
   stairsDownVisual?: { assetId: string; frame: number };
   /** Authored enemy roster; runtime chooses positions and repeats existing count rules. */
   enemyRoster?: string[];
-  specialRoom?: Vec;
   /** Authored visual layers from the manual home/dungeon editor.  The
    * numeric collision grid above remains the movement source of truth. */
   authoredLayers?: Partial<Record<"ground" | "structure" | "decoration", Array<{ assetId: string; frame: number } | null>>>;
@@ -245,7 +217,6 @@ export interface DungeonFloorSnapshot {
   enemies: Enemy[];
   items: GroundItem[];
   chests: DungeonChest[];
-  traps: Vec[];
   bodies: DungeonBody[];
   adventurers: DungeonAdventurer[];
   guard?: ActiveGuard;
@@ -261,7 +232,6 @@ export interface DungeonRun {
   enemies: Enemy[];
   items: GroundItem[];
   chests: DungeonChest[];
-  traps: Vec[];
   bodies: DungeonBody[];
   adventurers: DungeonAdventurer[];
   guard?: ActiveGuard;
@@ -300,32 +270,6 @@ export interface DailySupplyStock {
   provisions: number;
 }
 
-export interface Customer {
-  id: string;
-  name: string;
-  title: string;
-  interests: ItemCategory[];
-  budget: number;
-  relation: number;
-  knowledge: ItemCategory[];
-  color: number;
-}
-
-export interface Quest {
-  id: string;
-  title: string;
-  description: string;
-  status: QuestStatus;
-  targetItemId?: string;
-  targetFloor?: number;
-  reward?: number;
-  objective?:
-    | { kind: "collect"; itemId: string; floor: number }
-    | { kind: "inspectBody"; bodyId: string; floor: number }
-    | { kind: "consult"; itemId: string; customerIds: string[] }
-    | { kind: "story" };
-}
-
 export interface TimedEvent {
   id: string;
   dueDay: number;
@@ -333,7 +277,7 @@ export interface TimedEvent {
 }
 
 export interface GameState {
-  version: 7;
+  version: 8;
   campaignId: string;
   status: "active" | "gameOver";
   day: number;
@@ -349,20 +293,14 @@ export interface GameState {
   dailySupplyStock: DailySupplyStock;
   location: Location;
   homePos: Vec;
-  /** Legacy editor revision retained only for save migration compatibility. */
-  /** 固定家マップの配置版。旧セーブを安全な初期位置へ移行するために使う。 */
   /** Number of expeditions started. Persisted so a new visit never reuses the previous seed. */
   expeditionSerial: number;
-  guildReputation: number;
-  guards: GuardRecord[];
   hiredGuardId?: string;
   hiredGuardFee?: number;
   inventory: ItemInstance[];
   store: ItemInstance[];
   archive: ItemInstance[];
   display: string[];
-  customers: Customer[];
-  quests: Quest[];
   events: TimedEvent[];
   run?: DungeonRun;
   message: string;
@@ -372,26 +310,14 @@ export interface GameState {
   npcs: NpcRecord[];
   visitorNpcIds: string[];
   escortCommission?: EscortCommission;
-  refusedOffers: Record<string, number>;
   singularItemIds: string[];
-  story: {
-    blackSword: "locked" | "rumor" | "found" | "sold" | "incident" | "tomb" | "revealed";
-    early: {
-      stage: "herb" | "lostSword" | "missing" | "ring" | "complete";
-      guardHiringUnlocked: boolean;
-      missingBodyInspected: boolean;
-      ringConsulted: string[];
-      ringResolution?: "family" | "scholar" | "jeweler";
-      shoveTutorialSeen: boolean;
-    };
-  };
 }
 
 export type DungeonEvent =
   | { type: "move"; actorId: string; from: Vec; to: Vec }
   | { type: "shove"; enemyId: string; from: Vec; to: Vec; success: boolean }
   | { type: "attack"; attackerId: string; targetId: string; damage: number }
-  | { type: "defeated"; actorId: string }
+  | { type: "defeated"; actorId: string; pos?: Vec }
   | { type: "guardMode"; guardId: string; mode: ActiveGuard["mode"] }
   | { type: "pickup"; itemId: string }
   | { type: "message"; text: string };

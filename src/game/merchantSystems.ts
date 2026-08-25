@@ -1,4 +1,3 @@
-import { ITEM_DEFINITIONS } from "./content";
 import { MERCHANT_ITEM_DEFINITIONS } from "./merchantContent";
 import { prepareCustomerPurchaseRequest } from "./merchantEconomy";
 import type { GameState, ItemInstance, SupplyKind, TimeSlot } from "./types";
@@ -20,15 +19,10 @@ function processDayEvents(state: GameState): void {
   state.events = state.events.filter((event) => event.dueDay > state.day);
   if (!due.length) return;
   state.message = due.map((event) => event.text).join(" ");
-  if (due.some((event) => event.id === "black-sword-incident")) {
-    state.story.blackSword = "incident";
-    const quest = state.quests.find((entry) => entry.id === "black-tomb");
-    if (quest) quest.status = "active";
-  }
 }
 
 function definition(item: ItemInstance) {
-  return MERCHANT_ITEM_DEFINITIONS[item.definitionId] ?? ITEM_DEFINITIONS[item.definitionId];
+  return MERCHANT_ITEM_DEFINITIONS[item.definitionId];
 }
 
 function hash(value: string): number {

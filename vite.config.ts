@@ -149,10 +149,12 @@ export default defineConfig({
   server: { host: "127.0.0.1", port: 5173 },
   build: {
     target: "es2022",
+    // review.html はマップ編集専用で、素材取り込みもパレット保存も dev サーバーの
+    // /__map-editor/* に依存する。本番へ出しても書き戻せないので配信物へ含めない。
+    // 編集は `npm run edit` で開く。
     rollupOptions: {
       input: {
         game: "index.html",
-        review: "review.html",
       },
     },
   },

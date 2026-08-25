@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { beginExpedition, createItem, createNewGame, waitTurn } from "./engine";
+import { beginExpedition, createItem, createNewGame, descend, returnHome, waitTurn } from "./engine";
 import { ADVENTURER_RANKS, ITEM_VISUALS, MERCHANT_ITEM_DEFINITIONS, NPC_APPEARANCES } from "./merchantContent";
 import { acceptCustomerPurchaseRequest, cancelEscortCommission, createGeneratedAdventurer, createGeneratedDeadAdventurer, escortFeeForNpc, postEscortCommission, prepareCustomerPurchaseRequest } from "./merchantEconomy";
 import { startShopSession, summonNextCustomer } from "./merchantSystems";
@@ -166,5 +166,61 @@ describe("v6 merchant world", () => {
     expect(state.hp).toBe(0);
     expect(state.status).toBe("gameOver");
     expect(state.location).toBe("dungeon");
+  });
+});
+
+describe("campaign record pruning", () => {
+  function expedition(state: ReturnType<typeof createNewGame>, floors = 4): void {
+    beginExpedition(state);
+    for (let index = 0; index < floors; index += 1) descend(state);
+    returnHome(state);
+  }
+
+  it("keeps the save bounded across repeated expeditions", () => {
+    const state = createNewGame();
+    for (let visit = 0; visit < 10; visit += 1) {
+      state.day = visit + 1;
+      expedition(state);
+    }
+
+    // 拾わなかった床の品と、一度も取引しなかった冒険者は残らない。
+    // 町の常連15人と、その初期装備だけが残る。
+    expect(Object.keys(state.itemsById)).toHaveLength(10);
+    expect(state.npcs).toHaveLength(15);
+    expect(state.npcs.every((npc) => npc.status !== "departed")).toBe(true);
+    expect(JSON.stringify(state).length).toBeLessThan(40_000);
+  });
+
+  it("keeps a looted item and the dead adventurer it names", () => {
+    const state = createNewGame();
+    beginExpedition(state);
+    const run = state.run!;
+    const dead = createGeneratedDeadAdventurer(state, 1);
+    const loot = createItem(state, "blue-gem", 1);
+    loot.owner = dead.id;
+    loot.historyV2 = [{ day: 1, type: "ownerDied", npcId: dead.id, detail: "test" }];
+    dead.inventoryIds.push(loot.uuid);
+    run.bodies.push({ id: `body-${dead.id}`, npcId: dead.id, name: dead.name, pos: { ...run.player }, loot: [loot], inspected: true });
+
+    state.inventory.push(loot);
+    loot.owner = "player";
+    returnHome(state);
+
+    expect(state.itemsById[loot.uuid]).toBeDefined();
+    expect(state.npcs.some((npc) => npc.id === dead.id)).toBe(true);
+  });
+
+  it("keeps shelved and sold goods", () => {
+    const state = createNewGame();
+    const shelved = createItem(state, "iron-sword");
+    const sold = createItem(state, "old-ring");
+    state.store.push(shelved);
+    state.display.push(shelved.uuid);
+    state.archive.push(sold);
+    beginExpedition(state);
+    returnHome(state);
+
+    expect(state.itemsById[shelved.uuid]).toBeDefined();
+    expect(state.itemsById[sold.uuid]).toBeDefined();
   });
 });

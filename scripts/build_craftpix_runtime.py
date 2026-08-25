@@ -15,7 +15,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "assets-src" / "vendor" / "craftpix"
-PUBLIC = ROOT / "public" / "assets" / "craftpix"
+PUBLIC = ROOT / "assets-src" / "craftpix-source" / "craftpix"
 ACTOR_PUBLIC = ROOT / "public" / "assets" / "actors" / "craftpix"
 UI_PUBLIC = ROOT / "public" / "assets" / "ui" / "craftpix"
 

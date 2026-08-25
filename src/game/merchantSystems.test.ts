@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { INVENTORY_CAPACITY, beginExpedition, createItem, createNewGame, moveInventoryItems, moveStoreItemsToInventory, performDungeonCommand, setDisplayedItems } from "./engine";
+import { DISPLAY_CAPACITY, INVENTORY_CAPACITY, beginExpedition, createItem, createNewGame, moveInventoryItems, moveStoreItemsToInventory, performDungeonCommand, setDisplayedItems } from "./engine";
 import {
   buySupply,
   canOpenShop,
@@ -62,7 +62,7 @@ describe("v6 merchant systems", () => {
 
   it("does not partially move a bulk selection when the display lacks space", () => {
     const state = createNewGame();
-    const stored = Array.from({ length: 4 }, () => createItem(state, "iron-sword", 1));
+    const stored = Array.from({ length: DISPLAY_CAPACITY }, () => createItem(state, "iron-sword", 1));
     state.inventory.push(...stored);
     moveInventoryItems(state, stored.map((item) => item.uuid), "display");
     const incoming = createItem(state, "old-ring", 1);
@@ -70,7 +70,7 @@ describe("v6 merchant systems", () => {
 
     expect(moveInventoryItems(state, [incoming.uuid], "display")).toBe(0);
     expect(state.inventory).toContain(incoming);
-    expect(state.display).toHaveLength(4);
+    expect(state.display).toHaveLength(DISPLAY_CAPACITY);
   });
 
   it("returns checked stored items to the bag without partially exceeding capacity", () => {

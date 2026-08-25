@@ -11,9 +11,51 @@ export function initializeMerchantWorld(state: GameState): void {
   state.npcs = createInitialNpcs();
   state.itemsById = {};
   state.nextNpcId = 1;
-  state.refusedOffers = {};
   state.singularItemIds = [];
   state.visitorNpcIds = [];
+}
+
+const TOWN_NPC_IDS: ReadonlySet<string> = new Set(NPC_SEEDS.map((seed) => seed.id));
+
+/**
+ * 探索を終えるたびに、もう誰も参照しない記録を捨てる。
+ *
+ * 階を1つ作るたびに床の品と通りすがりの冒険者が `itemsById` / `npcs` へ登録されるが、
+ * 帰還すればその階は消える。拾わなかった品と、一度も取引しなかった冒険者を残すと
+ * セーブが探索回数に比例して膨らみ、1手ごとの自動保存が重くなる。
+ *
+ * 残すのは 鞄・保管庫・店頭・売却済み・装備中の品と、それらが名前を記録している人物、
+ * そして町の常連15人。遺体から回収した品は履歴に持ち主を残すので、故人の記録も一緒に残る。
+ */
+export function pruneCampaignRecords(state: GameState): void {
+  const liveItemIds = new Set<string>();
+  for (const item of [...state.inventory, ...state.store, ...state.archive]) liveItemIds.add(item.uuid);
+  for (const id of state.display) liveItemIds.add(id);
+  for (const id of [state.equipment.weaponItemId, state.equipment.armorItemId]) if (id) liveItemIds.add(id);
+  if (state.shopSession.requestedItemId) liveItemIds.add(state.shopSession.requestedItemId);
+  // 町にいる常連の持ち物は世界の一部として残す。故人の未回収分は階と一緒に消える。
+  for (const npc of state.npcs) {
+    if (!TOWN_NPC_IDS.has(npc.id) || npc.status === "dead") continue;
+    for (const id of npc.inventoryIds) liveItemIds.add(id);
+  }
+
+  const keptItems: Record<string, ItemInstance> = {};
+  const namedNpcIds = new Set<string>();
+  for (const id of liveItemIds) {
+    const item = state.itemsById[id];
+    if (!item) continue;
+    keptItems[id] = item;
+    if (item.owner && !["player", "store", "ground"].includes(item.owner)) namedNpcIds.add(item.owner);
+    if (item.namedByNpcId) namedNpcIds.add(item.namedByNpcId);
+    for (const event of item.historyV2 ?? []) if ("npcId" in event) namedNpcIds.add(event.npcId);
+  }
+  state.itemsById = keptItems;
+
+  for (const id of [state.hiredGuardId, state.escortCommission?.npcId, state.shopSession.currentNpcId]) if (id) namedNpcIds.add(id);
+  for (const id of [...state.visitorNpcIds, ...state.shopSession.queueNpcIds, ...state.shopSession.servedNpcIds]) namedNpcIds.add(id);
+
+  state.npcs = state.npcs.filter((npc) => TOWN_NPC_IDS.has(npc.id) || namedNpcIds.has(npc.id));
+  for (const npc of state.npcs) npc.inventoryIds = npc.inventoryIds.filter((id) => id in keptItems);
 }
 
 export function refreshDailyVisitors(state: GameState): void {
@@ -35,11 +77,10 @@ export function merchantItemName(item: ItemInstance): string | undefined {
   return MERCHANT_ITEM_DEFINITIONS[item.definitionId]?.trueName;
 }
 
-export function escortFeeForNpc(state: GameState, npc: NpcRecord): number {
+export function escortFeeForNpc(_state: GameState, npc: NpcRecord): number {
   const baseFee = ADVENTURER_RANKS[npc.rank ?? "E"].escortFee;
   const relationDiscount = Math.min(0.2, npc.relation * 0.02);
-  const guildDiscount = state.guildReputation >= 2 ? 0.2 : 0;
-  return Math.max(1, Math.floor(baseFee * (1 - relationDiscount) * (1 - guildDiscount)));
+  return Math.max(1, Math.floor(baseFee * (1 - relationDiscount)));
 }
 
 export function postEscortCommission(state: GameState, npcId: string): NpcRecord | undefined {
