@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { NPC_SEEDS } from "./merchantContent";
 import {
   assessGuardDescent,
   beginExpedition,
@@ -35,13 +36,15 @@ function hireMina() {
   return { state, npc, guard: state.run!.guard! };
 }
 
+const SEED_ADVENTURER_IDS = new Set(NPC_SEEDS.filter((seed) => seed.adventurer).map((seed) => seed.id));
+
 describe("guard personality and reputation", () => {
   it("assigns a deterministic balanced roster for each campaign", () => {
     const first = fixedCampaign("balanced-a");
     const second = fixedCampaign("balanced-a");
     const other = fixedCampaign("balanced-b");
     const snapshot = (state: ReturnType<typeof createNewGame>) => state.npcs
-      .filter((npc) => npc.adventurer && !npc.id.startsWith("generated-"))
+      .filter((npc) => npc.adventurer && SEED_ADVENTURER_IDS.has(npc.id))
       .map((npc) => [npc.id, npc.guardProfile!.personality] as const);
 
     expect(snapshot(second)).toEqual(snapshot(first));
@@ -110,7 +113,7 @@ describe("guard personality and reputation", () => {
     const town = state.npcs.find((entry) => entry.id === "mina")!;
     const dungeon = state.npcs.find((entry) => entry.id === "rolf")!;
     town.guardProfile!.stress = dungeon.guardProfile!.stress = 50;
-    dungeon.status = "dungeon";
+    dungeon.status = "delving";
     resetDailySystems(state);
     expect(town.guardProfile!.stress).toBe(38);
     expect(dungeon.guardProfile!.stress).toBe(50);
@@ -239,7 +242,9 @@ describe("guard depth decisions", () => {
     expect(result.consumedTurn).toBe(true);
     expect(state.run!.floor).toBe(3);
     expect(state.run!.guard).toBeUndefined();
-    expect(npc.status).toBe("inTown");
+    // HP1で帰した相手は、翌日すぐには雇えない。
+    expect(npc.status).toBe("recovering");
+    expect(npc.conditionHp).toBe(1);
     expect(npc.guardProfile!.trust).toBe(15);
     expect(npc.guardProfile!.career.earlyDepartures).toBe(1);
     expect(state.escortCommission).toBeUndefined();

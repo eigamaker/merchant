@@ -11,6 +11,7 @@ import type { ActorSettingsCatalog } from "../game/actorSettings";
 import type { CraftpixActorClip, CraftpixActorDefinition } from "../game/craftpixActors";
 import { advanceActorPreview, actorPreviewActions, actorPreviewDirections, actorPreviewFrameRect, actorPreviewPath, type ActorPreviewState } from "./actorPreview";
 import { createDefaultMapPack } from "../game/defaultMapPack";
+import { DungeonThemeEditor } from "./dungeonThemeEditor";
 
 const root = document.querySelector<HTMLElement>("#review-app");
 if (!root) throw new Error("review app root not found");
@@ -28,7 +29,7 @@ root.innerHTML = `
   <div class="map-editor-shell">
     <header class="map-editor-header"><div><p class="map-editor-eyebrow">AUTHORED TILE PALETTE</p><h1>家・ダンジョン マップエディター</h1><p>スプライトシートから自由なパレットを作り、矩形スタンプとして配置します。</p></div>
       <div class="map-editor-header-actions"><button data-action="new">新規マップ</button><button data-action="rename">名前変更</button><button data-action="duplicate">複製</button><button data-action="delete">削除</button><button data-action="undo">元に戻す</button><button data-action="redo">やり直す</button><button class="primary" data-action="try">編集マップでゲーム開始</button><span class="game-start-status" data-game-start-status></span></div></header>
-    <nav class="editor-mode-tabs" aria-label="エディターモード"><button class="active" data-editor-mode="map">マップ編集</button><button data-editor-mode="palette">素材パレット編集</button><button data-editor-mode="actors">キャラクター</button></nav>
+    <nav class="editor-mode-tabs" aria-label="エディターモード"><button class="active" data-editor-mode="map">マップ編集</button><button data-editor-mode="palette">素材パレット編集</button><button data-editor-mode="themes">ダンジョンテーマ</button><button data-editor-mode="actors">キャラクター</button></nav>
     <section data-editor-view="map">
       <section class="map-editor-toolbar">
         <label>一覧表示 <select data-kind><option value="home">家</option><option value="dungeon">ダンジョン</option></select></label>
@@ -52,7 +53,12 @@ root.innerHTML = `
     <section class="actor-editor-view" data-editor-view="actors" hidden>
       <div class="actor-editor-grid"><aside class="map-editor-side actor-library-panel"><div class="panel-heading"><div><h2>キャラクター素材</h2><p class="small">画像を選ぶと右側でアニメーションと能力値を確認できます。素材の追加はマップ編集タブの取込ボタンから行います。</p></div><span data-actor-library-count></span></div><div class="actor-preview-list" data-actor-preview-list></div></aside><section class="map-editor-side actor-detail-panel"><div class="panel-heading"><h2>キャラクター確認・設定</h2><span data-actor-preview-status></span></div><div class="actor-preview-controls"><select class="visually-hidden" data-actor-preview-id aria-label="キャラクター"></select><label>動作 <select data-actor-preview-action></select></label><label>方向 <select data-actor-preview-direction></select></label></div><canvas class="actor-preview-canvas" data-actor-preview-canvas width="320" height="320"></canvas><div data-actor-settings></div><button data-action="actor-settings-save">能力値・役割を保存</button><p class="small" data-actor-settings-status></p></section></div>
     </section>
+    <section class="theme-editor-view" data-editor-view="themes" hidden data-theme-editor></section>
   </div>`;
+
+const themeEditorHost = root.querySelector<HTMLElement>("[data-theme-editor]");
+if (!themeEditorHost) throw new Error("theme editor root not found");
+new DungeonThemeEditor(themeEditorHost, assets);
 
 const q = <T extends Element>(selector: string): T => { const result = root.querySelector<T>(selector); if (!result) throw new Error(`missing editor element: ${selector}`); return result; };
 const mapCanvas = q<HTMLCanvasElement>("[data-map-canvas]"), mapContext = mapCanvas.getContext("2d")!;
@@ -78,7 +84,8 @@ let pendingImport: { id: string; analysis: any } | undefined;
 let loadedActorSettings: ActorSettingsCatalog = currentActorSettings();
 let actorPreviewState: ActorPreviewState = { action: "idle", direction: "down", frame: 0, elapsedMs: 0 };
 let actorPreviewLastTime = 0;
-let editorMode: "map" | "palette" | "actors" = "map";
+type EditorMode = "map" | "palette" | "themes" | "actors";
+let editorMode: EditorMode = "map";
 const actorPreviewImages = new Map<string, HTMLImageElement>();
 const mapHistory = new Map<string, { undo: MapDocument[]; redo: MapDocument[] }>(), images = new Map<string, HTMLImageElement>();
 for (const asset of assets) { const image = new Image(); image.onload = () => render(); image.src = asset.path; images.set(asset.id, image); }
@@ -274,7 +281,7 @@ function describeValidationIssue(issue: string): string {
 }
 function renderValidation(): void { if (!active) return; const issues = [...validateMap(active), ...missingAssetIds(active).map((id) => `missing asset ${id}`)]; validation.innerHTML = issues.length ? issues.map((issue) => `<p class="error">${escapeHtml(describeValidationIssue(issue))}</p>`).join("") : `<p class="ok">検証OK</p>`; const home = maps.find((map) => map.kind === "home"), dungeons = maps.filter((map) => map.kind === "dungeon"), packIssues = home ? validateTrialMapPack({ home, dungeons }) : ["trial home"], missingAssets = maps.flatMap(missingAssetIds); const allIssues = [...new Set([...packIssues.map(describeValidationIssue), ...missingAssets.map((id) => `素材「${id}」が見つかりません`)])], tryButton = q<HTMLButtonElement>("[data-action=try]"); tryButton.disabled = allIssues.length > 0; gameStartStatus.textContent = allIssues.length ? `開始条件: ${allIssues.join("／")}` : "開始できます"; gameStartStatus.classList.toggle("ready", allIssues.length === 0); tryButton.title = allIssues.join("\n"); }
 function render(): void { if (!active) return; renderList(); renderPaletteTabs(); renderAssetOptions(); renderEnemyRoster(); renderMapActorStrip(); renderSource(); renderPalette(); renderMap(); renderValidation(); }
-function setEditorMode(mode: "map" | "palette" | "actors"): void {
+function setEditorMode(mode: EditorMode): void {
   // Preserve the current map's tile-size context before palette mode starts
   // accepting pages of every size.
   if (mode === "palette" && editorMode !== "palette") selectPageForMap();
@@ -284,7 +291,7 @@ function setEditorMode(mode: "map" | "palette" | "actors"): void {
   editorRoot.querySelectorAll<HTMLElement>("[data-editor-view]").forEach((view) => { view.hidden = view.dataset.editorView !== mode; });
   editorRoot.querySelectorAll<HTMLButtonElement>("[data-editor-mode]").forEach((button) => { button.classList.toggle("active", button.dataset.editorMode === mode); });
   if (mode === "actors") { renderActorPreviewOptions(); drawActorPreview(); }
-  else { renderPaletteTabs(); renderAssetOptions(); renderPalette(); renderSource(); }
+  else if (mode !== "themes") { renderPaletteTabs(); renderAssetOptions(); renderPalette(); renderSource(); }
 }
 function canvasPoint(canvas: HTMLCanvasElement, event: PointerEvent, cellPixels: number): CellPoint { const rect = canvas.getBoundingClientRect(), pixelX = (event.clientX - rect.left) * (canvas.width / rect.width), pixelY = (event.clientY - rect.top) * (canvas.height / rect.height); return { x: Math.floor(pixelX / cellPixels), y: Math.floor(pixelY / cellPixels) }; }
 function sourcePoint(event: PointerEvent): CellPoint | undefined { const asset = sourceAsset(); if (!asset) return undefined; const point = canvasPoint(sourceCanvas, event, sourceCellPixels); return inside(asset.columns, asset.rows, point) ? point : undefined; }
@@ -314,7 +321,7 @@ document.addEventListener("keydown", (event) => { if (event.key !== "Delete" || 
 
 kind.onchange = () => { const candidate = maps.filter((map) => map.kind === kind.value).sort((a, b) => a.floor - b.floor)[0]; if (candidate) setActive(candidate); else render(); };
 mapKind.onchange = syncFloorControls;
-root.querySelectorAll<HTMLButtonElement>("[data-editor-mode]").forEach((button) => button.onclick = () => setEditorMode(button.dataset.editorMode as "map" | "palette" | "actors"));
+root.querySelectorAll<HTMLButtonElement>("[data-editor-mode]").forEach((button) => button.onclick = () => setEditorMode(button.dataset.editorMode as EditorMode));
 layer.onchange = () => { const visibility = layerVisibility.get(layer.value as ManualLayer); if (visibility) visibility.checked = true; render(); };
 for (const visibility of layerVisibility.values()) visibility.onchange = renderMap;
 zoom.onchange = render; grid.onchange = render; pass.onchange = render;

@@ -15,6 +15,23 @@ const MAP_ASSETS = new Map<string, typeof MAP_ASSET_CATALOG[number]>(
   MAP_ASSET_CATALOG.map((asset) => [asset.id, asset]),
 );
 
+export function mapAssetDefinitions(assetIds: Iterable<string>): Array<typeof MAP_ASSET_CATALOG[number]> {
+  const requested = new Set(assetIds);
+  return MAP_ASSET_CATALOG.filter((asset) => requested.has(asset.id));
+}
+
+export function authoredMapAssetIds(maps: ReadonlyArray<{
+  layers?: Partial<Record<"ground" | "structure" | "decoration", readonly ({ assetId: string } | null)[]>>;
+  markers?: readonly { visual?: { assetId: string } }[];
+}>): Set<string> {
+  const result = new Set<string>();
+  for (const map of maps) {
+    for (const layer of Object.values(map.layers ?? {})) for (const cell of layer ?? []) if (cell) result.add(cell.assetId);
+    for (const marker of map.markers ?? []) if (marker.visual) result.add(marker.visual.assetId);
+  }
+  return result;
+}
+
 const warningFrame = (reason: MapAssetWarningReason): ResolvedMapAssetFrame => ({
   textureKey: MISSING_MAP_ASSET_TEXTURE,
   frame: 0,

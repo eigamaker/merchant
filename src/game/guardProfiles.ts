@@ -1,3 +1,4 @@
+import { NPC_SEEDS } from "./merchantContent";
 import type {
   GameState,
   GuardArchetype,
@@ -8,6 +9,9 @@ import type {
   GuardProfile,
   NpcRecord,
 } from "./types";
+
+/** 台本のある冒険者。生成された名簿の冒険者と配分規則を分ける。 */
+const SEED_ADVENTURER_IDS: ReadonlySet<string> = new Set(NPC_SEEDS.filter((seed) => seed.adventurer).map((seed) => seed.id));
 
 const ARCHETYPES: Record<GuardArchetype, Omit<GuardPersonality, "archetype">> = {
   steadfast: { courage: 75, discipline: 80, empathy: 75, integrity: 85, greed: 25 },
@@ -43,6 +47,8 @@ function emptyCareer(): GuardCareer {
     retreatCount: 0,
     warningsIgnored: 0,
     earlyDepartures: 0,
+    soloDelves: 0,
+    soloDeepest: 0,
     events: [],
   };
 }
@@ -76,6 +82,8 @@ function normalizeProfile(profile: GuardProfile): GuardProfile {
   career.retreatCount ??= 0;
   career.warningsIgnored ??= 0;
   career.earlyDepartures ??= 0;
+  career.soloDelves ??= 0;
+  career.soloDeepest ??= 0;
   career.events = (career.events ?? []).slice(-32);
   return profile;
 }
@@ -85,10 +93,15 @@ export function createGuardProfile(campaignId: string, npcId: string, archetype?
   return { personality: personality(campaignId, npcId, selected), trust: 20, stress: 0, career: emptyCareer() };
 }
 
-/** Assigns the ten town adventurers a balanced, campaign-specific roster. */
+/**
+ * 台本のある10人にだけ、原型を均等に配る。
+ *
+ * 生成された名簿の冒険者まで均等配分に混ぜると、作り込んだ配役の偏りが薄まる。
+ * それ以外はハッシュで原型を引く。
+ */
 export function initializeGuardProfiles(state: GameState): void {
   const townAdventurers = state.npcs
-    .filter((npc) => npc.adventurer && !npc.id.startsWith("generated-adventurer-"))
+    .filter((npc) => npc.adventurer && SEED_ADVENTURER_IDS.has(npc.id))
     .sort((a, b) => hash(`${state.campaignId}:guard-order:${a.id}`) - hash(`${state.campaignId}:guard-order:${b.id}`));
   townAdventurers.forEach((npc, index) => {
     npc.guardProfile = npc.guardProfile

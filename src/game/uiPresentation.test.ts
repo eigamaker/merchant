@@ -120,6 +120,15 @@ describe("readable canvas presentation", () => {
     expect(scene).toContain("defeatedAt.set(event.actorId, event.pos)");
   });
 
+  it("reaches the gear hand-over from the escort profile", () => {
+    const scene = readFileSync(resolve(process.cwd(), "src/scenes/MerchantScene.ts"), "utf8");
+    expect(scene).toContain("private openNpcGear(");
+    expect(scene).toContain("private openEntrustGear(");
+    expect(scene).toContain('label: "装備を預ける"');
+    // 接客中は在庫を動かせない、という既存の規則に従う。
+    expect(scene).toContain("canReorganizeHomeInventory(this.state)");
+  });
+
   it("renders the opening separately and keeps location headings out of the map", () => {
     const scene = readFileSync(resolve(process.cwd(), "src/scenes/MerchantScene.ts"), "utf8");
     expect(scene).toContain("if (!this.gameStarted) {");

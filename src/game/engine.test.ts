@@ -197,8 +197,10 @@ describe("dungeon generator", () => {
       ...run.bodies.map((body) => body.pos),
       ...run.adventurers.map((adventurer) => adventurer.pos),
     ];
-    expect(run.adventurers).toHaveLength(2);
-    expect(run.adventurers.every((adventurer) => state.npcs.find((npc) => npc.id === adventurer.npcId)?.rank === "E")).toBe(true);
+    // 迷宮の冒険者は名簿から借りる。鋳造しないので、その日潜っている人数が上限になる。
+    expect(run.adventurers.length).toBeLessThanOrEqual(2);
+    expect(run.adventurers.every((adventurer) => state.npcs.find((npc) => npc.id === adventurer.npcId)?.status === "delving")).toBe(true);
+    expect(run.adventurers.every((adventurer) => !adventurer.npcId.startsWith("generated-"))).toBe(true);
     const keys = positions.map((position) => `${position.x},${position.y}`);
     expect(new Set(keys).size).toBe(keys.length);
     positions.forEach((position) => expect(run.map.tiles[position.y]?.[position.x]).toBe(0));
@@ -544,7 +546,8 @@ describe("independent dungeon adventurers", () => {
     const adventurer = placeBesidePlayer(state);
     const npc = state.npcs.find((entry) => entry.id === adventurer.npcId)!;
     npc.inventoryIds = npc.inventoryIds.filter((id) => state.itemsById[id]?.definitionId !== "minor-healing-potion");
-    adventurer.hp = Math.max(1, adventurer.maxHp - 10);
+    adventurer.maxHp = 12;
+    adventurer.hp = 2;
     const potion = createItem(state, "major-healing-potion");
     state.inventory.push(potion);
 
@@ -625,7 +628,7 @@ describe("save migration", () => {
     const migrated = migrateSaveState(legacy as never);
     const carried = migrated as unknown as Record<string, unknown>;
 
-    expect(migrated.version).toBe(9);
+    expect(migrated.version).toBe(12);
     for (const key of ["quests", "customers", "guards", "story", "refusedOffers", "guildReputation"]) {
       expect(carried[key]).toBeUndefined();
     }

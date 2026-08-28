@@ -2,7 +2,7 @@ import { configDefaults, defineConfig } from "vitest/config";
 import type { Plugin } from "vite";
 import fs from "node:fs";
 import { randomUUID } from "node:crypto";
-import { MAP_EDITOR_PALETTE_API, MAP_TILE_INPUT_DIR, MAP_TILE_PALETTE_API, MAP_TILE_PALETTE_FILE, buildMapTileAssets, savePaletteAtomically } from "./scripts/map-tile-pipeline.mjs";
+import { DUNGEON_THEME_FILE, MAP_EDITOR_PALETTE_API, MAP_EDITOR_THEME_API, MAP_TILE_INPUT_DIR, MAP_TILE_PALETTE_API, MAP_TILE_PALETTE_FILE, buildMapTileAssets, readDungeonThemes, saveDungeonThemesAtomically, savePaletteAtomically } from "./scripts/map-tile-pipeline.mjs";
 import { analyzeImport, commitImport } from "./scripts/asset-import-pipeline.mjs";
 import { ACTOR_SOURCE_DIR, buildActorAssets } from "./scripts/build-actor-assets.mjs";
 import { readActorSettings, writeActorSettingsAtomically } from "./scripts/actor-settings.mjs";
@@ -36,8 +36,9 @@ function mapTilePipelinePlugin(): Plugin {
         }, 80);
       };
       const watchedRoot = MAP_TILE_INPUT_DIR.replaceAll("\\", "/");
+      const watchedThemeFile = DUNGEON_THEME_FILE.replaceAll("\\", "/");
       const watchedActorRoot = ACTOR_SOURCE_DIR.replaceAll("\\", "/");
-      const isAssetSource = (file: string) => { const normalized = file.replaceAll("\\", "/"); return normalized.startsWith(watchedRoot) || normalized.startsWith(watchedActorRoot); };
+      const isAssetSource = (file: string) => { const normalized = file.replaceAll("\\", "/"); return normalized.startsWith(watchedRoot) || normalized.startsWith(watchedActorRoot) || normalized === watchedThemeFile; };
       server.watcher.on("add", (file) => { if (isAssetSource(file)) rebuild(); });
       server.watcher.on("change", (file) => { if (isAssetSource(file)) rebuild(); });
       server.watcher.on("unlink", (file) => { if (isAssetSource(file)) rebuild(); });
@@ -77,6 +78,28 @@ function mapTilePipelinePlugin(): Plugin {
             response.statusCode = 200;
             response.setHeader("Content-Type", "application/json; charset=utf-8");
             response.end(JSON.stringify({ ok: true, settings: saved }));
+          }).catch((error) => { response.statusCode = 400; response.setHeader("Content-Type", "application/json; charset=utf-8"); response.end(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) })); });
+          return;
+        }
+        if (pathname === MAP_EDITOR_THEME_API) {
+          if (request.method === "GET") {
+            try {
+              response.statusCode = 200;
+              response.setHeader("Content-Type", "application/json; charset=utf-8");
+              response.end(JSON.stringify(readDungeonThemes()));
+            } catch (error) {
+              response.statusCode = 500;
+              response.end(error instanceof Error ? error.message : String(error));
+            }
+            return;
+          }
+          if (request.method !== "PUT") { response.statusCode = 405; response.setHeader("Allow", "GET, PUT"); response.end("Method Not Allowed"); return; }
+          void jsonBody(request).then((body) => {
+            const saved = saveDungeonThemesAtomically(body);
+            server.ws.send({ type: "full-reload" });
+            response.statusCode = 200;
+            response.setHeader("Content-Type", "application/json; charset=utf-8");
+            response.end(JSON.stringify({ ok: true, themes: saved.themes.length }));
           }).catch((error) => { response.statusCode = 400; response.setHeader("Content-Type", "application/json; charset=utf-8"); response.end(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) })); });
           return;
         }

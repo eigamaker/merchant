@@ -5,9 +5,21 @@ import { compileMap, loadTrialMapPack } from "./mapDocument";
 import { createDefaultMapPack } from "./defaultMapPack";
 import { actorDefinition } from "./actorCatalog";
 import { ADVENTURER_RANKS, MERCHANT_ITEM_DEFINITIONS } from "./merchantContent";
-import { createGeneratedAdventurer, createGeneratedDeadAdventurer, initializeMerchantWorld, pruneCampaignRecords, registerWorldItem } from "./merchantEconomy";
+import { SEED_NPC_IDS, initializeMerchantWorld, pruneCampaignRecords, registerWorldItem } from "./merchantEconomy";
+import { selectFloorDelvers } from "./townDay";
+import { npcCombatStats, recordGearDeed } from "./npcGear";
+import { applySurvivalGrowth } from "./adventurerGrowth";
+import { corpsesOnFloor, markCorpseInspected, pruneCorpses, recordCorpse, removeCorpseLoot } from "./dungeonCorpses";
+import { markExplored } from "./dungeonVision";
+import { DUNGEON_PRICE_CEILING, dungeonVerdict, marketPrice } from "./pricing";
+import { refreshItemLegend, wasEntrusted } from "./itemLegend";
 import { adjustGuardProfile, ensureGuardProfile, recordGuardEvent } from "./guardProfiles";
-import { advanceTime, canReorganizeHomeInventory, consumeDungeonTime, inventoryItemCount, playerAttackPower, playerDefensePower, resetDailySystems, unequipIfNeeded } from "./merchantSystems";
+import { recordBond } from "./npcBonds";
+import { advanceTime, canReorganizeHomeInventory, consumeDungeonTime, inventoryItemCount, playerAttackPower, playerDefensePower, processDayEvents, resetDailySystems, unequipIfNeeded } from "./merchantSystems";
+import { generateDungeonFloor, generatedPlacementCells } from "./dungeonGenerator";
+import { deriveDungeonSeed, dungeonThemeIdForFloor, snapshotDungeonThemePool } from "./dungeonThemes";
+import { nextDungeonStep } from "./dungeonPathfinding";
+import { hasDungeonVision } from "./dungeonVision";
 import type {
   ActiveGuard,
   DungeonBody,
@@ -26,25 +38,21 @@ import type {
   Vec,
 } from "./types";
 
-export const DUNGEON_WIDTH = 48;
-export const DUNGEON_HEIGHT = 36;
 export const INVENTORY_CAPACITY = 24;
 export const DISPLAY_CAPACITY = 8;
-const FLOOR = 0;
-const WALL = 1;
+export const DUNGEON_MAX_FLOOR = 8;
 
 export type DungeonGenerationMode = "fixed" | "procedural" | "manual";
 
-/** The authored fixed map is the stable normal route.  Procedural remains an
- * explicit development comparison and manual is reserved for editor trials. */
+/** Procedural is the normal route. Fixed/manual remain explicit development comparisons. */
 export function dungeonGenerationMode(): DungeonGenerationMode {
-  if (typeof window === "undefined") return "fixed";
+  if (typeof window === "undefined") return "procedural";
   const mode = new URLSearchParams(window.location.search).get("dungeon");
-  if (mode === "manual" || mode === "procedural") return mode;
-  return new URLSearchParams(window.location.search).get("autostart") === "world" && loadTrialMapPack() ? "manual" : "fixed";
+  if (mode === "manual" || mode === "procedural" || mode === "fixed") return mode;
+  return new URLSearchParams(window.location.search).get("autostart") === "world" && loadTrialMapPack() ? "manual" : "procedural";
 }
 
-export function createDungeonMap(mode: DungeonGenerationMode, seed: number, floor: number): DungeonMap {
+export function createDungeonMap(mode: DungeonGenerationMode, seed: number, floor: number, themePoolIds: readonly string[] = snapshotDungeonThemePool(), themeOverride?: string): DungeonMap {
   if (mode === "manual") {
     const trial = typeof window !== "undefined" ? loadTrialMapPack()?.dungeons.find((map) => map.floor === floor) : undefined;
     if (trial) return compileMap(trial);
@@ -53,7 +61,8 @@ export function createDungeonMap(mode: DungeonGenerationMode, seed: number, floo
     const authored = createDefaultMapPack().dungeons.find((map) => map.floor === floor);
     if (authored) return compileMap(authored);
   }
-  return generateDungeon(seed, floor);
+  const themeId = dungeonThemeIdForFloor(seed, floor, themePoolIds, themeOverride);
+  return generateDungeon(seed, floor, themeId);
 }
 
 const clone = <T>(value: T): T => structuredClone(value);
@@ -68,7 +77,7 @@ export const DIRECTION: Record<"up" | "down" | "left" | "right", Vec> = {
 
 export function createNewGame(): GameState {
   const state: GameState = {
-    version: 9,
+    version: 12,
     campaignId: typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `campaign-${Date.now()}`,
     status: "active",
     day: 1,
@@ -91,6 +100,8 @@ export function createNewGame(): GameState {
     archive: [],
     display: [],
     events: [],
+    dungeonCorpses: [],
+    lastSimulatedDay: 1,
     message: "商品を探しにダンジョンへ向かおう。護衛は探索準備から募集できる。",
     nextItemId: 1,
     nextNpcId: 1,
@@ -101,7 +112,8 @@ export function createNewGame(): GameState {
   };
   initializeMerchantWorld(state);
   resetDailySystems(state);
-  for (const npc of state.npcs.filter((entry) => entry.adventurer)) {
+  // 初期装備は台本のある15人だけに配る。名簿を増やしてもアイテム数は増やさない。
+  for (const npc of state.npcs.filter((entry) => entry.adventurer && SEED_NPC_IDS.has(entry.id))) {
     const definitionId = npc.profession === "scout" ? "antidote" : npc.profession === "mercenary" ? "bronze-spear" : "iron-sword";
     const gear = createItem(state, definitionId);
     gear.owner = npc.id;
@@ -153,136 +165,52 @@ export function createItem(state: GameState, definitionId: string, floor?: numbe
   return registerWorldItem(state, instance);
 }
 
-function carveRoom(tiles: number[][], x: number, y: number, width: number, height: number): Vec {
-  for (let yy = y; yy < y + height; yy += 1) {
-    for (let xx = x; xx < x + width; xx += 1) tiles[yy]![xx] = FLOOR;
+/**
+ * 拾える物の数は階の広さで決める。
+ *
+ * 以前は広さに関係なく床の品7個と宝箱2個を置いていた。作った地図と生成した地図では
+ * 歩ける升の数が違うので、狭い階ほど数歩ごとに何かが落ちていることになっていた。
+ * 鞄は24枠しかない。3階ぶん潜って拾い切れる量を超えないところに置く。
+ */
+const GROUND_ITEM_SPACING = 110;
+const CHEST_SPACING = 300;
+
+function walkableCells(map: DungeonMap): number {
+  let total = 0;
+  for (let y = 0; y < map.height; y += 1) for (let x = 0; x < map.width; x += 1) {
+    if (isWalkableCell(map, { x, y })) total += 1;
   }
-  return { x: Math.floor(x + width / 2), y: Math.floor(y + height / 2) };
+  return total;
 }
 
-function carveCorridor(tiles: number[][], from: Vec, to: Vec): void {
-  let x = from.x;
-  let y = from.y;
-  while (x !== to.x) {
-    tiles[y]![x] = FLOOR;
-    x += Math.sign(to.x - x);
-  }
-  while (y !== to.y) {
-    tiles[y]![x] = FLOOR;
-    y += Math.sign(to.y - y);
-  }
-  tiles[y]![x] = FLOOR;
+function dropCount(walkable: number, spacing: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, Math.round(walkable / spacing)));
 }
 
-type Room = { x: number; y: number; width: number; height: number; center: Vec };
-type Region = { x: number; y: number; width: number; height: number };
-
-function createRooms(tiles: number[][], rng: Rng): Room[] {
-  const target = rng.int(12, 16);
-  const regions: Region[] = [{ x: 1, y: 1, width: DUNGEON_WIDTH - 2, height: DUNGEON_HEIGHT - 2 }];
-  while (regions.length < target) {
-    const candidates = regions
-      .map((region, index) => ({ region, index }))
-      .filter(({ region }) => region.width >= 14 || region.height >= 14)
-      .sort((a, b) => b.region.width * b.region.height - a.region.width * a.region.height);
-    const selected = candidates[0];
-    if (!selected) break;
-    const { region, index } = selected;
-    const vertical = region.width >= 14 && (region.height < 14 || region.width / region.height > 1.2 || rng.next() < 0.5);
-    const first: Region = { ...region };
-    const second: Region = { ...region };
-    if (vertical) {
-      const cut = rng.int(7, region.width - 7);
-      first.width = cut;
-      second.x += cut;
-      second.width -= cut;
-    } else {
-      const cut = rng.int(7, region.height - 7);
-      first.height = cut;
-      second.y += cut;
-      second.height -= cut;
+function freeFloor(map: DungeonMap, rng: Rng, occupied: Vec[], preferred: readonly Vec[] = [], allowed: (pos: Vec) => boolean = () => true): Vec {
+  if (preferred.length > 0) {
+    const start = rng.int(0, preferred.length - 1);
+    for (let offset = 0; offset < preferred.length; offset += 1) {
+      const candidate = preferred[(start + offset) % preferred.length]!;
+      if (isWalkableCell(map, candidate) && allowed(candidate) && !occupied.some((pos) => samePosition(pos, candidate))) return { ...candidate };
     }
-    regions.splice(index, 1, first, second);
   }
-  return regions.map((region) => {
-    const width = rng.int(4, Math.min(9, region.width - 2));
-    const height = rng.int(4, Math.min(7, region.height - 2));
-    const x = rng.int(region.x + 1, region.x + region.width - width - 1);
-    const y = rng.int(region.y + 1, region.y + region.height - height - 1);
-    return { x, y, width, height, center: carveRoom(tiles, x, y, width, height) };
-  });
-}
-
-function connectRooms(tiles: number[][], rooms: Room[], rng: Rng): void {
-  if (rooms.length < 2) return;
-  const connected = [rooms[0]!];
-  const remaining = rooms.slice(1);
-  while (remaining.length > 0) {
-    let bestConnected = 0;
-    let bestRemaining = 0;
-    let bestDistance = Number.POSITIVE_INFINITY;
-    connected.forEach((source, sourceIndex) => remaining.forEach((target, targetIndex) => {
-      const candidate = Math.abs(source.center.x - target.center.x) + Math.abs(source.center.y - target.center.y);
-      if (candidate < bestDistance) {
-        bestDistance = candidate;
-        bestConnected = sourceIndex;
-        bestRemaining = targetIndex;
-      }
-    }));
-    const targetRoom = remaining.splice(bestRemaining, 1)[0]!;
-    const sourceRoom = connected[bestConnected]!;
-    if (rng.next() < 0.5) carveCorridor(tiles, sourceRoom.center, targetRoom.center);
-    else carveCorridor(tiles, targetRoom.center, sourceRoom.center);
-    connected.push(targetRoom);
-  }
-  for (let index = 0; index < rng.int(2, 4); index += 1) {
-    const source = rng.pick(rooms);
-    carveCorridor(tiles, source.center, rng.pick(rooms.filter((room) => room !== source)).center);
-  }
-}
-
-function freeFloor(map: DungeonMap, rng: Rng, occupied: Vec[]): Vec {
   for (let attempt = 0; attempt < 400; attempt += 1) {
     const candidate = { x: rng.int(1, map.width - 2), y: rng.int(1, map.height - 2) };
-    if (isWalkableCell(map, candidate) && !occupied.some((pos) => samePosition(pos, candidate))) return candidate;
+    if (isWalkableCell(map, candidate) && allowed(candidate) && !occupied.some((pos) => samePosition(pos, candidate))) return candidate;
   }
   const fallback = map.tiles.flatMap((row, y) => row.map((tile, x) => ({ tile, pos: { x, y } })))
-    .find(({ pos }) => isWalkableCell(map, pos) && !occupied.some((entry) => samePosition(entry, pos)));
+    .find(({ pos }) => isWalkableCell(map, pos) && allowed(pos) && !occupied.some((entry) => samePosition(entry, pos)));
   return fallback ? fallback.pos : { ...map.stairsUp };
 }
 
-export function generateDungeon(seed: number, floor: number): DungeonMap {
-  const rng = new Rng(seed + floor * 7919);
-  const tiles = Array.from({ length: DUNGEON_HEIGHT }, () => Array.from({ length: DUNGEON_WIDTH }, () => WALL));
-  const rooms = createRooms(tiles, rng);
-  connectRooms(tiles, rooms, rng);
-  const entranceRoom = rooms[0];
-  if (!entranceRoom) throw new Error("ダンジョンの部屋を生成できませんでした。");
-  const entrance = { ...entranceRoom.center };
-  const byDistance = [...rooms].sort((a, b) => distance(b.center, entrance) - distance(a.center, entrance));
-  const stairs = { ...(byDistance[0]?.center ?? entrance) };
-  return {
-    width: DUNGEON_WIDTH,
-    height: DUNGEON_HEIGHT,
-    tiles,
-    formatVersion: 2,
-    heights: Array.from({ length: DUNGEON_HEIGHT }, () => Array<0 | 1 | 2>(DUNGEON_WIDTH).fill(0)),
-    hardEdges: [],
-    ledgeEdges: [],
-    traversalLinks: [],
-    stairsUp: entrance,
-    stairsDown: stairs,
-    enemyRoster: [...defaultEnemyRoster(floor)],
-  };
+export function generateDungeon(seed: number, floor: number, themeId = "cave"): DungeonMap {
+  return generateDungeonFloor(seed, floor, themeId).map;
 }
 
 function distance(a: Vec, b: Vec): number {
   return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 }
-
-
-
-
 function randomItemId(state: GameState, rng: Rng, floor: number): string {
   const definitions = Object.values(MERCHANT_ITEM_DEFINITIONS).filter((definition) => {
     if (definition.singular && state.singularItemIds.includes(definition.id)) return false;
@@ -310,14 +238,15 @@ export function defaultEnemyRoster(floor: number): readonly string[] {
   return ["slime1", "orc1"];
 }
 
-function buildEnemies(rng: Rng, map: DungeonMap, floor: number, occupied: Vec[]): Enemy[] {
+function buildEnemies(rosterRng: Rng, placementRng: Rng, map: DungeonMap, floor: number, occupied: Vec[]): Enemy[] {
   const roster = Array.isArray(map.enemyRoster) && map.enemyRoster.length ? map.enemyRoster : defaultEnemyRoster(floor);
   const authored = roster.map((actorId) => ({ actorId, actor: actorDefinition(actorId) })).filter((entry) => entry.actor?.enemyStats);
   if (!authored.length) return [];
+  const candidates = generatedPlacementCells(map, ["combat", "loot", "treasure", "tomb"]);
   return Array.from({ length: 6 + Math.min(floor, 6) }, (_, index) => {
-    const selected = rng.pick(authored);
+    const selected = rosterRng.pick(authored);
     const stats = selected.actor!.enemyStats!;
-    const pos = freeFloor(map, rng, occupied);
+    const pos = freeFloor(map, placementRng, occupied, candidates, (candidate) => distance(candidate, map.stairsUp) > 6);
     occupied.push(pos);
     return {
       id: `${selected.actorId}-${floor}-${index}`,
@@ -336,7 +265,7 @@ function buildEnemies(rng: Rng, map: DungeonMap, floor: number, occupied: Vec[])
 /** Deterministic entry point used by the map-editor trial and regression tests. */
 export function buildInitialEnemies(map: DungeonMap, floor: number, seed = 1): Enemy[] {
   const occupied: Vec[] = [map.stairsUp, ...(map.stairsDown ? [map.stairsDown] : [])];
-  return buildEnemies(new Rng(seed + floor * 997), map, floor, occupied);
+  return buildEnemies(new Rng(deriveDungeonSeed(seed, "enemy-roster", floor)), new Rng(deriveDungeonSeed(seed, "enemy-placement", floor)), map, floor, occupied);
 }
 
 
@@ -348,21 +277,30 @@ function initialGuard(state: GameState, map: DungeonMap): ActiveGuard | undefine
   if (!state.hiredGuardId) return undefined;
   const npc = state.npcs.find((entry) => entry.id === state.hiredGuardId && entry.adventurer && entry.status !== "dead");
   if (!npc) return undefined;
-  const maxHp = npc.maxHp ?? 6;
-  return { guardId: npc.id, pos: { ...map.stairsUp }, hp: maxHp, maxHp, damage: npc.damage ?? 1, mode: "covering", safeTurns: 0, healingTrustGained: 0, retreatCount: 0 };
+  // 預けた装備は出発時に固定する。探索中に付け替えは起きない。
+  const stats = npcCombatStats(state, npc);
+  return { guardId: npc.id, pos: { ...map.stairsUp }, hp: stats.maxHp, maxHp: stats.maxHp, damage: stats.damage, defense: stats.defense, mode: "covering", safeTurns: 0, healingTrustGained: 0, retreatCount: 0 };
 }
 
 
-function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: ActiveGuard | null, highestFloor = floor, floorStates: NonNullable<DungeonRun["floorStates"]> = {}, startedDay = state.day): DungeonRun {
-  const map = createDungeonMap(dungeonGenerationMode(), seed, floor);
-  const rng = new Rng(seed + floor * 997);
+function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: ActiveGuard | null, highestFloor = floor, floorStates: NonNullable<DungeonRun["floorStates"]> = {}, startedDay = state.day, themePoolIds: string[] = snapshotDungeonThemePool()): DungeonRun {
+  const themeOverride = typeof window === "undefined" ? undefined : new URLSearchParams(window.location.search).get("dungeonTheme") ?? undefined;
+  const map = createDungeonMap(dungeonGenerationMode(), seed, floor, themePoolIds, themeOverride);
+  const itemRng = new Rng(deriveDungeonSeed(seed, "items", floor));
+  const enemyRosterRng = new Rng(deriveDungeonSeed(seed, "enemy-roster", floor));
+  const enemyPlacementRng = new Rng(deriveDungeonSeed(seed, "enemy-placement", floor));
+  const chestRng = new Rng(deriveDungeonSeed(seed, "chests", floor));
+  const bodyRng = new Rng(deriveDungeonSeed(seed, "bodies", floor));
+  const npcRng = new Rng(deriveDungeonSeed(seed, "npcs", floor));
   const occupied: Vec[] = [map.stairsUp, ...(map.stairsDown ? [map.stairsDown] : [])];
   const items: GroundItem[] = [];
+  const walkable = walkableCells(map);
+  const itemCells = generatedPlacementCells(map, ["loot", "combat", "treasure", "tomb"]);
 
-  for (let index = items.length; index < 7; index += 1) {
-    const pos = freeFloor(map, rng, occupied);
+  for (let index = items.length; index < dropCount(walkable, GROUND_ITEM_SPACING, 3, 8); index += 1) {
+    const pos = freeFloor(map, itemRng, occupied, itemCells);
     occupied.push(pos);
-    const generated = createItem(state, randomItemId(state, rng, floor), floor);
+    const generated = createItem(state, randomItemId(state, itemRng, floor), floor);
     generated.location = { kind: "dungeonGround", floor, pos: { ...pos } };
     items.push({ item: generated, pos });
   }
@@ -373,59 +311,91 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
       ? { ...carriedGuard, pos: { ...map.stairsUp } }
       : initialGuard(state, map);
 
-  const enemies = buildEnemies(rng, map, floor, occupied);
+  const enemies = buildEnemies(enemyRosterRng, enemyPlacementRng, map, floor, occupied);
   const occupiedEntities = [...occupied, ...enemies.map((enemy) => enemy.pos)];
-  const chests = Array.from({ length: 2 }, (_, index) => {
-    const pos = freeFloor(map, rng, occupiedEntities);
+  const chestCells = generatedPlacementCells(map, ["treasure", "loot"]);
+  const chests = Array.from({ length: dropCount(walkable, CHEST_SPACING, 1, 3) }, (_, index) => {
+    const pos = freeFloor(map, chestRng, occupiedEntities, chestCells);
     occupiedEntities.push(pos);
-    return { id: `chest-${floor}-${index}`, pos, item: createItem(state, randomItemId(state, rng, floor), floor) };
+    return { id: `chest-${floor}-${index}`, pos, item: createItem(state, randomItemId(state, chestRng, floor), floor) };
   });
   const bodies: DungeonBody[] = [];
   const adventurers: DungeonAdventurer[] = [];
-  const corpseChance = Math.min(0.6, 0.25 + (floor - 1) * 0.05);
-  if (rng.next() < corpseChance) {
-    const deadNpc = createGeneratedDeadAdventurer(state, floor);
-    const pos = freeFloor(map, rng, occupiedEntities);
+
+  // 身元の分からない古い遺体。名簿の誰でもないので記録は作らず、戦利品だけを置く。
+  // 名前のある遺体は台帳から来る（誰かが本当にここで死んだときだけ）。
+  const anonymousCorpseChance = Math.min(0.35, 0.15 + (floor - 1) * 0.03);
+  const bodyCells = generatedPlacementCells(map, ["tomb", "combat"]);
+  if (bodyRng.next() < anonymousCorpseChance) {
+    const pos = freeFloor(map, bodyRng, occupiedEntities, bodyCells);
     occupiedEntities.push(pos);
-    const loot = Array.from({ length: rng.int(1, 3) }, () => createItem(state, randomItemId(state, rng, floor), floor));
+    const loot = Array.from({ length: bodyRng.int(1, 2) }, () => createItem(state, randomItemId(state, bodyRng, floor), floor));
     for (const found of loot) {
-      found.owner = deadNpc.id;
-      found.location = { kind: "corpse", npcId: deadNpc.id, floor };
-      found.historyV2 ??= [];
-      found.historyV2.push({ day: state.day, type: "ownerDied", npcId: deadNpc.id, detail: `${deadNpc.name}が地下${floor}階で死亡` });
-      deadNpc.inventoryIds.push(found.uuid);
+      found.owner = "ground";
+      found.location = { kind: "dungeonGround", floor, pos: { ...pos } };
     }
-    bodies.push({ id: `body-${deadNpc.id}`, npcId: deadNpc.id, name: `冒険者${deadNpc.name}`, pos, loot, inspected: false });
+    bodies.push({ id: `remains-${floor}-${bodyRng.int(1, 9999)}`, name: "打ち捨てられた遺体", pos, loot, inspected: false });
   }
 
-  // Every floor has another party with its own survival and trading loop.
-  // Generated NPC records make their name, inventory and eventual death part
-  // of the persistent merchant world rather than a disposable visual effect.
-  for (let index = 0; index < 2; index += 1) {
-    const roamingNpc = createGeneratedAdventurer(state, floor);
-    const roamingPos = freeFloor(map, rng, occupiedEntities);
+  // 画面外で死んだ者も含め、この階で見つかる遺体を台帳から起こす。
+  for (const corpse of corpsesOnFloor(state, floor)) {
+    const deadNpc = state.npcs.find((npc) => npc.id === corpse.npcId);
+    if (!deadNpc) continue;
+    const pos = freeFloor(map, bodyRng, occupiedEntities, bodyCells);
+    occupiedEntities.push(pos);
+    if (!corpse.stocked) {
+      // 誰にも見つけられないまま死んだ相手の遺品は、最初に行き当たった時に決まる。
+      const generated = Array.from({ length: bodyRng.int(1, 2) }, () => createItem(state, randomItemId(state, bodyRng, floor), floor));
+      for (const found of generated) {
+        found.owner = deadNpc.id;
+        found.location = { kind: "corpse", npcId: deadNpc.id, floor };
+        found.historyV2 ??= [];
+        found.historyV2.push({ day: corpse.diedDay, type: "ownerDied", npcId: deadNpc.id, detail: `${deadNpc.name}が地下${floor}階で死亡` });
+      }
+      corpse.lootIds = generated.map((item) => item.uuid);
+      corpse.stocked = true;
+    }
+    const loot = corpse.lootIds.map((id) => state.itemsById[id]).filter((item): item is ItemInstance => Boolean(item));
+    bodies.push({ id: `body-${deadNpc.id}`, npcId: deadNpc.id, name: `冒険者${deadNpc.name}`, pos, loot, inspected: corpse.inspected });
+  }
+
+  // その階で行き合う冒険者は名簿から借りる。鋳造はしない。
+  // 同じ探索で同じ人物が二つの階に立たないよう、既に置いた人を除く。
+  const placedNpcIds = new Set(
+    Object.values(floorStates).flatMap((snapshot) => snapshot.adventurers.map((entry) => entry.npcId)),
+  );
+  selectFloorDelvers(state, floor, placedNpcIds).forEach((delver, index) => {
+    const npcCells = generatedPlacementCells(map, ["combat", "loot", "treasure", "tomb"]);
+    const roamingPos = freeFloor(map, npcRng, occupiedEntities, npcCells);
     occupiedEntities.push(roamingPos);
     const stockIds = index === 0
-      ? ["minor-healing-potion", randomItemId(state, rng, floor)]
-      : [randomItemId(state, rng, floor)];
+      ? ["minor-healing-potion", randomItemId(state, npcRng, floor)]
+      : [randomItemId(state, npcRng, floor)];
     for (const definitionId of stockIds) {
       const stock = createItem(state, definitionId, floor);
-      stock.owner = roamingNpc.id;
-      stock.location = { kind: "npcInventory", npcId: roamingNpc.id };
-      roamingNpc.inventoryIds.push(stock.uuid);
+      stock.owner = delver.id;
+      stock.location = { kind: "npcInventory", npcId: delver.id };
+      delver.inventoryIds.push(stock.uuid);
     }
+    // その階に立つこと自体が、担いだ武器の功績になる。
+    recordGearDeed(state, delver, { floor });
+    const stats = npcCombatStats(state, delver);
     adventurers.push({
-      npcId: roamingNpc.id,
+      npcId: delver.id,
       pos: roamingPos,
-      hp: roamingNpc.maxHp ?? 6,
-      maxHp: roamingNpc.maxHp ?? 6,
-      damage: roamingNpc.damage ?? 1,
-      gold: Math.max(200, Math.floor(roamingNpc.budget * 0.6)),
+      // 前の探索で負った傷を持ったまま現れる。
+      hp: Math.max(1, Math.min(stats.maxHp, delver.conditionHp ?? stats.maxHp)),
+      maxHp: stats.maxHp,
+      damage: stats.damage,
+      defense: stats.defense,
+      gold: Math.max(200, Math.floor(delver.budget * 0.6)),
     });
-  }
+  });
 
   return {
     seed,
+    themeScheduleVersion: 1,
+    themePoolIds: [...themePoolIds],
     startedDay,
     floor,
     map,
@@ -470,19 +440,22 @@ export function beginExpedition(state: GameState): boolean {
   const seed = Number.isFinite(querySeed) && querySeed > 0
     ? querySeed
     : Math.imul(startedDay, 104729) ^ Math.imul(state.expeditionSerial, 0x9e3779b1);
-  const floor = Number.isFinite(queryFloor) ? Math.min(8, Math.max(1, queryFloor)) : 1;
+  const floor = Number.isFinite(queryFloor) ? Math.min(DUNGEON_MAX_FLOOR, Math.max(1, queryFloor)) : 1;
+  const themePoolIds = snapshotDungeonThemePool();
   state.lastExpeditionDay = startedDay;
   state.location = "dungeon";
-  state.run = buildRun(state, floor, seed, undefined, floor, {}, startedDay);
+  state.run = buildRun(state, floor, seed, undefined, floor, {}, startedDay, themePoolIds);
+  markExplored(state.run);
   if (state.escortCommission?.status === "accepted" && state.escortCommission.npcId) {
     state.escortCommission.status = "active";
     const npc = state.npcs.find((entry) => entry.id === state.escortCommission?.npcId);
     if (npc) {
-      npc.status = "dungeon";
+      npc.status = "escorting";
       const profile = ensureGuardProfile(state, npc);
       profile.career.hireCount += 1;
       profile.career.deepestFloor = Math.max(profile.career.deepestFloor, floor);
       recordGuardEvent(state, npc, "hired", `地下迷宮の護衛を開始`, floor);
+      recordGearDeed(state, npc, { floor });
     }
   }
   advanceTime(state, 1);
@@ -508,10 +481,10 @@ function snapshotFloor(run: DungeonRun): import("./types").DungeonFloorSnapshot 
   };
 }
 
-function restoreFloor(snapshot: import("./types").DungeonFloorSnapshot, seed: number, floorStates: NonNullable<DungeonRun["floorStates"]>, highestFloor: number, player: Vec, carriedGuard: ActiveGuard | undefined, timeUnits: number, settledTimeBands: number, startedDay: number): DungeonRun {
+function restoreFloor(snapshot: import("./types").DungeonFloorSnapshot, seed: number, floorStates: NonNullable<DungeonRun["floorStates"]>, highestFloor: number, player: Vec, carriedGuard: ActiveGuard | undefined, timeUnits: number, settledTimeBands: number, startedDay: number, themePoolIds: string[], themeScheduleVersion: 1): DungeonRun {
   const restored = clone(snapshot);
   return {
-    ...restored, seed, startedDay,
+    ...restored, seed, startedDay, themePoolIds: [...themePoolIds], themeScheduleVersion,
     player: { ...player },
     guard: carriedGuard ? { ...clone(carriedGuard), pos: { ...player } } : undefined,
     highestFloor,
@@ -560,7 +533,7 @@ export function descend(state: GameState): void {
     state.message = "この階に下り階段はない。";
     return;
   }
-  if (run.floor >= 8 && dungeonGenerationMode() !== "manual") {
+  if (run.floor >= DUNGEON_MAX_FLOOR && dungeonGenerationMode() !== "manual") {
     state.message = "この探索で到達できる最深部だ。帰還石か階段で戻ろう。";
     return;
   }
@@ -573,8 +546,8 @@ export function descend(state: GameState): void {
   const highestFloor = Math.max(run.highestFloor, nextFloor);
   const previous = floorStates[String(nextFloor)];
   state.run = previous
-    ? restoreFloor(previous, run.seed, floorStates, highestFloor, previous.map.stairsUp, run.guard, run.timeUnits, run.settledTimeBands, run.startedDay)
-    : buildRun(state, nextFloor, run.seed, run.guard ?? null, highestFloor, floorStates, run.startedDay);
+    ? restoreFloor(previous, run.seed, floorStates, highestFloor, previous.map.stairsUp, run.guard, run.timeUnits, run.settledTimeBands, run.startedDay, run.themePoolIds, run.themeScheduleVersion)
+    : buildRun(state, nextFloor, run.seed, run.guard ?? null, highestFloor, floorStates, run.startedDay, run.themePoolIds);
   state.run.timeUnits = run.timeUnits;
   state.run.settledTimeBands = run.settledTimeBands;
   if (state.run.guard) {
@@ -582,8 +555,10 @@ export function descend(state: GameState): void {
     if (npc) {
       const profile = ensureGuardProfile(state, npc);
       profile.career.deepestFloor = Math.max(profile.career.deepestFloor, nextFloor);
+      recordGearDeed(state, npc, { floor: nextFloor });
     }
   }
+  markExplored(state.run);
   state.message = `地下${nextFloor}階へ降りた。`;
 }
 
@@ -599,15 +574,15 @@ export function ascend(state: GameState): void {
   const previous = floorStates[String(nextFloor)];
   if (previous) {
     const landing = previous.map.stairsDown ?? previous.map.stairsUp;
-    state.run = restoreFloor(previous, run.seed, floorStates, run.highestFloor, landing, run.guard, run.timeUnits, run.settledTimeBands, run.startedDay);
+    state.run = restoreFloor(previous, run.seed, floorStates, run.highestFloor, landing, run.guard, run.timeUnits, run.settledTimeBands, run.startedDay, run.themePoolIds, run.themeScheduleVersion);
   } else {
-    const map = createDungeonMap(dungeonGenerationMode(), run.seed, nextFloor);
-    state.run = buildRun(state, nextFloor, run.seed, run.guard ?? null, run.highestFloor, floorStates, run.startedDay);
-    state.run.player = { ...(map.stairsDown ?? map.stairsUp) };
+    state.run = buildRun(state, nextFloor, run.seed, run.guard ?? null, run.highestFloor, floorStates, run.startedDay, run.themePoolIds);
+    state.run.player = { ...(state.run.map.stairsDown ?? state.run.map.stairsUp) };
     if (state.run.guard) state.run.guard.pos = { ...state.run.player };
     state.run.timeUnits = run.timeUnits;
     state.run.settledTimeBands = run.settledTimeBands;
   }
+  markExplored(state.run);
   state.message = `地下${nextFloor}階へ上がった。`;
 }
 
@@ -640,6 +615,7 @@ function guardPhase(state: GameState, events: DungeonEvent[]): void {
       if (npc && profile) {
         profile.career.enemiesDefeated += 1;
         recordGuardEvent(state, npc, "kill", `${target.name}を倒した`, run.floor);
+        recordGearDeed(state, npc, { kills: 1 });
       }
       state.message = `${activeGuardName(state, guard.guardId)}が${target.name}を退けた。`;
     }
@@ -666,15 +642,7 @@ function consumeNpcMedicine(state: GameState, adventurer: DungeonAdventurer): bo
 }
 
 function moveToward(from: Vec, target: Vec, run: DungeonRun, blocked: Vec[], rng: Rng): Vec {
-  const horizontal = { x: Math.sign(target.x - from.x), y: 0 };
-  const vertical = { x: 0, y: Math.sign(target.y - from.y) };
-  const preferred = rng.next() > 0.5 ? [horizontal, vertical] : [vertical, horizontal];
-  for (const direction of preferred) {
-    if (direction.x === 0 && direction.y === 0) continue;
-    const next = { x: from.x + direction.x, y: from.y + direction.y };
-    if (canTraverse(run.map, from, next) && !blocked.some((pos) => samePosition(pos, next))) return next;
-  }
-  return from;
+  return nextDungeonStep(run.map, from, target, blocked, rng.int(0, 3));
 }
 
 function adventurerPhase(state: GameState, events: DungeonEvent[]): void {
@@ -693,6 +661,13 @@ function adventurerPhase(state: GameState, events: DungeonEvent[]): void {
       if (target.hp <= 0) {
         run.enemies = run.enemies.filter((enemy) => enemy.id !== target.id);
         events.push({ type: "defeated", actorId: target.id, pos: { ...target.pos } });
+        // 同行者の撃破はこれまで何も記録されていなかった。経歴イベントは護衛の分だけなので、
+        // ここでは数と、担いだ武器の功績だけを数える。
+        const slayer = state.npcs.find((entry) => entry.id === adventurer.npcId);
+        if (slayer) {
+          ensureGuardProfile(state, slayer).career.enemiesDefeated += 1;
+          recordGearDeed(state, slayer, { kills: 1 });
+        }
         state.message = `${adventurerName(state, adventurer.npcId)}が${target.name}を倒した。`;
       }
       continue;
@@ -705,32 +680,27 @@ function adventurerPhase(state: GameState, events: DungeonEvent[]): void {
 }
 
 function moveEnemy(enemy: Enemy, run: DungeonRun, rng: Rng, target: Vec = run.player): void {
-  const dist = distance(enemy.pos, target);
-  if (dist <= 6) {
+  const seesTarget = hasDungeonVision(run.map, enemy.pos, target);
+  if (seesTarget) {
     enemy.state = "chase";
     enemy.target = { ...target };
   } else if (enemy.state === "chase") {
     enemy.state = "search";
   }
-  let directions: Vec[];
-  if (enemy.state === "chase" && enemy.target) {
-    const horizontal = { x: Math.sign(enemy.target.x - enemy.pos.x), y: 0 };
-    const vertical = { x: 0, y: Math.sign(enemy.target.y - enemy.pos.y) };
-    directions = rng.next() > 0.5 ? [horizontal, vertical] : [vertical, horizontal];
-  } else {
-    directions = [...Object.values(DIRECTION)].sort(() => rng.next() - 0.5);
-  }
-  for (const direction of directions) {
-    if (direction.x === 0 && direction.y === 0) continue;
-    const next = { x: enemy.pos.x + direction.x, y: enemy.pos.y + direction.y };
-    const collision = run.enemies.some((other) => other.id !== enemy.id && samePosition(other.pos, next))
-      || run.adventurers.some((adventurer) => samePosition(adventurer.pos, next));
-    if (canTraverse(run.map, enemy.pos, next)
-      && !collision
-      && !samePosition(next, run.player)) {
-      enemy.pos = next;
-      break;
+  const blocked = [run.player, ...run.enemies.filter((other) => other.id !== enemy.id).map((other) => other.pos), ...run.adventurers.map((adventurer) => adventurer.pos)];
+  if ((enemy.state === "chase" || enemy.state === "search") && enemy.target) {
+    if (enemy.state === "search" && samePosition(enemy.pos, enemy.target)) {
+      enemy.state = "patrol";
+      delete enemy.target;
+      return;
     }
+    enemy.pos = nextDungeonStep(run.map, enemy.pos, enemy.target, blocked, rng.int(0, 3));
+    return;
+  }
+  const directions = [...Object.values(DIRECTION)].sort(() => rng.next() - 0.5);
+  for (const direction of directions) {
+    const next = { x: enemy.pos.x + direction.x, y: enemy.pos.y + direction.y };
+    if (canTraverse(run.map, enemy.pos, next) && !blocked.some((pos) => samePosition(pos, next))) { enemy.pos = next; break; }
   }
 }
 
@@ -747,16 +717,19 @@ function enemyPhase(state: GameState, events: DungeonEvent[]): void {
     }
     const guard = run.guard;
     if (guard?.mode === "covering" && distance(enemy.pos, run.player) === 1) {
-      const covered = Math.min(guard.hp, enemy.damage);
-      guard.hp -= enemy.damage;
-      events.push({ type: "attack", attackerId: enemy.id, targetId: guard.guardId, damage: enemy.damage });
+      // 主人公は playerDefensePower を引いて受けるのに、護衛だけ生で受けていた。
+      // 敵のダメージは全種1か2で0が無いため、防具なしなら Math.max(1, d - 0) は恒等になる。
+      const incoming = Math.max(1, enemy.damage - (guard.defense ?? 0));
+      const covered = Math.min(guard.hp, incoming);
+      guard.hp -= incoming;
+      events.push({ type: "attack", attackerId: enemy.id, targetId: guard.guardId, damage: incoming });
       const guardNpc = state.npcs.find((entry) => entry.id === guard.guardId);
       if (guardNpc) {
         const profile = ensureGuardProfile(state, guardNpc);
         profile.career.damageCovered += covered;
         recordGuardEvent(state, guardNpc, "covered", `${enemy.name}から${covered}ダメージを肩代わり`, run.floor);
       }
-      state.message = `${enemy.name}が${activeGuardName(state, guard.guardId)}へ${enemy.damage}ダメージ。`;
+      state.message = `${enemy.name}が${activeGuardName(state, guard.guardId)}へ${incoming}ダメージ。`;
       if (guard.hp <= 0) {
         const npc = guardNpc;
         if (npc) {
@@ -765,6 +738,10 @@ function enemyPhase(state: GameState, events: DungeonEvent[]): void {
           profile.career.deathDay = state.day;
           profile.career.deathFloor = run.floor;
           recordGuardEvent(state, npc, "died", `地下${run.floor}階で死亡`, run.floor);
+          recordBond(state, npc, "lost", `護衛の契約中に地下${run.floor}階で死亡した`, run.floor);
+          // 遺銘は品がまだ引ける今のうちに刻む。預かりの記録だけ外し、品は遺体へ流す。
+          recordGearDeed(state, npc, { died: true });
+          delete npc.gear;
           const loot = npc.inventoryIds.map((id) => state.itemsById[id]).filter((item): item is ItemInstance => Boolean(item));
           for (const item of loot) {
             item.location = { kind: "corpse", npcId: npc.id, floor: run.floor };
@@ -772,6 +749,7 @@ function enemyPhase(state: GameState, events: DungeonEvent[]): void {
             item.historyV2.push({ day: state.day, type: "ownerDied", npcId: npc.id, detail: `${npc.name}が地下${run.floor}階で死亡` });
           }
           run.bodies.push({ id: `body-${npc.id}`, npcId: npc.id, name: `冒険者${npc.name}`, pos: { ...guard.pos }, loot, inspected: false });
+          recordCorpse(state, npc.id, run.floor, loot.map((item) => item.uuid), true);
         }
         events.push({ type: "defeated", actorId: guard.guardId, pos: { ...guard.pos } });
         state.message = npc ? `${npc.name}は死亡し、その場に所持品を残した。` : `${activeGuardName(state, guard.guardId)}は倒れた。`;
@@ -793,9 +771,10 @@ function enemyPhase(state: GameState, events: DungeonEvent[]): void {
     }
     const adjacentAdventurer = run.adventurers.find((adventurer) => distance(enemy.pos, adventurer.pos) === 1);
     if (adjacentAdventurer) {
-      adjacentAdventurer.hp -= enemy.damage;
-      events.push({ type: "attack", attackerId: enemy.id, targetId: adjacentAdventurer.npcId, damage: enemy.damage });
-      state.message = `${enemy.name}が${adventurerName(state, adjacentAdventurer.npcId)}へ${enemy.damage}ダメージ。`;
+      const dealt = Math.max(1, enemy.damage - (adjacentAdventurer.defense ?? 0));
+      adjacentAdventurer.hp -= dealt;
+      events.push({ type: "attack", attackerId: enemy.id, targetId: adjacentAdventurer.npcId, damage: dealt });
+      state.message = `${enemy.name}が${adventurerName(state, adjacentAdventurer.npcId)}へ${dealt}ダメージ。`;
       if (adjacentAdventurer.hp <= 0) defeatDungeonAdventurer(state, adjacentAdventurer, events);
       continue;
     }
@@ -812,7 +791,8 @@ function enemyPhase(state: GameState, events: DungeonEvent[]): void {
     }
     const from = { ...enemy.pos };
     const targets = [run.player, ...run.adventurers.map((adventurer) => adventurer.pos)];
-    const target = [...targets].sort((a, b) => distance(enemy.pos, a) - distance(enemy.pos, b))[0] ?? run.player;
+    const visibleTargets = targets.filter((candidate) => hasDungeonVision(run.map, enemy.pos, candidate));
+    const target = [...visibleTargets].sort((a, b) => distance(enemy.pos, a) - distance(enemy.pos, b))[0] ?? run.player;
     moveEnemy(enemy, run, rng, target);
     if (!samePosition(from, enemy.pos)) events.push({ type: "move", actorId: enemy.id, from, to: { ...enemy.pos } });
   }
@@ -824,6 +804,8 @@ function defeatDungeonAdventurer(state: GameState, adventurer: DungeonAdventurer
   const npc = state.npcs.find((entry) => entry.id === adventurer.npcId);
   if (!npc) return;
   npc.status = "dead";
+  recordGearDeed(state, npc, { died: true });
+  delete npc.gear;
   const loot = npc.inventoryIds.map((id) => state.itemsById[id]).filter((item): item is ItemInstance => Boolean(item));
   for (const item of loot) {
     item.location = { kind: "corpse", npcId: npc.id, floor: run.floor };
@@ -831,6 +813,7 @@ function defeatDungeonAdventurer(state: GameState, adventurer: DungeonAdventurer
     item.historyV2.push({ day: state.day, type: "ownerDied", npcId: npc.id, detail: `${npc.name}が地下${run.floor}階で死亡` });
   }
   run.bodies.push({ id: `body-${npc.id}`, npcId: npc.id, name: `冒険者${npc.name}`, pos: { ...adventurer.pos }, loot, inspected: false });
+  recordCorpse(state, npc.id, run.floor, loot.map((item) => item.uuid), true);
   run.adventurers = run.adventurers.filter((entry) => entry.npcId !== adventurer.npcId);
   events.push({ type: "defeated", actorId: adventurer.npcId, pos: { ...adventurer.pos } });
   state.message = `${npc.name}は敵に倒され、所持品をその場に残した。`;
@@ -853,13 +836,16 @@ function updateGuardRecovery(state: GameState, events: DungeonEvent[]): void {
 function finishTurn(state: GameState, events: DungeonEvent[], decrementCooldown = true): TurnResult {
   const run = state.run;
   if (!run) return { consumedTurn: true, events };
+  markExplored(run);
   if (decrementCooldown && run.shoveCooldown > 0) run.shoveCooldown -= 1;
   guardPhase(state, events);
   adventurerPhase(state, events);
   enemyPhase(state, events);
   updateGuardRecovery(state, events);
   if (state.run) {
+    // 敵の手番で押し出されることがあるので、行動の前後どちらでも見た場所を拾う。
     state.run.turn += 1;
+    markExplored(state.run);
     consumeDungeonTime(state, 1);
   }
   return { consumedTurn: true, events };
@@ -1008,11 +994,19 @@ function performInspectBody(state: GameState, bodyId: string): TurnResult {
   if (!run || !body) return emptyResult();
   if (body.inspected) return emptyResult();
   body.inspected = true;
+  if (body.npcId) markCorpseInspected(state, body.npcId);
   const deadNpc = body.npcId ? state.npcs.find((npc) => npc.id === body.npcId) : undefined;
-  state.message = deadNpc
-    ? `${deadNpc.name}という冒険者だ。${body.loot.length}個の所持品が残されている。`
-    : "古い遺体だ。身元を示す物は残っていない。";
-  return finishTurn(state, [{ type: "message", text: state.message }]);
+  const entrusted = body.loot.find((item) => wasEntrusted(item));
+  const found = entrusted
+    ? `${deadNpc?.name ?? "冒険者"}だ。あなたが預けた${itemName(entrusted)}が、まだ握られている。`
+    : deadNpc
+      ? `${deadNpc.name}という冒険者だ。${body.loot.length}個の所持品が残されている。`
+      : "古い遺体だ。身元を示す物は残っていない。";
+  state.message = found;
+  const result = finishTurn(state, [{ type: "message", text: found }]);
+  // 遺体を検めた場面も、同じターンの戦闘ログに流させない。回収時と同じ扱いにする。
+  if (entrusted) state.message = found;
+  return result;
 }
 
 function performLootBody(state: GameState, bodyId: string, itemId: string, swapOutId?: string): TurnResult {
@@ -1028,10 +1022,22 @@ function performLootBody(state: GameState, bodyId: string, itemId: string, swapO
     if (npc) npc.inventoryIds = npc.inventoryIds.filter((id) => id !== item.uuid);
     item.historyV2 ??= [];
     item.historyV2.push({ day: state.day, type: "lootedFromCorpse", npcId, detail: `${body.name}の遺体から回収` });
+    if (npc) recordBond(state, npc, "looted", `${itemName(item)}を遺体から引き取った`, run.floor);
+    removeCorpseLoot(state, npcId, item.uuid);
   }
   item.history.push({ day: state.day, type: "recovered", detail: `${body.name}の遺品として回収` });
-  state.message = `${body.name}から${itemName(item)}を回収した。`;
-  return finishTurn(state, [{ type: "pickup", itemId: item.uuid }]);
+  // 手に取った時に遺銘が刻まれる。持ち主を喪ったことが、ここで名前になる。
+  const owner = npcId ? state.npcs.find((entry) => entry.id === npcId) : undefined;
+  refreshItemLegend(state, item, owner);
+  const entrusted = wasEntrusted(item);
+  const recovered = entrusted
+    ? `${body.name}から${itemName(item)}を取り戻した。この銘は、あの人が刻ませたものだ。`
+    : `${body.name}から${itemName(item)}を回収した。`;
+  state.message = recovered;
+  const result = finishTurn(state, [{ type: "pickup", itemId: item.uuid }]);
+  // 託した品を取り戻す場面は、同じターンの戦闘ログに流させない。
+  if (entrusted) state.message = recovered;
+  return result;
 }
 
 function performDrop(state: GameState, itemId: string): TurnResult {
@@ -1104,11 +1110,22 @@ function performBuyFromAdventurer(state: GameState, npcId: string, itemId: strin
   adventurer.gold += price;
   npc.inventoryIds = npc.inventoryIds.filter((id) => id !== item.uuid);
   item.history.push({ day: state.day, type: "found", detail: `${npc.name}から${price}Gで購入` });
+  recordBond(state, npc, "traded", `${itemName(item)}を${price}Gで買い取った`, state.run?.floor);
   state.message = `${npc.name}から${itemName(item)}を${price}Gで買った。`;
   return finishTurn(state, [{ type: "pickup", itemId: item.uuid }]);
 }
 
-function performSellToAdventurer(state: GameState, npcId: string, itemId: string): TurnResult {
+/** 傷が深いほど、回復品は言い値で通る。ここが迷宮と店の決定的な違いである。 */
+export function isDesperateFor(adventurer: DungeonAdventurer, item: ItemInstance): boolean {
+  return adventurer.hp < adventurer.maxHp * 0.7 && (itemDefinition(item).healing ?? 0) > 0;
+}
+
+/** 迷宮で提案できる最高額。他に店が無いぶん、桁が変わる。 */
+export function dungeonAskingCeiling(item: ItemInstance): number {
+  return dungeonAdventurerBuyPrice(item) * DUNGEON_PRICE_CEILING;
+}
+
+function performSellToAdventurer(state: GameState, npcId: string, itemId: string, asking?: number): TurnResult {
   const adventurer = nearbyAdventurer(state, npcId);
   const npc = state.npcs.find((entry) => entry.id === npcId);
   const item = state.inventory.find((entry) => entry.uuid === itemId);
@@ -1116,8 +1133,15 @@ function performSellToAdventurer(state: GameState, npcId: string, itemId: string
   const definition = itemDefinition(item);
   const needsMedicine = adventurer.hp < adventurer.maxHp && (definition.healing ?? 0) > 0;
   if (!npc.interests.includes(definition.category) && !needsMedicine) { state.message = `${npc.name}はその品を探していない。`; return emptyResult(); }
-  const price = dungeonAdventurerBuyPrice(item);
-  if (adventurer.gold < price) { state.message = `${npc.name}の手持ちでは買い取れない。`; return emptyResult(); }
+  const baseline = dungeonAdventurerBuyPrice(item);
+  const price = Math.max(1, Math.min(Math.round(asking ?? baseline), dungeonAskingCeiling(item)));
+  const desperate = isDesperateFor(adventurer, item);
+  const profile = npc.guardProfile ?? ensureGuardProfile(state, npc);
+  const verdict = dungeonVerdict(npc, price, baseline, adventurer.gold, desperate, profile.personality);
+  if (verdict.reaction === "refuse") {
+    state.message = verdict.line;
+    return emptyResult();
+  }
   state.inventory = state.inventory.filter((entry) => entry.uuid !== item.uuid);
   unequipIfNeeded(state, item.uuid);
   state.gold += price;
@@ -1126,8 +1150,27 @@ function performSellToAdventurer(state: GameState, npcId: string, itemId: string
   item.owner = npc.id;
   item.location = { kind: "npcInventory", npcId: npc.id };
   item.history.push({ day: state.day, type: "sold", detail: `${npc.name}へダンジョン内で売却`, value: price });
-  state.message = `${npc.name}へ${itemName(item)}を${price}Gで売った。`;
-  return finishTurn(state, [{ type: "message", text: state.message }]);
+  // 同じ取引でも、相手の受け取り方で残るものが変わる。
+  const floor = state.run?.floor;
+  if (verdict.sentiment === "resented") {
+    recordBond(state, npc, "gouged", `${itemName(item)}を${price}Gで買わされた`, floor);
+    adjustGuardProfile(profile, -8);
+    npc.relation = Math.max(-100, npc.relation - 6);
+  } else if (verdict.sentiment === "grateful") {
+    // 命の重さを知っている相手は、危ないところまで品を担いできた事実のほうを見る。
+    recordBond(state, npc, "aided", `${itemName(item)}を${price}Gで譲り、窮地を救った`, floor);
+    adjustGuardProfile(profile, 4);
+  } else if (desperate && verdict.sentiment === "fair") {
+    recordBond(state, npc, "aided", `${itemName(item)}を${price}Gで譲り、窮地を救った`, floor);
+  } else {
+    recordBond(state, npc, "traded", `${itemName(item)}を${price}Gで売った`, floor);
+  }
+  const sold = `${npc.name}へ${itemName(item)}を${price}Gで売った。${verdict.line}`;
+  state.message = sold;
+  const result = finishTurn(state, [{ type: "message", text: sold }]);
+  // 足元を見た商いは、同じターンの戦闘ログに流させない。恨みが生まれた場面は必ず読ませる。
+  if (verdict.sentiment !== "fair") state.message = sold;
+  return result;
 }
 
 function performSmoke(state: GameState): TurnResult {
@@ -1168,7 +1211,8 @@ function dismissGuardForDescent(state: GameState): string | undefined {
     profile.career.earlyDepartures += 1;
     adjustGuardProfile(profile, -5, 0);
     recordGuardEvent(state, npc, "leftEarly", `深層への同行を断り単独帰還`, state.run?.floor);
-    if (npc.status !== "dead") npc.status = "inTown";
+    if (npc.status !== "dead") npc.status = badlyHurt(guard.hp, guard.maxHp) ? "recovering" : "inTown";
+    if (npc.status === "recovering") npc.conditionHp = guard.hp;
   }
   state.run!.guard = undefined;
   state.hiredGuardId = undefined;
@@ -1235,7 +1279,7 @@ export function performDungeonCommand(state: GameState, command: DungeonCommand)
     case "drop": return performDrop(state, command.itemId);
     case "useMedicine": return performUseMedicine(state, command.itemId, command.target);
     case "buyFromAdventurer": return performBuyFromAdventurer(state, command.npcId, command.itemId, command.swapOutId);
-    case "sellToAdventurer": return performSellToAdventurer(state, command.npcId, command.itemId);
+    case "sellToAdventurer": return performSellToAdventurer(state, command.npcId, command.itemId, command.price);
     case "stairs": return performStairs(state, command.guardResponse);
   }
 }
@@ -1299,7 +1343,17 @@ export function returnHome(state: GameState, arrival: "homeSpawn" | "dungeonEntr
       ...completedRun.adventurers.map((entry) => entry.npcId),
       ...Object.values(completedRun.floorStates).flatMap((floor) => floor.adventurers.map((entry) => entry.npcId)),
     ]);
-    for (const npc of state.npcs) if (survivorIds.has(npc.id) && npc.status === "dungeon") npc.status = "departed";
+    // 生還者を町へ戻すのは翌朝の町シミュレーション。ここでは負った傷だけ書き戻す。
+    const woundedById = new Map<string, { hp: number; maxHp: number }>(
+      [completedRun, ...Object.values(completedRun.floorStates)]
+        .flatMap((floor) => floor.adventurers)
+        .map((entry) => [entry.npcId, { hp: entry.hp, maxHp: entry.maxHp }]),
+    );
+    for (const npc of state.npcs) {
+      if (!survivorIds.has(npc.id) || npc.status !== "delving") continue;
+      const wounded = woundedById.get(npc.id);
+      if (wounded && wounded.hp < wounded.maxHp) npc.conditionHp = wounded.hp;
+    }
   }
   state.message = "家へ帰還した。棚の商品を並べ替え、次の護衛を指定できる。";
   if (completedRun?.guard) {
@@ -1312,6 +1366,14 @@ export function returnHome(state: GameState, arrival: "homeSpawn" | "dungeonEntr
       profile.career.deepestFloor = Math.max(profile.career.deepestFloor, completedRun.highestFloor);
       adjustGuardProfile(profile, 8, -10);
       recordGuardEvent(state, npc, "returned", `地下${completedRun.highestFloor}階から契約を完遂して生還`, completedRun.highestFloor);
+      recordBond(state, npc, "foughtTogether", `地下${completedRun.highestFloor}階まで護衛し、共に生還した`, completedRun.highestFloor);
+      recordGearDeed(state, npc, { floor: completedRun.highestFloor, returned: true });
+      applySurvivalGrowth(state, npc, profile, completedRun.highestFloor);
+      const guard = completedRun.guard;
+      if (guard && badlyHurt(guard.hp, guard.maxHp)) {
+        npc.status = "recovering";
+        npc.conditionHp = guard.hp;
+      } else delete npc.conditionHp;
     }
   }
   state.lastExpeditionDay = Math.max(state.lastExpeditionDay, state.day);
@@ -1325,11 +1387,18 @@ export function returnHome(state: GameState, arrival: "homeSpawn" | "dungeonEntr
   state.hiredGuardId = undefined;
   state.hiredGuardFee = undefined;
   state.escortCommission = undefined;
-  // 探索を1回終えるごとに、もう誰も参照しない床の品と通りすがりの冒険者を捨てる。
+  // 遺体の台帳を先に整理してから剪定へ。未回収の遺品を生存扱いにする必要があるため。
+  pruneCorpses(state);
+  // 探索を1回終えるごとに、もう誰も参照しない床の品を捨てる。
   pruneCampaignRecords(state);
   processDayEvents(state);
 }
 
+
+/** 次の日まで動けないほどの傷か。護衛の帰還と途中解雇で同じ基準を使う。 */
+function badlyHurt(hp: number, maxHp: number): boolean {
+  return hp < Math.max(1, maxHp) * 0.35;
+}
 
 export function guardRetreatRatio(state: GameState, guardId: string): number {
   const npc = state.npcs.find((entry) => entry.id === guardId);
@@ -1438,6 +1507,8 @@ export function toggleDisplay(state: GameState, item: ItemInstance): void {
   } else {
     state.display.push(item.uuid);
     item.location = { kind: "shopStock" };
+    // 値を付けていない品は相場で並ぶ。あとから付け替えられる。
+    item.askingPrice ??= marketPrice(item);
     item.historyV2 ??= [];
     item.historyV2.push({ day: state.day, type: "listed", detail: "販売品として店頭へ配置" });
     item.history.push({ day: state.day, type: "displayed", detail: "店頭に展示" });
@@ -1471,14 +1542,3 @@ export function setDisplayedItems(state: GameState, itemIds: readonly string[]):
   state.message = `陳列を更新した。販売品 ${state.display.length}点。`;
   return changed;
 }
-
-
-function processDayEvents(state: GameState): void {
-  const due = state.events.filter((event) => event.dueDay <= state.day);
-  state.events = state.events.filter((event) => event.dueDay > state.day);
-  if (due.length === 0) return;
-  state.message = due.map((event) => event.text).join(" ");
-}
-
-
-

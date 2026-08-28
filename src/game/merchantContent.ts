@@ -64,13 +64,6 @@ export const ADVENTURER_RANKS: Record<AdventurerRank, AdventurerRankDefinition> 
 
 export const ADVENTURER_RANK_ORDER: readonly AdventurerRank[] = ["E", "D", "C", "B", "A"];
 
-export function adventurerRankForFloor(floor: number): AdventurerRank {
-  if (floor >= 7) return "A";
-  if (floor >= 6) return "B";
-  if (floor >= 4) return "C";
-  if (floor >= 3) return "D";
-  return "E";
-}
 
 export const NPC_SEEDS: readonly NpcSeed[] = [
   { id: "mina", name: "ミナ", profession: "scout", appearanceId: "profession.adventurer.scout.01", adventurer: true, rank: "E", interests: ["medicine", "material"], budget: 350, baseFee: 100, maxHp: 10, damage: 3, retreatHpRatio: 0.5 },
@@ -105,10 +98,3 @@ export function createInitialNpcs(): NpcRecord[] {
   return NPC_SEEDS.map((seed) => ({ ...seed, interests: [...seed.interests], status: "inTown", relation: 0, inventoryIds: [] }));
 }
 
-export const GENERATED_ADVENTURER_NAMES = [
-  "アロン・ヴェイル", "セリア・ハート", "デイン・クロウ", "エルナ・フォード",
-  "フェン・グレイ", "ギルダ・ルーン", "ヒューゴ・マーシュ", "イリス・ヴェイル",
-  "ヨラン・パイク", "カラ・ムーン", "レオン・アッシュ", "ノラ・フリント",
-] as const;
-
-export const LEGENDARY_NAME_PREFIXES = ["黒風", "宵月", "灰冠", "影喰らい", "冬雷"] as const;

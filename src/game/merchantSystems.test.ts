@@ -112,6 +112,8 @@ describe("v6 merchant systems", () => {
     const item = createItem(state, "iron-sword", 1);
     state.store.push(item);
     item.location = { kind: "shopStock" };
+    // 誰が来ても買える値にしておく。この試験が見ているのは客の並びであって値付けではない。
+    item.askingPrice = 20;
     state.display = [item.uuid];
     expect(canOpenShop(state)).toBe(true);
     expect(startShopSession(state)).toBe(true);
@@ -122,7 +124,7 @@ describe("v6 merchant systems", () => {
     expect(first).toBeTruthy();
     expect(state.visitorNpcIds).toEqual([first]);
     expect(state.shopSession.requestedItemId).toBe(item.uuid);
-    expect(state.shopSession.requestedPrice).toBeGreaterThan(0);
+    expect(state.shopSession.requestedPrice).toBe(20);
     finishCurrentCustomer(state);
     expect(state.visitorNpcIds).toEqual([]);
     expect(state.shopSession.requestedItemId).toBeUndefined();
@@ -184,5 +186,39 @@ describe("v6 merchant systems", () => {
     expect(restUntilMorning(state)).toBe(true);
     expect(state.hp).toBe(state.maxHp);
     expect(state.timeSlot).toBe("morning");
+  });
+});
+
+describe("familiar customers", () => {
+  it("brings people we have dealt with to the counter more often", () => {
+    const state = createNewGame();
+    const [familiar, stranger] = state.npcs.filter((npc) => npc.adventurer && npc.status === "inTown");
+    familiar!.relation = 20;
+    familiar!.bonds = [
+      { day: 1, kind: "aided", detail: "薬を譲った", floor: 3 },
+      { day: 2, kind: "traded", detail: "石を買った", floor: 2 },
+      { day: 3, kind: "served", detail: "買っていった" },
+    ];
+
+    let familiarVisits = 0;
+    let strangerVisits = 0;
+    for (let day = 1; day <= 40; day += 1) {
+      state.day = day;
+      state.shopSession = { day, status: "closed", queueNpcIds: [], servedNpcIds: [] };
+      const shelved = createItem(state, "iron-sword");
+      state.store.push(shelved);
+      state.display = [shelved.uuid];
+      shelved.location = { kind: "shopStock" };
+      expect(startShopSession(state)).toBe(true);
+      if (state.shopSession.queueNpcIds.includes(familiar!.id)) familiarVisits += 1;
+      if (state.shopSession.queueNpcIds.includes(stranger!.id)) strangerVisits += 1;
+      state.display = [];
+      state.store = [];
+    }
+
+    // 縁と関係の重みは決定的な指名ではなく、後押し。確実に上回るが独占はしない。
+    expect(familiarVisits).toBeGreaterThan(strangerVisits);
+    expect(familiarVisits).toBeGreaterThan(20);
+    expect(familiarVisits).toBeLessThan(40);
   });
 });

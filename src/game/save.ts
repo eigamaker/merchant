@@ -3,8 +3,10 @@ import { HOME_SPAWN, createHomeMap } from "./homeMap";
 import { loadTrialMapPack, type MapDocument } from "./mapDocument";
 import { isMapPositionWalkable } from "./mapTiles";
 import { initializeMerchantWorld, pruneCampaignRecords } from "./merchantEconomy";
+import { ensureRosterPopulation } from "./npcRoster";
 import { createInitialNpcs } from "./merchantContent";
 import { initializeGuardProfiles } from "./guardProfiles";
+import { deriveDungeonSeed, DUNGEON_THEME_FALLBACK_ID } from "./dungeonThemes";
 /** v1-v3 saves always used the fixed 32x20, 16px home. */
 const HOME_SPAWN_PIXEL = { x: HOME_SPAWN.x * 16 + 8, y: HOME_SPAWN.y * 16 + 8 };
 
@@ -51,7 +53,7 @@ export function isCampaignDead(campaignId: string): boolean {
 }
 
 export function isSupportedSaveVersion(version: unknown): version is number {
-  return typeof version === "number" && Number.isInteger(version) && version >= 5 && version <= 9;
+  return typeof version === "number" && Number.isInteger(version) && version >= 5 && version <= 12;
 }
 
 function activeHomeMapForSave(): MapDocument {
@@ -86,7 +88,7 @@ function migrationItem(state: LegacyGameState, definitionId: string, floor: numb
   };
 }
 
-function migrateDungeonMap(map: DungeonMap | LegacyDungeonMap): void {
+function migrateDungeonMap(map: DungeonMap | LegacyDungeonMap, seed = 1, floor = 1, sourceVersion = 12): void {
   // v5 map documents compile canonical up/down stairs. Old saves only carried
   // entrance/stairs/returnStairs, so derive the new fields without discarding
   // the original payload.
@@ -98,6 +100,17 @@ function migrateDungeonMap(map: DungeonMap | LegacyDungeonMap): void {
   map.hardEdges ??= [];
   map.ledgeEdges ??= [];
   map.traversalLinks ??= [];
+  if (sourceVersion < 12 && !map.authoredLayers && !map.procedural) {
+    map.tileSize ??= 16;
+    map.procedural = {
+      generatorVersion: 1,
+      themeId: DUNGEON_THEME_FALLBACK_ID,
+      layoutSeed: deriveDungeonSeed(seed, "layout", floor),
+      fallback: true,
+      mainPathRoomIds: [],
+      rooms: [],
+    };
+  }
 }
 
 /** v8 で撤去した旧クエスト・旧護衛・罠の残骸を、読み込んだ時点で捨てる。 */
@@ -119,7 +132,7 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
   const state = raw as unknown as GameState;
   const oldLocation = (state as unknown as { location?: string }).location;
   if (oldLocation === "town" || oldLocation === "interior") state.location = "home";
-  state.version = 9;
+  state.version = 12;
   state.campaignId ??= `legacy-${Date.now()}`;
   state.status ??= "active";
   // 追加した任意項目を補い、既存のブラウザ保存を壊さない。
@@ -143,7 +156,8 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
     for (const template of createInitialNpcs()) {
       const existing = state.npcs.find((npc) => npc.id === template.id);
       if (!existing) state.npcs.push(template);
-      else if (template.adventurer) {
+      else if (template.adventurer && sourceVersion < 11) {
+        // v11 以降は冒険者が育つ。台本の値で上書きすると成長が毎回消えてしまう。
         existing.rank = template.rank;
         existing.baseFee = template.baseFee;
         existing.maxHp = template.maxHp;
@@ -155,7 +169,32 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
   for (const npc of state.npcs) if (npc.adventurer && !npc.rank) {
     npc.rank = (npc.baseFee ?? 0) >= 900 ? "A" : (npc.baseFee ?? 0) >= 550 ? "B" : (npc.baseFee ?? 0) >= 320 ? "C" : (npc.baseFee ?? 0) >= 180 ? "D" : "E";
   }
+  // v9 の "departed" は「町へ帰った」印だった。v10 では帰った人はそのまま町にいる。
+  // "dungeon" は護衛と単独潜行の両方を指していたので、雇用中かどうかで振り分ける。
+  const escortingId = state.hiredGuardId ?? state.escortCommission?.npcId;
+  for (const npc of state.npcs) {
+    const legacy = npc.status as string;
+    if (legacy === "departed") npc.status = "inTown";
+    else if (legacy === "dungeon") {
+      if (npc.id === escortingId) npc.status = "escorting";
+      else {
+        npc.status = "delving";
+        npc.delve ??= { floor: state.run?.floor ?? 1, departedDay: state.day };
+      }
+    }
+  }
+  state.dungeonCorpses ??= [];
+  // v11 で護衛と単独潜行者に防御が付いた。読み落としても NaN にならないよう既定値を置く。
+  for (const floor of [state.run, ...Object.values(state.run?.floorStates ?? {})]) {
+    if (!floor) continue;
+    if (floor.guard) floor.guard.defense ??= 0;
+    for (const adventurer of floor.adventurers ?? []) adventurer.defense ??= 0;
+  }
+  // 読み込んだ瞬間に1日分を回さないよう、今日は済んだことにする。
+  state.lastSimulatedDay ??= state.day;
   initializeGuardProfiles(state);
+  // 旧セーブは15人しかいない。自分の campaignId から目標人数まで育てる。
+  ensureRosterPopulation(state);
   if (state.escortCommission?.npcId && !state.escortCommission.rank) {
     state.escortCommission.rank = state.npcs.find((npc) => npc.id === state.escortCommission?.npcId)?.rank ?? "E";
   }
@@ -213,7 +252,7 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
       state.run.floorStates ??= {};
       state.run.timeUnits ??= 0;
       state.run.settledTimeBands ??= 0;
-      migrateDungeonMap(state.run.map);
+      migrateDungeonMap(state.run.map, state.run.seed, state.run.floor, sourceVersion);
     }
   }
   if (state.run) {
@@ -222,7 +261,9 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
     state.run.timeUnits ??= 0;
     state.run.settledTimeBands ??= 0;
     state.run.floorStates ??= {};
-    migrateDungeonMap(state.run.map);
+    state.run.themeScheduleVersion ??= 1;
+    state.run.themePoolIds ??= sourceVersion < 12 ? [DUNGEON_THEME_FALLBACK_ID] : [DUNGEON_THEME_FALLBACK_ID];
+    migrateDungeonMap(state.run.map, state.run.seed, state.run.floor, sourceVersion);
     if (state.run.guard) {
       state.run.guard.mode ??= "covering";
       state.run.guard.safeTurns ??= 0;
@@ -232,7 +273,7 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
     }
     for (const snapshot of Object.values(state.run.floorStates ?? {})) {
       snapshot.adventurers ??= [];
-      migrateDungeonMap(snapshot.map);
+      migrateDungeonMap(snapshot.map, state.run.seed, snapshot.floor, sourceVersion);
       snapshot.shoveCooldown ??= 0;
       snapshot.turn ??= 0;
       if (snapshot.guard) {
@@ -247,7 +288,7 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
   stripRetiredFields(state);
   // 探索中でなければ、旧セーブに溜まった床の品と通りすがりの記録もここで捨てる。
   if (!state.run) pruneCampaignRecords(state);
-  (state as { version: number }).version = 9;
+  (state as { version: number }).version = 12;
   return state;
 }
 

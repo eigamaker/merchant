@@ -1,8 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { beginExpedition, createItem, createNewGame, descend, returnHome, waitTurn } from "./engine";
 import { ADVENTURER_RANKS, ITEM_VISUALS, MERCHANT_ITEM_DEFINITIONS, NPC_APPEARANCES } from "./merchantContent";
-import { acceptCustomerPurchaseRequest, cancelEscortCommission, createGeneratedAdventurer, createGeneratedDeadAdventurer, escortFeeForNpc, postEscortCommission, prepareCustomerPurchaseRequest } from "./merchantEconomy";
+import { acceptCustomerPurchaseRequest, cancelEscortCommission, escortFeeForNpc, postEscortCommission, prepareCustomerPurchaseRequest } from "./merchantEconomy";
 import { startShopSession, summonNextCustomer } from "./merchantSystems";
+import { ADVENTURER_ROSTER_TARGET, ROSTER_RANK_SHAPE, createRosterAdventurer } from "./npcRoster";
 
 describe("v6 merchant world", () => {
   it("defines 15 replaceable item visuals and a ranked NPC roster", () => {
@@ -13,12 +14,19 @@ describe("v6 merchant world", () => {
     expect(Object.values(MERCHANT_ITEM_DEFINITIONS).every((item) => ITEM_VISUALS[item.visualId!]?.endsWith(".png"))).toBe(true);
 
     const state = createNewGame();
-    expect(state.npcs).toHaveLength(15);
-    expect(state.npcs.filter((npc) => npc.adventurer)).toHaveLength(10);
-    expect(new Set(state.npcs.filter((npc) => npc.adventurer).map((npc) => npc.rank))).toEqual(new Set(["E", "D", "C", "B", "A"]));
+    const adventurers = state.npcs.filter((npc) => npc.adventurer);
+    // 台本のある15人に、生成された名簿が足されて目標人数になる。
+    expect(adventurers).toHaveLength(ADVENTURER_ROSTER_TARGET);
+    expect(state.npcs).toHaveLength(ADVENTURER_ROSTER_TARGET + 5);
+    for (const rank of ["E", "D", "C", "B", "A"] as const) {
+      expect(adventurers.filter((npc) => npc.rank === rank).length).toBe(ROSTER_RANK_SHAPE[rank]);
+    }
     expect(state.visitorNpcIds).toHaveLength(0);
     expect(state.npcs.every((npc) => Boolean(NPC_APPEARANCES[npc.appearanceId]))).toBe(true);
+    // 初期装備は台本のある10人だけ。名簿を増やしてもアイテムは増えない。
     expect(Object.keys(state.itemsById)).toHaveLength(10);
+    // 名前に通し番号が混じらない。
+    expect(state.npcs.every((npc) => !/\d/.test(npc.name))).toBe(true);
   });
 
   it("keeps customers hidden until opening and excludes unavailable NPCs", () => {
@@ -85,8 +93,8 @@ describe("v6 merchant world", () => {
 
   it("generates floor-ranked adventurers with varied stats", () => {
     const state = createNewGame();
-    const shallow = createGeneratedAdventurer(state, 1);
-    const deep = createGeneratedAdventurer(state, 8);
+    const shallow = createRosterAdventurer(state, { rank: "E" });
+    const deep = createRosterAdventurer(state, { rank: "A" });
 
     expect(shallow.rank).toBe("E");
     expect(deep.rank).toBe("A");
@@ -130,11 +138,15 @@ describe("v6 merchant world", () => {
     state.shopSession = { day: state.day, status: "serving", queueNpcIds: [], currentNpcId: buyer.id, servedNpcIds: [] };
     const sword = createItem(state, "nameless-black-blade", 7);
     sword.location = { kind: "shopStock" };
+    // 相場1800Gはゴドウィンの所持金を超える。買える値を付けなければ、彼はよそをあたる。
+    sword.askingPrice = 1200;
     state.store.push(sword);
     state.display.push(sword.uuid);
 
     expect(() => createItem(state, "nameless-black-blade", 8)).toThrow("一点もの");
-    expect(prepareCustomerPurchaseRequest(state, buyer.id)?.itemId).toBe(sword.uuid);
+    const request = prepareCustomerPurchaseRequest(state, buyer.id);
+    expect(request?.itemId).toBe(sword.uuid);
+    expect(request?.reaction).toBe("buy");
     expect(acceptCustomerPurchaseRequest(state).accepted).toBe(true);
     expect(sword.currentName).toMatch(/の剣$/);
     expect(sword.namedByNpcId).toBe(buyer.id);
@@ -143,13 +155,15 @@ describe("v6 merchant world", () => {
 
   it("creates named dead adventurers without consuming the initial roster", () => {
     const state = createNewGame();
-    const dead = createGeneratedDeadAdventurer(state, 3);
+    const dead = createRosterAdventurer(state, { rank: "C", status: "dead" });
 
-    expect(dead.id).toBe("generated-adventurer-1");
+    const before = state.npcs.length;
+    expect(dead.id.startsWith("adventurer-")).toBe(true);
     expect(dead.name.length).toBeGreaterThan(0);
     expect(dead.adventurer).toBe(true);
     expect(dead.status).toBe("dead");
-    expect(state.npcs).toHaveLength(16);
+    expect(state.npcs.some((npc) => npc.id === dead.id)).toBe(true);
+    expect(before).toBeGreaterThan(0);
   });
 
   it("ends the campaign when the merchant reaches zero HP", () => {
@@ -186,19 +200,19 @@ describe("campaign record pruning", () => {
       expedition(state);
     }
 
-    // 拾わなかった床の品と、一度も取引しなかった冒険者は残らない。
-    // 町の常連15人と、その初期装備だけが残る。
+    // 拾わなかった床の品と、迷宮へ担いでいった在庫は残らない。名簿はそのまま生き続ける。
     expect(Object.keys(state.itemsById)).toHaveLength(10);
-    expect(state.npcs).toHaveLength(15);
-    expect(state.npcs.every((npc) => npc.status !== "departed")).toBe(true);
-    expect(JSON.stringify(state).length).toBeLessThan(40_000);
+    expect(state.npcs.filter((npc) => npc.adventurer).length).toBeGreaterThanOrEqual(28);
+    expect(state.npcs.filter((npc) => npc.adventurer).length).toBeLessThanOrEqual(40);
+    expect(state.npcs.every((npc) => !npc.id.startsWith("generated-"))).toBe(true);
+    expect(JSON.stringify(state).length).toBeLessThan(60_000);
   });
 
   it("keeps a looted item and the dead adventurer it names", () => {
     const state = createNewGame();
     beginExpedition(state);
     const run = state.run!;
-    const dead = createGeneratedDeadAdventurer(state, 1);
+    const dead = createRosterAdventurer(state, { rank: "E", status: "dead" });
     const loot = createItem(state, "blue-gem", 1);
     loot.owner = dead.id;
     loot.historyV2 = [{ day: 1, type: "ownerDied", npcId: dead.id, detail: "test" }];

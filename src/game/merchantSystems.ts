@@ -1,6 +1,8 @@
 import { MERCHANT_ITEM_DEFINITIONS } from "./merchantContent";
-import { prepareCustomerPurchaseRequest } from "./merchantEconomy";
+import { isAvailableInTown, prepareCustomerPurchaseRequest } from "./merchantEconomy";
+import { npcBonds } from "./npcBonds";
 import { adjustGuardProfile, ensureGuardProfile, recordGuardEvent } from "./guardProfiles";
+import { simulateTownDay } from "./townDay";
 import type { GameState, ItemInstance, SupplyKind, TimeSlot } from "./types";
 
 export const SUPPLY_RULES: Record<SupplyKind, { label: string; supplier: string; price: number; dailyStock: number }> = {
@@ -11,15 +13,30 @@ export const SUPPLY_RULES: Record<SupplyKind, { label: string; supplier: string;
 
 export const SHOP_CUSTOMER_MIN = 3;
 export const SHOP_CUSTOMER_MAX = 6;
+/**
+ * 顔なじみが店に来やすくなる強さ（0で完全に平等）。
+ *
+ * 名簿が30人に増えると、1日3〜6人の抽選では特定の相手がまず再登場しない。
+ * 「昨日薬を買っていった相手が今日また来る」が届くかどうかは、この一箇所で決まる。
+ */
+export const SHOP_FAMILIARITY_WEIGHT = 0.45;
 export const DUNGEON_ACTIONS_PER_MEAL = 30;
 
 const TIME_ORDER: TimeSlot[] = ["morning", "afternoon", "evening", "night"];
 
-function processDayEvents(state: GameState): void {
+/** その日に届いた報せを返す。呼び出し側が本文へ混ぜられるようにするため。 */
+export function processDayEvents(state: GameState): string | undefined {
   const due = state.events.filter((event) => event.dueDay <= state.day);
   state.events = state.events.filter((event) => event.dueDay > state.day);
-  if (!due.length) return;
+  if (!due.length) return undefined;
+  for (const event of due) {
+    if (event.effect?.kind !== "arrival") continue;
+    // 噂が立った時点で人物は作られている。到着の日に、ようやく町の一員になる。
+    const arriving = state.npcs.find((npc) => npc.id === event.effect?.npcId);
+    if (arriving && arriving.status === "traveling") arriving.status = "inTown";
+  }
   state.message = due.map((event) => event.text).join(" ");
+  return state.message;
 }
 
 function definition(item: ItemInstance) {
@@ -86,9 +103,12 @@ export function resetDailySystems(state: GameState): void {
     returnStones: SUPPLY_RULES.returnStones.dailyStock,
     provisions: SUPPLY_RULES.provisions.dailyStock,
   };
-  for (const npc of state.npcs.filter((entry) => entry.adventurer && (entry.status === "inTown" || entry.status === "contracted"))) {
-    const profile = ensureGuardProfile(state, npc);
-    adjustGuardProfile(profile, 0, -12);
+  // 町で身体を休めている者だけ消耗が抜ける。療養中はより早く。
+  for (const npc of state.npcs) {
+    if (!npc.adventurer) continue;
+    const resting = npc.status === "inTown" || npc.status === "contracted" ? -12 : npc.status === "recovering" ? -18 : 0;
+    if (resting === 0) continue;
+    adjustGuardProfile(ensureGuardProfile(state, npc), 0, resting);
   }
 }
 
@@ -99,6 +119,7 @@ export function advanceTime(state: GameState, bands = 1): void {
       state.day += 1;
       state.timeSlot = "morning";
       resetDailySystems(state);
+      simulateTownDay(state);
       processDayEvents(state);
     } else state.timeSlot = TIME_ORDER[current + 1]!;
   }
@@ -110,8 +131,12 @@ export function restUntilMorning(state: GameState): boolean {
   state.timeSlot = "morning";
   state.hp = state.maxHp;
   resetDailySystems(state);
-  processDayEvents(state);
-  state.message = `${state.day}日目の朝。十分に休み、体力が回復した。`;
+  simulateTownDay(state);
+  // 報せを朝の定型文で塗り潰さない。訃報も到着も、寝て起きた朝に届く。
+  const news = processDayEvents(state);
+  state.message = news
+    ? `${state.day}日目の朝。${news}`
+    : `${state.day}日目の朝。十分に休み、体力が回復した。`;
   return true;
 }
 
@@ -156,10 +181,14 @@ export function startShopSession(state: GameState): boolean {
       : "販売品を店頭へ出してから開店しよう。";
     return false;
   }
-  const candidates = state.npcs.filter((npc) => npc.status === "inTown" && npc.id !== state.escortCommission?.npcId);
+  const candidates = state.npcs.filter((npc) => isAvailableInTown(npc) && npc.id !== state.escortCommission?.npcId);
   const ordered = candidates
-    .map((npc) => ({ npc, order: hash(`${state.campaignId}:${state.day}:shop:${npc.id}`) }))
-    .sort((a, b) => a.order - b.order);
+    .map((npc) => {
+      const familiarity = Math.min(1, npc.relation / 20 + npcBonds(npc).length / 6);
+      const draw = hash(`${state.campaignId}:${state.day}:shop:${npc.id}`) / 0x100000000;
+      return { npc, order: draw - familiarity * SHOP_FAMILIARITY_WEIGHT };
+    })
+    .sort((a, b) => a.order - b.order || a.npc.id.localeCompare(b.npc.id));
   const countRange = SHOP_CUSTOMER_MAX - SHOP_CUSTOMER_MIN + 1;
   const count = Math.min(ordered.length, SHOP_CUSTOMER_MIN + hash(`${state.campaignId}:${state.day}:shop-count`) % countRange);
   state.shopSession = {

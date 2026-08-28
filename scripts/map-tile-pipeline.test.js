@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { PNG } from "pngjs";
 import { afterEach, describe, expect, it } from "vitest";
-import { MAP_EDITOR_PALETTE_API, MAP_TILE_PALETTE_API, buildMapTileAssets, readTileSheets, savePaletteAtomically, validatePalette } from "./map-tile-pipeline.mjs";
+import { DUNGEON_THEME_FILE, MAP_EDITOR_PALETTE_API, MAP_EDITOR_THEME_API, MAP_TILE_PALETTE_API, buildMapTileAssets, readDungeonThemes, readTileSheets, savePaletteAtomically, validateDungeonThemes, validatePalette } from "./map-tile-pipeline.mjs";
 
 const temporaryDirectories = [];
 afterEach(() => { for (const directory of temporaryDirectories.splice(0)) fs.rmSync(directory, { recursive: true, force: true }); });
@@ -33,7 +33,17 @@ function writeSheet(directory, base, overrides = {}, width = 16, height = 16) {
 describe("map tile source pipeline", () => {
   it("exposes the canonical editor palette endpoint and legacy alias", () => {
     expect(MAP_EDITOR_PALETTE_API).toBe("/__map-editor/palettes");
+    expect(MAP_EDITOR_THEME_API).toBe("/__map-editor/dungeon-themes");
     expect(MAP_TILE_PALETTE_API).toBe("/__map-tiles/palettes.json");
+  });
+
+  it("validates all built-in dungeon themes and fails loudly on removed references", () => {
+    const assets = readTileSheets(path.resolve("assets-src/map-tiles/sheets"));
+    const source = readDungeonThemes(DUNGEON_THEME_FILE, assets);
+    expect(source.themes.map((theme) => theme.id)).toEqual(["cave", "ruins", "lava"]);
+    const invalid = structuredClone(source);
+    invalid.themes[0].floorVariants[0].assetId = "removed-theme-sheet";
+    expect(() => validateDungeonThemes(invalid, assets)).toThrow(/references unknown asset removed-theme-sheet/);
   });
 
   it("reads paired sheets and derives frame geometry", () => {
