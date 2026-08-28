@@ -145,15 +145,35 @@ hr { border: 0; border-top: 1px solid #35445a; margin: 14px 0; }
 .theme-editor-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; padding: 10px 12px; border: 1px solid #35445a; border-radius: 7px; background: rgba(18, 27, 40, .85); }
 .theme-editor-toolbar label, .theme-preview-controls label { color: #c1ccdb; font-size: 12px; }
 .theme-editor-toolbar [data-theme-status] { color: #75d9cf; font-size: 12px; }
+.theme-asset-palette-panel { position: sticky; top: 6px; z-index: 8; margin-bottom: 14px; padding: 11px 13px; box-shadow: 0 8px 22px #05080dbb; }
+.theme-asset-palette-panel .panel-heading { align-items: flex-start; margin-bottom: 7px; }
+.theme-asset-palette-panel .panel-heading p { margin: 3px 0 0; }
+.theme-palette-heading { display: flex; align-items: center; gap: 8px; }
+.theme-palette-heading strong { color: #86eadc; font-size: 12px; }
+.theme-palette-heading button { padding: 4px 7px; font-size: 10px; }
+.theme-palette-tabs { display: flex; gap: 5px; margin-bottom: 6px; overflow-x: auto; }
+.theme-palette-tabs button { padding: 4px 8px; font-size: 10px; }
+.theme-palette-tabs button.active { border-color: #72ded0; background: #1f5856; }
+.theme-palette-scroll { max-height: 164px; overflow: auto; border: 1px solid #3b4a60; background: #0e1520; }
+.theme-palette-grid { display: grid; width: max-content; min-width: 100%; min-height: 48px; background-color: #101725; background-image: linear-gradient(#ffffff12 1px, transparent 1px), linear-gradient(90deg, #ffffff12 1px, transparent 1px); background-size: 48px 48px; }
+.theme-palette-cell { width: 48px; height: 48px; padding: 1px; border: 1px solid transparent; border-radius: 0; background: transparent; }
+.theme-palette-cell:hover, .theme-palette-cell:focus-visible { position: relative; z-index: 1; border-color: #72ded0; background: #254b50; outline: none; }
+.theme-palette-cell canvas { display: block; width: 44px; height: 44px; image-rendering: pixelated; pointer-events: none; }
+.theme-palette-status { min-height: 1.3em; margin: 5px 0 0; color: #75d9cf; font-size: 10px; }
 .theme-editor-grid { display: grid; grid-template-columns: minmax(450px, .9fr) minmax(560px, 1.1fr); gap: 14px; align-items: start; }
 .theme-contract-panel, .theme-preview-panel { padding: 13px; }
 .theme-contract-panel h3, .theme-preview-panel h3 { margin: 13px 0 7px; color: #dfe9f6; font-size: 13px; }
 .theme-contract-panel code { color: #75d9cf; }
 .theme-ref-list, .theme-decoration-list { display: grid; gap: 6px; }
-.theme-wall-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
-.theme-ref { display: grid; grid-template-columns: minmax(54px, auto) 32px minmax(120px, 1fr) 62px 62px; align-items: center; gap: 5px; min-width: 0; color: #afbdd0; font-size: 10px; }
+.theme-wall-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 5px; }
+.theme-ref { display: grid; grid-template-columns: minmax(92px, auto) 32px minmax(120px, 1fr) 62px 62px 50px; align-items: center; gap: 5px; min-width: 0; padding: 2px; border: 1px solid transparent; border-radius: 5px; color: #afbdd0; font-size: 10px; }
+.theme-ref.active { border-color: #72ded0; background: #17373d; }
+.theme-ref.drop-target { border-color: #ffe066; background: #4b4322; }
 .theme-ref canvas { width: 32px; height: 32px; border: 1px solid #405169; image-rendering: pixelated; background: #101725; }
 .theme-ref select, .theme-ref input { min-width: 0; width: 100%; }
+.theme-ref-target { padding: 4px 5px; font-size: 9px; }
+.theme-ref.active .theme-ref-target { border-color: #72ded0; background: #1f5856; }
+.theme-ref-weight-spacer { display: block; }
 .theme-preview-controls { display: flex; align-items: end; flex-wrap: wrap; gap: 7px; margin-bottom: 8px; }
 .theme-preview-controls input[type="number"] { width: 7em; }
 .theme-preview-wrap { overflow: auto; border: 1px solid #3b4a60; background: #080b10; }

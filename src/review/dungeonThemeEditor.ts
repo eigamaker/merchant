@@ -1,6 +1,8 @@
+import { DEFAULT_PALETTE_LAYOUT } from "../game/mapAssetCatalog.generated";
 import { DUNGEON_THEME_CATALOG } from "../game/dungeonThemeCatalog.generated";
 import { generateDungeonFloor, type GeneratedDungeonFloor } from "../game/dungeonGenerator";
 import { createDungeonRenderPlan, type AssetFrameRef, type DungeonThemeDefinition } from "../game/dungeonThemes";
+import { clonePaletteLayout, validatePaletteLayout, type PaletteLayout, type PalettePage } from "./paletteModel";
 
 interface EditorAsset {
   id: string;
@@ -32,6 +34,12 @@ interface ThemeDocument { version: 1; themes: EditableTheme[] }
 
 const cloneCatalog = (): ThemeDocument => ({ version: 1, themes: structuredClone(DUNGEON_THEME_CATALOG) as unknown as EditableTheme[] });
 const escapeHtml = (value: unknown): string => String(value).replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]!);
+const WALL_MASK_LABELS = [
+  "孤立", "北へ接続", "東へ接続", "北東角",
+  "南へ接続", "縦", "東南角", "西が開いたT字",
+  "西へ接続", "北西角", "横", "南が開いたT字",
+  "南西角", "東が開いたT字", "北が開いたT字", "十字",
+] as const;
 
 export class DungeonThemeEditor {
   private document = cloneCatalog();
@@ -42,6 +50,10 @@ export class DungeonThemeEditor {
   private annotations = true;
   private dirty = false;
   private generated?: GeneratedDungeonFloor;
+  private paletteLayout = clonePaletteLayout(DEFAULT_PALETTE_LAYOUT as unknown as PaletteLayout);
+  private palettePageId = "";
+  private paletteStatus = "標準パレットを表示中";
+  private activeRefPath = "stairsUp";
   private readonly assetsById: Map<string, EditorAsset>;
   private readonly images = new Map<string, HTMLImageElement>();
 
@@ -53,9 +65,11 @@ export class DungeonThemeEditor {
       image.src = asset.path;
       this.images.set(asset.id, image);
     }
+    this.selectPalettePage();
     this.regenerate();
     this.render();
     void this.load();
+    void this.loadPalette();
   }
 
   private get theme(): EditableTheme { return this.document.themes.find((theme) => theme.id === this.selectedId) ?? this.document.themes[0]!; }
@@ -66,7 +80,44 @@ export class DungeonThemeEditor {
   }
 
   private refEditor(label: string, ref: AssetFrameRef, path: string, weight?: number): string {
-    return `<label class="theme-ref"><span>${escapeHtml(label)}</span><canvas width="32" height="32" data-theme-frame-preview="${escapeHtml(path)}"></canvas><select data-theme-ref-asset="${escapeHtml(path)}">${this.assetOptions(ref.assetId)}</select><input data-theme-ref-frame="${escapeHtml(path)}" type="number" min="0" value="${ref.frame}" title="frame">${weight === undefined ? "" : `<input data-theme-ref-weight="${escapeHtml(path)}" type="number" min="0.01" step="0.01" value="${weight}" title="weight">`}</label>`;
+    const active = path === this.activeRefPath ? " active" : "";
+    return `<div class="theme-ref${active}" data-theme-ref-row="${escapeHtml(path)}"><span>${escapeHtml(label)}</span><canvas width="32" height="32" data-theme-frame-preview="${escapeHtml(path)}"></canvas><select data-theme-ref-asset="${escapeHtml(path)}" aria-label="${escapeHtml(label)}の素材">${this.assetOptions(ref.assetId)}</select><input data-theme-ref-frame="${escapeHtml(path)}" type="number" min="0" value="${ref.frame}" title="frame" aria-label="${escapeHtml(label)}のframe">${weight === undefined ? "<span class=\"theme-ref-weight-spacer\"></span>" : `<input data-theme-ref-weight="${escapeHtml(path)}" type="number" min="0.01" step="0.01" value="${weight}" title="weight" aria-label="${escapeHtml(label)}のweight">`}<button type="button" class="theme-ref-target" data-theme-ref-target="${escapeHtml(path)}">選択先</button></div>`;
+  }
+
+  private dungeonPalettePages(): PalettePage[] {
+    return this.paletteLayout.pages.filter((page) => page.mapKind === "dungeon" && page.tileSize === 16);
+  }
+
+  private selectPalettePage(): void {
+    const pages = this.dungeonPalettePages();
+    if (!pages.some((page) => page.id === this.palettePageId)) this.palettePageId = pages[0]?.id ?? "";
+  }
+
+  private get palettePage(): PalettePage | undefined {
+    return this.dungeonPalettePages().find((page) => page.id === this.palettePageId);
+  }
+
+  private refLabel(path: string): string {
+    if (path === "stairsUp") return "上り階段";
+    if (path === "stairsDown") return "下り階段";
+    const [kind, first, second] = path.split(":");
+    if (kind === "floor") return `床 ${Number(first) + 1}`;
+    if (kind === "wall") return `壁 ${WALL_MASK_LABELS[Number(first)] ?? first}`;
+    if (kind === "decor") return `装飾 ${Number(first) + 1}・候補 ${Number(second) + 1}`;
+    return path;
+  }
+
+  private renderPalettePicker(): string {
+    const pages = this.dungeonPalettePages();
+    const page = this.palettePage;
+    const maxColumn = page ? Math.max(1, ...page.cells.map((cell) => cell.x + 1)) : 1;
+    const maxRow = page ? Math.max(1, ...page.cells.map((cell) => cell.y + 1)) : 1;
+    return `<section class="map-editor-side theme-asset-palette-panel">
+      <div class="panel-heading"><div><h2>素材パレットから割り当て</h2><p class="small">設定先を選び、画像をクリックするか設定欄へドラッグします。タイル名は不要です。</p></div><div class="theme-palette-heading"><strong data-theme-palette-target>選択先: ${escapeHtml(this.refLabel(this.activeRefPath))}</strong><button type="button" data-theme-palette-reload>再読込</button></div></div>
+      <div class="theme-palette-tabs" role="tablist" aria-label="ダンジョン素材パレット">${pages.map((entry) => `<button type="button" role="tab" data-theme-palette-page="${escapeHtml(entry.id)}" class="${entry.id === page?.id ? "active" : ""}" aria-selected="${entry.id === page?.id}">${escapeHtml(entry.label)}</button>`).join("")}</div>
+      <div class="theme-palette-scroll">${page ? `<div class="theme-palette-grid" style="grid-template-columns:repeat(${maxColumn},48px);grid-template-rows:repeat(${maxRow},48px)">${page.cells.map((cell) => `<button type="button" class="theme-palette-cell" draggable="true" data-theme-palette-asset="${escapeHtml(cell.assetId)}" data-theme-palette-frame="${cell.frame}" style="grid-column:${cell.x + 1};grid-row:${cell.y + 1}" title="${escapeHtml(this.assetsById.get(cell.assetId)?.label ?? cell.assetId)} / frame ${cell.frame}"><canvas width="44" height="44" data-theme-palette-preview data-asset-id="${escapeHtml(cell.assetId)}" data-frame="${cell.frame}"></canvas></button>`).join("")}</div>` : `<p class="small">16pxのダンジョン用パレットがありません。素材パレット編集で作成してください。</p>`}</div>
+      <p class="theme-palette-status" data-theme-palette-status>${escapeHtml(this.paletteStatus)}</p>
+    </section>`;
   }
 
   private render(): void {
@@ -77,12 +128,13 @@ export class DungeonThemeEditor {
         <label class="check"><input data-theme-enabled type="checkbox"${theme.enabled ? " checked" : ""}${theme.id === "cave" ? " disabled" : ""}>有効</label>
         <button class="primary" data-theme-save>テーマ定義を保存</button><span data-theme-status></span>
       </div>
+      ${this.renderPalettePicker()}
       <div class="theme-editor-grid">
         <aside class="map-editor-side theme-contract-panel">
           <div class="panel-heading"><div><h2>${escapeHtml(theme.label)}</h2><p class="small">IDは公開後固定です。画像パック交換時は参照先とframeだけを変更します。</p></div><code>${escapeHtml(theme.id)}</code></div>
           <h3>階段</h3>${this.refEditor("上り", theme.stairsUp, "stairsUp")}${this.refEditor("下り", theme.stairsDown, "stairsDown")}
           <h3>床候補</h3><div class="theme-ref-list">${theme.floorVariants.map((ref, index) => this.refEditor(`床 ${index + 1}`, ref, `floor:${index}`, ref.weight)).join("")}</div>
-          <h3>壁マスク <small>N=1 / E=2 / S=4 / W=8</small></h3><div class="theme-wall-grid">${theme.wallFrameByMask.map((ref, index) => this.refEditor(index.toString(2).padStart(4, "0"), ref, `wall:${index}`)).join("")}</div>
+          <h3>壁マスク <small>N=1 / E=2 / S=4 / W=8</small></h3><div class="theme-wall-grid">${theme.wallFrameByMask.map((ref, index) => this.refEditor(`${WALL_MASK_LABELS[index]} (${index.toString(2).padStart(4, "0")})`, ref, `wall:${index}`)).join("")}</div>
         </aside>
         <section class="map-editor-side theme-preview-panel">
           <div class="panel-heading"><div><h2>生成プレビュー</h2><p class="small">テーマを変えても論理地形と配置領域は変わりません。</p></div><span data-theme-preview-status></span></div>
@@ -105,9 +157,34 @@ export class DungeonThemeEditor {
     this.host.querySelector<HTMLButtonElement>("[data-theme-regenerate]")!.onclick = () => { this.seed = Number(this.host.querySelector<HTMLInputElement>("[data-theme-seed]")!.value) || 1; this.floor = Math.max(1, Number(this.host.querySelector<HTMLInputElement>("[data-theme-floor]")!.value) || 1); this.regenerate(); this.renderDungeonPreview(); };
     this.host.querySelector<HTMLInputElement>("[data-theme-collision]")!.onchange = (event) => { this.collision = (event.currentTarget as HTMLInputElement).checked; this.renderDungeonPreview(); };
     this.host.querySelector<HTMLInputElement>("[data-theme-annotations]")!.onchange = (event) => { this.annotations = (event.currentTarget as HTMLInputElement).checked; this.renderDungeonPreview(); };
-    this.host.querySelectorAll<HTMLSelectElement>("[data-theme-ref-asset]").forEach((input) => input.onchange = () => { this.refAt(input.dataset.themeRefAsset!).assetId = input.value; this.markDirty(); this.renderFramePreviews(); this.renderDungeonPreview(); });
-    this.host.querySelectorAll<HTMLInputElement>("[data-theme-ref-frame]").forEach((input) => input.onchange = () => { this.refAt(input.dataset.themeRefFrame!).frame = Math.max(0, Number(input.value) || 0); this.markDirty(); this.renderFramePreviews(); this.renderDungeonPreview(); });
-    this.host.querySelectorAll<HTMLInputElement>("[data-theme-ref-weight]").forEach((input) => input.onchange = () => { const ref = this.refAt(input.dataset.themeRefWeight!) as { weight?: number }; ref.weight = Math.max(0.01, Number(input.value) || 1); this.markDirty(); this.renderDungeonPreview(); });
+    this.host.querySelectorAll<HTMLSelectElement>("[data-theme-ref-asset]").forEach((input) => { input.onfocus = () => this.selectRef(input.dataset.themeRefAsset!); input.onchange = () => { this.refAt(input.dataset.themeRefAsset!).assetId = input.value; this.markDirty(); this.renderFramePreviews(); this.renderDungeonPreview(); }; });
+    this.host.querySelectorAll<HTMLInputElement>("[data-theme-ref-frame]").forEach((input) => { input.onfocus = () => this.selectRef(input.dataset.themeRefFrame!); input.onchange = () => { this.refAt(input.dataset.themeRefFrame!).frame = Math.max(0, Number(input.value) || 0); this.markDirty(); this.renderFramePreviews(); this.renderDungeonPreview(); }; });
+    this.host.querySelectorAll<HTMLInputElement>("[data-theme-ref-weight]").forEach((input) => { input.onfocus = () => this.selectRef(input.dataset.themeRefWeight!); input.onchange = () => { const ref = this.refAt(input.dataset.themeRefWeight!) as { weight?: number }; ref.weight = Math.max(0.01, Number(input.value) || 1); this.markDirty(); this.renderDungeonPreview(); }; });
+    this.host.querySelectorAll<HTMLButtonElement>("[data-theme-ref-target]").forEach((button) => button.onclick = () => this.selectRef(button.dataset.themeRefTarget!));
+    this.host.querySelectorAll<HTMLElement>("[data-theme-ref-row]").forEach((row) => {
+      row.ondragover = (event) => { event.preventDefault(); row.classList.add("drop-target"); };
+      row.ondragleave = () => row.classList.remove("drop-target");
+      row.ondrop = (event) => {
+        event.preventDefault();
+        row.classList.remove("drop-target");
+        const raw = event.dataTransfer?.getData("application/x-dungeon-theme-frame") || event.dataTransfer?.getData("text/plain");
+        if (!raw) return;
+        try { const value = JSON.parse(raw) as AssetFrameRef; this.assignPaletteFrame(row.dataset.themeRefRow!, value.assetId, value.frame); } catch { /* Ignore unrelated drags. */ }
+      };
+    });
+    this.host.querySelectorAll<HTMLButtonElement>("[data-theme-palette-page]").forEach((button) => button.onclick = () => { this.palettePageId = button.dataset.themePalettePage!; this.render(); });
+    this.host.querySelector<HTMLButtonElement>("[data-theme-palette-reload]")!.onclick = () => { void this.loadPalette(); };
+    this.host.querySelectorAll<HTMLButtonElement>("[data-theme-palette-asset]").forEach((button) => {
+      const assetId = button.dataset.themePaletteAsset!;
+      const frame = Number(button.dataset.themePaletteFrame) || 0;
+      button.onclick = () => this.assignPaletteFrame(this.activeRefPath, assetId, frame);
+      button.ondragstart = (event) => {
+        const payload = JSON.stringify({ assetId, frame });
+        event.dataTransfer?.setData("application/x-dungeon-theme-frame", payload);
+        event.dataTransfer?.setData("text/plain", payload);
+        if (event.dataTransfer) event.dataTransfer.effectAllowed = "copy";
+      };
+    });
     this.host.querySelectorAll<HTMLSelectElement>("[data-theme-decoration-placement]").forEach((input) => input.onchange = () => { this.theme.decorations[Number(input.dataset.themeDecorationPlacement)]!.placement = input.value as EditableTheme["decorations"][number]["placement"]; this.markDirty(); this.renderDungeonPreview(); });
     this.host.querySelectorAll<HTMLInputElement>("[data-theme-decoration-weight]").forEach((input) => input.onchange = () => { this.theme.decorations[Number(input.dataset.themeDecorationWeight)]!.weight = Math.max(0.001, Number(input.value) || 0.001); this.markDirty(); this.renderDungeonPreview(); });
     this.host.querySelectorAll<HTMLInputElement>("[data-theme-decoration-max]").forEach((input) => input.onchange = () => { this.theme.decorations[Number(input.dataset.themeDecorationMax)]!.maxPerFloor = Math.max(1, Number(input.value) || 1); this.markDirty(); this.renderDungeonPreview(); });
@@ -120,6 +197,33 @@ export class DungeonThemeEditor {
     if (kind === "floor") return this.theme.floorVariants[Number(first)]!;
     if (kind === "wall") return this.theme.wallFrameByMask[Number(first)]!;
     return this.theme.decorations[Number(first)]!.variants[Number(second)]!;
+  }
+
+  private selectRef(path: string): void {
+    this.activeRefPath = path;
+    this.host.querySelectorAll<HTMLElement>("[data-theme-ref-row]").forEach((row) => row.classList.toggle("active", row.dataset.themeRefRow === path));
+    const target = this.host.querySelector<HTMLElement>("[data-theme-palette-target]");
+    if (target) target.textContent = `選択先: ${this.refLabel(path)}`;
+  }
+
+  private assignPaletteFrame(path: string, assetId: string, frame: number): void {
+    const asset = this.assetsById.get(assetId);
+    if (!asset || frame < 0 || frame >= asset.frameCount) {
+      this.paletteStatus = "このセルは16pxダンジョン素材として利用できません";
+      this.renderPaletteStatus();
+      return;
+    }
+    const ref = this.refAt(path);
+    ref.assetId = assetId;
+    ref.frame = frame;
+    this.host.querySelectorAll<HTMLSelectElement>("[data-theme-ref-asset]").forEach((input) => { if (input.dataset.themeRefAsset === path) input.value = assetId; });
+    this.host.querySelectorAll<HTMLInputElement>("[data-theme-ref-frame]").forEach((input) => { if (input.dataset.themeRefFrame === path) input.value = String(frame); });
+    this.paletteStatus = `${this.refLabel(path)}へ画像を設定しました`;
+    this.selectRef(path);
+    this.markDirty();
+    this.renderPaletteStatus();
+    this.renderFramePreviews();
+    this.renderDungeonPreview();
   }
 
   private drawFrame(canvas: HTMLCanvasElement, ref: AssetFrameRef): void {
@@ -138,6 +242,7 @@ export class DungeonThemeEditor {
 
   private renderFramePreviews(): void {
     this.host.querySelectorAll<HTMLCanvasElement>("[data-theme-frame-preview]").forEach((canvas) => this.drawFrame(canvas, this.refAt(canvas.dataset.themeFramePreview!)));
+    this.host.querySelectorAll<HTMLCanvasElement>("[data-theme-palette-preview]").forEach((canvas) => this.drawFrame(canvas, { assetId: canvas.dataset.assetId!, frame: Number(canvas.dataset.frame) || 0 }));
   }
 
   private regenerate(): void { this.generated = generateDungeonFloor(this.seed, this.floor, this.theme.id); }
@@ -185,6 +290,33 @@ export class DungeonThemeEditor {
   private renderStatus(message?: string): void {
     const status = this.host.querySelector<HTMLElement>("[data-theme-status]");
     if (status) status.textContent = message ?? (this.dirty ? "未保存" : "保存済み");
+  }
+
+  private renderPaletteStatus(): void {
+    const status = this.host.querySelector<HTMLElement>("[data-theme-palette-status]");
+    if (status) status.textContent = this.paletteStatus;
+  }
+
+  private async loadPalette(): Promise<void> {
+    if (!import.meta.env.DEV) return;
+    try {
+      this.paletteStatus = "パレットを読み込み中…";
+      this.renderPaletteStatus();
+      const response = await fetch("/__map-editor/palettes", { headers: { Accept: "application/json" } });
+      if (!response.ok) throw new Error("palette endpoint unavailable");
+      const incoming = await response.json() as PaletteLayout;
+      const errors = validatePaletteLayout(incoming);
+      if (errors.length) throw new Error(errors.join(", "));
+      this.paletteLayout = clonePaletteLayout(incoming);
+      this.selectPalettePage();
+      this.paletteStatus = "保存済みの素材パレットを表示中";
+      this.render();
+    } catch {
+      this.paletteLayout = clonePaletteLayout(DEFAULT_PALETTE_LAYOUT as unknown as PaletteLayout);
+      this.selectPalettePage();
+      this.paletteStatus = "標準パレットを表示中";
+      this.render();
+    }
   }
 
   private async load(): Promise<void> {
