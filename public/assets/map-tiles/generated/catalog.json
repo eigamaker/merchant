@@ -710,6 +710,227 @@
       "path": "/assets/map-tiles/generated/png-windows-doors.png"
     },
     {
+      "id": "png-fire-trap",
+      "label": "fire_trap",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 63,
+      "rows": 8,
+      "frameCount": 504,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-fire-trap.png"
+    },
+    {
+      "id": "png-full",
+      "label": "full",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 69,
+      "rows": 26,
+      "frameCount": 1794,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-full.png"
+    },
+    {
+      "id": "png-other-objects",
+      "label": "Other_objects",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 22,
+      "rows": 7,
+      "frameCount": 154,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-other-objects.png"
+    },
+    {
+      "id": "png-pedestals",
+      "label": "pedestals",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 35,
+      "rows": 8,
+      "frameCount": 280,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-pedestals.png"
+    },
+    {
+      "id": "png-supplies-objects",
+      "label": "supplies_objects",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 13,
+      "rows": 37,
+      "frameCount": 481,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-supplies-objects.png"
+    },
+    {
+      "id": "png-trap-plate",
+      "label": "trap_plate",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 7,
+      "rows": 15,
+      "frameCount": 105,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-trap-plate.png"
+    },
+    {
+      "id": "png-trap-saw",
+      "label": "trap_saw",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 24,
+      "rows": 16,
+      "frameCount": 384,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/png-trap-saw.png"
+    },
+    {
+      "id": "tiled-files-fire-trap",
+      "label": "fire_trap",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 63,
+      "rows": 8,
+      "frameCount": 504,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/tiled-files-fire-trap.png"
+    },
+    {
+      "id": "tiled-files-other-objects",
+      "label": "Other_objects",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 23,
+      "rows": 8,
+      "frameCount": 184,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/tiled-files-other-objects.png"
+    },
+    {
+      "id": "tiled-files-pedestals",
+      "label": "pedestals",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 37,
+      "rows": 10,
+      "frameCount": 370,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/tiled-files-pedestals.png"
+    },
+    {
+      "id": "tiled-files-supplies-objects",
+      "label": "supplies_objects",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 15,
+      "rows": 37,
+      "frameCount": 555,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/tiled-files-supplies-objects.png"
+    },
+    {
+      "id": "tiled-files-trap-plate",
+      "label": "trap_plate",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 8,
+      "rows": 17,
+      "frameCount": 136,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/tiled-files-trap-plate.png"
+    },
+    {
+      "id": "tiled-files-trap-saw",
+      "label": "trap_saw",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 26,
+      "rows": 17,
+      "frameCount": 442,
+      "mapKinds": [
+        "home",
+        "dungeon"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/tiled-files-trap-saw.png"
+    },
+    {
       "id": "mapchip2-mapchip-base",
       "label": "base",
       "tileSize": 16,

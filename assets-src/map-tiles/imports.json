@@ -5627,6 +5627,588 @@
         "WOLF RPG Editorの.tile設定を4件検出しました。自動接続規則は静的タイルへ変換しません。",
         "License/READMEが見つかりません。利用条件を手動確認してください。"
       ]
+    },
+    {
+      "source": {
+        "fileName": "craftpix-net-218281-free-pixel-art-dungeon-objects-asset-pack.zip",
+        "bytes": 1339066,
+        "sha256": "85e8ea6b18f9d4c120c8bb0b9625965c77abc73d2d827028ac66a79e063e99c3"
+      },
+      "mapTiles": [
+        {
+          "id": "png-other-objects",
+          "label": "Other_objects",
+          "sourcePath": "PNG/Other_objects.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 22,
+          "rows": 7,
+          "frameCount": 154,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 352,
+            "height": 112,
+            "bitDepth": 8,
+            "colorType": 6,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 22,
+                "rows": 7,
+                "frameCount": 154,
+                "boundary": {
+                  "boundaryMean": 43.10349462365591,
+                  "internalMean": 40.55174512987013,
+                  "ratio": 1.0629257627659083
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": false
+          },
+          "sourceArchive": "craftpix-net-218281-free-pixel-art-dungeon-objects-asset-pack.zip"
+        },
+        {
+          "id": "png-fire-trap",
+          "label": "fire_trap",
+          "sourcePath": "PNG/fire_trap.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 63,
+          "rows": 8,
+          "frameCount": 504,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 1008,
+            "height": 128,
+            "bitDepth": 8,
+            "colorType": 6,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 63,
+                "rows": 8,
+                "frameCount": 504,
+                "boundary": {
+                  "boundaryMean": 22.954709178228388,
+                  "internalMean": 24.051111937830687,
+                  "ratio": 0.954413635326451
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": false
+          },
+          "sourceArchive": "craftpix-net-218281-free-pixel-art-dungeon-objects-asset-pack.zip"
+        },
+        {
+          "id": "png-trap-saw",
+          "label": "trap_saw",
+          "sourcePath": "PNG/trap_saw.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 24,
+          "rows": 16,
+          "frameCount": 384,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 384,
+            "height": 256,
+            "bitDepth": 8,
+            "colorType": 6,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 24,
+                "rows": 16,
+                "frameCount": 384,
+                "boundary": {
+                  "boundaryMean": 18.357915521978022,
+                  "internalMean": 35.029041883680556,
+                  "ratio": 0.5240770096692444
+                }
+              },
+              {
+                "tileSize": 32,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 12,
+                "rows": 8,
+                "frameCount": 96,
+                "boundary": {
+                  "boundaryMean": 8.312681686046512,
+                  "internalMean": 34.781549269153224,
+                  "ratio": 0.2389968779630755
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": false
+          },
+          "sourceArchive": "craftpix-net-218281-free-pixel-art-dungeon-objects-asset-pack.zip"
+        },
+        {
+          "id": "png-supplies-objects",
+          "label": "supplies_objects",
+          "sourcePath": "PNG/supplies_objects.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 13,
+          "rows": 37,
+          "frameCount": 481,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 208,
+            "height": 592,
+            "bitDepth": 8,
+            "colorType": 6,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 13,
+                "rows": 37,
+                "frameCount": 481,
+                "boundary": {
+                  "boundaryMean": 29.907277960526315,
+                  "internalMean": 40.838457207207206,
+                  "ratio": 0.7323312388805974
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": false
+          },
+          "sourceArchive": "craftpix-net-218281-free-pixel-art-dungeon-objects-asset-pack.zip"
+        },
+        {
+          "id": "png-pedestals",
+          "label": "pedestals",
+          "sourcePath": "PNG/pedestals.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 35,
+          "rows": 8,
+          "frameCount": 280,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 560,
+            "height": 128,
+            "bitDepth": 8,
+            "colorType": 6,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 35,
+                "rows": 8,
+                "frameCount": 280,
+                "boundary": {
+                  "boundaryMean": 44.88636363636363,
+                  "internalMean": 30.125677083333333,
+                  "ratio": 1.4899702838943485
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": false
+          },
+          "sourceArchive": "craftpix-net-218281-free-pixel-art-dungeon-objects-asset-pack.zip"
+        },
+        {
+          "id": "png-trap-plate",
+          "label": "trap_plate",
+          "sourcePath": "PNG/trap_plate.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 7,
+          "rows": 15,
+          "frameCount": 105,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 112,
+            "height": 240,
+            "bitDepth": 8,
+            "colorType": 6,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 7,
+                "rows": 15,
+                "frameCount": 105,
+                "boundary": {
+                  "boundaryMean": 196.08710106382978,
+                  "internalMean": 23.616309523809523,
+                  "ratio": 8.303037393126068
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": false
+          },
+          "sourceArchive": "craftpix-net-218281-free-pixel-art-dungeon-objects-asset-pack.zip"
+        },
+        {
+          "id": "png-full",
+          "label": "full",
+          "sourcePath": "PNG/full.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 69,
+          "rows": 26,
+          "frameCount": 1794,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 1104,
+            "height": 416,
+            "bitDepth": 8,
+            "colorType": 6,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 69,
+                "rows": 26,
+                "frameCount": 1794,
+                "boundary": {
+                  "boundaryMean": 36.11036358431148,
+                  "internalMean": 35.137666062801934,
+                  "ratio": 1.027682473837933
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": false
+          },
+          "sourceArchive": "craftpix-net-218281-free-pixel-art-dungeon-objects-asset-pack.zip"
+        },
+        {
+          "id": "tiled-files-other-objects",
+          "label": "Other_objects",
+          "sourcePath": "Tiled_files/Other_objects.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 23,
+          "rows": 8,
+          "frameCount": 184,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 368,
+            "height": 128,
+            "bitDepth": 8,
+            "colorType": 6,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 23,
+                "rows": 8,
+                "frameCount": 184,
+                "boundary": {
+                  "boundaryMean": 35.685089020771514,
+                  "internalMean": 33.94004755434783,
+                  "ratio": 1.0514154101767055
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": false
+          },
+          "sourceArchive": "craftpix-net-218281-free-pixel-art-dungeon-objects-asset-pack.zip"
+        },
+        {
+          "id": "tiled-files-fire-trap",
+          "label": "fire_trap",
+          "sourcePath": "Tiled_files/fire_trap.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 63,
+          "rows": 8,
+          "frameCount": 504,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 1008,
+            "height": 128,
+            "bitDepth": 8,
+            "colorType": 6,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 63,
+                "rows": 8,
+                "frameCount": 504,
+                "boundary": {
+                  "boundaryMean": 22.954709178228388,
+                  "internalMean": 24.051111937830687,
+                  "ratio": 0.954413635326451
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": false
+          },
+          "sourceArchive": "craftpix-net-218281-free-pixel-art-dungeon-objects-asset-pack.zip"
+        },
+        {
+          "id": "tiled-files-trap-saw",
+          "label": "trap_saw",
+          "sourcePath": "Tiled_files/trap_saw.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 26,
+          "rows": 17,
+          "frameCount": 442,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 416,
+            "height": 272,
+            "bitDepth": 8,
+            "colorType": 6,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 26,
+                "rows": 17,
+                "frameCount": 442,
+                "boundary": {
+                  "boundaryMean": 16.579741379310345,
+                  "internalMean": 30.43247077677225,
+                  "ratio": 0.5448043144746868
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": false
+          },
+          "sourceArchive": "craftpix-net-218281-free-pixel-art-dungeon-objects-asset-pack.zip"
+        },
+        {
+          "id": "tiled-files-supplies-objects",
+          "label": "supplies_objects",
+          "sourcePath": "Tiled_files/supplies_objects.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 15,
+          "rows": 37,
+          "frameCount": 555,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 240,
+            "height": 592,
+            "bitDepth": 8,
+            "colorType": 6,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 15,
+                "rows": 37,
+                "frameCount": 555,
+                "boundary": {
+                  "boundaryMean": 26.60438327032136,
+                  "internalMean": 35.39332957957958,
+                  "ratio": 0.7516778892051721
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": false
+          },
+          "sourceArchive": "craftpix-net-218281-free-pixel-art-dungeon-objects-asset-pack.zip"
+        },
+        {
+          "id": "tiled-files-pedestals",
+          "label": "pedestals",
+          "sourcePath": "Tiled_files/pedestals.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 37,
+          "rows": 10,
+          "frameCount": 370,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 592,
+            "height": 160,
+            "bitDepth": 8,
+            "colorType": 6,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 37,
+                "rows": 10,
+                "frameCount": 370,
+                "boundary": {
+                  "boundaryMean": 38.07368326118326,
+                  "internalMean": 22.797809684684683,
+                  "ratio": 1.670058825289727
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": false
+          },
+          "sourceArchive": "craftpix-net-218281-free-pixel-art-dungeon-objects-asset-pack.zip"
+        },
+        {
+          "id": "tiled-files-trap-plate",
+          "label": "trap_plate",
+          "sourcePath": "Tiled_files/trap_plate.png",
+          "tileSize": 16,
+          "margin": 0,
+          "spacing": 0,
+          "columns": 8,
+          "rows": 17,
+          "frameCount": 136,
+          "mapKinds": [
+            "home",
+            "dungeon"
+          ],
+          "defaultLayer": "decoration",
+          "defaultWalkable": false,
+          "selected": true,
+          "warnings": [],
+          "suggestions": {
+            "width": 128,
+            "height": 272,
+            "bitDepth": 8,
+            "colorType": 6,
+            "candidates": [
+              {
+                "tileSize": 16,
+                "margin": 0,
+                "spacing": 0,
+                "columns": 8,
+                "rows": 17,
+                "frameCount": 136,
+                "boundary": {
+                  "boundaryMean": 181.86184210526315,
+                  "internalMean": 18.233180147058825,
+                  "ratio": 9.974225046780942
+                }
+              }
+            ],
+            "suggestedTileSize": 16,
+            "normalized": false
+          },
+          "sourceArchive": "craftpix-net-218281-free-pixel-art-dungeon-objects-asset-pack.zip"
+        }
+      ],
+      "warnings": []
     }
   ]
 }
