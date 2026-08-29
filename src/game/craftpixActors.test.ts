@@ -14,6 +14,8 @@ describe("Craftpix actor catalog", () => {
     expect(CRAFTPIX_NPC_ACTORS.swordsman_lvl2.clips.runAttack?.path).toContain("Run_Attack");
     expect(Object.keys(CRAFTPIX_ENEMY_ACTORS)).toHaveLength(12);
     expect(CRAFTPIX_ENEMY_POOLS.deep).toContain("vampire3");
+    expect([CRAFTPIX_ENEMY_ACTORS.vampire1.id, CRAFTPIX_ENEMY_ACTORS.vampire2.id, CRAFTPIX_ENEMY_ACTORS.vampire3.id]).toEqual(["vampire1", "vampire2", "vampire3"]);
+    expect(new Set([CRAFTPIX_ENEMY_ACTORS.vampire1.clips.idle?.path, CRAFTPIX_ENEMY_ACTORS.vampire2.clips.idle?.path, CRAFTPIX_ENEMY_ACTORS.vampire3.clips.idle?.path]).size).toBe(3);
   });
 
   it("maps four directional rows without guessing at runtime", () => {

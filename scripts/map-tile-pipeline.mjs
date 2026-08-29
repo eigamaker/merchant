@@ -16,13 +16,49 @@ export const MAP_TILE_PALETTE_API = "/__map-tiles/palettes.json";
 
 const layers = new Set(["ground", "structure", "decoration"]);
 const kinds = new Set(["home", "dungeon"]);
+/** How the importer produced the sheet. See scripts/asset-import-pipeline.mjs. */
+const sourceFormats = new Set(["grid", "wolf-autotile", "section-catalog"]);
+/** blob47 covers all 256 eight-neighbour combinations with 47 tiles. */
+const autotileSchemes = new Set(["blob47"]);
+const BLOB47_TILE_COUNT = 47;
 const idPattern = /^[a-z][a-z0-9._-]*$/;
 const themePlacements = new Set(["floor", "wall", "corner", "deadEnd"]);
+/** Palette triage vocabulary. Mirrors src/review/paletteModel.ts. */
+const cellRoles = new Set(["floor", "wall", "prop", "stairs", "liquid"]);
+const cellStatuses = new Set(["ready", "unsorted", "rejected"]);
+const spawnRoles = new Set(["common", "elite"]);
 const requiredThemeIds = ["cave", "ruins", "lava"];
+/** Enemies defined in code (src/game/craftpixActors.ts), so not discoverable on disk. */
 const builtInEnemyIds = new Set([
   "slime1", "slime2", "slime3", "plant1", "plant2", "plant3",
   "orc1", "orc2", "orc3", "vampire1", "vampire2", "vampire3",
 ]);
+export const ACTOR_SOURCE_DIR = path.resolve("assets-src/actors/imported");
+
+/**
+ * Every actor a theme may put in an enemy pool: the built-ins plus whatever has
+ * been imported.  Validating against the built-ins alone locked imported enemies
+ * out of procedural generation even though the manual map editor offered them.
+ */
+export function availableEnemyIds(sourceDir = ACTOR_SOURCE_DIR) {
+  const ids = new Set(builtInEnemyIds);
+  if (!fs.existsSync(sourceDir)) return ids;
+  const visit = (directory) => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const absolute = path.join(directory, entry.name);
+      if (entry.isDirectory()) { visit(absolute); continue; }
+      if (entry.name !== "actor.json") continue;
+      try {
+        const definition = JSON.parse(fs.readFileSync(absolute, "utf8"));
+        if (typeof definition?.id === "string" && (definition.roles ?? []).includes("enemy")) ids.add(definition.id);
+      } catch {
+        // A malformed actor is reported by the actor build, not by theme validation.
+      }
+    }
+  };
+  visit(sourceDir);
+  return ids;
+}
 
 function issue(message, file) {
   return file ? `${file}: ${message}` : message;
@@ -70,6 +106,12 @@ function assertConfig(config, file) {
   if (!Array.isArray(c.mapKinds) || c.mapKinds.length === 0 || c.mapKinds.some((kind) => !kinds.has(kind)) || new Set(c.mapKinds).size !== c.mapKinds.length) throw new Error(issue("mapKinds must contain unique home/dungeon values", file));
   if (!layers.has(c.defaultLayer)) throw new Error(issue("defaultLayer is invalid", file));
   if (typeof c.defaultWalkable !== "boolean") throw new Error(issue("defaultWalkable must be boolean", file));
+  if (c.sourceFormat !== undefined && !sourceFormats.has(c.sourceFormat)) throw new Error(issue("sourceFormat is invalid", file));
+  if (c.autotile !== undefined) {
+    if (!c.autotile || typeof c.autotile !== "object" || Array.isArray(c.autotile)) throw new Error(issue("autotile must be an object", file));
+    if (!autotileSchemes.has(c.autotile.scheme)) throw new Error(issue("autotile.scheme is invalid", file));
+    if (!integer(c.autotile.animationFrames) || c.autotile.animationFrames < 1) throw new Error(issue("autotile.animationFrames must be a positive integer", file));
+  }
   return c;
 }
 
@@ -102,7 +144,13 @@ export function readTileSheets(inputDir = MAP_TILE_INPUT_DIR) {
     }
     const columns = innerWidth / step;
     const rows = innerHeight / step;
-    assets.push({ id: config.id, label: config.label, sourceFile: pngFile, tileSize: config.tileSize, margin: config.margin, spacing: config.spacing, columns, rows, frameCount: columns * rows, mapKinds: [...config.mapKinds], defaultLayer: config.defaultLayer, defaultWalkable: config.defaultWalkable });
+    if (config.autotile) {
+      // An expanded blob set is one row of 47 tiles per animation frame, so a
+      // frame index is `animationFrame * 47 + frameByMask[neighbourMask]`.
+      if (columns !== BLOB47_TILE_COUNT) throw new Error(issue(`autotile sheet must be ${BLOB47_TILE_COUNT} tiles wide, found ${columns}`, jsonFile));
+      if (rows !== config.autotile.animationFrames) throw new Error(issue(`autotile sheet has ${rows} rows but declares ${config.autotile.animationFrames} animation frames`, jsonFile));
+    }
+    assets.push({ id: config.id, label: config.label, sourceFile: pngFile, tileSize: config.tileSize, margin: config.margin, spacing: config.spacing, columns, rows, frameCount: columns * rows, mapKinds: [...config.mapKinds], defaultLayer: config.defaultLayer, defaultWalkable: config.defaultWalkable, ...(config.autotile ? { autotile: { scheme: config.autotile.scheme, animationFrames: config.autotile.animationFrames } } : {}) });
   }
   return assets;
 }
@@ -111,9 +159,13 @@ function validateCell(cell, page, assetsById, index) {
   if (!cell || typeof cell !== "object" || !integer(cell.x) || !integer(cell.y) || cell.x < 0 || cell.y < 0 || cell.x >= page.width || cell.y >= page.height) throw new Error(`page ${page.id} cell ${index} has invalid coordinates`);
   const asset = assetsById.get(cell.assetId);
   if (!asset) throw new Error(`page ${page.id} cell ${index} references unknown asset ${String(cell.assetId)}`);
-  if (asset.tileSize !== page.tileSize || !asset.mapKinds.includes(page.mapKind)) throw new Error(`page ${page.id} cell ${index} asset ${asset.id} is incompatible with page`);
+  if (asset.tileSize !== page.tileSize) throw new Error(`page ${page.id} cell ${index} asset ${asset.id} is incompatible with page`);
   if (!integer(cell.frame) || cell.frame < 0 || cell.frame >= asset.frameCount) throw new Error(`page ${page.id} cell ${index} has invalid frame`);
   if (!layers.has(cell.layer) || typeof cell.walkable !== "boolean") throw new Error(`page ${page.id} cell ${index} has invalid layer/walkable`);
+  // Triage tags. Absent means the tile has not been sorted yet, which is valid.
+  if (cell.role !== undefined && !cellRoles.has(cell.role)) throw new Error(`page ${page.id} cell ${index} has invalid role ${String(cell.role)}`);
+  if (cell.status !== undefined && !cellStatuses.has(cell.status)) throw new Error(`page ${page.id} cell ${index} has invalid status ${String(cell.status)}`);
+  if (cell.note !== undefined && typeof cell.note !== "string") throw new Error(`page ${page.id} cell ${index} has invalid note`);
 }
 
 export function validatePalette(value, assets, { allowEmpty = false } = {}) {
@@ -162,16 +214,22 @@ function writeGeneratedTypescript(file, assets, palette, themeFile, themeGenerat
   }
 }
 
-function validateFrameRef(ref, assetsById, context, weighted = false) {
+/**
+ * Floors and walls have to tile on the 16px world grid, but a decoration is a
+ * single picture and may be coarser: a 32px sheet covers 2x2 cells.
+ */
+function validateFrameRef(ref, assetsById, context, { weighted = false, allowCoarse = false } = {}) {
   if (!ref || typeof ref !== "object" || Array.isArray(ref)) throw new Error(`${context} must be an asset frame reference`);
   const asset = assetsById.get(ref.assetId);
   if (!asset) throw new Error(`${context} references unknown asset ${String(ref.assetId)}`);
-  if (asset.tileSize !== 16 || !asset.mapKinds.includes("dungeon")) throw new Error(`${context} asset ${asset.id} must be a 16px dungeon asset`);
+  const sizeOk = allowCoarse ? asset.tileSize % 16 === 0 : asset.tileSize === 16;
+  if (!sizeOk || !asset.mapKinds.includes("dungeon")) throw new Error(`${context} asset ${asset.id} must be a ${allowCoarse ? "16px or 32px" : "16px"} dungeon asset`);
   if (!integer(ref.frame) || ref.frame < 0 || ref.frame >= asset.frameCount) throw new Error(`${context} has invalid frame ${String(ref.frame)}`);
   if (weighted && (!Number.isFinite(ref.weight) || ref.weight <= 0)) throw new Error(`${context} weight must be positive`);
+  return asset;
 }
 
-export function validateDungeonThemes(value, assets) {
+export function validateDungeonThemes(value, assets, enemyIds = availableEnemyIds()) {
   if (!value || typeof value !== "object" || Array.isArray(value) || value.version !== 1 || !Array.isArray(value.themes)) throw new Error("dungeon themes must be {version:1,themes:[]}");
   const assetsById = new Map(assets.map((asset) => [asset.id, asset]));
   const ids = new Set();
@@ -184,9 +242,30 @@ export function validateDungeonThemes(value, assets) {
     if (typeof theme.enabled !== "boolean") throw new Error(`${context} enabled must be boolean`);
     if (theme.tileSize !== 16) throw new Error(`${context} tileSize must be 16`);
     if (!Array.isArray(theme.floorVariants) || theme.floorVariants.length < 3) throw new Error(`${context} needs at least three floor variants`);
-    theme.floorVariants.forEach((ref, index) => validateFrameRef(ref, assetsById, `${context} floorVariants[${index}]`, true));
-    if (!Array.isArray(theme.wallFrameByMask) || theme.wallFrameByMask.length !== 16) throw new Error(`${context} wallFrameByMask must contain 16 entries`);
-    theme.wallFrameByMask.forEach((ref, index) => validateFrameRef(ref, assetsById, `${context} wallFrameByMask[${index}]`));
+    theme.floorVariants.forEach((ref, index) => validateFrameRef(ref, assetsById, `${context} floorVariants[${index}]`, { weighted: true }));
+    // A theme names either one expanded autotile, which derives every
+    // neighbourhood, or the legacy sixteen frames indexed by the cardinal mask.
+    if (theme.wall !== undefined) {
+      if (!theme.wall || typeof theme.wall !== "object" || Array.isArray(theme.wall)) throw new Error(`${context} wall must be an object`);
+      const wallAsset = assetsById.get(theme.wall.assetId);
+      if (!wallAsset) throw new Error(`${context} wall references unknown asset ${String(theme.wall.assetId)}`);
+      if (!wallAsset.autotile) throw new Error(`${context} wall asset ${wallAsset.id} is not an expanded autotile`);
+      if (wallAsset.tileSize !== 16 || !wallAsset.mapKinds.includes("dungeon")) throw new Error(`${context} wall asset ${wallAsset.id} must be a 16px dungeon asset`);
+      if (theme.wall.faceHeight !== undefined && theme.wall.faceHeight !== 1 && theme.wall.faceHeight !== 2) throw new Error(`${context} wall faceHeight must be 1 or 2`);
+      if (theme.wall.face !== undefined) {
+        const faceAsset = validateFrameRef(theme.wall.face, assetsById, `${context} wall face`);
+        // The lower half of a two-cell face is the frame one row further down.
+        if (theme.wall.faceHeight === 2 && theme.wall.face.frame + faceAsset.columns >= faceAsset.frameCount) {
+          throw new Error(`${context} wall face has no lower half below frame ${theme.wall.face.frame}`);
+        }
+      } else if (theme.wall.faceHeight === 2) {
+        throw new Error(`${context} wall faceHeight 2 needs a face`);
+      }
+    }
+    if (theme.wallFrameByMask !== undefined || theme.wall === undefined) {
+      if (!Array.isArray(theme.wallFrameByMask) || theme.wallFrameByMask.length !== 16) throw new Error(`${context} wallFrameByMask must contain 16 entries`);
+      theme.wallFrameByMask.forEach((ref, index) => validateFrameRef(ref, assetsById, `${context} wallFrameByMask[${index}]`));
+    }
     validateFrameRef(theme.stairsUp, assetsById, `${context} stairsUp`);
     validateFrameRef(theme.stairsDown, assetsById, `${context} stairsDown`);
     if (!Array.isArray(theme.decorations) || theme.decorations.length < 6) throw new Error(`${context} needs at least six decoration rules`);
@@ -199,13 +278,30 @@ export function validateDungeonThemes(value, assets) {
       if (!Number.isFinite(rule.weight) || rule.weight <= 0) throw new Error(`${ruleContext} weight must be positive`);
       if (!integer(rule.maxPerFloor) || rule.maxPerFloor < 1) throw new Error(`${ruleContext} maxPerFloor must be a positive integer`);
       if (!Array.isArray(rule.variants) || rule.variants.length === 0) throw new Error(`${ruleContext} needs variants`);
-      rule.variants.forEach((ref, variantIndex) => validateFrameRef(ref, assetsById, `${ruleContext} variants[${variantIndex}]`, true));
+      rule.variants.forEach((ref, variantIndex) => validateFrameRef(ref, assetsById, `${ruleContext} variants[${variantIndex}]`, { weighted: true, allowCoarse: true }));
     }
-    if (!theme.enemyPools || typeof theme.enemyPools !== "object") throw new Error(`${context} enemyPools is required`);
-    for (const depth of ["shallow", "middle", "deep"]) {
-      const pool = theme.enemyPools[depth];
-      if (!Array.isArray(pool) || pool.length === 0) throw new Error(`${context} enemyPools.${depth} must not be empty`);
-      for (const actorId of pool) if (!builtInEnemyIds.has(actorId)) throw new Error(`${context} enemyPools.${depth} references unavailable enemy ${String(actorId)}`);
+    // A theme carries either a spawn table or the legacy three depth buckets.
+    if (theme.spawns !== undefined) {
+      if (!Array.isArray(theme.spawns) || theme.spawns.length === 0) throw new Error(`${context} spawns must not be empty`);
+      for (const [index, entry] of theme.spawns.entries()) {
+        const spawnContext = `${context} spawns[${index}]`;
+        if (!entry || typeof entry !== "object" || Array.isArray(entry)) throw new Error(`${spawnContext} must be an object`);
+        if (!enemyIds.has(entry.actorId)) throw new Error(`${spawnContext} references unavailable enemy ${String(entry.actorId)}`);
+        if (!integer(entry.minFloor) || entry.minFloor < 1) throw new Error(`${spawnContext} minFloor must be a positive integer`);
+        if (entry.maxFloor !== undefined && (!integer(entry.maxFloor) || entry.maxFloor < entry.minFloor)) throw new Error(`${spawnContext} maxFloor must be at least minFloor`);
+        if (!Number.isFinite(entry.weight) || entry.weight <= 0) throw new Error(`${spawnContext} weight must be positive`);
+        if (entry.role !== undefined && !spawnRoles.has(entry.role)) throw new Error(`${spawnContext} role is invalid`);
+        if (entry.maxPerFloor !== undefined && (!integer(entry.maxPerFloor) || entry.maxPerFloor < 1)) throw new Error(`${spawnContext} maxPerFloor must be a positive integer`);
+      }
+      // Every floor the game can reach has to have something to meet.
+      if (!theme.spawns.some((entry) => entry.minFloor <= 1)) throw new Error(`${context} spawns leave floor 1 empty`);
+    } else {
+      if (!theme.enemyPools || typeof theme.enemyPools !== "object") throw new Error(`${context} needs spawns or enemyPools`);
+      for (const depth of ["shallow", "middle", "deep"]) {
+        const pool = theme.enemyPools[depth];
+        if (!Array.isArray(pool) || pool.length === 0) throw new Error(`${context} enemyPools.${depth} must not be empty`);
+        for (const actorId of pool) if (!enemyIds.has(actorId)) throw new Error(`${context} enemyPools.${depth} references unavailable enemy ${String(actorId)}`);
+      }
     }
   }
   if (!value.themes.find((theme) => theme.id === "cave")?.enabled) throw new Error("fallback dungeon theme cave must stay enabled");

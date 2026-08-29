@@ -1,7 +1,7 @@
 {
   "version": 1,
   "id": "mapchip2-mapchip-mizu3-doukutu4",
-  "label": "mizu3_doukutu4",
+  "label": "水3・洞窟4",
   "tileSize": 16,
   "margin": 0,
   "spacing": 0,
@@ -11,6 +11,11 @@
   ],
   "defaultLayer": "decoration",
   "defaultWalkable": false,
+  "sourceFormat": "wolf-autotile",
+  "autotile": {
+    "scheme": "blob47",
+    "animationFrames": 2
+  },
   "source": {
     "archive": "mapchip2_0724.zip",
     "path": "mapchip2/MapChip/mizu3_doukutu4.png",

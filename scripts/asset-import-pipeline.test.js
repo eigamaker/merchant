@@ -20,13 +20,66 @@ describe("asset import pipeline", () => {
     expect(report.mapTiles[0]).toMatchObject({ tileSize: 32, columns: 30, rows: 30 });
   });
 
-  it("recognizes mapchip2's 16px base/world sheets and warns about .tile rules", () => {
+  it("expands mapchip2's WOLF autotiles instead of slicing them into fragments", () => {
     const file = "C:/Users/takao/Downloads/mapchip2_0724.zip";
     if (!fs.existsSync(file)) return;
     const report = analyzeImportFile(file);
-    expect(report.mapTiles.filter((entry) => entry.selected).map((entry) => entry.label)).toEqual(["base", "world"]);
-    expect(report.mapTiles.find((entry) => entry.label === "base")).toMatchObject({ tileSize: 16, columns: 8, rows: 292 });
+    const autotiles = report.mapTiles.filter((entry) => entry.format?.kind === "wolf-autotile");
+    // 85 of the pack's 87 sheets are autotiles; the old detector read each as a
+    // valid "1 column x 5 rows" grid and registered five meaningless fragments.
+    expect(autotiles).toHaveLength(85);
+    expect(autotiles.every((entry) => entry.tileSize === 16 && entry.columns === 47)).toBe(true);
+    expect(report.mapTiles.find((entry) => entry.label === "yougan")).toMatchObject({
+      columns: 47, rows: 6, frameCount: 282, autotile: { scheme: "blob47", animationFrames: 6 },
+    });
+  });
+
+  it("splits mapchip2's catalogue sheets at their caption bands", () => {
+    const file = "C:/Users/takao/Downloads/mapchip2_0724.zip";
+    if (!fs.existsSync(file)) return;
+    const report = analyzeImportFile(file);
+    const sections = report.mapTiles.filter((entry) => entry.format?.kind === "section-catalog");
+    // base.png carries 31 captioned sections and world.png 4.
+    expect(sections).toHaveLength(35);
+    expect(sections.filter((entry) => entry.sourcePath.endsWith("base.png"))).toHaveLength(31);
+    // "ダン 床・壁・階段" — the dungeon floor/wall/stair shelf.
+    expect(sections.find((entry) => entry.id.endsWith("base-s17"))).toMatchObject({ columns: 8, rows: 24, section: { fromRow: 162, toRow: 185 } });
+    expect(sections.every((entry) => String(entry.preview).startsWith("data:image/png;base64,"))).toBe(true);
+  });
+
+  it("reads the pack author's own tileset grouping out of the .tile settings", () => {
+    const file = "C:/Users/takao/Downloads/mapchip2_0724.zip";
+    if (!fs.existsSync(file)) return;
+    const report = analyzeImportFile(file);
+    expect(report.tileGroups.map((group) => group.label)).toEqual(["街", "ダンジョン", "森", "ワールドマップ"]);
+    const dungeon = report.tileGroups.find((group) => group.label === "ダンジョン");
+    expect(dungeon.images).toHaveLength(16);
+    expect(dungeon.images.some((image) => image.endsWith("kabe-ue_doukutu1.png"))).toBe(true);
     expect(report.warnings.join(" ")).toMatch(/\.tile/);
+  });
+
+  it("stores an expanded blob sheet and records how it was produced", () => {
+    const file = "C:/Users/takao/Downloads/mapchip2_0724.zip";
+    if (!fs.existsSync(file)) return;
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "asset-import-wolf-"));
+    const report = analyzeImportFile(file);
+    const selected = report.mapTiles.filter((entry) => /yougan|base-s17$/.test(entry.id));
+    commitImport(report, { mapTiles: selected, actors: [], licenseAcknowledged: true, mapSheetImportDir: path.join(root, "sheets"), actorImportDir: path.join(root, "actors"), mapImportManifest: path.join(root, "map-imports.json"), actorImportManifest: path.join(root, "actor-imports.json") });
+    const dir = path.join(root, "sheets", "mapchip2-0724");
+    const sidecar = (id) => JSON.parse(fs.readFileSync(path.join(dir, `${id}.tileset.json`), "utf8"));
+    const image = (id) => PNG.sync.read(fs.readFileSync(path.join(dir, `${id}.png`)));
+    expect(image("mapchip2-mapchip-yougan")).toMatchObject({ width: 47 * 16, height: 6 * 16 });
+    expect(sidecar("mapchip2-mapchip-yougan")).toMatchObject({ sourceFormat: "wolf-autotile", autotile: { scheme: "blob47", animationFrames: 6 } });
+    expect(image("mapchip2-mapchip-base-s17")).toMatchObject({ width: 8 * 16, height: 24 * 16 });
+    expect(sidecar("mapchip2-mapchip-base-s17")).toMatchObject({ sourceFormat: "section-catalog", section: { fromRow: 162, toRow: 185 } });
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("refuses to guess a grid for a sheet whose shape it does not recognize", () => {
+    // 40x24 divides by neither 16 nor 32, so there is nothing honest to suggest.
+    const report = analyzeImport(Buffer.from(zipSync({ "odd.png": new Uint8Array(png(40, 24)) })), { fileName: "odd.zip" });
+    expect(report.mapTiles[0]).toMatchObject({ format: { kind: "unknown" }, selected: false });
+    expect(report.mapTiles[0].warnings.join(" ")).toMatch(/40x24/);
   });
 
   it("classifies the male TMX pack as actors and does not preselect map sheets", () => {

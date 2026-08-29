@@ -7,44 +7,222 @@
       "label": "洞窟",
       "enabled": true,
       "tileSize": 16,
+      "wall": {
+        "assetId": "mapchip2-mapchip-kabe-ue-doukutu1",
+        "face": {
+          "assetId": "mapchip2-mapchip-base-s17",
+          "frame": 56
+        },
+        "faceHeight": 2
+      },
       "floorVariants": [
-        { "assetId": "mapchip2-mapchip-base", "frame": 1600, "weight": 8 },
-        { "assetId": "mapchip2-mapchip-base", "frame": 1601, "weight": 2 },
-        { "assetId": "mapchip2-mapchip-base", "frame": 1602, "weight": 1 }
+        {
+          "assetId": "mapchip2-mapchip-base-s08",
+          "frame": 2,
+          "weight": 8
+        },
+        {
+          "assetId": "mapchip2-mapchip-base-s08",
+          "frame": 34,
+          "weight": 3
+        },
+        {
+          "assetId": "mapchip2-mapchip-base-s08",
+          "frame": 10,
+          "weight": 1
+        }
       ],
-      "wallFrameByMask": [
-        { "assetId": "mapchip2-mapchip-kabe-ue-doukutu1", "frame": 0 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-doukutu1", "frame": 1 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-doukutu1", "frame": 2 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-doukutu1", "frame": 3 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-doukutu2", "frame": 1 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-doukutu2", "frame": 2 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-doukutu2", "frame": 3 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-doukutu2", "frame": 4 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-doukutu3", "frame": 1 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-doukutu3", "frame": 2 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-doukutu3", "frame": 3 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-doukutu3", "frame": 4 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-doukutu4", "frame": 1 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-doukutu4", "frame": 2 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-doukutu5", "frame": 3 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-doukutu5", "frame": 4 }
-      ],
-      "stairsUp": { "assetId": "dungeon.stairs-up", "frame": 0 },
-      "stairsDown": { "assetId": "dungeon.stairs-down", "frame": 0 },
+      "stairsUp": {
+        "assetId": "dungeon.stairs-up",
+        "frame": 0
+      },
+      "stairsDown": {
+        "assetId": "dungeon.stairs-down",
+        "frame": 0
+      },
       "decorations": [
-        { "id": "cave-cracks", "placement": "floor", "variants": [{ "assetId": "png-decorative-cracks", "frame": 0, "weight": 1 }, { "assetId": "png-decorative-cracks", "frame": 1, "weight": 1 }, { "assetId": "png-decorative-cracks", "frame": 2, "weight": 1 }], "weight": 0.035, "maxPerFloor": 8 },
-        { "id": "cave-rubble", "placement": "corner", "variants": [{ "assetId": "mapchip2-mapchip-base", "frame": 1672, "weight": 1 }], "weight": 0.18, "maxPerFloor": 4 },
-        { "id": "cave-bones", "placement": "deadEnd", "variants": [{ "assetId": "mapchip2-mapchip-base", "frame": 1680, "weight": 1 }], "weight": 0.7, "maxPerFloor": 2 },
-        { "id": "cave-stones", "placement": "floor", "variants": [{ "assetId": "mapchip2-mapchip-base", "frame": 1664, "weight": 1 }], "weight": 0.012, "maxPerFloor": 4 },
-        { "id": "cave-wall-mark", "placement": "wall", "variants": [{ "assetId": "mapchip2-mapchip-base", "frame": 1690, "weight": 1 }], "weight": 0.014, "maxPerFloor": 4 },
-        { "id": "cave-moss", "placement": "corner", "variants": [{ "assetId": "mapchip2-mapchip-base", "frame": 1696, "weight": 1 }], "weight": 0.12, "maxPerFloor": 3 }
+        {
+          "id": "cave-rubble",
+          "placement": "corner",
+          "variants": [
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 33,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 34,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 35,
+              "weight": 1
+            }
+          ],
+          "weight": 0.08,
+          "maxPerFloor": 10
+        },
+        {
+          "id": "cave-bones",
+          "placement": "floor",
+          "variants": [
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 16,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 17,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 24,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 25,
+              "weight": 1
+            }
+          ],
+          "weight": 0.02,
+          "maxPerFloor": 6
+        },
+        {
+          "id": "cave-crystals",
+          "placement": "floor",
+          "variants": [
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 26,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 27,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 31,
+              "weight": 1
+            }
+          ],
+          "weight": 0.015,
+          "maxPerFloor": 5
+        },
+        {
+          "id": "cave-stones",
+          "placement": "deadEnd",
+          "variants": [
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 40,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 46,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 47,
+              "weight": 1
+            }
+          ],
+          "weight": 0.3,
+          "maxPerFloor": 4
+        },
+        {
+          "id": "cave-pots",
+          "placement": "floor",
+          "variants": [
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 50,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 51,
+              "weight": 1
+            }
+          ],
+          "weight": 0.008,
+          "maxPerFloor": 3
+        },
+        {
+          "id": "cave-lever",
+          "placement": "wall",
+          "variants": [
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 0,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 2,
+              "weight": 1
+            }
+          ],
+          "weight": 0.01,
+          "maxPerFloor": 3
+        }
       ],
-      "enemyPools": {
-        "shallow": ["slime1", "orc1"],
-        "middle": ["slime2", "orc2", "plant1"],
-        "deep": ["orc3", "plant2", "vampire1"]
-      }
+      "spawns": [
+        {
+          "actorId": "slime1",
+          "minFloor": 1,
+          "maxFloor": 5,
+          "weight": 4
+        },
+        {
+          "actorId": "orc1",
+          "minFloor": 1,
+          "maxFloor": 6,
+          "weight": 3
+        },
+        {
+          "actorId": "slime2",
+          "minFloor": 3,
+          "maxFloor": 9,
+          "weight": 3
+        },
+        {
+          "actorId": "plant1",
+          "minFloor": 3,
+          "maxFloor": 8,
+          "weight": 2
+        },
+        {
+          "actorId": "orc2",
+          "minFloor": 4,
+          "weight": 3
+        },
+        {
+          "actorId": "plant2",
+          "minFloor": 6,
+          "weight": 2
+        },
+        {
+          "actorId": "orc3",
+          "minFloor": 8,
+          "weight": 2
+        },
+        {
+          "actorId": "vampire1",
+          "minFloor": 9,
+          "weight": 1,
+          "role": "elite",
+          "maxPerFloor": 1
+        }
+      ]
     },
     {
       "version": 1,
@@ -52,44 +230,227 @@
       "label": "遺跡",
       "enabled": true,
       "tileSize": 16,
+      "wall": {
+        "assetId": "mapchip2-mapchip-kabe-ue-dungeon1",
+        "face": {
+          "assetId": "mapchip2-mapchip-base-s17",
+          "frame": 136
+        },
+        "faceHeight": 2
+      },
       "floorVariants": [
-        { "assetId": "mapchip2-mapchip-base", "frame": 1120, "weight": 8 },
-        { "assetId": "mapchip2-mapchip-base", "frame": 1121, "weight": 2 },
-        { "assetId": "mapchip2-mapchip-base", "frame": 1122, "weight": 1 }
+        {
+          "assetId": "mapchip2-mapchip-base-s08",
+          "frame": 1,
+          "weight": 8
+        },
+        {
+          "assetId": "mapchip2-mapchip-base-s08",
+          "frame": 17,
+          "weight": 3
+        },
+        {
+          "assetId": "mapchip2-mapchip-base-s08",
+          "frame": 21,
+          "weight": 1
+        }
       ],
-      "wallFrameByMask": [
-        { "assetId": "mapchip2-mapchip-kabe-ue-dungeon1", "frame": 0 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-dungeon1", "frame": 1 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-dungeon1", "frame": 2 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-dungeon1", "frame": 3 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-dungeon1", "frame": 4 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-dungeon2", "frame": 0 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-dungeon2", "frame": 1 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-dungeon2", "frame": 2 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-dungeon2", "frame": 3 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-dungeon2", "frame": 4 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-dungeon1", "frame": 1 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-dungeon1", "frame": 2 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-dungeon2", "frame": 1 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-dungeon2", "frame": 2 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-dungeon2", "frame": 3 },
-        { "assetId": "mapchip2-mapchip-kabe-ue-dungeon2", "frame": 4 }
-      ],
-      "stairsUp": { "assetId": "dungeon.stairs-up", "frame": 0 },
-      "stairsDown": { "assetId": "dungeon.stairs-down", "frame": 0 },
+      "stairsUp": {
+        "assetId": "dungeon.stairs-up",
+        "frame": 0
+      },
+      "stairsDown": {
+        "assetId": "dungeon.stairs-down",
+        "frame": 0
+      },
       "decorations": [
-        { "id": "ruins-cracks", "placement": "floor", "variants": [{ "assetId": "png-decorative-cracks", "frame": 12, "weight": 1 }, { "assetId": "png-decorative-cracks", "frame": 13, "weight": 1 }], "weight": 0.04, "maxPerFloor": 8 },
-        { "id": "ruins-column", "placement": "corner", "variants": [{ "assetId": "mapchip2-mapchip-base", "frame": 1184, "weight": 1 }], "weight": 0.18, "maxPerFloor": 4 },
-        { "id": "ruins-rubble", "placement": "deadEnd", "variants": [{ "assetId": "mapchip2-mapchip-base", "frame": 1192, "weight": 1 }], "weight": 0.7, "maxPerFloor": 2 },
-        { "id": "ruins-statue", "placement": "floor", "variants": [{ "assetId": "mapchip2-mapchip-base", "frame": 1200, "weight": 1 }], "weight": 0.01, "maxPerFloor": 3 },
-        { "id": "ruins-door", "placement": "wall", "variants": [{ "assetId": "png-windows-doors", "frame": 0, "weight": 1 }], "weight": 0.012, "maxPerFloor": 3 },
-        { "id": "ruins-pottery", "placement": "corner", "variants": [{ "assetId": "mapchip2-mapchip-base", "frame": 1208, "weight": 1 }], "weight": 0.12, "maxPerFloor": 3 }
+        {
+          "id": "ruins-timber",
+          "placement": "corner",
+          "variants": [
+            {
+              "assetId": "mapchip2-mapchip-base-s25",
+              "frame": 20,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s25",
+              "frame": 21,
+              "weight": 1
+            }
+          ],
+          "weight": 0.06,
+          "maxPerFloor": 8
+        },
+        {
+          "id": "ruins-rubble",
+          "placement": "floor",
+          "variants": [
+            {
+              "assetId": "mapchip2-mapchip-base-s25",
+              "frame": 0,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s25",
+              "frame": 1,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s25",
+              "frame": 22,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s25",
+              "frame": 23,
+              "weight": 1
+            }
+          ],
+          "weight": 0.03,
+          "maxPerFloor": 8
+        },
+        {
+          "id": "ruins-crater",
+          "placement": "floor",
+          "variants": [
+            {
+              "assetId": "mapchip2-mapchip-base-s25",
+              "frame": 8,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s25",
+              "frame": 10,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s25",
+              "frame": 12,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s25",
+              "frame": 14,
+              "weight": 1
+            }
+          ],
+          "weight": 0.02,
+          "maxPerFloor": 5
+        },
+        {
+          "id": "ruins-sticks",
+          "placement": "deadEnd",
+          "variants": [
+            {
+              "assetId": "mapchip2-mapchip-base-s25",
+              "frame": 16,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s25",
+              "frame": 17,
+              "weight": 1
+            }
+          ],
+          "weight": 0.3,
+          "maxPerFloor": 4
+        },
+        {
+          "id": "ruins-pots",
+          "placement": "floor",
+          "variants": [
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 50,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 51,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 58,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 59,
+              "weight": 1
+            }
+          ],
+          "weight": 0.008,
+          "maxPerFloor": 3
+        },
+        {
+          "id": "ruins-door",
+          "placement": "wall",
+          "variants": [
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 48,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 56,
+              "weight": 1
+            }
+          ],
+          "weight": 0.01,
+          "maxPerFloor": 3
+        }
       ],
-      "enemyPools": {
-        "shallow": ["orc1", "slime1"],
-        "middle": ["orc2", "vampire1", "slime2"],
-        "deep": ["vampire2", "vampire3", "orc3"]
-      }
+      "spawns": [
+        {
+          "actorId": "orc1",
+          "minFloor": 1,
+          "maxFloor": 5,
+          "weight": 4
+        },
+        {
+          "actorId": "slime1",
+          "minFloor": 1,
+          "maxFloor": 4,
+          "weight": 2
+        },
+        {
+          "actorId": "orc2",
+          "minFloor": 3,
+          "maxFloor": 9,
+          "weight": 3
+        },
+        {
+          "actorId": "slime2",
+          "minFloor": 4,
+          "maxFloor": 9,
+          "weight": 2
+        },
+        {
+          "actorId": "vampire1",
+          "minFloor": 5,
+          "weight": 3
+        },
+        {
+          "actorId": "orc3",
+          "minFloor": 7,
+          "weight": 2
+        },
+        {
+          "actorId": "vampire2",
+          "minFloor": 9,
+          "weight": 2
+        },
+        {
+          "actorId": "vampire3",
+          "minFloor": 11,
+          "weight": 1,
+          "role": "elite",
+          "maxPerFloor": 1
+        }
+      ]
     },
     {
       "version": 1,
@@ -97,44 +458,202 @@
       "label": "溶岩洞",
       "enabled": true,
       "tileSize": 16,
+      "wall": {
+        "assetId": "mapchip2-mapchip-kabe-ue-doukutu2",
+        "face": {
+          "assetId": "mapchip2-mapchip-base-s17",
+          "frame": 72
+        },
+        "faceHeight": 2
+      },
       "floorVariants": [
-        { "assetId": "mapchip2-mapchip-base", "frame": 2240, "weight": 8 },
-        { "assetId": "mapchip2-mapchip-base", "frame": 2241, "weight": 2 },
-        { "assetId": "mapchip2-mapchip-base", "frame": 2242, "weight": 1 }
+        {
+          "assetId": "mapchip2-mapchip-base-s08",
+          "frame": 37,
+          "weight": 8
+        },
+        {
+          "assetId": "mapchip2-mapchip-base-s08",
+          "frame": 36,
+          "weight": 3
+        },
+        {
+          "assetId": "mapchip2-mapchip-base-s08",
+          "frame": 27,
+          "weight": 1
+        }
       ],
-      "wallFrameByMask": [
-        { "assetId": "mapchip2-mapchip-yougan", "frame": 0 },
-        { "assetId": "mapchip2-mapchip-yougan", "frame": 1 },
-        { "assetId": "mapchip2-mapchip-yougan", "frame": 2 },
-        { "assetId": "mapchip2-mapchip-yougan", "frame": 3 },
-        { "assetId": "mapchip2-mapchip-yougan", "frame": 4 },
-        { "assetId": "mapchip2-mapchip-yougan", "frame": 5 },
-        { "assetId": "mapchip2-mapchip-yougan", "frame": 6 },
-        { "assetId": "mapchip2-mapchip-yougan", "frame": 7 },
-        { "assetId": "mapchip2-mapchip-yougan", "frame": 8 },
-        { "assetId": "mapchip2-mapchip-yougan", "frame": 9 },
-        { "assetId": "mapchip2-mapchip-yougan", "frame": 10 },
-        { "assetId": "mapchip2-mapchip-yougan", "frame": 11 },
-        { "assetId": "mapchip2-mapchip-yougan", "frame": 12 },
-        { "assetId": "mapchip2-mapchip-yougan", "frame": 13 },
-        { "assetId": "mapchip2-mapchip-yougan", "frame": 14 },
-        { "assetId": "mapchip2-mapchip-yougan", "frame": 15 }
-      ],
-      "stairsUp": { "assetId": "dungeon.stairs-up", "frame": 0 },
-      "stairsDown": { "assetId": "dungeon.stairs-down", "frame": 0 },
+      "stairsUp": {
+        "assetId": "dungeon.stairs-up",
+        "frame": 0
+      },
+      "stairsDown": {
+        "assetId": "dungeon.stairs-down",
+        "frame": 0
+      },
       "decorations": [
-        { "id": "lava-cracks", "placement": "floor", "variants": [{ "assetId": "png-decorative-cracks", "frame": 24, "weight": 1 }, { "assetId": "png-decorative-cracks", "frame": 25, "weight": 1 }], "weight": 0.035, "maxPerFloor": 7 },
-        { "id": "lava-flame", "placement": "wall", "variants": [{ "assetId": "png-fire", "frame": 0, "weight": 1 }, { "assetId": "png-fire", "frame": 8, "weight": 1 }], "weight": 0.025, "maxPerFloor": 5 },
-        { "id": "lava-rock", "placement": "corner", "variants": [{ "assetId": "mapchip2-mapchip-base", "frame": 2272, "weight": 1 }], "weight": 0.2, "maxPerFloor": 4 },
-        { "id": "lava-vent", "placement": "deadEnd", "variants": [{ "assetId": "mapchip2-mapchip-yougan", "frame": 20, "weight": 1 }], "weight": 0.8, "maxPerFloor": 2 },
-        { "id": "lava-cinder", "placement": "floor", "variants": [{ "assetId": "mapchip2-mapchip-base", "frame": 2280, "weight": 1 }], "weight": 0.012, "maxPerFloor": 4 },
-        { "id": "lava-basalt", "placement": "corner", "variants": [{ "assetId": "mapchip2-mapchip-base", "frame": 2288, "weight": 1 }], "weight": 0.12, "maxPerFloor": 3 }
+        {
+          "id": "lava-cinder",
+          "placement": "corner",
+          "variants": [
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 36,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 37,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 40,
+              "weight": 1
+            }
+          ],
+          "weight": 0.08,
+          "maxPerFloor": 10
+        },
+        {
+          "id": "lava-crystal",
+          "placement": "floor",
+          "variants": [
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 28,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 29,
+              "weight": 1
+            }
+          ],
+          "weight": 0.015,
+          "maxPerFloor": 5
+        },
+        {
+          "id": "lava-rock",
+          "placement": "floor",
+          "variants": [
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 44,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 45,
+              "weight": 1
+            }
+          ],
+          "weight": 0.04,
+          "maxPerFloor": 8
+        },
+        {
+          "id": "lava-vent",
+          "placement": "deadEnd",
+          "variants": [
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 26,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 30,
+              "weight": 1
+            }
+          ],
+          "weight": 0.3,
+          "maxPerFloor": 4
+        },
+        {
+          "id": "lava-bones",
+          "placement": "floor",
+          "variants": [
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 16,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 24,
+              "weight": 1
+            }
+          ],
+          "weight": 0.01,
+          "maxPerFloor": 3
+        },
+        {
+          "id": "lava-lever",
+          "placement": "wall",
+          "variants": [
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 1,
+              "weight": 1
+            },
+            {
+              "assetId": "mapchip2-mapchip-base-s18",
+              "frame": 3,
+              "weight": 1
+            }
+          ],
+          "weight": 0.01,
+          "maxPerFloor": 3
+        }
       ],
-      "enemyPools": {
-        "shallow": ["orc1", "plant1"],
-        "middle": ["orc2", "plant2", "vampire1"],
-        "deep": ["orc3", "plant3", "vampire3"]
-      }
+      "spawns": [
+        {
+          "actorId": "orc1",
+          "minFloor": 1,
+          "maxFloor": 5,
+          "weight": 3
+        },
+        {
+          "actorId": "plant1",
+          "minFloor": 1,
+          "maxFloor": 6,
+          "weight": 3
+        },
+        {
+          "actorId": "orc2",
+          "minFloor": 4,
+          "maxFloor": 10,
+          "weight": 3
+        },
+        {
+          "actorId": "plant2",
+          "minFloor": 5,
+          "weight": 3
+        },
+        {
+          "actorId": "vampire1",
+          "minFloor": 6,
+          "maxFloor": 11,
+          "weight": 2
+        },
+        {
+          "actorId": "orc3",
+          "minFloor": 8,
+          "weight": 2
+        },
+        {
+          "actorId": "plant3",
+          "minFloor": 9,
+          "weight": 2
+        },
+        {
+          "actorId": "vampire3",
+          "minFloor": 10,
+          "weight": 1,
+          "role": "elite",
+          "maxPerFloor": 1
+        }
+      ]
     }
   ]
 }

@@ -1,4 +1,7 @@
+import { blobFrame, neighbourMask } from "./autotile";
+import { depthBand } from "./dungeonDifficulty";
 import { DUNGEON_THEME_CATALOG } from "./dungeonThemeCatalog.generated";
+import { MAP_ASSET_CATALOG } from "./mapAssetCatalog.generated";
 import type { DungeonMap, Vec } from "./types";
 
 export type DungeonThemeId = typeof DUNGEON_THEME_CATALOG[number]["id"];
@@ -22,6 +25,37 @@ export interface DungeonDecorationRule {
   maxPerFloor: number;
 }
 
+/**
+ * A whole wall set in one reference. The sheet is an expanded blob autotile, so
+ * naming the asset is enough: the tile for any neighbourhood is derived rather
+ * than authored, which replaces sixteen hand-entered frame numbers per theme.
+ */
+export interface DungeonWallAutotile {
+  assetId: string;
+  /**
+   * Drawn on wall cells whose south neighbour is floor — the side of the wall
+   * that faces the camera. Without one the top tile is used everywhere.
+   */
+  face?: AssetFrameRef;
+  /** 2 makes the face overhang one cell upwards, so the wall reads as a block. */
+  faceHeight?: 1 | 2;
+}
+
+/**
+ * One line of a theme's spawn table. Depth range and weight replace the three
+ * fixed shallow/middle/deep buckets, so a creature can fade in and out instead
+ * of appearing or vanishing at a hard boundary.
+ */
+export interface DungeonSpawnEntry {
+  actorId: string;
+  minFloor: number;
+  /** Omitted means "from minFloor down". */
+  maxFloor?: number;
+  weight: number;
+  role?: "common" | "elite";
+  maxPerFloor?: number;
+}
+
 export interface DungeonThemeDefinition {
   version: 1;
   id: string;
@@ -29,11 +63,17 @@ export interface DungeonThemeDefinition {
   enabled: boolean;
   tileSize: 16;
   floorVariants: readonly WeightedFrameRef[];
-  wallFrameByMask: readonly AssetFrameRef[];
+  /** Preferred. Resolves all 256 eight-neighbour cases from one asset. */
+  wall?: DungeonWallAutotile;
+  /** Legacy fallback: sixteen frames indexed by the four-neighbour mask. */
+  wallFrameByMask?: readonly AssetFrameRef[];
   stairsUp: AssetFrameRef;
   stairsDown: AssetFrameRef;
   decorations: readonly DungeonDecorationRule[];
-  enemyPools: Record<DungeonThemeDepth, readonly string[]>;
+  /** Preferred. Depth ranges and weights, spent against the floor's budget. */
+  spawns?: readonly DungeonSpawnEntry[];
+  /** Legacy fallback: three fixed depth buckets. */
+  enemyPools?: Record<DungeonThemeDepth, readonly string[]>;
 }
 
 export interface DungeonRenderPlan {
@@ -41,6 +81,11 @@ export interface DungeonRenderPlan {
   ground: Array<AssetFrameRef | null>;
   structure: Array<AssetFrameRef | null>;
   decoration: Array<AssetFrameRef | null>;
+  /**
+   * Pieces that belong to the cell at their index but are drawn one cell above
+   * it. They sort with the entities so a wall can stand in front of an actor.
+   */
+  overhang: Array<AssetFrameRef | null>;
 }
 
 export const DUNGEON_THEME_FALLBACK_ID: DungeonThemeId = "cave";
@@ -104,13 +149,21 @@ export function dungeonThemeIdForFloor(seed: number, floor: number, poolIds: rea
 }
 
 export function dungeonThemeDepth(floor: number): DungeonThemeDepth {
-  if (floor >= 6) return "deep";
-  if (floor >= 3) return "middle";
-  return "shallow";
+  return depthBand(floor);
+}
+
+/** The spawn lines a floor is eligible for, in table order. */
+export function dungeonThemeSpawns(themeId: string, floor: number): readonly DungeonSpawnEntry[] {
+  const theme = dungeonTheme(themeId);
+  if (!theme.spawns?.length) {
+    const pool = theme.enemyPools?.[dungeonThemeDepth(floor)] ?? [];
+    return pool.map((actorId) => ({ actorId, minFloor: 1, weight: 1 }));
+  }
+  return theme.spawns.filter((entry) => floor >= entry.minFloor && (entry.maxFloor === undefined || floor <= entry.maxFloor));
 }
 
 export function dungeonThemeEnemyRoster(themeId: string, floor: number): readonly string[] {
-  return dungeonTheme(themeId).enemyPools[dungeonThemeDepth(floor)];
+  return [...new Set(dungeonThemeSpawns(themeId, floor).map((entry) => entry.actorId))];
 }
 
 function weightedFrame(values: readonly WeightedFrameRef[], hash: number): AssetFrameRef {
@@ -124,10 +177,69 @@ function weightedFrame(values: readonly WeightedFrameRef[], hash: number): Asset
   return { assetId: fallback.assetId, frame: fallback.frame };
 }
 
+const isWall = (map: DungeonMap, x: number, y: number): boolean =>
+  x < 0 || y < 0 || x >= map.width || y >= map.height || map.tiles[y]?.[x] !== 0;
+
 /** N=1, E=2, S=4, W=8. A bit is set when the neighbouring cell is also a wall. */
 export function dungeonWallMask(map: DungeonMap, x: number, y: number): number {
-  const wall = (xx: number, yy: number) => xx < 0 || yy < 0 || xx >= map.width || yy >= map.height || map.tiles[yy]?.[xx] !== 0;
+  const wall = (xx: number, yy: number) => isWall(map, xx, yy);
   return Number(wall(x, y - 1)) | (Number(wall(x + 1, y)) << 1) | (Number(wall(x, y + 1)) << 2) | (Number(wall(x - 1, y)) << 3);
+}
+
+/** The eight-neighbour form, which is what a corner-aware autotile needs. */
+export function dungeonWallNeighbourMask(map: DungeonMap, x: number, y: number): number {
+  return neighbourMask(x, y, (xx, yy) => isWall(map, xx, yy));
+}
+
+const autotileByAssetId = new Map<string, { scheme: string; animationFrames: number }>(
+  MAP_ASSET_CATALOG
+    .filter((asset): asset is typeof asset & { autotile: { scheme: string; animationFrames: number } } => "autotile" in asset && Boolean(asset.autotile))
+    .map((asset) => [asset.id, asset.autotile]),
+);
+
+const columnsByAssetId = new Map<string, number>(MAP_ASSET_CATALOG.map((asset) => [asset.id, asset.columns]));
+
+/**
+ * A two-cell face is drawn as two frames stacked on the sheet: the reference
+ * names the upper half and the row below it carries the lower half, which is how
+ * these wall sheets are laid out. A one-cell face uses the same frame for both.
+ */
+export function dungeonWallFaceHalves(wall: DungeonWallAutotile | undefined): { upper: AssetFrameRef; lower: AssetFrameRef } | undefined {
+  if (!wall?.face) return undefined;
+  const columns = columnsByAssetId.get(wall.face.assetId) ?? 0;
+  if ((wall.faceHeight ?? 1) === 1 || columns <= 0) return { upper: { ...wall.face }, lower: { ...wall.face } };
+  return { upper: { ...wall.face }, lower: { assetId: wall.face.assetId, frame: wall.face.frame + columns } };
+}
+
+/** Whether a theme's wall reference resolves to an expanded blob sheet. */
+export function dungeonWallAutotile(theme: DungeonThemeDefinition): { assetId: string; animationFrames: number } | undefined {
+  if (!theme.wall) return undefined;
+  const autotile = autotileByAssetId.get(theme.wall.assetId);
+  if (!autotile || autotile.scheme !== "blob47") return undefined;
+  return { assetId: theme.wall.assetId, animationFrames: autotile.animationFrames };
+}
+
+export type DungeonWallAutotileResolver = (theme: DungeonThemeDefinition) => { assetId: string; animationFrames: number } | undefined;
+
+/**
+ * The wall tile for one cell. An autotile theme derives it from the eight
+ * neighbours; older themes keep their sixteen authored frames.
+ *
+ * `resolve` is injectable so the derived path can be exercised without a
+ * blob sheet in the generated catalogue.
+ */
+export function dungeonWallFrame(theme: DungeonThemeDefinition, map: DungeonMap, x: number, y: number, animationFrame = 0, resolve: DungeonWallAutotileResolver = dungeonWallAutotile): AssetFrameRef {
+  const face = dungeonWallFaceHalves(theme.wall);
+  if (face && !isWall(map, x, y + 1)) return face.lower;
+  const autotile = resolve(theme);
+  if (autotile) {
+    return { assetId: autotile.assetId, frame: blobFrame(dungeonWallNeighbourMask(map, x, y), animationFrame, autotile.animationFrames) };
+  }
+  const authored = theme.wallFrameByMask?.[dungeonWallMask(map, x, y)];
+  if (authored) return { ...authored };
+  // A theme with neither a resolvable autotile nor authored frames would leave
+  // holes in the map, so fall back to the first frame of whatever it names.
+  return { assetId: theme.wall?.assetId ?? theme.floorVariants[0]!.assetId, frame: 0 };
 }
 
 function walkableNeighbours(map: DungeonMap, x: number, y: number): number {
@@ -158,11 +270,17 @@ export function createDungeonRenderPlan(map: DungeonMap, runSeed: number, floor:
   const ground: Array<AssetFrameRef | null> = Array(size).fill(null);
   const structure: Array<AssetFrameRef | null> = Array(size).fill(null);
   const decoration: Array<AssetFrameRef | null> = Array(size).fill(null);
+  const overhang: Array<AssetFrameRef | null> = Array(size).fill(null);
   const visualSeed = deriveDungeonSeed(runSeed, "visual", floor);
+  const wallFace = dungeonWallFaceHalves(theme.wall);
+  const overhangs = wallFace !== undefined && (theme.wall?.faceHeight ?? 1) === 2;
   for (let y = 0; y < map.height; y += 1) for (let x = 0; x < map.width; x += 1) {
     const index = y * map.width + x;
-    if (map.tiles[y]?.[x] === 0) ground[index] = weightedFrame(theme.floorVariants, coordinateHash(visualSeed, x, y, 0x13));
-    else structure[index] = { ...theme.wallFrameByMask[dungeonWallMask(map, x, y)]! };
+    if (map.tiles[y]?.[x] === 0) { ground[index] = weightedFrame(theme.floorVariants, coordinateHash(visualSeed, x, y, 0x13)); continue; }
+    structure[index] = dungeonWallFrame(theme, map, x, y);
+    // A two-cell-high face keeps its collision in this cell but reaches one cell
+    // up, so the upper half is carried separately and sorted with the entities.
+    if (overhangs && !isWall(map, x, y + 1) && y > 0) overhang[index] = { ...wallFace!.upper };
   }
   for (const [ruleIndex, rule] of theme.decorations.entries()) {
     const candidates: Array<{ x: number; y: number; hash: number }> = [];
@@ -179,7 +297,7 @@ export function createDungeonRenderPlan(map: DungeonMap, runSeed: number, floor:
   }
   decoration[map.stairsUp.y * map.width + map.stairsUp.x] = { ...theme.stairsUp };
   if (map.stairsDown) decoration[map.stairsDown.y * map.width + map.stairsDown.x] = { ...theme.stairsDown };
-  return { themeId: theme.id, ground, structure, decoration };
+  return { themeId: theme.id, ground, structure, decoration, overhang };
 }
 
 export function dungeonThemeAssetIds(themeIds: readonly string[] = enabledDungeonThemeIds()): Set<string> {
@@ -187,7 +305,8 @@ export function dungeonThemeAssetIds(themeIds: readonly string[] = enabledDungeo
   for (const id of themeIds) {
     const theme = dungeonTheme(id);
     for (const ref of theme.floorVariants) result.add(ref.assetId);
-    for (const ref of theme.wallFrameByMask) result.add(ref.assetId);
+    if (theme.wall) result.add(theme.wall.assetId);
+    for (const ref of theme.wallFrameByMask ?? []) result.add(ref.assetId);
     result.add(theme.stairsUp.assetId);
     result.add(theme.stairsDown.assetId);
     for (const rule of theme.decorations) for (const ref of rule.variants) result.add(ref.assetId);

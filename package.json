@@ -8,6 +8,7 @@
     "assets:inspect": "node scripts/inspect-assets.mjs",
     "predev": "npm run assets",
     "dev": "vite",
+    "preedit": "npm run assets",
     "edit": "vite --open /review.html",
     "prebuild": "npm run assets",
     "build": "tsc --noEmit && vite build",

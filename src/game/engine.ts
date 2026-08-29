@@ -3,7 +3,7 @@ import { Rng } from "./rng";
 import { HOME_SPAWN, createHomeMap } from "./homeMap";
 import { compileMap, loadTrialMapPack } from "./mapDocument";
 import { createDefaultMapPack } from "./defaultMapPack";
-import { actorDefinition } from "./actorCatalog";
+import { actorDefinition, actorEnemyCost, actorEnemyStatsAt, actorHasEnemyStats } from "./actorCatalog";
 import { ADVENTURER_RANKS, MERCHANT_ITEM_DEFINITIONS } from "./merchantContent";
 import { SEED_NPC_IDS, initializeMerchantWorld, pruneCampaignRecords, registerWorldItem } from "./merchantEconomy";
 import { selectFloorDelvers } from "./townDay";
@@ -17,7 +17,8 @@ import { adjustGuardProfile, ensureGuardProfile, recordGuardEvent } from "./guar
 import { recordBond } from "./npcBonds";
 import { advanceTime, canReorganizeHomeInventory, consumeDungeonTime, inventoryItemCount, playerAttackPower, playerDefensePower, processDayEvents, resetDailySystems, unequipIfNeeded } from "./merchantSystems";
 import { generateDungeonFloor, generatedPlacementCells } from "./dungeonGenerator";
-import { deriveDungeonSeed, dungeonThemeIdForFloor, snapshotDungeonThemePool } from "./dungeonThemes";
+import { depthBand, encounterBudget } from "./dungeonDifficulty";
+import { deriveDungeonSeed, dungeonThemeIdForFloor, dungeonThemeSpawns, snapshotDungeonThemePool, type DungeonSpawnEntry } from "./dungeonThemes";
 import { nextDungeonStep } from "./dungeonPathfinding";
 import { hasDungeonVision } from "./dungeonVision";
 import type {
@@ -228,38 +229,64 @@ function randomItemId(state: GameState, rng: Rng, floor: number): string {
 }
 
 /**
- * 手描きの階が用意されるまで、手続き生成の階も同じ craftpix の敵を使う。
- * 深いほど種類が入れ替わり、1階と2階で敵の系統が変わらない。
+ * 出現するのはテーマの出現表が決める。ここは、その表が空だったときに
+ * 階を無人にしないための最小限の保険である。深さの帯は
+ * dungeonDifficulty の DEPTH_BANDS ただひとつを使う。
  */
 export function defaultEnemyRoster(floor: number): readonly string[] {
-  if (floor >= 7) return ["plant3", "vampire2", "vampire3", "orc3"];
-  if (floor >= 5) return ["orc3", "plant2", "vampire1"];
-  if (floor >= 3) return ["slime2", "orc2", "plant1"];
+  const band = depthBand(floor);
+  if (band === "deep") return ["orc3", "plant3", "vampire3"];
+  if (band === "middle") return ["slime2", "orc2", "plant1"];
   return ["slime1", "orc1"];
 }
 
+/** A floor never holds more bodies than this, whatever the budget allows. */
+const MAX_FLOOR_ENEMIES = 24;
+
+/**
+ * Fills a floor up to its encounter budget instead of to a fixed head count, so
+ * a floor of tough enemies holds fewer of them and the total threat stays even.
+ */
 function buildEnemies(rosterRng: Rng, placementRng: Rng, map: DungeonMap, floor: number, occupied: Vec[]): Enemy[] {
-  const roster = Array.isArray(map.enemyRoster) && map.enemyRoster.length ? map.enemyRoster : defaultEnemyRoster(floor);
-  const authored = roster.map((actorId) => ({ actorId, actor: actorDefinition(actorId) })).filter((entry) => entry.actor?.enemyStats);
-  if (!authored.length) return [];
+  const spawns = map.procedural?.themeId
+    ? dungeonThemeSpawns(map.procedural.themeId, floor)
+    : (map.enemyRoster ?? []).map((actorId) => ({ actorId, minFloor: 1, weight: 1 } as DungeonSpawnEntry));
+  const table = spawns
+    .map((entry) => ({ entry, actor: actorDefinition(entry.actorId) }))
+    .filter((row) => row.actor && actorHasEnemyStats(row.actor) && row.entry.weight > 0);
+  if (!table.length) return [];
+  // Weight decides who turns up; tier decides how much of the budget they eat.
+  const weighted = table.flatMap((row) => Array<typeof row>(Math.max(1, Math.round(row.entry.weight))).fill(row));
   const candidates = generatedPlacementCells(map, ["combat", "loot", "treasure", "tomb"]);
-  return Array.from({ length: 6 + Math.min(floor, 6) }, (_, index) => {
-    const selected = rosterRng.pick(authored);
-    const stats = selected.actor!.enemyStats!;
+  const placed: Enemy[] = [];
+  const perActor = new Map<string, number>();
+  let budget = encounterBudget(floor);
+  // The cheapest line bounds the loop, so an exhausted budget always terminates.
+  const cheapest = Math.min(...table.map((row) => actorEnemyCost(row.actor, row.entry.role === "elite")));
+  while (budget >= cheapest && placed.length < MAX_FLOOR_ENEMIES) {
+    const row = rosterRng.pick(weighted);
+    const elite = row.entry.role === "elite";
+    const cost = actorEnemyCost(row.actor, elite);
+    const used = perActor.get(row.entry.actorId) ?? 0;
+    if (cost > budget || (row.entry.maxPerFloor !== undefined && used >= row.entry.maxPerFloor)) continue;
+    const stats = actorEnemyStatsAt(row.actor, floor, elite)!;
     const pos = freeFloor(map, placementRng, occupied, candidates, (candidate) => distance(candidate, map.stairsUp) > 6);
     occupied.push(pos);
-    return {
-      id: `${selected.actorId}-${floor}-${index}`,
-      actorId: selected.actorId,
-      name: selected.actor!.label,
-      hp: stats.baseHp + floor * stats.hpPerFloor,
-      maxHp: stats.baseHp + floor * stats.hpPerFloor,
+    budget -= cost;
+    perActor.set(row.entry.actorId, used + 1);
+    placed.push({
+      id: `${row.entry.actorId}-${floor}-${placed.length}`,
+      actorId: row.entry.actorId,
+      name: row.actor!.label,
+      hp: stats.maxHp,
+      maxHp: stats.maxHp,
       damage: stats.damage,
       state: "patrol" as const,
       staggerTurns: 0,
       pos,
-    };
-  });
+    });
+  }
+  return placed;
 }
 
 /** Deterministic entry point used by the map-editor trial and regression tests. */

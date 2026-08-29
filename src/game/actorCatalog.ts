@@ -2,6 +2,7 @@ import { CRAFTPIX_ACTORS, type CraftpixActorDefinition } from "./craftpixActors"
 import { GENERATED_ACTORS } from "./actorAssetCatalog.generated";
 import { GENERATED_ACTOR_SETTINGS } from "./actorSettings.generated";
 import type { ActorSettings, ActorSettingsCatalog } from "./actorSettings";
+import { enemyCost, enemyStatsAt, legacyEnemyStatsAt, type ActorProfile, type EnemyStats } from "./dungeonDifficulty";
 
 const BASE_ACTOR_CATALOG: Record<string, CraftpixActorDefinition> = Object.fromEntries([
   ...Object.entries(CRAFTPIX_ACTORS),
@@ -19,6 +20,8 @@ function materialize(actor: CraftpixActorDefinition, settings: ActorSettings | u
     ...(settings.roles ? { roles: [...settings.roles] } : {}),
     ...(settings.scale ? { scale: settings.scale } : {}),
     ...(settings.originY !== undefined ? { origin: { ...actor.origin, y: settings.originY } } : {}),
+    ...(settings.archetype ? { archetype: settings.archetype } : {}),
+    ...(settings.tier ? { tier: settings.tier } : {}),
     ...(settings.enemyStats ? { enemyStats: { ...settings.enemyStats } } : {}),
     clips: { ...actor.clips },
   };
@@ -43,9 +46,29 @@ export function enemyActorIds(): string[] {
   return Object.values(ACTOR_CATALOG).filter((actor) => actor.roles?.includes("enemy") && actorHasEnemyStats(actor) && actorSupportsDirectionalMovement(actor)).map((actor) => actor.id).sort();
 }
 
+/** An actor can fight if it has a tier profile, or legacy numbers of its own. */
 export function actorHasEnemyStats(actor: CraftpixActorDefinition | undefined): boolean {
+  if (actorProfile(actor)) return true;
   const stats = actor?.enemyStats;
   return Boolean(stats && Number.isFinite(stats.baseHp) && Number.isFinite(stats.hpPerFloor) && Number.isFinite(stats.damage));
+}
+
+export function actorProfile(actor: CraftpixActorDefinition | undefined): ActorProfile | undefined {
+  return actor?.archetype && actor.tier ? { archetype: actor.archetype, tier: actor.tier } : undefined;
+}
+
+/** What this actor is worth on a floor. Prefers the shared curve over old numbers. */
+export function actorEnemyStatsAt(actor: CraftpixActorDefinition | undefined, floor: number, elite = false): EnemyStats | undefined {
+  const profile = actorProfile(actor);
+  if (profile) return enemyStatsAt(profile, floor, elite);
+  const stats = actor?.enemyStats;
+  return stats ? legacyEnemyStatsAt(stats, floor) : undefined;
+}
+
+/** Cost against a floor's encounter budget; legacy actors count as one tier-one. */
+export function actorEnemyCost(actor: CraftpixActorDefinition | undefined, elite = false): number {
+  const profile = actorProfile(actor);
+  return profile ? enemyCost(profile, elite) : 1;
 }
 
 /** Dungeon actors must not swap between a fallback sprite and an action-only sheet. */

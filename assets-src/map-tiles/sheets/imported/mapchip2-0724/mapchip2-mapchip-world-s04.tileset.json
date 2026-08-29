@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "id": "mapchip2-mapchip-world-s04",
+  "label": "ワールド 街・ダンジョン",
+  "tileSize": 16,
+  "margin": 0,
+  "spacing": 0,
+  "mapKinds": [
+    "home",
+    "dungeon"
+  ],
+  "defaultLayer": "decoration",
+  "defaultWalkable": false,
+  "sourceFormat": "section-catalog",
+  "section": {
+    "index": 3,
+    "fromRow": 9,
+    "toRow": 22
+  },
+  "source": {
+    "archive": "mapchip2_0724.zip",
+    "path": "mapchip2/MapChip/world.png",
+    "sha256": "7e8e9abf605f33a7ca1bf9ecf95ba97ff5a9900a99daa6522c8e15cfe6c9b518"
+  }
+}

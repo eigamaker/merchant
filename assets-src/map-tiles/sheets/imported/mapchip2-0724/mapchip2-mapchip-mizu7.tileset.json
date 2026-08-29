@@ -1,7 +1,7 @@
 {
   "version": 1,
   "id": "mapchip2-mapchip-mizu7",
-  "label": "mizu7",
+  "label": "水7",
   "tileSize": 16,
   "margin": 0,
   "spacing": 0,
@@ -11,6 +11,11 @@
   ],
   "defaultLayer": "decoration",
   "defaultWalkable": false,
+  "sourceFormat": "wolf-autotile",
+  "autotile": {
+    "scheme": "blob47",
+    "animationFrames": 4
+  },
   "source": {
     "archive": "mapchip2_0724.zip",
     "path": "mapchip2/MapChip/mizu7.png",

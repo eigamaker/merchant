@@ -21,3 +21,16 @@ describe("actor settings", () => {
     expect(() => normalizeActorSettings({ version: 1, actors: { bad: { enemyStats: { baseHp: 0, hpPerFloor: 0, damage: 0 } } } })).toThrow(/invalid enemy stats/);
   });
 });
+
+describe("actor profile settings", () => {
+  it("keeps the archetype and tier instead of dropping them", () => {
+    const settings = normalizeActorSettings({ version: 1, actors: { orc1: { archetype: "brute", tier: 3 } } });
+    expect(settings.actors.orc1).toEqual({ archetype: "brute", tier: 3 });
+  });
+
+  it("rejects an unknown archetype or an out-of-range tier", () => {
+    expect(() => normalizeActorSettings({ version: 1, actors: { orc1: { archetype: "wizard" } } })).toThrow(/archetype/);
+    expect(() => normalizeActorSettings({ version: 1, actors: { orc1: { tier: 0 } } })).toThrow(/tier/);
+    expect(() => normalizeActorSettings({ version: 1, actors: { orc1: { tier: 6 } } })).toThrow(/tier/);
+  });
+});

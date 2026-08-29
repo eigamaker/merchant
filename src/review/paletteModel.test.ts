@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_PALETTE_DIMENSION, PaletteHistory, addPalettePage, clonePaletteLayout, createPalettePage, deletePalettePage, emptyPaletteLayout, fillPaletteStamp, paintPaletteStamp, paletteStamp, placeSourceFrames, rectanglePaletteStamp, resizePalettePage, selectCompatiblePalettePageId, transferPaletteRegion, validatePaletteLayout, type PaletteAsset, type PaletteLayer, type StampMap } from "./paletteModel";
+import { MAX_PALETTE_DIMENSION, PaletteHistory, addPalettePage, clonePaletteLayout, createPalettePage, deletePalettePage, emptyPaletteLayout, fillPaletteStamp, paintPaletteStamp, paletteStamp, placeSourceFrames, rectanglePaletteStamp, resizePalettePage, selectCompatiblePalettePageId, transferPaletteRegion, validatePaletteLayout, type PaletteAsset, type PaletteLayer, type StampMap, paletteTagSummary, tagPaletteRegion } from "./paletteModel";
 
 const asset: PaletteAsset = { id: "dungeon-sheet", label: "Dungeon", path: "/dungeon.png", mapKinds: ["dungeon"], tileSize: 16, margin: 0, spacing: 0, columns: 4, rows: 4, frameCount: 16, defaultLayer: "ground", defaultWalkable: true };
 const page = () => createPalettePage({ id: "p", label: "床", mapKind: "dungeon", tileSize: 16, width: 4, height: 4 });
@@ -55,6 +55,12 @@ describe("free-form palette model", () => {
     expect(target.cells.map((cell) => cell.frame).sort((a, b) => a - b)).toEqual([6, 7, 10, 11]);
   });
 
+  it("shares assets between home and dungeon palettes when tile size matches", () => {
+    const home = createPalettePage({ id: "home", label: "Home", mapKind: "home", tileSize: 16, width: 2, height: 2 });
+    expect(placeSourceFrames(home, { x: 0, y: 0 }, asset, { x: 0, y: 0, width: 1, height: 1 })).toBe(true);
+    expect(validatePaletteLayout({ version: 1, pages: [home] }, [asset])).toEqual([]);
+  });
+
   it("moves sparse selections without destroying overlapping source data", () => {
     const target = page();
     placeSourceFrames(target, { x: 0, y: 0 }, asset, { x: 0, y: 0, width: 1, height: 1 });
@@ -101,5 +107,56 @@ describe("free-form palette model", () => {
     expect(history.undo()).toBe(true); expect(history.layout.pages[0].label).toBe("床");
     expect(history.redo()).toBe(true); expect(history.layout.pages[0].label).toBe("編集");
     history.reload(clonePaletteLayout(source)); expect(history.dirty).toBe(false); expect(history.undo()).toBe(false);
+  });
+});
+
+describe("palette triage tags", () => {
+  const page = () => createPalettePage({
+    id: "shelf", label: "shelf", mapKind: "dungeon", tileSize: 16, width: 4, height: 4,
+    cells: [
+      { x: 0, y: 0, assetId: "a", frame: 0, layer: "ground", walkable: true },
+      { x: 1, y: 0, assetId: "a", frame: 1, layer: "ground", walkable: true },
+      { x: 3, y: 3, assetId: "a", frame: 2, layer: "decoration", walkable: false },
+    ],
+  });
+
+  it("tags every populated cell inside the rectangle and leaves the rest alone", () => {
+    const shelf = page();
+    expect(tagPaletteRegion(shelf, { x: 0, y: 0, width: 2, height: 1 }, { role: "floor", status: "ready" })).toBe(2);
+    expect(shelf.cells.map((cell) => cell.role)).toEqual(["floor", "floor", undefined]);
+    expect(shelf.cells[2]!.status).toBeUndefined();
+  });
+
+  it("reports nothing changed when the tag already matches", () => {
+    const shelf = page();
+    tagPaletteRegion(shelf, { x: 0, y: 0, width: 4, height: 4 }, { role: "prop" });
+    expect(tagPaletteRegion(shelf, { x: 0, y: 0, width: 4, height: 4 }, { role: "prop" })).toBe(0);
+  });
+
+  it("clears a field with null and drops a blank note", () => {
+    const shelf = page();
+    tagPaletteRegion(shelf, { x: 0, y: 0, width: 4, height: 4 }, { role: "wall", status: "rejected", note: "  grid is off  " });
+    expect(shelf.cells[0]).toMatchObject({ role: "wall", status: "rejected", note: "grid is off" });
+    tagPaletteRegion(shelf, { x: 0, y: 0, width: 4, height: 4 }, { role: null, note: "   " });
+    expect(shelf.cells[0]!.role).toBeUndefined();
+    expect(shelf.cells[0]!.note).toBeUndefined();
+    expect(shelf.cells[0]!.status).toBe("rejected");
+  });
+
+  it("counts the backlog, treating an untagged cell as unsorted", () => {
+    const shelf = page();
+    tagPaletteRegion(shelf, { x: 0, y: 0, width: 2, height: 1 }, { role: "floor", status: "ready" });
+    const summary = paletteTagSummary([shelf]);
+    expect(summary).toMatchObject({ cells: 3, untagged: 1 });
+    expect(summary.byRole.floor).toBe(2);
+    expect(summary.byStatus).toMatchObject({ ready: 2, unsorted: 1, rejected: 0 });
+  });
+
+  it("keeps tagged cells valid and rejects an unknown role", () => {
+    const shelf = page();
+    tagPaletteRegion(shelf, { x: 0, y: 0, width: 4, height: 4 }, { role: "stairs", status: "ready" });
+    expect(validatePaletteLayout({ version: 1, pages: [shelf] })).toEqual([]);
+    const broken = { ...shelf, cells: [{ ...shelf.cells[0], role: "doorway" }] };
+    expect(validatePaletteLayout({ version: 1, pages: [broken] })).toContain("cell role");
   });
 });

@@ -15,6 +15,19 @@ const MAP_ASSETS = new Map<string, typeof MAP_ASSET_CATALOG[number]>(
   MAP_ASSET_CATALOG.map((asset) => [asset.id, asset]),
 );
 
+/**
+ * How many map cells one frame of an asset covers, per side.
+ *
+ * The world grid is the map's cell size, so a 32px sheet on a 16px map is a
+ * single picture spanning 2x2 cells rather than four unrelated tiles. The
+ * anchor is the top-left cell.
+ */
+export function mapAssetFootprint(assetId: string, mapTileSize: number): number {
+  const asset = MAP_ASSETS.get(assetId);
+  if (!asset || mapTileSize <= 0) return 1;
+  return Math.max(1, Math.round(asset.tileSize / mapTileSize));
+}
+
 export function mapAssetDefinitions(assetIds: Iterable<string>): Array<typeof MAP_ASSET_CATALOG[number]> {
   const requested = new Set(assetIds);
   return MAP_ASSET_CATALOG.filter((asset) => requested.has(asset.id));

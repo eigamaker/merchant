@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { PNG } from "pngjs";
 import { afterEach, describe, expect, it } from "vitest";
-import { DUNGEON_THEME_FILE, MAP_EDITOR_PALETTE_API, MAP_EDITOR_THEME_API, MAP_TILE_PALETTE_API, buildMapTileAssets, readDungeonThemes, readTileSheets, savePaletteAtomically, validateDungeonThemes, validatePalette } from "./map-tile-pipeline.mjs";
+import { DUNGEON_THEME_FILE, MAP_EDITOR_PALETTE_API, MAP_EDITOR_THEME_API, MAP_TILE_PALETTE_API, availableEnemyIds, buildMapTileAssets, readDungeonThemes, readTileSheets, savePaletteAtomically, validateDungeonThemes, validatePalette } from "./map-tile-pipeline.mjs";
 
 const temporaryDirectories = [];
 afterEach(() => { for (const directory of temporaryDirectories.splice(0)) fs.rmSync(directory, { recursive: true, force: true }); });
@@ -44,6 +44,32 @@ describe("map tile source pipeline", () => {
     const invalid = structuredClone(source);
     invalid.themes[0].floorVariants[0].assetId = "removed-theme-sheet";
     expect(() => validateDungeonThemes(invalid, assets)).toThrow(/references unknown asset removed-theme-sheet/);
+  });
+
+  it("accepts imported enemies in a theme pool, not only the built-in twelve", () => {
+    const assets = readTileSheets(path.resolve("assets-src/map-tiles/sheets"));
+    const themes = structuredClone(readDungeonThemes(DUNGEON_THEME_FILE, assets));
+    themes.themes[0].spawns[0].actorId = "imported-ghoul";
+    // The whitelist used to be the twelve craftpix ids, which locked every
+    // imported enemy out of procedural generation.
+    expect(() => validateDungeonThemes(themes, assets, availableEnemyIds())).toThrow(/unavailable enemy imported-ghoul/);
+    expect(() => validateDungeonThemes(themes, assets, new Set([...availableEnemyIds(), "imported-ghoul"]))).not.toThrow();
+  });
+
+  it("collects enemy ids from imported actor definitions", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "enemy-ids-"));
+    const actor = (id, roles) => {
+      fs.mkdirSync(path.join(root, id), { recursive: true });
+      fs.writeFileSync(path.join(root, id, "actor.json"), JSON.stringify({ version: 1, id, label: id, roles }), "utf8");
+    };
+    actor("imported-ghoul", ["enemy"]);
+    actor("imported-villager", ["npc"]);
+    fs.writeFileSync(path.join(root, "broken.json"), "{ not json", "utf8");
+    const ids = availableEnemyIds(root);
+    expect(ids.has("imported-ghoul")).toBe(true);
+    expect(ids.has("imported-villager")).toBe(false);
+    expect(ids.has("slime1")).toBe(true);
+    fs.rmSync(root, { recursive: true, force: true });
   });
 
   it("reads paired sheets and derives frame geometry", () => {
@@ -112,6 +138,12 @@ describe("map tile source pipeline", () => {
     expect(fs.existsSync(path.join(outputDir, "catalog.json"))).toBe(true);
     expect(fs.existsSync(generatedTs)).toBe(true);
     expect(() => validatePalette({ version: 1, pages: [{ ...palette.pages[0], cells: [{ ...palette.pages[0].cells[0], assetId: "missing" }] }] }, result.assets)).toThrow(/unknown asset/);
+  });
+
+  it("allows a sheet on either map-kind palette when the tile size matches", () => {
+    const assets = [{ id: "shared", tileSize: 16, frameCount: 1, mapKinds: ["dungeon"] }];
+    const palette = { version: 1, pages: [{ id: "home", label: "Home", mapKind: "home", tileSize: 16, width: 1, height: 1, cells: [{ x: 0, y: 0, assetId: "shared", frame: 0, layer: "ground", walkable: true }] }] };
+    expect(() => validatePalette(palette, assets)).not.toThrow();
   });
 
   it("removes palette cells for sheets deleted from the source folder", () => {

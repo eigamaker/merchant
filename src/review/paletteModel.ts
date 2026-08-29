@@ -6,6 +6,16 @@
 export type PaletteMapKind = "home" | "dungeon";
 export type PaletteTileSize = 16 | 32;
 export type PaletteLayer = "ground" | "structure" | "decoration";
+/**
+ * What a tile is for, independent of which layer it happens to be drawn on.
+ * This is the vocabulary the dungeon themes shop from, so a shelf can be
+ * filtered down to "the floors" or "the props" instead of every frame at once.
+ */
+export type PaletteCellRole = "floor" | "wall" | "prop" | "stairs" | "liquid";
+/** Whether the author has decided a tile is usable. Absent means not yet triaged. */
+export type PaletteCellStatus = "ready" | "unsorted" | "rejected";
+export const PALETTE_CELL_ROLES: readonly PaletteCellRole[] = ["floor", "wall", "prop", "stairs", "liquid"];
+export const PALETTE_CELL_STATUSES: readonly PaletteCellStatus[] = ["ready", "unsorted", "rejected"];
 /** Large authored workspaces are sparse; only populated cells are persisted. */
 export const MAX_PALETTE_DIMENSION = 4096;
 
@@ -16,6 +26,10 @@ export interface PaletteCell {
   frame: number;
   layer: PaletteLayer;
   walkable: boolean;
+  role?: PaletteCellRole;
+  status?: PaletteCellStatus;
+  /** Why a tile was rejected, so the same sheet is not re-judged later. */
+  note?: string;
 }
 
 export interface PalettePage {
@@ -133,8 +147,11 @@ export function validatePaletteLayout(value: unknown, assets?: readonly PaletteA
       if (!Number.isInteger(cell.frame) || cell.frame < 0) errors.push("cell frame");
       if (!layers.includes(cell.layer)) errors.push("cell layer");
       if (typeof cell.walkable !== "boolean") errors.push("cell walkable");
+      if (cell.role !== undefined && !PALETTE_CELL_ROLES.includes(cell.role)) errors.push("cell role");
+      if (cell.status !== undefined && !PALETTE_CELL_STATUSES.includes(cell.status)) errors.push("cell status");
+      if (cell.note !== undefined && typeof cell.note !== "string") errors.push("cell note");
       const asset = assetIndex?.get(cell.assetId);
-      if (asset && (asset.tileSize !== page.tileSize || !asset.mapKinds.includes(page.mapKind) || cell.frame >= asset.frameCount)) errors.push("cell asset incompatible");
+      if (asset && (asset.tileSize !== page.tileSize || cell.frame >= asset.frameCount)) errors.push("cell asset incompatible");
       if (assetIndex && !asset) errors.push("unknown asset");
     }
   }
@@ -185,6 +202,57 @@ export function putPaletteCell(page: PalettePage, cell: PaletteCell | null, x: n
   return true;
 }
 
+/** `null` clears a field; omitted fields are left as they are. */
+export interface PaletteTagPatch {
+  role?: PaletteCellRole | null;
+  status?: PaletteCellStatus | null;
+  note?: string | null;
+}
+
+/**
+ * Applies a tag to every populated cell in a rectangle.
+ *
+ * Triage is the bottleneck when a pack arrives with thousands of frames, so the
+ * unit of work is a selection rather than a cell. Returns how many cells changed
+ * so the caller can report it and skip a no-op undo entry.
+ */
+export function tagPaletteRegion(page: PalettePage, rect: CellRect, patch: PaletteTagPatch): number {
+  let changed = 0;
+  for (const cell of page.cells) {
+    if (cell.x < rect.x || cell.y < rect.y || cell.x >= rect.x + rect.width || cell.y >= rect.y + rect.height) continue;
+    const before = `${cell.role ?? ""}|${cell.status ?? ""}|${cell.note ?? ""}`;
+    if (patch.role !== undefined) { if (patch.role === null) delete cell.role; else cell.role = patch.role; }
+    if (patch.status !== undefined) { if (patch.status === null) delete cell.status; else cell.status = patch.status; }
+    if (patch.note !== undefined) { const note = patch.note?.trim(); if (!note) delete cell.note; else cell.note = note; }
+    if (`${cell.role ?? ""}|${cell.status ?? ""}|${cell.note ?? ""}` !== before) changed += 1;
+  }
+  return changed;
+}
+
+export interface PaletteTagSummary {
+  cells: number;
+  /** Cells with no role yet — the work still to do. */
+  untagged: number;
+  byRole: Record<PaletteCellRole, number>;
+  byStatus: Record<PaletteCellStatus, number>;
+}
+
+/** Counts the triage state of a whole layout, or of one page. */
+export function paletteTagSummary(pages: readonly PalettePage[]): PaletteTagSummary {
+  const summary: PaletteTagSummary = {
+    cells: 0,
+    untagged: 0,
+    byRole: { floor: 0, wall: 0, prop: 0, stairs: 0, liquid: 0 },
+    byStatus: { ready: 0, unsorted: 0, rejected: 0 },
+  };
+  for (const page of pages) for (const cell of page.cells) {
+    summary.cells += 1;
+    if (cell.role) summary.byRole[cell.role] += 1; else summary.untagged += 1;
+    summary.byStatus[cell.status ?? "unsorted"] += 1;
+  }
+  return summary;
+}
+
 export function paletteRectFromPoints(a: CellPoint, b: CellPoint): CellRect {
   const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y);
   return { x, y, width: Math.abs(a.x - b.x) + 1, height: Math.abs(a.y - b.y) + 1 };
@@ -217,7 +285,7 @@ export function transferPaletteRegion(page: PalettePage, source: CellRect, targe
 
 /** Place a selected source-sheet rectangle. Source frames are row-major. */
 export function placeSourceFrames(page: PalettePage, target: CellPoint, asset: PaletteAsset, source: CellRect): boolean {
-  if (asset.tileSize !== page.tileSize || !asset.mapKinds.includes(page.mapKind) || source.width < 1 || source.height < 1 || !inside(page.width, page.height, target.x, target.y) || !inside(page.width, page.height, target.x + source.width - 1, target.y + source.height - 1)) return false;
+  if (asset.tileSize !== page.tileSize || source.width < 1 || source.height < 1 || !inside(page.width, page.height, target.x, target.y) || !inside(page.width, page.height, target.x + source.width - 1, target.y + source.height - 1)) return false;
   const columns = Math.max(1, asset.columns);
   for (let y = 0; y < source.height; y += 1) for (let x = 0; x < source.width; x += 1) {
     const frame = (source.y + y) * columns + source.x + x;

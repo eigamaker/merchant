@@ -5,6 +5,9 @@ export const ACTOR_SETTINGS_FILE = path.resolve("assets-src/actors/actor-setting
 export const ACTOR_SETTINGS_GENERATED_TS = path.resolve("src/game/actorSettings.generated.ts");
 
 const roles = new Set(["player", "npc", "enemy"]);
+/** Identity, not numbers. The curve lives in src/game/dungeonDifficulty.ts. */
+const archetypes = new Set(["brute", "swarm", "caster", "lurker"]);
+const MAX_TIER = 5;
 
 export function normalizeActorSettings(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("actor settings must be an object");
@@ -24,6 +27,15 @@ export function normalizeActorSettings(value) {
     if (settings.roles !== undefined) {
       if (!Array.isArray(settings.roles) || settings.roles.some((role) => !roles.has(role))) throw new Error(`invalid actor roles: ${id}`);
       normalized.roles = [...new Set(settings.roles)];
+    }
+    if (settings.archetype !== undefined) {
+      if (!archetypes.has(settings.archetype)) throw new Error(`invalid actor archetype: ${id}`);
+      normalized.archetype = settings.archetype;
+    }
+    if (settings.tier !== undefined) {
+      const tier = Number(settings.tier);
+      if (!Number.isInteger(tier) || tier < 1 || tier > MAX_TIER) throw new Error(`invalid actor tier: ${id}`);
+      normalized.tier = tier;
     }
     if (settings.enemyStats !== undefined) {
       const stats = settings.enemyStats;

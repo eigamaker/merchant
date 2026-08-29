@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "id": "mapchip2-mapchip-base-s18",
+  "label": "ダンジョン 装飾",
+  "tileSize": 16,
+  "margin": 0,
+  "spacing": 0,
+  "mapKinds": [
+    "home",
+    "dungeon"
+  ],
+  "defaultLayer": "decoration",
+  "defaultWalkable": false,
+  "sourceFormat": "section-catalog",
+  "section": {
+    "index": 17,
+    "fromRow": 187,
+    "toRow": 194
+  },
+  "source": {
+    "archive": "mapchip2_0724.zip",
+    "path": "mapchip2/MapChip/base.png",
+    "sha256": "d9fda151043490f91d7858f047846f23ea47aa5db7c86bb9b80447b3e02e8e67"
+  }
+}

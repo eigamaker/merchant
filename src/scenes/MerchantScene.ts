@@ -49,7 +49,7 @@ import { HOME_POI, HOME_SPAWN, createHomeMap } from "../game/homeMap";
 import { moveMapPosition } from "../game/mapTiles";
 import { assignHomeVisitorCells, findHomeVisitorPath } from "../game/homeVisitors";
 import { compileMap, loadTrialMap, loadTrialMapPack } from "../game/mapDocument";
-import { MISSING_MAP_ASSET_TEXTURE, authoredMapAssetIds, mapAssetDefinitions, resolveMapAssetFrame } from "../game/mapAssetRuntime";
+import { MISSING_MAP_ASSET_TEXTURE, authoredMapAssetIds, mapAssetDefinitions, mapAssetFootprint, resolveMapAssetFrame } from "../game/mapAssetRuntime";
 import { createDungeonRenderPlan, dungeonThemeAssetIds } from "../game/dungeonThemes";
 import { createDefaultMapPack } from "../game/defaultMapPack";
 import { acceptCustomerPurchaseRequest, cancelEscortCommission, escortFeeForNpc, isHireable, merchantItemName, postEscortCommission, prepareCustomerPurchaseRequest } from "../game/merchantEconomy";
@@ -1717,9 +1717,12 @@ export class MerchantScene extends Phaser.Scene {
     const run = this.state.run;
     if (!run) return;
     const tile = run.map.tileSize ?? DUNGEON_LEGACY_TILE;
-    const center = tile / 2;
-    const place = (x: number, y: number, texture: string, frame: number): void => {
-      terrain.add(this.add.image(x * tile + center, y * tile + center, texture, frame).setDisplaySize(tile, tile));
+    // A sheet coarser than the map grid is one picture spanning several cells,
+    // anchored at its top-left cell rather than squashed into one.
+    const place = (x: number, y: number, texture: string, frame: number, assetId?: string): void => {
+      const cells = assetId ? mapAssetFootprint(assetId, tile) : 1;
+      const span = cells * tile;
+      terrain.add(this.add.image(x * tile + span / 2, y * tile + span / 2, texture, frame).setDisplaySize(span, span));
     };
     const authored = run.map.authoredLayers;
     const hasAuthored = authored && Object.values(authored).some((values) => values?.some(Boolean));
@@ -1730,7 +1733,7 @@ export class MerchantScene extends Phaser.Scene {
           const cell = authored[name]?.[index];
           if (!cell) continue;
           const resolved = resolveMapAssetFrame(cell.assetId, cell.frame, (key) => this.textures.exists(key));
-          place(x, y, resolved.textureKey, resolved.frame);
+          place(x, y, resolved.textureKey, resolved.frame, cell.assetId);
         }
       }
     } else if (run.map.procedural) {
@@ -1740,7 +1743,7 @@ export class MerchantScene extends Phaser.Scene {
         for (const cell of [plan.ground[index], plan.structure[index], plan.decoration[index]]) {
           if (!cell) continue;
           const resolved = resolveMapAssetFrame(cell.assetId, cell.frame, (key) => this.textures.exists(key));
-          place(x, y, resolved.textureKey, resolved.frame);
+          place(x, y, resolved.textureKey, resolved.frame, cell.assetId);
         }
       }
     } else {
@@ -1755,7 +1758,7 @@ export class MerchantScene extends Phaser.Scene {
         return;
       }
       const resolved = resolveMapAssetFrame(visual.assetId, visual.frame, (key) => this.textures.exists(key));
-      place(position.x, position.y, resolved.textureKey, resolved.frame);
+      place(position.x, position.y, resolved.textureKey, resolved.frame, visual.assetId);
     };
     if (!run.map.procedural) {
       if (run.map.stairsDown) markerAt(run.map.stairsDown, run.map.stairsDownVisual, DUNGEON_OBJECT_FRAMES.stairs);
@@ -1770,10 +1773,26 @@ export class MerchantScene extends Phaser.Scene {
     const tile = run.map.tileSize ?? DUNGEON_LEGACY_TILE;
     const center = tile / 2;
     const partyOffsets = this.dungeonPartyOffsets(run.guard?.mode);
-    const place = (x: number, y: number, texture: string, frame: number, alpha = 1): Phaser.GameObjects.Image => {
-      const image = this.add.image(x * tile + center, y * tile + center, texture, frame).setDisplaySize(tile, tile).setAlpha(alpha);
+    // Everything that shares the floor is sorted by the bottom edge of its cell,
+    // so what stands lower on the map draws in front.
+    const depthAt = (y: number) => y * tile + tile;
+    const place = (x: number, y: number, texture: string, frame: number, alpha = 1, assetId?: string): Phaser.GameObjects.Image => {
+      const cells = assetId ? mapAssetFootprint(assetId, tile) : 1;
+      const span = cells * tile;
+      const image = this.add.image(x * tile + span / 2, y * tile + span / 2, texture, frame).setDisplaySize(span, span).setAlpha(alpha).setDepth(depthAt(y + cells - 1));
       return add(image);
     };
+    // The upper half of a two-cell wall belongs to the cell below it, so it
+    // sorts as that wall and can stand in front of an actor further back.
+    if (run.map.procedural) {
+      const plan = createDungeonRenderPlan(run.map, run.seed, run.floor);
+      for (let y = 0; y < run.map.height; y += 1) for (let x = 0; x < run.map.width; x += 1) {
+        const cell = plan.overhang[y * run.map.width + x];
+        if (!cell || !isExplored(run.map, x, y)) continue;
+        const resolved = resolveMapAssetFrame(cell.assetId, cell.frame, (key) => this.textures.exists(key));
+        add(this.add.image(x * tile + tile / 2, (y - 1) * tile + tile / 2, resolved.textureKey, resolved.frame).setDisplaySize(tile, tile).setDepth(depthAt(y)));
+      }
+    }
     for (const entry of run.items) {
       if (!isExplored(run.map, entry.pos.x, entry.pos.y)) continue;
       const texture = entry.item.visualId ? `merchant.${entry.item.visualId}` : "";
@@ -1798,7 +1817,7 @@ export class MerchantScene extends Phaser.Scene {
       const sprite = this.add.sprite(enemy.pos.x * tile + center, enemy.pos.y * tile + tile, textureKey, 0).setName(`actor:${enemy.id}`);
       const direction = this.dungeonWalkAnimations.get(enemy.id) ?? "down";
       if (!actorDefinition || !this.playCraftpixActor(sprite, actorDefinition, "idle", direction)) sprite.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE).play(`${textureKey}.idle-${direction}`);
-      add(sprite);
+      add(sprite.setDepth(depthAt(enemy.pos.y)));
     }
     for (const adventurer of run.adventurers) {
       if (!hasDungeonVision(run.map, run.player, adventurer.pos)) continue;
@@ -1809,7 +1828,7 @@ export class MerchantScene extends Phaser.Scene {
       const direction = this.dungeonWalkAnimations.get(adventurer.npcId) ?? "down";
       const sprite = this.add.sprite(adventurer.pos.x * tile + center, adventurer.pos.y * tile + tile, textureKey, 0).setName(`actor:${adventurer.npcId}`);
       if (!craftpix || !this.playCraftpixActor(sprite, craftpix, "idle", direction)) sprite.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE).play(`${textureKey}.idle-${direction}`);
-      add(sprite);
+      add(sprite.setDepth(depthAt(adventurer.pos.y)));
     }
     if (run.guard) {
       const npc = this.state.npcs.find((entry) => entry.id === run.guard?.guardId);
@@ -1820,12 +1839,14 @@ export class MerchantScene extends Phaser.Scene {
       const sprite = this.add.sprite(run.guard.pos.x * tile + center + partyOffsets.guard.x, run.guard.pos.y * tile + tile + partyOffsets.guard.y, textureKey, 0).setName(`actor:${run.guard.guardId}`);
       if (!craftpix || !this.playCraftpixActor(sprite, craftpix, "idle", direction)) sprite.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE).play(`${textureKey}.idle-${direction}`);
       if (run.guard.mode === "retreated") sprite.setTint(0x8b8791).setAlpha(0.72);
-      add(sprite);
+      add(sprite.setDepth(depthAt(run.guard.pos.y)));
     }
     const playerTexture = this.craftpixActorTexture(CRAFTPIX_PLAYER_ACTOR) ?? ASSET_MANIFEST.player.textureKey;
     const player = this.add.sprite(run.player.x * tile + center + (run.guard ? partyOffsets.player.x : 0), run.player.y * tile + tile + (run.guard ? partyOffsets.player.y : 0), playerTexture, 0).setName("actor:player");
     if (!this.playCraftpixActor(player, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing)) player.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE).play(`player.idle-${this.playerFacing}`);
-    add(player);
+    add(player.setDepth(depthAt(run.player.y)));
+    // Sorting happens before the overlays so fog and the hunger aura stay on top.
+    world.sort("depth");
     if (this.state.provisions === 0) this.renderHungerEffect(world, player, tile);
     if (run.guard?.mode === "covering") {
       const guardSprite = world.getByName(`actor:${run.guard.guardId}`);

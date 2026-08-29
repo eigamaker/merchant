@@ -5,6 +5,9 @@ import { unzipSync } from "fflate";
 import { XMLParser } from "fast-xml-parser";
 import { PNG } from "pngjs";
 import { MAP_TILE_PALETTE_FILE, savePaletteAtomically } from "./map-tile-pipeline.mjs";
+import { WOLF_AUTOTILE_DIVERGENCE_LIMIT, expandWolfAutotile, wolfAutotileDivergence, wolfAutotileGeometry } from "./autotile.mjs";
+import { catalogSections, sectionBandImage, sectionSheet } from "./sheet-sections.mjs";
+import { readWolfTileGroups, resolveGroupImages } from "./wolf-tile-groups.mjs";
 
 export const MAP_SHEET_IMPORT_DIR = path.resolve("assets-src/map-tiles/sheets/imported");
 export const ACTOR_IMPORT_DIR = path.resolve("assets-src/actors/imported");
@@ -223,6 +226,59 @@ function mapCandidate(id, label, sourcePath, bytes, suggestions, extra = {}) {
   return { id, label, sourcePath, ...suggestions, mapKinds: ["home", "dungeon"], defaultLayer: "decoration", defaultWalkable: false, selected: false, warnings: [], ...extra, _bytes: bytes };
 }
 
+const dataUri = (bytes) => `data:image/png;base64,${Buffer.from(bytes).toString("base64")}`;
+
+/** A strip of the expanded set, so the author can see the shape came out right. */
+function autotilePreview(expanded, tiles = 8) {
+  const sheet = PNG.sync.read(expanded.png);
+  const width = Math.min(tiles, expanded.columns) * 16;
+  const preview = new PNG({ width, height: 16 });
+  for (let y = 0; y < 16; y += 1) {
+    const from = (y * sheet.width) * 4;
+    sheet.data.copy(preview.data, y * width * 4, from, from + width * 4);
+  }
+  return dataUri(PNG.sync.write(preview));
+}
+
+/**
+ * Names the shape of a sheet instead of guessing a grid for it.
+ *
+ * The previous detector only asked whether a 16px or 32px grid divided the image
+ * evenly.  A WOLF autotile is 16x80, which divides perfectly, so 85 of
+ * mapchip2's 87 sheets were imported as five-frame fragments without a warning.
+ * Anything that matches no known shape is now reported as `unknown` and left for
+ * the author rather than being registered on a confident-looking guess.
+ */
+function detectSheetFormat(bytes, source) {
+  const info = pngInfo(bytes, source);
+  const image = { width: info.width, height: info.height, data: info.data };
+
+  const autotile = wolfAutotileGeometry(info.width, info.height);
+  if (autotile) {
+    const divergence = wolfAutotileDivergence(image);
+    return {
+      kind: "wolf-autotile", tileSize: autotile.tileSize, margin: 0, spacing: 0,
+      columns: autotile.tileCount, rows: autotile.animationFrames,
+      frameCount: autotile.tileCount * autotile.animationFrames,
+      animationFrames: autotile.animationFrames, divergence,
+      confident: divergence <= WOLF_AUTOTILE_DIVERGENCE_LIMIT,
+    };
+  }
+
+  for (const tileSize of [16, 32]) {
+    if (info.width % tileSize !== 0 || info.height % tileSize !== 0) continue;
+    const sections = catalogSections(image, tileSize);
+    if (sections.length) return { kind: "section-catalog", tileSize, margin: 0, spacing: 0, columns: info.width / tileSize, sections };
+  }
+
+  const suggestions = sheetSuggestions(bytes, source);
+  if (suggestions.suggestedTileSize) {
+    const geometry = cellGeometry(info.width, info.height, suggestions.suggestedTileSize, 0, 0);
+    return { kind: "grid", tileSize: suggestions.suggestedTileSize, margin: 0, spacing: 0, ...geometry, suggestions };
+  }
+  return { kind: "unknown", reason: `${info.width}x${info.height} は既知のシート形式に一致しません。`, suggestions };
+}
+
 export function analyzeImport(input, { fileName = "input" } = {}) {
   const bytes = Buffer.isBuffer(input) ? input : Buffer.from(input);
   const isZip = bytes.subarray(0, 2).toString("ascii") === "PK" || /\.zip$/i.test(fileName);
@@ -230,7 +286,6 @@ export function analyzeImport(input, { fileName = "input" } = {}) {
   const pngEntries = [...files.entries()].filter(([name]) => IMAGE_EXTENSIONS.has(path.extname(name).toLowerCase()));
   const tmxEntries = [...files.entries()].filter(([name]) => /\.(tmx|tsx)$/i.test(name));
   const metaEntries = [...files.entries()].filter(([name]) => /(^|\/)(license|readme)([^/]*)\.(txt|md)$/i.test(name));
-  const tileEntries = [...files.entries()].filter(([name]) => /\.tile$/i.test(name));
   const mapTiles = [];
   const warnings = [];
   const actors = [];
@@ -245,29 +300,67 @@ export function analyzeImport(input, { fileName = "input" } = {}) {
     warnings.push(...report.warnings);
   }
   const actorTmx = tmxReports.some((report) => report.classification.target === "actor");
-  const pngSuggestions = new Map(pngEntries.map(([name, value]) => [name, sheetSuggestions(value, name)]));
+  const formats = new Map(pngEntries.map(([name, value]) => [name, detectSheetFormat(value, name)]));
+  // Only plain grids vote on the archive's cell size; an autotile is always 16px
+  // and a catalogue carries its own.
   let only16 = 0, only32 = 0;
-  for (const suggestions of pngSuggestions.values()) {
-    const sizes = suggestions.candidates.map((candidate) => candidate.tileSize);
+  for (const format of formats.values()) {
+    if (format.kind !== "grid" && format.kind !== "unknown") continue;
+    const sizes = format.suggestions.candidates.map((candidate) => candidate.tileSize);
     if (sizes.length === 1 && sizes[0] === 16) only16 += 1;
     if (sizes.length === 1 && sizes[0] === 32) only32 += 1;
   }
   const archiveConsensus = isZip && only16 > only32 ? 16 : isZip && only32 > only16 ? 32 : undefined;
   for (const [name, value] of pngEntries) {
-    const suggestions = pngSuggestions.get(name);
-    if (archiveConsensus && suggestions.candidates.some((candidate) => candidate.tileSize === archiveConsensus)) suggestions.suggestedTileSize = archiveConsensus;
+    const format = formats.get(name);
     const tmxReferenced = referenced.has(name);
-    const id = slug(name.replace(/\//g, "-"));
-    const candidate = mapCandidate(id, path.basename(name, ".png"), name, value, { tileSize: suggestions.suggestedTileSize, margin: 0, spacing: 0, ...(suggestions.suggestedTileSize ? cellGeometry(suggestions.width, suggestions.height, suggestions.suggestedTileSize, 0, 0) : {}) }, { selected: !actorTmx && !tmxReferenced && Boolean(suggestions.suggestedTileSize), suggestions, sourceArchive: isZip ? fileName : undefined });
-    if (tileEntries.length) candidate.selected = !actorTmx && /(^|\/)(base|world)\.png$/i.test(name);
-    if (!suggestions.suggestedTileSize) candidate.warnings.push("16px/32pxグリッドを自動確定できません。手動設定が必要です。");
-    if (tmxReferenced) candidate.selected = false;
+    const baseId = slug(name.replace(/\//g, "-"));
+    const baseLabel = path.basename(name, ".png");
+    const shared = { selected: !actorTmx && !tmxReferenced, sourceArchive: isZip ? fileName : undefined };
+
+    if (format.kind === "wolf-autotile") {
+      const expanded = expandWolfAutotile(value);
+      const candidate = mapCandidate(baseId, baseLabel, name, value,
+        { tileSize: format.tileSize, margin: 0, spacing: 0, columns: expanded.columns, rows: expanded.rows, frameCount: expanded.frameCount },
+        // The 256-entry lookup is a property of the scheme, not of this sheet, so
+        // it stays in code (src/game/autotile.ts) instead of every payload.
+        { ...shared, format, autotile: { scheme: expanded.autotile.scheme, animationFrames: expanded.autotile.animationFrames }, preview: autotilePreview(expanded) });
+      // The expansion itself is routine and stated once for the whole group;
+      // only a sheet whose pixels disagree with the format earns a warning.
+      if (!format.confident) candidate.warnings.push("画素の並びがこの形式らしくありません。プレビューを確認してください。");
+      mapTiles.push(candidate);
+      continue;
+    }
+
+    if (format.kind === "section-catalog") {
+      const sheet = PNG.sync.read(value);
+      for (const section of format.sections) {
+        mapTiles.push(mapCandidate(`${baseId}-s${String(section.index + 1).padStart(2, "0")}`, `${baseLabel} 第${section.index + 1}区`, name, value,
+          { tileSize: format.tileSize, margin: 0, spacing: 0, columns: section.columns, rows: section.rows, frameCount: section.frameCount },
+          { ...shared, format: { kind: "section-catalog", tileSize: format.tileSize }, section, preview: dataUri(sectionBandImage(sheet, section, format.tileSize)) }));
+      }
+      continue;
+    }
+
+    if (format.kind === "grid") {
+      const suggestions = format.suggestions;
+      const tileSize = archiveConsensus && suggestions.candidates.some((candidate) => candidate.tileSize === archiveConsensus) ? archiveConsensus : format.tileSize;
+      mapTiles.push(mapCandidate(baseId, baseLabel, name, value,
+        { tileSize, margin: 0, spacing: 0, ...cellGeometry(suggestions.width, suggestions.height, tileSize, 0, 0) },
+        { ...shared, format: { kind: "grid", tileSize }, suggestions }));
+      continue;
+    }
+
+    const candidate = mapCandidate(baseId, baseLabel, name, value, { tileSize: undefined, margin: 0, spacing: 0 },
+      { ...shared, selected: false, format, suggestions: format.suggestions });
+    candidate.warnings.push(`${format.reason}手動でセルサイズを指定してください。`);
     mapTiles.push(candidate);
   }
-  if (tileEntries.length) warnings.push(`WOLF RPG Editorの.tile設定を${tileEntries.length}件検出しました。自動接続規則は静的タイルへ変換しません。`);
+  const tileGroups = readWolfTileGroups(files).map((group) => resolveGroupImages(group, files));
+  if (tileGroups.length) warnings.push(`WOLF RPG Editorの.tile設定から${tileGroups.length}件のタイルセット構成（${tileGroups.map((group) => group.label).join(" / ")}）を読み込みました。テーマの下書きとして利用できます。`);
   if (!metaEntries.length) warnings.push("License/READMEが見つかりません。利用条件を手動確認してください。");
   const dedup = new Map();
-  for (const candidate of mapTiles) { const key = `${candidate.sourcePath}:${candidate.tileSize}:${candidate.margin}:${candidate.spacing}`; if (!dedup.has(key)) dedup.set(key, candidate); }
+  for (const candidate of mapTiles) { const key = `${candidate.sourcePath}:${candidate.section?.index ?? ""}:${candidate.tileSize}:${candidate.margin}:${candidate.spacing}`; if (!dedup.has(key)) dedup.set(key, candidate); }
   return {
     version: 1,
     source: sourceRecord(fileName, bytes),
@@ -276,6 +369,7 @@ export function analyzeImport(input, { fileName = "input" } = {}) {
     licenses: metaEntries.map(([name]) => name),
     warnings,
     tmx: tmxReports,
+    tileGroups,
     mapTiles: [...dedup.values()],
     actors,
     _files: files,
@@ -329,6 +423,32 @@ function appendPalettePages(paletteFile, selectedAssets, existingPages) {
   return pages;
 }
 
+/**
+ * Turns an approved candidate into the PNG that is actually stored, plus the
+ * extra sidecar fields that record how it was produced.  Autotiles are expanded
+ * into their blob set and catalogue sections are cropped out, so everything on
+ * disk is a plain grid the rest of the pipeline already understands.
+ */
+function materializeCandidate(candidate, bytes) {
+  const kind = candidate.format?.kind ?? "grid";
+  if (kind === "wolf-autotile") {
+    const expanded = expandWolfAutotile(bytes);
+    if (expanded.columns !== candidate.columns || expanded.rows !== candidate.rows) {
+      throw new Error(`map asset ${candidate.id} expanded to ${expanded.columns}x${expanded.rows}, expected ${candidate.columns}x${candidate.rows}`);
+    }
+    return { png: expanded.png, extras: { sourceFormat: "wolf-autotile", autotile: { scheme: expanded.autotile.scheme, animationFrames: expanded.autotile.animationFrames } } };
+  }
+  if (kind === "section-catalog") {
+    if (!candidate.section) throw new Error(`map asset ${candidate.id} is missing its section range`);
+    const sheet = PNG.sync.read(bytes);
+    return {
+      png: sectionSheet(sheet, candidate.section, candidate.tileSize),
+      extras: { sourceFormat: "section-catalog", section: { index: candidate.section.index, fromRow: candidate.section.fromRow, toRow: candidate.section.toRow } },
+    };
+  }
+  return { png: normalizedPng(bytes, candidate.sourcePath), extras: { sourceFormat: "grid" } };
+}
+
 export function commitImport(analysis, { mapTiles = [], actors = [], createPalettePages = false, licenseAcknowledged = false, paletteFile = MAP_TILE_PALETTE_FILE, mapSheetImportDir = MAP_SHEET_IMPORT_DIR, actorImportDir = ACTOR_IMPORT_DIR, mapImportManifest = MAP_IMPORT_MANIFEST, actorImportManifest = ACTOR_IMPORT_MANIFEST, paletteInputDir, paletteOutputDir, paletteGeneratedTs } = {}) {
   if (!licenseAcknowledged) throw new Error("利用条件の確認が必要です");
   if (!analysis?._files) throw new Error("analysis has expired; analyze the source again");
@@ -345,14 +465,14 @@ export function commitImport(analysis, { mapTiles = [], actors = [], createPalet
       if (selected.tileSize !== 16 && selected.tileSize !== 32) throw new Error(`map asset ${selected.id} requires tileSize 16 or 32`);
       const bytes = analysis._files.get(selected.sourcePath);
       if (!bytes) throw new Error(`missing source file: ${selected.sourcePath}`);
-      const normalized = normalizedPng(bytes, selected.sourcePath);
+      const { png: normalized, extras } = materializeCandidate(selected, bytes);
       const geometry = cellGeometry(pngInfo(normalized, selected.sourcePath).width, pngInfo(normalized, selected.sourcePath).height, selected.tileSize, selected.margin ?? 0, selected.spacing ?? 0);
       if (!geometry) throw new Error(`map asset ${selected.id} dimensions do not fit configured grid`);
       const destination = path.join(mapRoot, `${selected.id}.png`), configFile = path.join(mapRoot, `${selected.id}.tileset.json`);
       if (fs.existsSync(destination) || fs.existsSync(configFile)) throw new Error(`asset already exists: ${selected.id}`);
       fs.mkdirSync(mapRoot, { recursive: true });
       fs.writeFileSync(destination, normalized);
-      fs.writeFileSync(configFile, JSON.stringify({ version: 1, id: selected.id, label: selected.label, tileSize: selected.tileSize, margin: selected.margin ?? 0, spacing: selected.spacing ?? 0, mapKinds: selected.mapKinds ?? ["home", "dungeon"], defaultLayer: selected.defaultLayer ?? "decoration", defaultWalkable: selected.defaultWalkable ?? false, source: { archive: analysis.source.fileName, path: selected.sourcePath, sha256: sha256(bytes) } }, null, 2) + "\n", "utf8");
+      fs.writeFileSync(configFile, JSON.stringify({ version: 1, id: selected.id, label: selected.label, tileSize: selected.tileSize, margin: selected.margin ?? 0, spacing: selected.spacing ?? 0, mapKinds: selected.mapKinds ?? ["home", "dungeon"], defaultLayer: selected.defaultLayer ?? "decoration", defaultWalkable: selected.defaultWalkable ?? false, ...extras, source: { archive: analysis.source.fileName, path: selected.sourcePath, sha256: sha256(bytes) } }, null, 2) + "\n", "utf8");
       selected._normalizedBytes = normalized;
       selected._geometry = geometry;
       created.push(destination, configFile);

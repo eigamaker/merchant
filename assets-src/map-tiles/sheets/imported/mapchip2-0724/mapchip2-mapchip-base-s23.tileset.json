@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "id": "mapchip2-mapchip-base-s23",
+  "label": "雪 屋根・テント",
+  "tileSize": 16,
+  "margin": 0,
+  "spacing": 0,
+  "mapKinds": [
+    "home",
+    "dungeon"
+  ],
+  "defaultLayer": "decoration",
+  "defaultWalkable": false,
+  "sourceFormat": "section-catalog",
+  "section": {
+    "index": 22,
+    "fromRow": 230,
+    "toRow": 235
+  },
+  "source": {
+    "archive": "mapchip2_0724.zip",
+    "path": "mapchip2/MapChip/base.png",
+    "sha256": "d9fda151043490f91d7858f047846f23ea47aa5db7c86bb9b80447b3e02e8e67"
+  }
+}

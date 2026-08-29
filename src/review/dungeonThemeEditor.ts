@@ -2,7 +2,7 @@ import { DEFAULT_PALETTE_LAYOUT } from "../game/mapAssetCatalog.generated";
 import { DUNGEON_THEME_CATALOG } from "../game/dungeonThemeCatalog.generated";
 import { generateDungeonFloor, type GeneratedDungeonFloor } from "../game/dungeonGenerator";
 import { createDungeonRenderPlan, type AssetFrameRef, type DungeonThemeDefinition } from "../game/dungeonThemes";
-import { clonePaletteLayout, validatePaletteLayout, type PaletteLayout, type PalettePage } from "./paletteModel";
+import { PALETTE_CELL_ROLES, clonePaletteLayout, validatePaletteLayout, type PaletteCell, type PaletteCellRole, type PaletteLayout, type PalettePage } from "./paletteModel";
 
 interface EditorAsset {
   id: string;
@@ -15,11 +15,13 @@ interface EditorAsset {
   rows: number;
   frameCount: number;
   mapKinds: readonly string[];
+  autotile?: { scheme: string; animationFrames: number };
 }
 
 type EditableTheme = DungeonThemeDefinition & {
   floorVariants: Array<{ assetId: string; frame: number; weight: number }>;
-  wallFrameByMask: AssetFrameRef[];
+  wall?: { assetId: string };
+  wallFrameByMask?: AssetFrameRef[];
   decorations: Array<{
     id: string;
     placement: "floor" | "wall" | "corner" | "deadEnd";
@@ -27,13 +29,14 @@ type EditableTheme = DungeonThemeDefinition & {
     weight: number;
     maxPerFloor: number;
   }>;
-  enemyPools: { shallow: string[]; middle: string[]; deep: string[] };
+  spawns?: Array<{ actorId: string; minFloor: number; maxFloor?: number; weight: number; role?: "common" | "elite"; maxPerFloor?: number }>;
 };
 
 interface ThemeDocument { version: 1; themes: EditableTheme[] }
 
 const cloneCatalog = (): ThemeDocument => ({ version: 1, themes: structuredClone(DUNGEON_THEME_CATALOG) as unknown as EditableTheme[] });
 const escapeHtml = (value: unknown): string => String(value).replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]!);
+const ROLE_LABELS: Record<PaletteCellRole, string> = { floor: "床", wall: "壁", prop: "小物", stairs: "階段", liquid: "水・溶岩" };
 const WALL_MASK_LABELS = [
   "孤立", "北へ接続", "東へ接続", "北東角",
   "南へ接続", "縦", "東南角", "西が開いたT字",
@@ -54,6 +57,7 @@ export class DungeonThemeEditor {
   private palettePageId = "";
   private paletteStatus = "標準パレットを表示中";
   private activeRefPath = "stairsUp";
+  private roleFilter: PaletteCellRole | "all" = "all";
   private readonly assetsById: Map<string, EditorAsset>;
   private readonly images = new Map<string, HTMLImageElement>();
 
@@ -61,7 +65,7 @@ export class DungeonThemeEditor {
     this.assetsById = new Map(assets.filter((asset) => asset.tileSize === 16 && asset.mapKinds.includes("dungeon")).map((asset) => [asset.id, asset]));
     for (const asset of this.assetsById.values()) {
       const image = new Image();
-      image.onload = () => { this.renderFramePreviews(); this.renderDungeonPreview(); };
+      image.onload = () => { this.renderFramePreviews(); this.renderWallPreview(); this.renderDungeonPreview(); };
       image.src = asset.path;
       this.images.set(asset.id, image);
     }
@@ -82,6 +86,48 @@ export class DungeonThemeEditor {
   private refEditor(label: string, ref: AssetFrameRef, path: string, weight?: number): string {
     const active = path === this.activeRefPath ? " active" : "";
     return `<div class="theme-ref${active}" data-theme-ref-row="${escapeHtml(path)}"><span>${escapeHtml(label)}</span><canvas width="32" height="32" data-theme-frame-preview="${escapeHtml(path)}"></canvas><select data-theme-ref-asset="${escapeHtml(path)}" aria-label="${escapeHtml(label)}の素材">${this.assetOptions(ref.assetId)}</select><input data-theme-ref-frame="${escapeHtml(path)}" type="number" min="0" value="${ref.frame}" title="frame" aria-label="${escapeHtml(label)}のframe">${weight === undefined ? "<span class=\"theme-ref-weight-spacer\"></span>" : `<input data-theme-ref-weight="${escapeHtml(path)}" type="number" min="0.01" step="0.01" value="${weight}" title="weight" aria-label="${escapeHtml(label)}のweight">`}<button type="button" class="theme-ref-target" data-theme-ref-target="${escapeHtml(path)}">選択先</button></div>`;
+  }
+
+  /** Expanded blob sheets are the only assets a theme can name as its wall set. */
+  private wallSets(): EditorAsset[] {
+    return [...this.assetsById.values()].filter((asset) => asset.autotile?.scheme === "blob47");
+  }
+
+  /**
+   * One choice replaces sixteen frame numbers: an expanded autotile resolves
+   * every neighbourhood on its own. Themes that still carry the old sixteen
+   * frames keep their grid so they stay editable.
+   */
+  private renderWallEditor(theme: EditableTheme): string {
+    const sets = this.wallSets();
+    if (theme.wall || !theme.wallFrameByMask) {
+      const selected = theme.wall?.assetId ?? "";
+      const asset = this.assetsById.get(selected);
+      const options = sets.map((entry) => `<option value="${escapeHtml(entry.id)}"${entry.id === selected ? " selected" : ""}>${escapeHtml(entry.label)}</option>`).join("");
+      const missing = selected && !asset ? `<p class="small theme-wall-missing">素材 ${escapeHtml(selected)} が見つかりません。</p>` : "";
+      const detail = asset ? `47タイル × ${asset.autotile!.animationFrames}コマ` : "壁セットを選択してください";
+      return `<div class="theme-wall-set">
+        <label>壁セット <select data-theme-wall-set aria-label="壁セット">${options || `<option value="">展開済みオートタイルがありません</option>`}</select></label>
+        <canvas width="376" height="16" data-theme-wall-preview></canvas>
+        <p class="small">${escapeHtml(detail)}・8近傍から自動でつながります。</p>${missing}
+      </div>`;
+    }
+    return `<div class="theme-wall-grid">${theme.wallFrameByMask.map((ref, index) => this.refEditor(`${WALL_MASK_LABELS[index]} (${index.toString(2).padStart(4, "0")})`, ref, `wall:${index}`)).join("")}</div>`;
+  }
+
+  /** Draws the first tiles of the chosen wall set so the choice is visible. */
+  private renderWallPreview(): void {
+    const canvas = this.host.querySelector<HTMLCanvasElement>("[data-theme-wall-preview]");
+    if (!canvas) return;
+    const context = canvas.getContext("2d");
+    const asset = this.theme.wall ? this.assetsById.get(this.theme.wall.assetId) : undefined;
+    const image = asset ? this.images.get(asset.id) : undefined;
+    if (!context) return;
+    context.imageSmoothingEnabled = false;
+    context.clearRect(0, 0, canvas.width, canvas.height);
+    if (!asset || !image?.complete || image.naturalWidth === 0) return;
+    const tiles = Math.min(asset.columns, Math.floor(canvas.width / 16));
+    for (let tile = 0; tile < tiles; tile += 1) context.drawImage(image, tile * 16, 0, 16, 16, tile * 16, 0, 16, 16);
   }
 
   private dungeonPalettePages(): PalettePage[] {
@@ -107,15 +153,22 @@ export class DungeonThemeEditor {
     return path;
   }
 
+  /** Cells the picker should offer, honouring the role filter and hiding rejects. */
+  private pickableCells(page: PalettePage | undefined): PaletteCell[] {
+    if (!page) return [];
+    return page.cells.filter((cell) => cell.status !== "rejected" && (this.roleFilter === "all" || cell.role === this.roleFilter));
+  }
+
   private renderPalettePicker(): string {
     const pages = this.dungeonPalettePages();
     const page = this.palettePage;
-    const maxColumn = page ? Math.max(1, ...page.cells.map((cell) => cell.x + 1)) : 1;
-    const maxRow = page ? Math.max(1, ...page.cells.map((cell) => cell.y + 1)) : 1;
+    const cells = this.pickableCells(page);
+    const maxColumn = cells.length ? Math.max(1, ...cells.map((cell) => cell.x + 1)) : 1;
+    const maxRow = cells.length ? Math.max(1, ...cells.map((cell) => cell.y + 1)) : 1;
     return `<section class="map-editor-side theme-asset-palette-panel">
-      <div class="panel-heading"><div><h2>素材パレットから割り当て</h2><p class="small">設定先を選び、画像をクリックするか設定欄へドラッグします。タイル名は不要です。</p></div><div class="theme-palette-heading"><strong data-theme-palette-target>選択先: ${escapeHtml(this.refLabel(this.activeRefPath))}</strong><button type="button" data-theme-palette-reload>再読込</button></div></div>
+      <div class="panel-heading"><div><h2>素材パレットから割り当て</h2><p class="small">設定先を選び、画像をクリックするか設定欄へドラッグします。タイル名は不要です。</p></div><div class="theme-palette-heading"><strong data-theme-palette-target>選択先: ${escapeHtml(this.refLabel(this.activeRefPath))}</strong><label class="theme-palette-filter">用途 <select data-theme-palette-role aria-label="用途で絞り込む">${["all", ...PALETTE_CELL_ROLES].map((role) => `<option value="${role}"${role === this.roleFilter ? " selected" : ""}>${role === "all" ? "すべて" : escapeHtml(ROLE_LABELS[role as PaletteCellRole])}</option>`).join("")}</select></label><button type="button" data-theme-palette-reload>再読込</button></div></div>
       <div class="theme-palette-tabs" role="tablist" aria-label="ダンジョン素材パレット">${pages.map((entry) => `<button type="button" role="tab" data-theme-palette-page="${escapeHtml(entry.id)}" class="${entry.id === page?.id ? "active" : ""}" aria-selected="${entry.id === page?.id}">${escapeHtml(entry.label)}</button>`).join("")}</div>
-      <div class="theme-palette-scroll">${page ? `<div class="theme-palette-grid" style="grid-template-columns:repeat(${maxColumn},48px);grid-template-rows:repeat(${maxRow},48px)">${page.cells.map((cell) => `<button type="button" class="theme-palette-cell" draggable="true" data-theme-palette-asset="${escapeHtml(cell.assetId)}" data-theme-palette-frame="${cell.frame}" style="grid-column:${cell.x + 1};grid-row:${cell.y + 1}" title="${escapeHtml(this.assetsById.get(cell.assetId)?.label ?? cell.assetId)} / frame ${cell.frame}"><canvas width="44" height="44" data-theme-palette-preview data-asset-id="${escapeHtml(cell.assetId)}" data-frame="${cell.frame}"></canvas></button>`).join("")}</div>` : `<p class="small">16pxのダンジョン用パレットがありません。素材パレット編集で作成してください。</p>`}</div>
+      <div class="theme-palette-scroll">${page ? `<div class="theme-palette-grid" style="grid-template-columns:repeat(${maxColumn},48px);grid-template-rows:repeat(${maxRow},48px)">${cells.map((cell) => `<button type="button" class="theme-palette-cell" draggable="true" data-theme-palette-asset="${escapeHtml(cell.assetId)}" data-theme-palette-frame="${cell.frame}" style="grid-column:${cell.x + 1};grid-row:${cell.y + 1}" title="${escapeHtml(this.assetsById.get(cell.assetId)?.label ?? cell.assetId)} / frame ${cell.frame}"><canvas width="44" height="44" data-theme-palette-preview data-asset-id="${escapeHtml(cell.assetId)}" data-frame="${cell.frame}"></canvas></button>`).join("")}</div>` : `<p class="small">16pxのダンジョン用パレットがありません。素材パレット編集で作成してください。</p>`}</div>
       <p class="theme-palette-status" data-theme-palette-status>${escapeHtml(this.paletteStatus)}</p>
     </section>`;
   }
@@ -134,18 +187,19 @@ export class DungeonThemeEditor {
           <div class="panel-heading"><div><h2>${escapeHtml(theme.label)}</h2><p class="small">IDは公開後固定です。画像パック交換時は参照先とframeだけを変更します。</p></div><code>${escapeHtml(theme.id)}</code></div>
           <h3>階段</h3>${this.refEditor("上り", theme.stairsUp, "stairsUp")}${this.refEditor("下り", theme.stairsDown, "stairsDown")}
           <h3>床候補</h3><div class="theme-ref-list">${theme.floorVariants.map((ref, index) => this.refEditor(`床 ${index + 1}`, ref, `floor:${index}`, ref.weight)).join("")}</div>
-          <h3>壁マスク <small>N=1 / E=2 / S=4 / W=8</small></h3><div class="theme-wall-grid">${theme.wallFrameByMask.map((ref, index) => this.refEditor(`${WALL_MASK_LABELS[index]} (${index.toString(2).padStart(4, "0")})`, ref, `wall:${index}`)).join("")}</div>
+          <h3>壁</h3>${this.renderWallEditor(theme)}
         </aside>
         <section class="map-editor-side theme-preview-panel">
           <div class="panel-heading"><div><h2>生成プレビュー</h2><p class="small">テーマを変えても論理地形と配置領域は変わりません。</p></div><span data-theme-preview-status></span></div>
           <div class="theme-preview-controls"><label>seed <input data-theme-seed type="number" value="${this.seed}"></label><label>地下階 <input data-theme-floor type="number" min="1" value="${this.floor}"></label><button data-theme-regenerate>再生成</button><label class="check"><input data-theme-collision type="checkbox"${this.collision ? " checked" : ""}>衝突表示</label><label class="check"><input data-theme-annotations type="checkbox"${this.annotations ? " checked" : ""}>主経路・部屋タグ</label></div>
           <div class="theme-preview-wrap"><canvas width="384" height="288" data-theme-preview></canvas></div>
           <h3>環境装飾</h3><div class="theme-decoration-list">${theme.decorations.map((rule, ruleIndex) => `<fieldset><legend>${escapeHtml(rule.id)}</legend><label>配置 <select data-theme-decoration-placement="${ruleIndex}">${["floor", "wall", "corner", "deadEnd"].map((value) => `<option${value === rule.placement ? " selected" : ""}>${value}</option>`).join("")}</select></label><label>出現率 <input data-theme-decoration-weight="${ruleIndex}" type="number" min="0.001" max="1" step="0.001" value="${rule.weight}"></label><label>上限 <input data-theme-decoration-max="${ruleIndex}" type="number" min="1" value="${rule.maxPerFloor}"></label>${rule.variants.map((ref, variantIndex) => this.refEditor(`候補 ${variantIndex + 1}`, ref, `decor:${ruleIndex}:${variantIndex}`, ref.weight)).join("")}</fieldset>`).join("")}</div>
-          <h3>深度別の敵候補</h3><div class="theme-enemy-pools">${(["shallow", "middle", "deep"] as const).map((depth) => `<label>${depth}<textarea data-theme-enemy-pool="${depth}" rows="2">${escapeHtml(theme.enemyPools[depth].join(", "))}</textarea></label>`).join("")}</div>
+          <h3>出現する敵</h3><p class="small">${theme.spawns?.length ? `${theme.spawns.length}行の出現表があります。` : "出現表がありません。"}深さごとの内訳と重みは「出現表」タブで編集します。</p>
         </section>
       </div>`;
     this.bind();
     this.renderFramePreviews();
+    this.renderWallPreview();
     this.renderDungeonPreview();
     this.renderStatus();
   }
@@ -157,6 +211,17 @@ export class DungeonThemeEditor {
     this.host.querySelector<HTMLButtonElement>("[data-theme-regenerate]")!.onclick = () => { this.seed = Number(this.host.querySelector<HTMLInputElement>("[data-theme-seed]")!.value) || 1; this.floor = Math.max(1, Number(this.host.querySelector<HTMLInputElement>("[data-theme-floor]")!.value) || 1); this.regenerate(); this.renderDungeonPreview(); };
     this.host.querySelector<HTMLInputElement>("[data-theme-collision]")!.onchange = (event) => { this.collision = (event.currentTarget as HTMLInputElement).checked; this.renderDungeonPreview(); };
     this.host.querySelector<HTMLInputElement>("[data-theme-annotations]")!.onchange = (event) => { this.annotations = (event.currentTarget as HTMLInputElement).checked; this.renderDungeonPreview(); };
+    const roleFilter = this.host.querySelector<HTMLSelectElement>("[data-theme-palette-role]");
+    if (roleFilter) roleFilter.onchange = () => { this.roleFilter = roleFilter.value as PaletteCellRole | "all"; this.render(); };
+    const wallSet = this.host.querySelector<HTMLSelectElement>("[data-theme-wall-set]");
+    if (wallSet) wallSet.onchange = () => {
+      this.theme.wall = { assetId: wallSet.value };
+      // A theme cannot hold both wall descriptions; the set replaces the grid.
+      delete this.theme.wallFrameByMask;
+      this.markDirty();
+      this.renderWallPreview();
+      this.renderDungeonPreview();
+    };
     this.host.querySelectorAll<HTMLSelectElement>("[data-theme-ref-asset]").forEach((input) => { input.onfocus = () => this.selectRef(input.dataset.themeRefAsset!); input.onchange = () => { this.refAt(input.dataset.themeRefAsset!).assetId = input.value; this.markDirty(); this.renderFramePreviews(); this.renderDungeonPreview(); }; });
     this.host.querySelectorAll<HTMLInputElement>("[data-theme-ref-frame]").forEach((input) => { input.onfocus = () => this.selectRef(input.dataset.themeRefFrame!); input.onchange = () => { this.refAt(input.dataset.themeRefFrame!).frame = Math.max(0, Number(input.value) || 0); this.markDirty(); this.renderFramePreviews(); this.renderDungeonPreview(); }; });
     this.host.querySelectorAll<HTMLInputElement>("[data-theme-ref-weight]").forEach((input) => { input.onfocus = () => this.selectRef(input.dataset.themeRefWeight!); input.onchange = () => { const ref = this.refAt(input.dataset.themeRefWeight!) as { weight?: number }; ref.weight = Math.max(0.01, Number(input.value) || 1); this.markDirty(); this.renderDungeonPreview(); }; });
@@ -188,14 +253,13 @@ export class DungeonThemeEditor {
     this.host.querySelectorAll<HTMLSelectElement>("[data-theme-decoration-placement]").forEach((input) => input.onchange = () => { this.theme.decorations[Number(input.dataset.themeDecorationPlacement)]!.placement = input.value as EditableTheme["decorations"][number]["placement"]; this.markDirty(); this.renderDungeonPreview(); });
     this.host.querySelectorAll<HTMLInputElement>("[data-theme-decoration-weight]").forEach((input) => input.onchange = () => { this.theme.decorations[Number(input.dataset.themeDecorationWeight)]!.weight = Math.max(0.001, Number(input.value) || 0.001); this.markDirty(); this.renderDungeonPreview(); });
     this.host.querySelectorAll<HTMLInputElement>("[data-theme-decoration-max]").forEach((input) => input.onchange = () => { this.theme.decorations[Number(input.dataset.themeDecorationMax)]!.maxPerFloor = Math.max(1, Number(input.value) || 1); this.markDirty(); this.renderDungeonPreview(); });
-    this.host.querySelectorAll<HTMLTextAreaElement>("[data-theme-enemy-pool]").forEach((input) => input.onchange = () => { const depth = input.dataset.themeEnemyPool as "shallow" | "middle" | "deep"; this.theme.enemyPools[depth] = input.value.split(/[,\s]+/).map((value) => value.trim()).filter(Boolean); this.markDirty(); });
   }
 
   private refAt(path: string): AssetFrameRef & { weight?: number } {
     if (path === "stairsUp" || path === "stairsDown") return this.theme[path];
     const [kind, first, second] = path.split(":");
     if (kind === "floor") return this.theme.floorVariants[Number(first)]!;
-    if (kind === "wall") return this.theme.wallFrameByMask[Number(first)]!;
+    if (kind === "wall") return this.theme.wallFrameByMask?.[Number(first)] ?? { assetId: "", frame: 0 };
     return this.theme.decorations[Number(first)]!.variants[Number(second)]!;
   }
 
@@ -223,6 +287,7 @@ export class DungeonThemeEditor {
     this.markDirty();
     this.renderPaletteStatus();
     this.renderFramePreviews();
+    this.renderWallPreview();
     this.renderDungeonPreview();
   }
 

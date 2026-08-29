@@ -1,3 +1,5 @@
+import type { ActorArchetype, ActorTier } from "./dungeonDifficulty";
+
 export type ActorRole = "player" | "npc" | "enemy";
 
 export interface ActorEnemyStats {
@@ -9,6 +11,9 @@ export interface ActorEnemyStats {
 export interface ActorSettings {
   label?: string;
   roles?: readonly ActorRole[];
+  /** Identity, not numbers: the curve in dungeonDifficulty turns this into stats. */
+  archetype?: ActorArchetype;
+  tier?: ActorTier;
   enemyStats?: ActorEnemyStats;
   scale?: number;
   originY?: number;

@@ -6,6 +6,8 @@
  * the renderer creates the animation from this manifest.
  */
 
+import type { ActorArchetype, ActorTier } from "./dungeonDifficulty";
+
 export type ActorAction = "idle" | "walk" | "run" | "attack" | "walkAttack" | "runAttack" | "hurt" | "death";
 export type ActorDirection = "down" | "left" | "right" | "up";
 
@@ -36,6 +38,10 @@ export interface CraftpixActorDefinition {
   scale: number;
   origin: { x: 0.5; y: number };
   roles?: readonly ("player" | "npc" | "enemy")[];
+  /** What kind of thing it is and how big a deal — the numbers come from dungeonDifficulty. */
+  archetype?: ActorArchetype;
+  tier?: ActorTier;
+  /** Legacy explicit numbers, still honoured for actors without a tier. */
   enemyStats?: { baseHp: number; hpPerFloor: number; damage: number };
 }
 
@@ -55,7 +61,7 @@ const clip = (action: ActorAction, path: string, columns: number, frameRate: num
 
 type ActorColumns = Partial<Record<"idle" | "walk" | "run" | "attack" | "walkAttack" | "runAttack" | "hurt" | "death", number>>;
 
-function characterSet(prefix: string, folder: string, sourcePack: string, columns: ActorColumns, roles: readonly ("player" | "npc" | "enemy")[] = ["enemy"]): CraftpixActorDefinition {
+function characterSet(prefix: string, folder: string, sourcePack: string, columns: ActorColumns, roles: readonly ("player" | "npc" | "enemy")[] = ["enemy"], profile?: { archetype: ActorArchetype; tier: ActorTier }): CraftpixActorDefinition {
   const uppercaseActions = prefix.startsWith("Swordsman") || prefix.startsWith("Slime") || prefix.startsWith("Plant") || prefix.startsWith("Vampires");
   const file = (action: string): string => {
     const names: Record<string, string> = uppercaseActions
@@ -88,7 +94,7 @@ function characterSet(prefix: string, folder: string, sourcePack: string, column
     scale: 1,
     origin: { x: 0.5, y: 0.72 },
     roles,
-    enemyStats: roles.includes("enemy") ? { baseHp: prefix.startsWith("Slime") ? 3 : prefix.startsWith("Vampires") ? 2 : 4, hpPerFloor: 1, damage: prefix.startsWith("Slime") || prefix.startsWith("Vampires") ? 1 : 2 } : undefined,
+    ...(profile ?? {}),
   };
 }
 
@@ -123,18 +129,18 @@ export const CRAFTPIX_NPC_ACTORS = {
 export type CraftpixNpcActorId = keyof typeof CRAFTPIX_NPC_ACTORS;
 
 export const CRAFTPIX_ENEMY_ACTORS = {
-  slime1: characterSet("Slime1", "Slime1", "slimes", { idle: 6, walk: 8, run: 8, attack: 10, hurt: 5, death: 10 }),
-  slime2: characterSet("Slime2", "Slime2", "slimes", { idle: 6, walk: 8, run: 8, attack: 11, hurt: 5, death: 10 }),
-  slime3: characterSet("Slime3", "Slime3", "slimes", { idle: 6, walk: 8, run: 8, attack: 9, hurt: 5, death: 10 }),
-  plant1: characterSet("Plant1", "Plant1", "predator-plants", { idle: 4, walk: 6, run: 8, attack: 7, hurt: 5, death: 10 }),
-  plant2: characterSet("Plant2", "Plant2", "predator-plants", { idle: 4, walk: 6, run: 8, attack: 7, hurt: 5, death: 10 }),
-  plant3: characterSet("Plant3", "Plant3", "predator-plants", { idle: 4, walk: 6, run: 8, attack: 7, hurt: 5, death: 10 }),
-  orc1: characterSet("orc1", "Orc1", "orcs", { idle: 4, walk: 6, run: 8, attack: 8, hurt: 6, death: 8 }),
-  orc2: characterSet("orc2", "Orc2", "orcs", { idle: 4, walk: 6, run: 8, attack: 8, hurt: 6, death: 8 }),
-  orc3: characterSet("orc3", "Orc3", "orcs", { idle: 4, walk: 6, run: 8, attack: 8, hurt: 6, death: 8 }),
-  vampire1: characterSet("Vampires1", "Vampires1", "vampires", { idle: 4, walk: 6, run: 8, attack: 12, hurt: 4, death: 11 }),
-  vampire2: characterSet("Vampires2", "Vampires2", "vampires", { idle: 4, walk: 6, run: 8, attack: 12, hurt: 4, death: 11 }),
-  vampire3: characterSet("Vampires3", "Vampires3", "vampires", { idle: 4, walk: 6, run: 8, attack: 12, hurt: 4, death: 11 }),
+  slime1: characterSet("Slime1", "Slime1", "slimes", { idle: 6, walk: 8, run: 8, attack: 10, hurt: 5, death: 10 }, ["enemy"], { archetype: "swarm", tier: 1 }),
+  slime2: characterSet("Slime2", "Slime2", "slimes", { idle: 6, walk: 8, run: 8, attack: 11, hurt: 5, death: 10 }, ["enemy"], { archetype: "swarm", tier: 2 }),
+  slime3: characterSet("Slime3", "Slime3", "slimes", { idle: 6, walk: 8, run: 8, attack: 9, hurt: 5, death: 10 }, ["enemy"], { archetype: "swarm", tier: 3 }),
+  plant1: characterSet("Plant1", "Plant1", "predator-plants", { idle: 4, walk: 6, run: 8, attack: 7, hurt: 5, death: 10 }, ["enemy"], { archetype: "lurker", tier: 1 }),
+  plant2: characterSet("Plant2", "Plant2", "predator-plants", { idle: 4, walk: 6, run: 8, attack: 7, hurt: 5, death: 10 }, ["enemy"], { archetype: "lurker", tier: 2 }),
+  plant3: characterSet("Plant3", "Plant3", "predator-plants", { idle: 4, walk: 6, run: 8, attack: 7, hurt: 5, death: 10 }, ["enemy"], { archetype: "lurker", tier: 3 }),
+  orc1: characterSet("orc1", "Orc1", "orcs", { idle: 4, walk: 6, run: 8, attack: 8, hurt: 6, death: 8 }, ["enemy"], { archetype: "brute", tier: 1 }),
+  orc2: characterSet("orc2", "Orc2", "orcs", { idle: 4, walk: 6, run: 8, attack: 8, hurt: 6, death: 8 }, ["enemy"], { archetype: "brute", tier: 2 }),
+  orc3: characterSet("orc3", "Orc3", "orcs", { idle: 4, walk: 6, run: 8, attack: 8, hurt: 6, death: 8 }, ["enemy"], { archetype: "brute", tier: 3 }),
+  vampire1: { ...characterSet("Vampires1", "Vampires1", "vampires", { idle: 4, walk: 6, run: 8, attack: 12, hurt: 4, death: 11 }, ["enemy"], { archetype: "caster", tier: 2 }), id: "vampire1" },
+  vampire2: { ...characterSet("Vampires2", "Vampires2", "vampires", { idle: 4, walk: 6, run: 8, attack: 12, hurt: 4, death: 11 }, ["enemy"], { archetype: "caster", tier: 3 }), id: "vampire2" },
+  vampire3: { ...characterSet("Vampires3", "Vampires3", "vampires", { idle: 4, walk: 6, run: 8, attack: 12, hurt: 4, death: 11 }, ["enemy"], { archetype: "caster", tier: 4 }), id: "vampire3" },
 } as const;
 
 export type CraftpixEnemyActorId = keyof typeof CRAFTPIX_ENEMY_ACTORS;
