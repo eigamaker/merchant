@@ -107,6 +107,156 @@ export const GENERATED_ACTORS: readonly CraftpixActorDefinition[] = [
   },
   {
     "version": 1,
+    "id": "citizen1",
+    "label": "町人1",
+    "roles": [
+      "npc",
+      "townsfolk"
+    ],
+    "clips": {
+      "idle": {
+        "action": "idle",
+        "path": "/assets/actors/generated/citizen1/idle.png",
+        "width": 384,
+        "height": 128,
+        "frameWidth": 32,
+        "frameHeight": 32,
+        "columns": 12,
+        "rows": 4,
+        "directions": [
+          "down",
+          "left",
+          "right",
+          "up"
+        ],
+        "frameRate": 8
+      },
+      "walk": {
+        "action": "walk",
+        "path": "/assets/actors/generated/citizen1/walk.png",
+        "width": 192,
+        "height": 128,
+        "frameWidth": 32,
+        "frameHeight": 32,
+        "columns": 6,
+        "rows": 4,
+        "directions": [
+          "down",
+          "left",
+          "right",
+          "up"
+        ],
+        "frameRate": 8
+      }
+    },
+    "scale": 1,
+    "origin": {
+      "x": 0.5,
+      "y": 0.72
+    }
+  },
+  {
+    "version": 1,
+    "id": "citizen2",
+    "label": "町人2",
+    "roles": [
+      "npc",
+      "townsfolk"
+    ],
+    "clips": {
+      "idle": {
+        "action": "idle",
+        "path": "/assets/actors/generated/citizen2/idle.png",
+        "width": 384,
+        "height": 128,
+        "frameWidth": 32,
+        "frameHeight": 32,
+        "columns": 12,
+        "rows": 4,
+        "directions": [
+          "down",
+          "left",
+          "right",
+          "up"
+        ],
+        "frameRate": 8
+      },
+      "walk": {
+        "action": "walk",
+        "path": "/assets/actors/generated/citizen2/walk.png",
+        "width": 192,
+        "height": 128,
+        "frameWidth": 32,
+        "frameHeight": 32,
+        "columns": 6,
+        "rows": 4,
+        "directions": [
+          "down",
+          "left",
+          "right",
+          "up"
+        ],
+        "frameRate": 8
+      }
+    },
+    "scale": 1,
+    "origin": {
+      "x": 0.5,
+      "y": 0.72
+    }
+  },
+  {
+    "version": 1,
+    "id": "fighter2",
+    "label": "剣士2",
+    "roles": [
+      "npc",
+      "adventurer"
+    ],
+    "clips": {
+      "idle": {
+        "action": "idle",
+        "path": "/assets/actors/generated/fighter2/idle.png",
+        "width": 384,
+        "height": 128,
+        "frameWidth": 32,
+        "frameHeight": 32,
+        "columns": 12,
+        "rows": 4,
+        "directions": [
+          "down",
+          "left",
+          "right",
+          "up"
+        ],
+        "frameRate": 8
+      },
+      "walk": {
+        "action": "walk",
+        "path": "/assets/actors/generated/fighter2/walk.png",
+        "width": 192,
+        "height": 128,
+        "frameWidth": 32,
+        "frameHeight": 32,
+        "columns": 6,
+        "rows": 4,
+        "directions": [
+          "down",
+          "left",
+          "right",
+          "up"
+        ],
+        "frameRate": 8
+      }
+    },
+    "scale": 1,
+    "origin": {
+      "x": 0.5,
+      "y": 0.72
+    }
+  },
+  {
+    "version": 1,
     "id": "interior-2nd-floor-attacked",
     "label": "attacked (Interior_2nd_floor.tmx)",
     "roles": [

@@ -1,7 +1,7 @@
 import { DEFAULT_PALETTE_LAYOUT } from "../game/mapAssetCatalog.generated";
 import { DUNGEON_THEME_CATALOG } from "../game/dungeonThemeCatalog.generated";
 import { generateDungeonFloor, type GeneratedDungeonFloor } from "../game/dungeonGenerator";
-import { createDungeonRenderPlan, type AssetFrameRef, type DungeonThemeDefinition } from "../game/dungeonThemes";
+import { DUNGEON_THEME_OBJECT_KINDS, createDungeonRenderPlan, type AssetFrameRef, type DungeonThemeDefinition, type DungeonThemeObjectKind } from "../game/dungeonThemes";
 import { PALETTE_CELL_ROLES, clonePaletteLayout, validatePaletteLayout, type PaletteCell, type PaletteCellRole, type PaletteLayout, type PalettePage } from "./paletteModel";
 
 interface EditorAsset {
@@ -24,7 +24,8 @@ type EditableTheme = DungeonThemeDefinition & {
   wallFrameByMask?: AssetFrameRef[];
   decorations: Array<{
     id: string;
-    placement: "floor" | "wall" | "corner" | "deadEnd";
+    placement: "floor" | "wall" | "wallFace" | "corner" | "deadEnd";
+    enabled?: boolean;
     variants: Array<{ assetId: string; frame: number; weight: number }>;
     weight: number;
     maxPerFloor: number;
@@ -37,6 +38,8 @@ interface ThemeDocument { version: 1; themes: EditableTheme[] }
 const cloneCatalog = (): ThemeDocument => ({ version: 1, themes: structuredClone(DUNGEON_THEME_CATALOG) as unknown as EditableTheme[] });
 const escapeHtml = (value: unknown): string => String(value).replace(/[&<>"']/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[character]!);
 const ROLE_LABELS: Record<PaletteCellRole, string> = { floor: "床", wall: "壁", prop: "小物", stairs: "階段", liquid: "水・溶岩" };
+/** Tiles the game places itself, so the label says what puts one there. */
+const OBJECT_LABELS: Record<DungeonThemeObjectKind, string> = { chest: "宝箱", corpse: "冒険者の遺体" };
 const WALL_MASK_LABELS = [
   "孤立", "北へ接続", "東へ接続", "北東角",
   "南へ接続", "縦", "東南角", "西が開いたT字",
@@ -144,6 +147,7 @@ export class DungeonThemeEditor {
   }
 
   private refLabel(path: string): string {
+    if (path.startsWith("object:")) return OBJECT_LABELS[path.slice("object:".length) as DungeonThemeObjectKind] ?? path;
     if (path === "stairsUp") return "上り階段";
     if (path === "stairsDown") return "下り階段";
     const [kind, first, second] = path.split(":");
@@ -186,6 +190,8 @@ export class DungeonThemeEditor {
         <aside class="map-editor-side theme-contract-panel">
           <div class="panel-heading"><div><h2>${escapeHtml(theme.label)}</h2><p class="small">IDは公開後固定です。画像パック交換時は参照先とframeだけを変更します。</p></div><code>${escapeHtml(theme.id)}</code></div>
           <h3>階段</h3>${this.refEditor("上り", theme.stairsUp, "stairsUp")}${this.refEditor("下り", theme.stairsDown, "stairsDown")}
+          <h3>ゲーム内オブジェクト</h3><p class="small">遺体や宝箱など、ゲームが理由あって置くタイルです。未設定なら共通の仮素材のままになります。</p>
+          ${DUNGEON_THEME_OBJECT_KINDS.map((kind) => this.refEditor(OBJECT_LABELS[kind], theme.objects?.[kind] ?? { assetId: "", frame: 0 }, `object:${kind}`)).join("")}
           <h3>床候補</h3><div class="theme-ref-list">${theme.floorVariants.map((ref, index) => this.refEditor(`床 ${index + 1}`, ref, `floor:${index}`, ref.weight)).join("")}</div>
           <h3>壁</h3>${this.renderWallEditor(theme)}
         </aside>
@@ -193,7 +199,7 @@ export class DungeonThemeEditor {
           <div class="panel-heading"><div><h2>生成プレビュー</h2><p class="small">テーマを変えても論理地形と配置領域は変わりません。</p></div><span data-theme-preview-status></span></div>
           <div class="theme-preview-controls"><label>seed <input data-theme-seed type="number" value="${this.seed}"></label><label>地下階 <input data-theme-floor type="number" min="1" value="${this.floor}"></label><button data-theme-regenerate>再生成</button><label class="check"><input data-theme-collision type="checkbox"${this.collision ? " checked" : ""}>衝突表示</label><label class="check"><input data-theme-annotations type="checkbox"${this.annotations ? " checked" : ""}>主経路・部屋タグ</label></div>
           <div class="theme-preview-wrap"><canvas width="384" height="288" data-theme-preview></canvas></div>
-          <h3>環境装飾</h3><div class="theme-decoration-list">${theme.decorations.map((rule, ruleIndex) => `<fieldset><legend>${escapeHtml(rule.id)}</legend><label>配置 <select data-theme-decoration-placement="${ruleIndex}">${["floor", "wall", "corner", "deadEnd"].map((value) => `<option${value === rule.placement ? " selected" : ""}>${value}</option>`).join("")}</select></label><label>出現率 <input data-theme-decoration-weight="${ruleIndex}" type="number" min="0.001" max="1" step="0.001" value="${rule.weight}"></label><label>上限 <input data-theme-decoration-max="${ruleIndex}" type="number" min="1" value="${rule.maxPerFloor}"></label>${rule.variants.map((ref, variantIndex) => this.refEditor(`候補 ${variantIndex + 1}`, ref, `decor:${ruleIndex}:${variantIndex}`, ref.weight)).join("")}</fieldset>`).join("")}</div>
+          <h3>環境装飾</h3><div class="theme-decoration-list">${theme.decorations.map((rule, ruleIndex) => `<fieldset><legend>${escapeHtml(rule.id)}</legend><label><input type="checkbox" data-theme-decoration-enabled="${ruleIndex}"${rule.enabled === false ? "" : " checked"}> 配置する</label><label>配置 <select data-theme-decoration-placement="${ruleIndex}">${["floor", "wall", "wallFace", "corner", "deadEnd"].map((value) => `<option${value === rule.placement ? " selected" : ""}>${value}</option>`).join("")}</select></label><label>出現率 <input data-theme-decoration-weight="${ruleIndex}" type="number" min="0.001" max="1" step="0.001" value="${rule.weight}"></label><label>上限 <input data-theme-decoration-max="${ruleIndex}" type="number" min="1" value="${rule.maxPerFloor}"></label>${rule.variants.map((ref, variantIndex) => this.refEditor(`候補 ${variantIndex + 1}`, ref, `decor:${ruleIndex}:${variantIndex}`, ref.weight)).join("")}</fieldset>`).join("")}</div>
           <h3>出現する敵</h3><p class="small">${theme.spawns?.length ? `${theme.spawns.length}行の出現表があります。` : "出現表がありません。"}深さごとの内訳と重みは「出現表」タブで編集します。</p>
         </section>
       </div>`;
@@ -222,8 +228,8 @@ export class DungeonThemeEditor {
       this.renderWallPreview();
       this.renderDungeonPreview();
     };
-    this.host.querySelectorAll<HTMLSelectElement>("[data-theme-ref-asset]").forEach((input) => { input.onfocus = () => this.selectRef(input.dataset.themeRefAsset!); input.onchange = () => { this.refAt(input.dataset.themeRefAsset!).assetId = input.value; this.markDirty(); this.renderFramePreviews(); this.renderDungeonPreview(); }; });
-    this.host.querySelectorAll<HTMLInputElement>("[data-theme-ref-frame]").forEach((input) => { input.onfocus = () => this.selectRef(input.dataset.themeRefFrame!); input.onchange = () => { this.refAt(input.dataset.themeRefFrame!).frame = Math.max(0, Number(input.value) || 0); this.markDirty(); this.renderFramePreviews(); this.renderDungeonPreview(); }; });
+    this.host.querySelectorAll<HTMLSelectElement>("[data-theme-ref-asset]").forEach((input) => { input.onfocus = () => this.selectRef(input.dataset.themeRefAsset!); input.onchange = () => { this.retargetRef(input.dataset.themeRefAsset!, { assetId: input.value }); this.markDirty(); this.renderFramePreviews(); this.renderDungeonPreview(); }; });
+    this.host.querySelectorAll<HTMLInputElement>("[data-theme-ref-frame]").forEach((input) => { input.onfocus = () => this.selectRef(input.dataset.themeRefFrame!); input.onchange = () => { this.retargetRef(input.dataset.themeRefFrame!, { frame: Math.max(0, Number(input.value) || 0) }); this.markDirty(); this.renderFramePreviews(); this.renderDungeonPreview(); }; });
     this.host.querySelectorAll<HTMLInputElement>("[data-theme-ref-weight]").forEach((input) => { input.onfocus = () => this.selectRef(input.dataset.themeRefWeight!); input.onchange = () => { const ref = this.refAt(input.dataset.themeRefWeight!) as { weight?: number }; ref.weight = Math.max(0.01, Number(input.value) || 1); this.markDirty(); this.renderDungeonPreview(); }; });
     this.host.querySelectorAll<HTMLButtonElement>("[data-theme-ref-target]").forEach((button) => button.onclick = () => this.selectRef(button.dataset.themeRefTarget!));
     this.host.querySelectorAll<HTMLElement>("[data-theme-ref-row]").forEach((row) => {
@@ -250,14 +256,41 @@ export class DungeonThemeEditor {
         if (event.dataTransfer) event.dataTransfer.effectAllowed = "copy";
       };
     });
+    this.host.querySelectorAll<HTMLInputElement>("[data-theme-decoration-enabled]").forEach((input) => input.onchange = () => {
+      const rule = this.theme.decorations[Number(input.dataset.themeDecorationEnabled)]!;
+      // Only the off state is written, so an ordinary rule stays a plain entry.
+      if (input.checked) delete rule.enabled; else rule.enabled = false;
+      this.markDirty();
+      this.renderDungeonPreview();
+    });
     this.host.querySelectorAll<HTMLSelectElement>("[data-theme-decoration-placement]").forEach((input) => input.onchange = () => { this.theme.decorations[Number(input.dataset.themeDecorationPlacement)]!.placement = input.value as EditableTheme["decorations"][number]["placement"]; this.markDirty(); this.renderDungeonPreview(); });
     this.host.querySelectorAll<HTMLInputElement>("[data-theme-decoration-weight]").forEach((input) => input.onchange = () => { this.theme.decorations[Number(input.dataset.themeDecorationWeight)]!.weight = Math.max(0.001, Number(input.value) || 0.001); this.markDirty(); this.renderDungeonPreview(); });
     this.host.querySelectorAll<HTMLInputElement>("[data-theme-decoration-max]").forEach((input) => input.onchange = () => { this.theme.decorations[Number(input.dataset.themeDecorationMax)]!.maxPerFloor = Math.max(1, Number(input.value) || 1); this.markDirty(); this.renderDungeonPreview(); });
   }
 
-  private refAt(path: string): AssetFrameRef & { weight?: number } {
+  /**
+   * Points a reference at a different picture. A stair's height is derived from
+   * the sheet by the build, so a stale one is cleared here rather than left to
+   * stretch over whatever frame the author picked next.
+   */
+  private retargetRef(path: string, changes: { assetId?: string; frame?: number }): void {
+    const [kind, name] = path.split(":");
+    // An object entry exists only while it names a picture, so editing one into
+    // being creates it and editing the asset away removes it again.
+    if (kind === "object") ((this.theme.objects ??= {})[name as DungeonThemeObjectKind] ??= { assetId: "", frame: 0 });
+    const ref = this.refAt(path);
+    if (changes.assetId !== undefined) ref.assetId = changes.assetId;
+    if (changes.frame !== undefined) ref.frame = changes.frame;
+    delete ref.height;
+    if (kind === "object" && !ref.assetId) delete this.theme.objects?.[name as DungeonThemeObjectKind];
+  }
+
+  private refAt(path: string): AssetFrameRef & { weight?: number; height?: 1 | 2 } {
     if (path === "stairsUp" || path === "stairsDown") return this.theme[path];
     const [kind, first, second] = path.split(":");
+    // Reading never creates the entry. Every render asks for one of these, and a
+    // theme that gained an empty reference on sight would fail to save.
+    if (kind === "object") return this.theme.objects?.[first as DungeonThemeObjectKind] ?? { assetId: "", frame: 0 };
     if (kind === "floor") return this.theme.floorVariants[Number(first)]!;
     if (kind === "wall") return this.theme.wallFrameByMask?.[Number(first)] ?? { assetId: "", frame: 0 };
     return this.theme.decorations[Number(first)]!.variants[Number(second)]!;
@@ -277,9 +310,7 @@ export class DungeonThemeEditor {
       this.renderPaletteStatus();
       return;
     }
-    const ref = this.refAt(path);
-    ref.assetId = assetId;
-    ref.frame = frame;
+    this.retargetRef(path, { assetId, frame });
     this.host.querySelectorAll<HTMLSelectElement>("[data-theme-ref-asset]").forEach((input) => { if (input.dataset.themeRefAsset === path) input.value = assetId; });
     this.host.querySelectorAll<HTMLInputElement>("[data-theme-ref-frame]").forEach((input) => { if (input.dataset.themeRefFrame === path) input.value = String(frame); });
     this.paletteStatus = `${this.refLabel(path)}へ画像を設定しました`;
@@ -322,17 +353,21 @@ export class DungeonThemeEditor {
     context.fillStyle = "#080b10";
     context.fillRect(0, 0, canvas.width, canvas.height);
     const plan = createDungeonRenderPlan(map, this.seed, this.floor, this.theme);
+    const drawRef = (ref: AssetFrameRef, x: number, y: number): void => {
+      const asset = this.assetsById.get(ref.assetId);
+      const image = this.images.get(ref.assetId);
+      if (!asset || !image?.complete || image.naturalWidth === 0 || ref.frame >= asset.frameCount) return;
+      const sx = asset.margin + (ref.frame % asset.columns) * (asset.tileSize + asset.spacing);
+      const sy = asset.margin + Math.floor(ref.frame / asset.columns) * (asset.tileSize + asset.spacing);
+      context.drawImage(image, sx, sy, asset.tileSize, asset.tileSize, x * scale, y * scale, scale, scale);
+    };
     for (let y = 0; y < map.height; y += 1) for (let x = 0; x < map.width; x += 1) {
       const index = y * map.width + x;
       for (const ref of [plan.ground[index], plan.structure[index], plan.decoration[index]]) {
-        if (!ref) continue;
-        const asset = this.assetsById.get(ref.assetId);
-        const image = this.images.get(ref.assetId);
-        if (!asset || !image?.complete || image.naturalWidth === 0 || ref.frame >= asset.frameCount) continue;
-        const sx = asset.margin + (ref.frame % asset.columns) * (asset.tileSize + asset.spacing);
-        const sy = asset.margin + Math.floor(ref.frame / asset.columns) * (asset.tileSize + asset.spacing);
-        context.drawImage(image, sx, sy, asset.tileSize, asset.tileSize, x * scale, y * scale, scale, scale);
+        if (ref) drawRef(ref, x, y);
       }
+      const above = plan.overhang[index];
+      if (above && y > 0) drawRef(above, x, y - 1);
       if (this.collision) { context.fillStyle = map.tiles[y]?.[x] === 0 ? "#00c8f044" : "#ff4b1f55"; context.fillRect(x * scale, y * scale, scale, scale); }
     }
     if (this.annotations) {

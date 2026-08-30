@@ -1,5 +1,22 @@
 import type { ItemRarity } from "./types";
 
+/** The grid every screen is laid out on. Coordinates in the scenes are these. */
+export const UI_BASE_WIDTH = 640;
+export const UI_BASE_HEIGHT = 360;
+
+/**
+ * How many canvas pixels one layout pixel is drawn with.
+ *
+ * The canvas used to be the layout grid itself, blown up by the browser with
+ * nearest-neighbour sampling. Sprites survive that, but a 10-11px Japanese
+ * glyph does not: it is rasterised into too few pixels and then every one of
+ * them is doubled, which is what made the text look chipped. Rendering the
+ * canvas at this multiple and magnifying the camera by the same amount keeps
+ * the art identical - it is still whole pixels, scaled by an integer - while
+ * text drawn at the matching resolution lands one glyph pixel per screen pixel.
+ */
+export const UI_PIXEL_SCALE = 2;
+
 /**
  * ウインドウ・ボタン・ゲージの見た目を決める唯一の参照先。
  *

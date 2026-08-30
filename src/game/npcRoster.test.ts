@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { createNewGame } from "./engine";
 import { ADVENTURER_ROSTER_TARGET, ROSTER_RANK_SHAPE, createRosterAdventurer, ensureRosterPopulation, livingAdventurersByRank, thinnestRank } from "./npcRoster";
-import { NPC_SEEDS } from "./merchantContent";
+import { NPC_SEEDS, npcAppearanceSprite } from "./merchantContent";
+import { ACTOR_CATALOG, applyActorSettings, currentActorSettings, npcActorIds } from "./actorCatalog";
 
 describe("the adventurer roster", () => {
   it("fills the guild to its intended shape", () => {
@@ -63,5 +64,48 @@ describe("the adventurer roster", () => {
     expect(famous.guardProfile!.career.deepestFloor).toBeGreaterThanOrEqual(6);
     // 実績はあっても、まだ一度も雇っていない。
     expect(famous.guardProfile!.career.hireCount).toBe(0);
+  });
+});
+
+describe("who a generated adventurer looks like", () => {
+  it("only ever wears a sheet marked as an adventurer", () => {
+    const approved = new Set(npcActorIds("adventurer"));
+    expect(approved.size).toBeGreaterThan(0);
+    const state = createNewGame();
+    const generated = state.npcs.filter((npc) => npc.id.startsWith("adventurer-"));
+    expect(generated.length).toBeGreaterThan(0);
+    for (const npc of generated) {
+      expect(approved.has(npc.appearanceId)).toBe(true);
+      expect(npcAppearanceSprite(npc.appearanceId)).toBe(npc.appearanceId);
+    }
+  });
+
+  it("spreads the roster across every approved sheet", () => {
+    const state = createNewGame();
+    const worn = new Set(state.npcs.filter((npc) => npc.id.startsWith("adventurer-")).map((npc) => npc.appearanceId));
+    // Thirty people over three sheets: a table this small should use them all.
+    expect(worn).toEqual(new Set(npcActorIds("adventurer")));
+  });
+
+  it("falls back to the seed's own appearance when nothing is marked", () => {
+    const settings = currentActorSettings();
+    // Strip the role from every sheet that carries it, as an author would by
+    // clearing the checkboxes, and check the roster still produces people.
+    const cleared = { version: 1 as const, actors: { ...settings.actors } };
+    for (const actor of Object.values(ACTOR_CATALOG)) {
+      if (!actor.roles?.includes("adventurer")) continue;
+      cleared.actors[actor.id] = { ...cleared.actors[actor.id], roles: actor.roles.filter((role) => role !== "adventurer") };
+    }
+    try {
+      applyActorSettings(cleared);
+      expect(npcActorIds("adventurer")).toEqual([]);
+      const state = createNewGame();
+      const generated = state.npcs.filter((npc) => npc.id.startsWith("adventurer-"));
+      expect(generated.length).toBeGreaterThan(0);
+      // Back to the seed's appearance id, which the authored table still answers.
+      expect(generated.every((npc) => Boolean(npcAppearanceSprite(npc.appearanceId)))).toBe(true);
+    } finally {
+      applyActorSettings(settings);
+    }
   });
 });

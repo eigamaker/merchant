@@ -2,5 +2,14 @@
 import type { ActorSettingsCatalog } from "./actorSettings";
 export const GENERATED_ACTOR_SETTINGS: ActorSettingsCatalog = {
   "version": 1,
-  "actors": {}
+  "actors": {
+    "citizen2": {
+      "label": "町人2",
+      "roles": [
+        "player"
+      ],
+      "archetype": "brute",
+      "tier": 1
+    }
+  }
 };

@@ -169,6 +169,11 @@ hr { border: 0; border-top: 1px solid #35445a; margin: 14px 0; }
 .actor-setting-field input { min-width: 0; flex: 1; }
 .actor-stat-fields input { width: 4em; }
 .actor-role-fields > span { color: #9facbe; }
+.actor-register-panel { margin-top: 10px; border-top: 1px solid #2a3444; padding-top: 8px; font-size: 11px; }
+.actor-register-panel > summary { cursor: pointer; color: #cfe0f5; }
+.actor-register-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; margin: 6px 0; }
+.actor-register-fields label { display: flex; align-items: center; gap: 4px; }
+.actor-register-fields input, .actor-register-fields select { min-width: 0; flex: 1; }
 .theme-editor-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; padding: 10px 12px; border: 1px solid #35445a; border-radius: 7px; background: rgba(18, 27, 40, .85); }
 .theme-editor-toolbar label, .theme-preview-controls label { color: #c1ccdb; font-size: 12px; }
 .theme-editor-toolbar [data-theme-status] { color: #75d9cf; font-size: 12px; }

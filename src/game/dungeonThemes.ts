@@ -6,12 +6,52 @@ import type { DungeonMap, Vec } from "./types";
 
 export type DungeonThemeId = typeof DUNGEON_THEME_CATALOG[number]["id"];
 export type DungeonThemeDepth = "shallow" | "middle" | "deep";
-export type DungeonDecorationPlacement = "floor" | "wall" | "corner" | "deadEnd";
+/**
+ * Where a decoration rule may drop a prop.
+ *
+ * `wall` is any wall cell touching floor, which includes the far side of a
+ * wall the camera never sees. `wallFace` is the near side only - the cell the
+ * wall shows to the player - which is what anything hung on a wall needs.
+ */
+export type DungeonDecorationPlacement = "floor" | "wall" | "wallFace" | "corner" | "deadEnd";
 
 export interface AssetFrameRef {
   assetId: string;
   frame: number;
 }
+
+/**
+ * A piece of scenery the game places on purpose: a staircase, a chest, a body.
+ * It is one cell or two. The reference always names the cell it stands in;
+ * `height: 2` says the picture continues into the row above on the sheet and is
+ * drawn one cell further up. An up-staircase leans back into the cell behind it
+ * that way, while a down-staircase is a hole and stays flat.
+ *
+ * The build derives this from the sheet's alpha (scripts/map-tile-pipeline.mjs),
+ * so a theme names only the frame its author can see in the palette.
+ */
+export interface DungeonPieceRef extends AssetFrameRef {
+  height?: 1 | 2;
+}
+
+/**
+ * Tiles the game places for its own reasons rather than for atmosphere. A
+ * decoration rule scatters props wherever its placement matches; these appear
+ * only where something is actually there to interact with, so a player can read
+ * a body as loot to recover instead of as scenery.
+ *
+ * Absent entries fall back to the shared placeholder object sheet, which is what
+ * every theme used before it could name its own.
+ */
+export interface DungeonThemeObjects {
+  /** Where an unopened chest waits. */
+  chest?: DungeonPieceRef;
+  /** Where an adventurer died and left something to recover. */
+  corpse?: DungeonPieceRef;
+}
+
+export type DungeonThemeObjectKind = keyof DungeonThemeObjects;
+export const DUNGEON_THEME_OBJECT_KINDS: readonly DungeonThemeObjectKind[] = ["chest", "corpse"];
 
 export interface WeightedFrameRef extends AssetFrameRef {
   weight: number;
@@ -23,6 +63,12 @@ export interface DungeonDecorationRule {
   variants: readonly WeightedFrameRef[];
   weight: number;
   maxPerFloor: number;
+  /**
+   * `false` keeps the rule authored but places nothing. A prop that ought to do
+   * something - a pit that drops you a floor - can sit here fully chosen while
+   * it would still only be scenery, instead of being deleted and re-found later.
+   */
+  enabled?: boolean;
 }
 
 /**
@@ -67,8 +113,10 @@ export interface DungeonThemeDefinition {
   wall?: DungeonWallAutotile;
   /** Legacy fallback: sixteen frames indexed by the four-neighbour mask. */
   wallFrameByMask?: readonly AssetFrameRef[];
-  stairsUp: AssetFrameRef;
-  stairsDown: AssetFrameRef;
+  stairsUp: DungeonPieceRef;
+  stairsDown: DungeonPieceRef;
+  /** Optional. Without it the game falls back to the placeholder object sheet. */
+  objects?: DungeonThemeObjects;
   decorations: readonly DungeonDecorationRule[];
   /** Preferred. Depth ranges and weights, spent against the floor's budget. */
   spawns?: readonly DungeonSpawnEntry[];
@@ -211,6 +259,25 @@ export function dungeonWallFaceHalves(wall: DungeonWallAutotile | undefined): { 
   return { upper: { ...wall.face }, lower: { assetId: wall.face.assetId, frame: wall.face.frame + columns } };
 }
 
+/**
+ * The halves of a stair piece. The mirror of `dungeonWallFaceHalves`: a wall is
+ * authored from its top so its reference is the upper half, while a stair is
+ * authored from the cell it occupies so its reference is the lower half and the
+ * upper one is the frame a row earlier.
+ */
+export function dungeonPieceHalves(ref: DungeonPieceRef): { lower: AssetFrameRef; upper?: AssetFrameRef } {
+  const lower: AssetFrameRef = { assetId: ref.assetId, frame: ref.frame };
+  const columns = columnsByAssetId.get(ref.assetId) ?? 0;
+  if ((ref.height ?? 1) === 1 || columns <= 0 || ref.frame < columns) return { lower };
+  return { lower, upper: { assetId: ref.assetId, frame: ref.frame - columns } };
+}
+
+/** The tile a theme wants for one of the game's own objects, if it names one. */
+export function dungeonThemeObject(theme: DungeonThemeDefinition, kind: DungeonThemeObjectKind): DungeonPieceRef | undefined {
+  const ref = theme.objects?.[kind];
+  return ref ? { ...ref } : undefined;
+}
+
 /** Whether a theme's wall reference resolves to an expanded blob sheet. */
 export function dungeonWallAutotile(theme: DungeonThemeDefinition): { assetId: string; animationFrames: number } | undefined {
   if (!theme.wall) return undefined;
@@ -251,6 +318,9 @@ function placementMatches(map: DungeonMap, placement: DungeonDecorationPlacement
   const neighbours = walkableNeighbours(map, x, y);
   if (placement === "floor") return floor;
   if (placement === "wall") return !floor && neighbours > 0;
+  // The face is the side the wall turns towards the camera, the same test
+  // dungeonWallFrame uses to decide which wall tile to draw.
+  if (placement === "wallFace") return !floor && map.tiles[y + 1]?.[x] === 0;
   if (placement === "deadEnd") return floor && neighbours <= 1;
   if (!floor) return false;
   const north = map.tiles[y - 1]?.[x] !== 0;
@@ -283,6 +353,9 @@ export function createDungeonRenderPlan(map: DungeonMap, runSeed: number, floor:
     if (overhangs && !isWall(map, x, y + 1) && y > 0) overhang[index] = { ...wallFace!.upper };
   }
   for (const [ruleIndex, rule] of theme.decorations.entries()) {
+    // Skipped rather than filtered out: the rule's index salts its placement
+    // hash, so switching one off leaves every other rule where it already was.
+    if (rule.enabled === false) continue;
     const candidates: Array<{ x: number; y: number; hash: number }> = [];
     for (let y = 1; y < map.height - 1; y += 1) for (let x = 1; x < map.width - 1; x += 1) {
       if (same(map.stairsUp, x, y) || same(map.stairsDown, x, y) || !placementMatches(map, rule.placement, x, y)) continue;
@@ -295,8 +368,16 @@ export function createDungeonRenderPlan(map: DungeonMap, runSeed: number, floor:
       if (!decoration[index]) decoration[index] = weightedFrame(rule.variants, mix32(candidate.hash ^ 0xa53));
     }
   }
-  decoration[map.stairsUp.y * map.width + map.stairsUp.x] = { ...theme.stairsUp };
-  if (map.stairsDown) decoration[map.stairsDown.y * map.width + map.stairsDown.x] = { ...theme.stairsDown };
+  const placeStairs = (at: Vec, ref: DungeonPieceRef): void => {
+    const index = at.y * map.width + at.x;
+    const halves = dungeonPieceHalves(ref);
+    decoration[index] = halves.lower;
+    // The upper half sorts with the entities rather than the terrain, so the
+    // party passes behind the far side of a staircase and in front of the near.
+    if (halves.upper && at.y > 0) overhang[index] = halves.upper;
+  };
+  placeStairs(map.stairsUp, theme.stairsUp);
+  if (map.stairsDown) placeStairs(map.stairsDown, theme.stairsDown);
   return { themeId: theme.id, ground, structure, decoration, overhang };
 }
 
@@ -309,6 +390,10 @@ export function dungeonThemeAssetIds(themeIds: readonly string[] = enabledDungeo
     for (const ref of theme.wallFrameByMask ?? []) result.add(ref.assetId);
     result.add(theme.stairsUp.assetId);
     result.add(theme.stairsDown.assetId);
+    for (const kind of DUNGEON_THEME_OBJECT_KINDS) {
+      const object = theme.objects?.[kind];
+      if (object) result.add(object.assetId);
+    }
     for (const rule of theme.decorations) for (const ref of rule.variants) result.add(ref.assetId);
   }
   return result;

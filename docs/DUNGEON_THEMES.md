@@ -20,8 +20,19 @@
 - `label`, `enabled`, `tileSize`: 表示名、有効状態、共通セル寸法
 - `floorVariants`: 重み付き床候補
 - `wallFrameByMask`: 壁の論理隣接16状態
-- `stairsUp`, `stairsDown`: 上下階段
+- `stairsUp`, `stairsDown`: 上下階段。参照するのはパーティが立つセルの画像1枚だけです
+  - 素材によっては上り階段が縦2タイルで描かれています（上半分は透過）。その場合は`height: 2`が付き、上半分は1セット上のセルへ`overhang`として描かれます
+  - `height`は`npm run assets`が素材のアルファから判定して生成カタログへ書き込むので、`themes.json`には通常書きません。判定を上書きしたいときだけ明示的に`height`を書きます（詳細は`scripts/map-tile-pipeline.mjs`の`detectStackedFrames`）
+- `objects`: ゲームが理由あって置くタイル。`chest`（宝箱）と`corpse`（冒険者の遺体）
+  - 環境装飾と違い、実際にそこへ中身がある場所にだけ出ます。プレイヤーが「拾えるもの」と「風景」を見分けられるようにするための枠です
+  - 省略可。省略すると共通の仮素材（`public/assets/objects/dungeon_objects.png`）のままになります
+  - 階段と同じく縦2タイルの素材にも対応します（`height`は自動判定）
 - `decorations`: 配置条件、重み、階ごとの上限、画像候補
+  - `placement`は`floor` / `wall` / `wallFace` / `corner` / `deadEnd`
+  - `wall`は床に接するすべての壁セル。カメラから見えない奥側の壁も含みます
+  - `wallFace`はカメラに面した側の壁だけ。松明やレバーなど壁に取り付ける物はこちらを使います
+  - `enabled: false`で、規則を残したまま何も置かないようにできます。落とし穴のように「本来は意味を持つべきだが、まだ仕組みがない」物を、消さずに保留しておくための項目です
+  - 規則の並び順が配置乱数の種になるため、`enabled: false`にしても他の規則の配置は動きません
 - `enemyPools`: `shallow`（1～2階）、`middle`（3～5階）、`deep`（6階以降）の敵ID
 
 `cave`は必須フォールバックで無効化できません。`cave`、`ruins`、`lava`は削除せず、廃止した見た目は同じIDの参照先を代替画像へ変更してください。

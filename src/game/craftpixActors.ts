@@ -7,6 +7,7 @@
  */
 
 import type { ActorArchetype, ActorTier } from "./dungeonDifficulty";
+import type { ActorRole } from "./actorSettings";
 
 export type ActorAction = "idle" | "walk" | "run" | "attack" | "walkAttack" | "runAttack" | "hurt" | "death";
 export type ActorDirection = "down" | "left" | "right" | "up";
@@ -37,7 +38,7 @@ export interface CraftpixActorDefinition {
   clips: Partial<Record<ActorAction, CraftpixActorClip>>;
   scale: number;
   origin: { x: 0.5; y: number };
-  roles?: readonly ("player" | "npc" | "enemy")[];
+  roles?: readonly ActorRole[];
   /** What kind of thing it is and how big a deal — the numbers come from dungeonDifficulty. */
   archetype?: ActorArchetype;
   tier?: ActorTier;
@@ -45,9 +46,19 @@ export interface CraftpixActorDefinition {
   enemyStats?: { baseHp: number; hpPerFloor: number; damage: number };
 }
 
-// Craftpix top-down sheets are authored front, back, left, right.
-const directions = ["down", "up", "left", "right"] as const;
-const clip = (action: ActorAction, path: string, columns: number, frameRate: number, repeat = -1, frameWidth = 64, frameHeight = 64): CraftpixActorClip => ({
+/**
+ * Which facing each row of a sheet holds. The packs do not agree: the monster
+ * sheets run front, back, then the two sides, while the human sheets put the
+ * sides in the middle and the back last. Reading one order onto the other
+ * leaves a character showing its back when it walks right.
+ *
+ * Verified against the art rather than assumed: in every sheet the two side
+ * rows are near-exact mirrors of one another, which is what identifies them.
+ */
+export const MONSTER_DIRECTION_ROWS = ["down", "up", "left", "right"] as const;
+export const HUMAN_DIRECTION_ROWS = ["down", "left", "right", "up"] as const;
+
+const clip = (action: ActorAction, path: string, columns: number, frameRate: number, repeat = -1, frameWidth = 64, frameHeight = 64, directions: readonly ActorDirection[] = MONSTER_DIRECTION_ROWS): CraftpixActorClip => ({
   action,
   path,
   frameWidth,
@@ -61,7 +72,7 @@ const clip = (action: ActorAction, path: string, columns: number, frameRate: num
 
 type ActorColumns = Partial<Record<"idle" | "walk" | "run" | "attack" | "walkAttack" | "runAttack" | "hurt" | "death", number>>;
 
-function characterSet(prefix: string, folder: string, sourcePack: string, columns: ActorColumns, roles: readonly ("player" | "npc" | "enemy")[] = ["enemy"], profile?: { archetype: ActorArchetype; tier: ActorTier }): CraftpixActorDefinition {
+function characterSet(prefix: string, folder: string, sourcePack: string, columns: ActorColumns, roles: readonly ActorRole[] = ["enemy"], profile?: { archetype: ActorArchetype; tier: ActorTier }, rows: readonly ActorDirection[] = MONSTER_DIRECTION_ROWS): CraftpixActorDefinition {
   const uppercaseActions = prefix.startsWith("Swordsman") || prefix.startsWith("Slime") || prefix.startsWith("Plant") || prefix.startsWith("Vampires");
   const file = (action: string): string => {
     const names: Record<string, string> = uppercaseActions
@@ -72,16 +83,16 @@ function characterSet(prefix: string, folder: string, sourcePack: string, column
   };
 
   const clips: Partial<Record<ActorAction, CraftpixActorClip>> = {
-    idle: clip("idle", file("idle"), columns.idle ?? 4, 5),
-    walk: clip("walk", file("walk"), columns.walk ?? 6, 8),
-    run: clip("run", file("run"), columns.run ?? 8, 10),
-    attack: clip("attack", file("attack"), columns.attack ?? 8, 12, 0),
-    hurt: clip("hurt", file("hurt"), columns.hurt ?? 5, 8, 0),
-    death: clip("death", file("death"), columns.death ?? 7, 8, 0),
+    idle: clip("idle", file("idle"), columns.idle ?? 4, 5, -1, 64, 64, rows),
+    walk: clip("walk", file("walk"), columns.walk ?? 6, 8, -1, 64, 64, rows),
+    run: clip("run", file("run"), columns.run ?? 8, 10, -1, 64, 64, rows),
+    attack: clip("attack", file("attack"), columns.attack ?? 8, 12, 0, 64, 64, rows),
+    hurt: clip("hurt", file("hurt"), columns.hurt ?? 5, 8, 0, 64, 64, rows),
+    death: clip("death", file("death"), columns.death ?? 7, 8, 0, 64, 64, rows),
   };
   if (prefix.startsWith("Swordsman")) {
-    clips.walkAttack = clip("walkAttack", file("walkAttack"), columns.walkAttack ?? 6, 12, 0);
-    clips.runAttack = clip("runAttack", file("runAttack"), columns.runAttack ?? 8, 12, 0);
+    clips.walkAttack = clip("walkAttack", file("walkAttack"), columns.walkAttack ?? 6, 12, 0, 64, 64, rows);
+    clips.runAttack = clip("runAttack", file("runAttack"), columns.runAttack ?? 8, 12, 0, 64, 64, rows);
   }
 
   return {
@@ -98,32 +109,22 @@ function characterSet(prefix: string, folder: string, sourcePack: string, column
   };
 }
 
-function merchantProtagonistSet(): CraftpixActorDefinition {
-  const idlePath = "assets/actors/craftpix/MerchantProtagonist/MerchantProtagonist_Idle_with_shadow.png";
-  const walkPath = "assets/actors/craftpix/MerchantProtagonist/MerchantProtagonist_Walk_with_shadow.png";
-  return {
-    id: "merchant-protagonist",
-    label: "MerchantProtagonist",
-    sourcePack: "provided-character",
-    clips: {
-      // The supplied sheet has three authored frames per direction. Use the
-      // first frame for idle and retain all three for walking.
-      idle: clip("idle", idlePath, 1, 5, -1, 32, 32),
-      walk: clip("walk", walkPath, 3, 8, -1, 32, 32),
-    },
-    scale: 1,
-    origin: { x: 0.5, y: 0.72 },
-    roles: ["player"],
-  };
-}
+/**
+ * There is no built-in protagonist sheet. The player wears whichever actor
+ * carries the `player` role, which `playerActor()` in actorCatalog resolves, so
+ * swapping the protagonist is a checkbox rather than an edit here.
+ */
 
-export const CRAFTPIX_PLAYER_ACTOR = merchantProtagonistSet();
-
-/** The level 2/3 Swordsman sheets are human NPC variants, not enemies. */
+/**
+ * The level 2/3 Swordsman sheets are human NPC variants, not enemies. They are
+ * marked `adventurer` because these are the faces the guild roster wears; a
+ * townsfolk sheet has to be registered before the town can stop using the
+ * legacy three-frame sprites.
+ */
 export const CRAFTPIX_NPC_ACTORS = {
-  swordsman_lvl1: characterSet("Swordsman_lvl1", "Swordsman_lvl1", "swordsman", { idle: 12, walk: 6, run: 8, attack: 8, walkAttack: 6, runAttack: 8, hurt: 5, death: 7 }, ["npc"]),
-  swordsman_lvl2: characterSet("Swordsman_lvl2", "Swordsman_lvl2", "swordsman", { idle: 12, walk: 6, run: 8, attack: 8, walkAttack: 6, runAttack: 8, hurt: 5, death: 7 }, ["npc"]),
-  swordsman_lvl3: characterSet("Swordsman_lvl3", "Swordsman_lvl3", "swordsman", { idle: 12, walk: 6, run: 8, attack: 8, walkAttack: 6, runAttack: 8, hurt: 5, death: 7 }, ["npc"]),
+  swordsman_lvl1: characterSet("Swordsman_lvl1", "Swordsman_lvl1", "swordsman", { idle: 12, walk: 6, run: 8, attack: 8, walkAttack: 6, runAttack: 8, hurt: 5, death: 7 }, ["npc", "adventurer"], undefined, HUMAN_DIRECTION_ROWS),
+  swordsman_lvl2: characterSet("Swordsman_lvl2", "Swordsman_lvl2", "swordsman", { idle: 12, walk: 6, run: 8, attack: 8, walkAttack: 6, runAttack: 8, hurt: 5, death: 7 }, ["npc", "adventurer"], undefined, HUMAN_DIRECTION_ROWS),
+  swordsman_lvl3: characterSet("Swordsman_lvl3", "Swordsman_lvl3", "swordsman", { idle: 12, walk: 6, run: 8, attack: 8, walkAttack: 6, runAttack: 8, hurt: 5, death: 7 }, ["npc", "adventurer"], undefined, HUMAN_DIRECTION_ROWS),
 } as const;
 
 export type CraftpixNpcActorId = keyof typeof CRAFTPIX_NPC_ACTORS;
@@ -153,7 +154,6 @@ export const CRAFTPIX_ENEMY_POOLS = {
 };
 
 export const CRAFTPIX_ACTORS = {
-  player: CRAFTPIX_PLAYER_ACTOR,
   ...CRAFTPIX_NPC_ACTORS,
   ...CRAFTPIX_ENEMY_ACTORS,
 } as const;

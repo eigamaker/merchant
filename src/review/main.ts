@@ -56,7 +56,7 @@ root.innerHTML = `
     </section>
     <section class="palette-editor-view" data-editor-view="palette"><div class="palette-editor-toolbar"><span>素材取込からパレット作成・保存までをここで行います。保存したパレットはダンジョンテーマと自動生成設定から参照できます。</span></div><div class="palette-tag-toolbar"><span class="palette-tag-label">選択範囲の仕分け</span><label>用途 <select data-tag-role><option value="">変更しない</option><option value="floor">床</option><option value="wall">壁</option><option value="prop">小物</option><option value="stairs">階段</option><option value="liquid">水・溶岩</option><option value="-">未設定に戻す</option></select></label><label>状態 <select data-tag-status><option value="">変更しない</option><option value="ready">使える</option><option value="unsorted">未整理</option><option value="rejected">不採用</option></select></label><input data-tag-note placeholder="不採用の理由（任意）" aria-label="不採用の理由"><button type="button" data-action="palette-tag">選択範囲へ適用</button><span class="palette-tag-summary" data-tag-summary></span></div><div class="palette-workspace"><section class="asset-folder-panel" data-asset-folder><div class="panel-heading"><div><h2>素材フォルダ（Project）</h2><p class="small">ZIP／TMX／PNGを登録し、タイルをパレットへドラッグします。</p></div><span data-asset-folder-status></span></div><div class="asset-import-toolbar"><label class="file-button">素材を取り込む<input type="file" accept=".zip,.tmx,.tsx,.png" multiple data-asset-import></label><span>登録時に素材別パレットを自動作成します。</span></div><div data-import-report></div><div class="asset-filter-toolbar"><div class="asset-size-filters" role="group" aria-label="素材のセルサイズ"><button type="button" class="active" data-asset-size-filter="all">すべて</button><button type="button" data-asset-size-filter="16">16px</button><button type="button" data-asset-size-filter="32">32px</button></div><input type="search" data-asset-search placeholder="素材名を検索" aria-label="素材名を検索"><button type="button" data-action="asset-refresh">一覧更新</button></div><select class="visually-hidden" data-asset aria-label="素材シート"></select><div class="asset-browser"><nav class="asset-image-picker" data-asset-picker aria-label="素材フォルダ"></nav><div class="asset-content"><div class="source-wrap asset-source-wrap"><canvas data-source-canvas></canvas></div><p class="small">左の画像を選択し、方眼で単体または矩形を選んで右の同じセルサイズのパレットへドラッグします。</p></div></div></section><div class="palette-host" data-palette-host="palette"></div></div></section>
     <section class="actor-editor-view" data-editor-view="actors" hidden>
-      <div class="actor-editor-grid"><aside class="map-editor-side actor-library-panel"><div class="panel-heading"><div><h2>キャラクター素材</h2><p class="small">画像を選ぶと右側でアニメーションと能力値を確認できます。素材の追加は素材パレット編集タブから行います。</p></div><span data-actor-library-count></span></div><div class="actor-preview-list" data-actor-preview-list></div></aside><section class="map-editor-side actor-detail-panel"><div class="panel-heading"><h2>キャラクター確認・設定</h2><span data-actor-preview-status></span></div><div class="actor-preview-controls"><select class="visually-hidden" data-actor-preview-id aria-label="キャラクター"></select><label>動作 <select data-actor-preview-action></select></label><label>方向 <select data-actor-preview-direction></select></label></div><canvas class="actor-preview-canvas" data-actor-preview-canvas width="320" height="320"></canvas><div data-actor-settings></div><button data-action="actor-settings-save">能力値・役割を保存</button><p class="small" data-actor-settings-status></p></section></div>
+      <div class="actor-editor-grid"><aside class="map-editor-side actor-library-panel"><div class="panel-heading"><div><h2>キャラクター素材</h2><p class="small">画像を選ぶと右側でアニメーションと能力値を確認できます。取り込み済みの画像は下の欄からキャラクターとして登録できます。</p></div><span data-actor-library-count></span></div><div class="actor-preview-list" data-actor-preview-list></div><details class="actor-register-panel"><summary>素材フォルダの画像をキャラクターとして登録</summary><p class="small">キャラのアニメ画像は取り込み時に地形シートとして登録されることがあります。動作ごとにここで登録すると、この一覧に並びます。同じIDへ別の動作を足していけます。</p><div class="actor-register-fields"><label>ID <input data-actor-register-id placeholder="citizen1"></label><label>表示名 <input data-actor-register-label placeholder="町人1"></label><label>動作 <select data-actor-register-action></select></label><label>素材 <select data-actor-register-asset></select></label><label>コマ幅 <input type="number" min="1" data-actor-register-frame-width></label><label>コマ高 <input type="number" min="1" data-actor-register-frame-height></label><label>列数 <input type="number" min="1" data-actor-register-columns></label><label>速度 <input type="number" min="1" max="60" value="8" data-actor-register-rate></label><label>行の並び <select data-actor-register-rows><option value="human">正面・左・右・背面（人物）</option><option value="monster">正面・背面・左・右（モンスター）</option></select></label></div><div class="actor-role-fields"><span>役割</span><label><input type="checkbox" data-actor-register-role="townsfolk" checked>街のNPC</label><label><input type="checkbox" data-actor-register-role="adventurer">冒険者のNPC</label><label><input type="checkbox" data-actor-register-role="enemy">敵</label></div><button type="button" data-action="actor-register">この画像を登録</button><p class="small" data-actor-register-status></p></details></aside><section class="map-editor-side actor-detail-panel"><div class="panel-heading"><h2>キャラクター確認・設定</h2><span data-actor-preview-status></span></div><div class="actor-preview-controls"><select class="visually-hidden" data-actor-preview-id aria-label="キャラクター"></select><label>動作 <select data-actor-preview-action></select></label><label>方向 <select data-actor-preview-direction></select></label></div><canvas class="actor-preview-canvas" data-actor-preview-canvas width="320" height="320"></canvas><div data-actor-settings></div><button data-action="actor-settings-save">能力値・役割を保存</button><p class="small" data-actor-settings-status></p></section></div>
     </section>
     <section class="theme-editor-view" data-editor-view="themes" hidden data-theme-editor></section>
     <section class="spawn-editor-view" data-editor-view="spawns" hidden data-spawn-editor></section>
@@ -224,6 +224,86 @@ function previewImage(clip: CraftpixActorClip): HTMLImageElement {
   if (!image) { image = new Image(); image.onload = () => { drawActorPreview(); renderActorPreviewOptions(); renderMapActorStrip(); }; image.onerror = () => { drawActorPreview(); renderActorPreviewOptions(); renderMapActorStrip(); }; image.src = path; actorPreviewImages.set(path, image); }
   return image;
 }
+/**
+ * The frame grid a four-row character sheet implies. The dev server checks the
+ * numbers again on submit; this only saves the author from typing them.
+ */
+function guessSheetGeometry(width: number, height: number): { frameWidth: number; frameHeight: number; columns: number } | undefined {
+  if (height % ACTOR_SHEET_ROWS !== 0) return undefined;
+  const frameHeight = height / ACTOR_SHEET_ROWS;
+  if (frameHeight < 1 || width % frameHeight !== 0) return undefined;
+  return { frameWidth: frameHeight, frameHeight, columns: width / frameHeight };
+}
+
+function registerAssetSheets() {
+  return MAP_ASSET_CATALOG.map((asset) => ({
+    id: asset.id,
+    label: asset.label,
+    width: asset.columns * asset.tileSize,
+    height: asset.rows * asset.tileSize,
+  })).sort((a, b) => a.label.localeCompare(b.label) || a.id.localeCompare(b.id));
+}
+
+function fillRegisterGeometry(): void {
+  const sheet = registerAssetSheets().find((entry) => entry.id === registerAsset.value);
+  if (!sheet) return;
+  const guess = guessSheetGeometry(sheet.width, sheet.height);
+  registerFrameWidth.value = guess ? String(guess.frameWidth) : "";
+  registerFrameHeight.value = guess ? String(guess.frameHeight) : "";
+  registerColumns.value = guess ? String(guess.columns) : "";
+  registerStatus.textContent = guess
+    ? `${sheet.width}x${sheet.height} → ${guess.columns}コマ × ${ACTOR_SHEET_ROWS}方向（${guess.frameWidth}x${guess.frameHeight}）`
+    : `${sheet.width}x${sheet.height} はコマ割りを推定できません。コマ幅・コマ高・列数を入力してください。`;
+}
+
+function renderActorRegisterOptions(): void {
+  registerAction.innerHTML = ACTOR_ACTIONS.map((action) => `<option value="${action}"${action === "idle" ? " selected" : ""}>${action}</option>`).join("");
+  registerAsset.innerHTML = registerAssetSheets().map((sheet) => `<option value="${escapeHtml(sheet.id)}">${escapeHtml(sheet.label)}（${sheet.width}x${sheet.height}）</option>`).join("");
+  fillRegisterGeometry();
+}
+
+async function submitActorRegistration(): Promise<void> {
+  const roles = ACTOR_REGISTER_ROLES.filter((role) => editorRoot.querySelector<HTMLInputElement>(`[data-actor-register-role="${role}"]`)?.checked === true);
+  const body = {
+    id: registerId.value.trim(),
+    label: registerLabel.value.trim(),
+    roles: roles.length ? ["npc", ...roles].filter((role, index, all) => all.indexOf(role) === index) : ["npc"],
+    action: registerAction.value,
+    assetId: registerAsset.value,
+    frameWidth: Number(registerFrameWidth.value) || undefined,
+    frameHeight: Number(registerFrameHeight.value) || undefined,
+    columns: Number(registerColumns.value) || undefined,
+    frameRate: Number(registerRate.value) || undefined,
+    directions: DIRECTION_ROW_ORDERS[registerRows.value as keyof typeof DIRECTION_ROW_ORDERS],
+  };
+  registerStatus.textContent = "登録中…";
+  try {
+    const response = await fetch(ACTOR_REGISTER_API, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    const result = await response.json() as { ok?: boolean; error?: string };
+    if (!response.ok || !result.ok) throw new Error(result.error ?? "登録に失敗しました");
+    // The dev server rebuilds the catalogue and reloads, which is what brings
+    // the new character into the list below.
+    registerStatus.textContent = "登録しました。キャラクター一覧を更新しています…";
+  } catch (error) {
+    registerStatus.textContent = `登録エラー: ${error instanceof Error ? error.message : "不明"}`;
+  }
+}
+
+const ACTOR_REGISTER_API = "/__map-editor/actors/register";
+const ACTOR_SHEET_ROWS = 4;
+const ACTOR_ACTIONS = ["idle", "walk", "run", "attack", "walkAttack", "runAttack", "hurt", "death"] as const;
+const ACTOR_REGISTER_ROLES = ["townsfolk", "adventurer", "enemy"] as const;
+/** Mirrors MONSTER/HUMAN_DIRECTION_ROWS in scripts/actor-registration.mjs. */
+const DIRECTION_ROW_ORDERS = { human: ["down", "left", "right", "up"], monster: ["down", "up", "left", "right"] } as const;
+const registerId = q<HTMLInputElement>("[data-actor-register-id]"), registerLabel = q<HTMLInputElement>("[data-actor-register-label]"), registerAction = q<HTMLSelectElement>("[data-actor-register-action]"), registerAsset = q<HTMLSelectElement>("[data-actor-register-asset]"), registerFrameWidth = q<HTMLInputElement>("[data-actor-register-frame-width]"), registerFrameHeight = q<HTMLInputElement>("[data-actor-register-frame-height]"), registerColumns = q<HTMLInputElement>("[data-actor-register-columns]"), registerRate = q<HTMLInputElement>("[data-actor-register-rate]"), registerRows = q<HTMLSelectElement>("[data-actor-register-rows]"), registerStatus = q<HTMLElement>("[data-actor-register-status]");
+
+function actorRoleCaption(actor: CraftpixActorDefinition): string {
+  if (actor.roles?.includes("enemy")) return "敵";
+  if (actor.roles?.includes("player")) return "プレイヤー";
+  const kinds = [actor.roles?.includes("townsfolk") ? "街" : "", actor.roles?.includes("adventurer") ? "冒険者" : ""].filter(Boolean);
+  return kinds.length ? `NPC・${kinds.join("／")}` : "NPC（種類未設定）";
+}
+
 function renderActorPreviewOptions(): void {
   const actors = Object.values(ACTOR_CATALOG).sort((a, b) => a.label.localeCompare(b.label));
   actorLibraryCount.textContent = `${actors.length}体`;
@@ -231,7 +311,7 @@ function renderActorPreviewOptions(): void {
   const previousId = actorPreviewId.value;
   actorPreviewId.innerHTML = actors.map((actor) => `<option value="${escapeHtml(actor.id)}">${escapeHtml(actor.label)}</option>`).join("");
   actorPreviewId.value = actors.some((actor) => actor.id === previousId) ? previousId : actors[0]!.id;
-  actorPreviewList.innerHTML = actors.map((actor) => `<button type="button" class="actor-preview-card${actor.id === actorPreviewId.value ? " active" : ""}" data-actor-card="${escapeHtml(actor.id)}"><canvas data-actor-card-thumb="${escapeHtml(actor.id)}" width="82" height="82"></canvas><strong>${escapeHtml(actor.label)}</strong><small>${actor.roles?.includes("enemy") ? "敵" : actor.roles?.includes("player") ? "プレイヤー" : "NPC"}</small></button>`).join("");
+  actorPreviewList.innerHTML = actors.map((actor) => `<button type="button" class="actor-preview-card${actor.id === actorPreviewId.value ? " active" : ""}" data-actor-card="${escapeHtml(actor.id)}"><canvas data-actor-card-thumb="${escapeHtml(actor.id)}" width="82" height="82"></canvas><strong>${escapeHtml(actor.label)}</strong><small>${actorRoleCaption(actor)}</small></button>`).join("");
   actors.forEach((actor) => { const canvas = actorPreviewList.querySelector<HTMLCanvasElement>(`[data-actor-card-thumb="${CSS.escape(actor.id)}"]`); if (canvas) drawActorThumbnail(canvas, actor); });
   actorPreviewList.querySelectorAll<HTMLButtonElement>("[data-actor-card]").forEach((button) => button.onclick = () => { actorPreviewId.value = button.dataset.actorCard!; actorPreviewState = { action: "idle", direction: "down", frame: 0, elapsedMs: 0 }; renderActorPreviewOptions(); drawActorPreview(); });
   const actor = selectedPreviewActor(), actions = actorPreviewActions(actor);
@@ -253,7 +333,7 @@ function renderActorSettingsForm(): void {
   // The author picks what a creature is, not what its numbers are. The table
   // below shows what the shared curve makes of that choice.
   const preview = actorStatPreviewRows(archetype, tier);
-  actorSettings.innerHTML = `<label class="actor-setting-field">表示名 <input data-actor-label value="${escapeHtml(stored.label ?? actor.label)}"></label><div class="actor-role-fields"><span>役割</span><label><input type="checkbox" data-actor-role="enemy" ${roles.includes("enemy") ? "checked" : ""}>敵</label><label><input type="checkbox" data-actor-role="npc" ${roles.includes("npc") ? "checked" : ""}>NPC</label><label><input type="checkbox" data-actor-role="player" ${roles.includes("player") ? "checked" : ""}>プレイヤー</label></div><div class="actor-stat-fields"><label>系統 <select data-actor-archetype>${ACTOR_ARCHETYPES.map((value) => `<option value="${value}"${value === archetype ? " selected" : ""}>${ARCHETYPE_LABELS[value]}</option>`).join("")}</select></label><label>格 <select data-actor-tier>${ACTOR_TIERS.map((value) => `<option value="${value}"${value === tier ? " selected" : ""}>ティア${value}</option>`).join("")}</select></label></div><table class="actor-stat-preview"><caption>この設定での能力値</caption><thead><tr><th>階</th><th>HP</th><th>攻撃</th></tr></thead><tbody data-actor-stat-preview>${preview}</tbody></table>`;
+  actorSettings.innerHTML = `<label class="actor-setting-field">表示名 <input data-actor-label value="${escapeHtml(stored.label ?? actor.label)}"></label><div class="actor-role-fields"><span>役割</span><label><input type="checkbox" data-actor-role="enemy" ${roles.includes("enemy") ? "checked" : ""}>敵</label><label><input type="checkbox" data-actor-role="npc" ${roles.includes("npc") ? "checked" : ""}>NPC</label><label><input type="checkbox" data-actor-role="player" ${roles.includes("player") ? "checked" : ""}>プレイヤー</label></div><div class="actor-role-fields"><span>NPCの種類</span><label><input type="checkbox" data-actor-role="townsfolk" ${roles.includes("townsfolk") ? "checked" : ""}>街のNPC</label><label><input type="checkbox" data-actor-role="adventurer" ${roles.includes("adventurer") ? "checked" : ""}>冒険者のNPC</label><span class="small">冒険者に印を付けた素材だけが、ダンジョンで出会う冒険者の見た目に使われます。</span></div><div class="actor-stat-fields"><label>系統 <select data-actor-archetype>${ACTOR_ARCHETYPES.map((value) => `<option value="${value}"${value === archetype ? " selected" : ""}>${ARCHETYPE_LABELS[value]}</option>`).join("")}</select></label><label>格 <select data-actor-tier>${ACTOR_TIERS.map((value) => `<option value="${value}"${value === tier ? " selected" : ""}>ティア${value}</option>`).join("")}</select></label></div><table class="actor-stat-preview"><caption>この設定での能力値</caption><thead><tr><th>階</th><th>HP</th><th>攻撃</th></tr></thead><tbody data-actor-stat-preview>${preview}</tbody></table>`;
   for (const control of actorSettings.querySelectorAll<HTMLSelectElement>("[data-actor-archetype], [data-actor-tier]")) {
     // Refresh only the table: rebuilding the form would read the stored values
     // back and discard the choice that was just made.
@@ -297,7 +377,7 @@ async function loadActorSettings(): Promise<void> {
 }
 async function saveActorSettings(): Promise<void> {
   const actor = selectedPreviewActor(); if (!actor) return;
-  const roles = (["enemy", "npc", "player"] as const).filter((role) => actorSettings.querySelector<HTMLInputElement>(`[data-actor-role="${role}"]`)?.checked === true);
+  const roles = (["enemy", "npc", "player", "townsfolk", "adventurer"] as const).filter((role) => actorSettings.querySelector<HTMLInputElement>(`[data-actor-role="${role}"]`)?.checked === true);
   // Only identity is stored; the numbers stay in src/game/dungeonDifficulty.ts.
   const next: ActorSettingsCatalog = { version: 1, actors: { ...loadedActorSettings.actors, [actor.id]: { label: actorSettings.querySelector<HTMLInputElement>("[data-actor-label]")?.value.trim() || actor.label, roles, archetype: actorSettings.querySelector<HTMLSelectElement>("[data-actor-archetype]")?.value as ActorArchetype, tier: Number(actorSettings.querySelector<HTMLSelectElement>("[data-actor-tier]")?.value ?? 1) as ActorTier } } };
   try {
@@ -466,7 +546,7 @@ function setEditorMode(mode: EditorMode): void {
   editorRoot.querySelectorAll<HTMLElement>("[data-editor-view]").forEach((view) => { view.hidden = view.dataset.editorView !== mode; });
   editorRoot.querySelectorAll<HTMLButtonElement>("[data-editor-mode]").forEach((button) => { button.classList.toggle("active", button.dataset.editorMode === mode); });
   manualMapActions.hidden = mode !== "map";
-  if (mode === "actors") { renderActorPreviewOptions(); drawActorPreview(); }
+  if (mode === "actors") { renderActorPreviewOptions(); renderActorRegisterOptions(); drawActorPreview(); }
   else if (mode === "spawns") spawnEditor.render();
   else if (mode !== "themes") { renderPaletteTabs(); renderAssetOptions(); renderPalette(); renderSource(); }
 }
@@ -516,6 +596,8 @@ actorPreviewId.onchange = () => { actorPreviewState = { action: "idle", directio
 actorPreviewAction.onchange = () => { actorPreviewState = { ...actorPreviewState, action: actorPreviewAction.value, frame: 0, elapsedMs: 0 }; renderActorPreviewOptions(); drawActorPreview(); };
 actorPreviewDirection.onchange = () => { actorPreviewState = { ...actorPreviewState, direction: actorPreviewDirection.value as ActorPreviewState["direction"], frame: 0, elapsedMs: 0 }; drawActorPreview(); };
 q<HTMLButtonElement>("[data-action=actor-settings-save]").onclick = () => { void saveActorSettings(); };
+q<HTMLButtonElement>("[data-action=actor-register]").onclick = () => { void submitActorRegistration(); };
+registerAsset.onchange = () => fillRegisterGeometry();
 applyFloorButton.onclick = async () => {
   if (!active || active.kind !== "dungeon") return;
   try {

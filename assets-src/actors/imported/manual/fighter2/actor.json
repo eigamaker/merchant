@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "id": "fighter2",
+  "label": "剣士2",
+  "roles": [
+    "npc",
+    "adventurer"
+  ],
+  "clips": {
+    "idle": {
+      "action": "idle",
+      "path": "imported/manual/fighter2/idle.png",
+      "width": 384,
+      "height": 128,
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "columns": 12,
+      "rows": 4,
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "frameRate": 8
+    },
+    "walk": {
+      "action": "walk",
+      "path": "imported/manual/fighter2/walk.png",
+      "width": 192,
+      "height": 128,
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "columns": 6,
+      "rows": 4,
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "frameRate": 8
+    }
+  },
+  "scale": 1,
+  "origin": {
+    "x": 0.5,
+    "y": 0.72
+  }
+}

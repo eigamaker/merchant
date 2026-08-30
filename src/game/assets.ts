@@ -1,4 +1,4 @@
-import { CRAFTPIX_ACTORS, CRAFTPIX_PLAYER_ACTOR, CRAFTPIX_ENEMY_ACTORS, CRAFTPIX_NPC_ACTORS } from "./craftpixActors";
+import { CRAFTPIX_ACTORS, CRAFTPIX_ENEMY_ACTORS, CRAFTPIX_NPC_ACTORS } from "./craftpixActors";
 import { CRAFTPIX_UI } from "./craftpixUi";
 
 /**
@@ -30,7 +30,6 @@ export const ASSET_MANIFEST = {
  * editor/game share one canonical actor and UI catalog. */
 export const CRAFTPIX_RUNTIME_ASSETS = {
   actors: CRAFTPIX_ACTORS,
-  player: CRAFTPIX_PLAYER_ACTOR,
   npcs: CRAFTPIX_NPC_ACTORS,
   enemies: CRAFTPIX_ENEMY_ACTORS,
   ui: CRAFTPIX_UI,

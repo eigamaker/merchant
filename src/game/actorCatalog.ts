@@ -1,7 +1,7 @@
 import { CRAFTPIX_ACTORS, type CraftpixActorDefinition } from "./craftpixActors";
 import { GENERATED_ACTORS } from "./actorAssetCatalog.generated";
 import { GENERATED_ACTOR_SETTINGS } from "./actorSettings.generated";
-import type { ActorSettings, ActorSettingsCatalog } from "./actorSettings";
+import type { ActorSettings, ActorSettingsCatalog, NpcActorRole } from "./actorSettings";
 import { enemyCost, enemyStatsAt, legacyEnemyStatsAt, type ActorProfile, type EnemyStats } from "./dungeonDifficulty";
 
 const BASE_ACTOR_CATALOG: Record<string, CraftpixActorDefinition> = Object.fromEntries([
@@ -40,6 +40,28 @@ applyActorSettings(GENERATED_ACTOR_SETTINGS);
 
 export function actorDefinition(id: string): CraftpixActorDefinition | undefined {
   return ACTOR_CATALOG[id];
+}
+
+/**
+ * The sheet the protagonist wears.
+ *
+ * This used to be one hard-coded definition shipped with the game. It is now
+ * whichever actor carries the `player` role, so the character settings decide
+ * it. Nothing marked leaves this undefined, and the scenes fall back to the
+ * legacy sprite rather than drawing nothing.
+ */
+export function playerActor(): CraftpixActorDefinition | undefined {
+  const marked = Object.values(ACTOR_CATALOG).filter((actor) => actor.roles?.includes("player")).sort((a, b) => a.id.localeCompare(b.id));
+  return marked[0];
+}
+
+/**
+ * The sheets an author has approved for a kind of person, in a stable order.
+ * The roster picks faces from here rather than from a fixed table, so what
+ * walks around town or through the dungeon is always something chosen.
+ */
+export function npcActorIds(role: NpcActorRole): string[] {
+  return Object.values(ACTOR_CATALOG).filter((actor) => actor.roles?.includes(role)).map((actor) => actor.id).sort();
 }
 
 export function enemyActorIds(): string[] {

@@ -7,8 +7,8 @@ import {
   GUARD_ASSET_VARIANTS,
   DUNGEON_OBJECT_FRAMES,
 } from "../game/assets";
-import { CRAFTPIX_ENEMY_ACTORS, CRAFTPIX_PLAYER_ACTOR, actorFrame, type ActorAction, type ActorDirection, type CraftpixActorDefinition } from "../game/craftpixActors";
-import { ACTOR_CATALOG, actorDefinition, actorSupportsDirectionalMovement } from "../game/actorCatalog";
+import { CRAFTPIX_ENEMY_ACTORS, actorFrame, type ActorAction, type ActorDirection, type CraftpixActorDefinition } from "../game/craftpixActors";
+import { ACTOR_CATALOG, actorDefinition, actorSupportsDirectionalMovement, playerActor } from "../game/actorCatalog";
 import { CRAFTPIX_UI } from "../game/craftpixUi";
 import {
   DIRECTION,
@@ -50,7 +50,7 @@ import { moveMapPosition } from "../game/mapTiles";
 import { assignHomeVisitorCells, findHomeVisitorPath } from "../game/homeVisitors";
 import { compileMap, loadTrialMap, loadTrialMapPack } from "../game/mapDocument";
 import { MISSING_MAP_ASSET_TEXTURE, authoredMapAssetIds, mapAssetDefinitions, mapAssetFootprint, resolveMapAssetFrame } from "../game/mapAssetRuntime";
-import { createDungeonRenderPlan, dungeonThemeAssetIds } from "../game/dungeonThemes";
+import { createDungeonRenderPlan, dungeonPieceHalves, dungeonTheme, dungeonThemeAssetIds, dungeonThemeObject, type DungeonThemeObjectKind } from "../game/dungeonThemes";
 import { createDefaultMapPack } from "../game/defaultMapPack";
 import { acceptCustomerPurchaseRequest, cancelEscortCommission, escortFeeForNpc, isHireable, merchantItemName, postEscortCommission, prepareCustomerPurchaseRequest } from "../game/merchantEconomy";
 import { ensureGuardProfile, guardConditionLabel, guardObservationLines, guardTrustLabel } from "../game/guardProfiles";
@@ -75,7 +75,7 @@ import {
   summonNextCustomer,
   unequipItem,
 } from "../game/merchantSystems";
-import { ADVENTURER_RANK_ORDER, ADVENTURER_RANKS, ITEM_VISUALS, NPC_APPEARANCES, NPC_SEEDS } from "../game/merchantContent";
+import { ADVENTURER_RANK_ORDER, ADVENTURER_RANKS, ITEM_VISUALS, NPC_SEEDS, npcAppearanceSprite } from "../game/merchantContent";
 import type { AdventurerRank, DungeonCommand, DungeonEvent, GameState, GuardDescentAssessment, ItemInstance, ItemRarity, MenuChoice, NpcRecord, Vec } from "../game/types";
 import {
   FLOATING_INK,
@@ -88,6 +88,7 @@ import {
   rarityInk,
   rarityLabel,
   toneInk,
+  UI_PIXEL_SCALE,
   type MessageTone,
 } from "../game/uiTheme";
 import {
@@ -308,6 +309,17 @@ export class MerchantScene extends Phaser.Scene {
 
   create(): void {
     this.installFrameGuard();
+    // Every coordinate in this scene is on the 640x360 layout grid, so the
+    // camera magnifies that grid to fill the larger canvas.
+    // Origin at the top-left keeps the transform a plain multiply, so layout
+    // coordinate (0,0) is canvas (0,0) whatever the scale factor is.
+    this.cameras.main.setZoom(UI_PIXEL_SCALE).setOrigin(0, 0).setScroll(0, 0);
+    // Text is rasterised by the browser at its font size and then magnified with
+    // the rest of the scene. Rendering it at the camera's factor instead puts one
+    // glyph pixel on one screen pixel, which is what makes small kanji readable.
+    this.events.on(Phaser.Scenes.Events.ADDED_TO_SCENE, (object: Phaser.GameObjects.GameObject) => {
+      if (object instanceof Phaser.GameObjects.Text) object.setResolution(UI_PIXEL_SCALE);
+    });
     if (!this.input.keyboard) throw new Error("キーボード入力を初期化できませんでした。");
     this.keys = this.input.keyboard.addKeys({
       up: Phaser.Input.Keyboard.KeyCodes.UP,
@@ -572,7 +584,8 @@ export class MerchantScene extends Phaser.Scene {
       this.updateHomePresentation();
       this.saveAuto();
     } else if (this.homePlayer) {
-      if (!this.playCraftpixActor(this.homePlayer, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing, true, this.homeScale())) this.homePlayer.play(`player.idle-${this.playerFacing}`, true);
+      const protagonist = playerActor();
+      if (!protagonist || !this.playCraftpixActor(this.homePlayer, protagonist, "idle", this.playerFacing, true, this.homeScale())) this.homePlayer.play(`player.idle-${this.playerFacing}`, true);
     }
     this.updateHomeNpcs(delta);
     if (investigate || talk || inventory || shop) this.render();
@@ -1032,7 +1045,7 @@ export class MerchantScene extends Phaser.Scene {
 
   private playHomeCustomerMotion(sprite: Phaser.GameObjects.Sprite, npcId: string, direction: "up" | "down" | "left" | "right", walking: boolean): void {
     const npc = this.state.npcs.find((entry) => entry.id === npcId);
-    const visual = npc ? NPC_APPEARANCES[npc.appearanceId] : undefined;
+    const visual = npcAppearanceSprite(npc?.appearanceId);
     const craftpix = visual ? actorDefinition(visual) : undefined;
     if (craftpix && this.playCraftpixActor(sprite, craftpix, walking ? "walk" : "idle", direction, true, this.homeScale())) return;
     const animation = `${sprite.texture.key}.${walking ? "walk" : "idle"}-${direction}`;
@@ -1620,9 +1633,10 @@ export class MerchantScene extends Phaser.Scene {
     }
     this.add.circle(80, 73, 33, 0xd3a75b, 0.12);
     this.add.circle(80, 73, 22, 0xd3a75b, 0.16);
-    const playerTexture = this.craftpixActorTexture(CRAFTPIX_PLAYER_ACTOR) ?? ASSET_MANIFEST.player.textureKey;
+    const protagonist = playerActor();
+    const playerTexture = (protagonist && this.craftpixActorTexture(protagonist)) ?? ASSET_MANIFEST.player.textureKey;
     const player = this.add.sprite(154, 244, playerTexture, 0);
-    if (!this.playCraftpixActor(player, CRAFTPIX_PLAYER_ACTOR, "idle", "down", true, 2.05)) player.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(1.8).play("player.idle-down");
+    if (!protagonist || !this.playCraftpixActor(player, protagonist, "idle", "down", true, 2.05)) player.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(1.8).play("player.idle-down");
     this.add.text(296, 40, "DUNGEON", { fontSize: "14px", color: "#c8a76a", letterSpacing: 4 });
     this.add.text(296, 58, "CURIO MERCHANT", { fontSize: "24px", color: "#ffe7ad" });
     addDivider(this, 296, 94, 312);
@@ -1662,10 +1676,11 @@ export class MerchantScene extends Phaser.Scene {
     this.drawHomeBackdrop();
     const world = this.add.container(0, 0);
     this.homeNpcs = [];
-    const playerTexture = this.craftpixActorTexture(CRAFTPIX_PLAYER_ACTOR) ?? ASSET_MANIFEST.player.textureKey;
+    const protagonist = playerActor();
+    const playerTexture = (protagonist && this.craftpixActorTexture(protagonist)) ?? ASSET_MANIFEST.player.textureKey;
     const homeScale = this.homeScale();
     const player = this.add.sprite(this.state.homePos.x, this.state.homePos.y + this.homeMap.tileSize / 2, playerTexture, 0);
-    if (!this.playCraftpixActor(player, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing, true, homeScale)) player.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE * homeScale).play(`player.idle-${this.playerFacing}`);
+    if (!protagonist || !this.playCraftpixActor(player, protagonist, "idle", this.playerFacing, true, homeScale)) player.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE * homeScale).play(`player.idle-${this.playerFacing}`);
     world.add(player);
     this.homePlayer = player;
     this.drawHomeNpcs(world);
@@ -1802,13 +1817,26 @@ export class MerchantScene extends Phaser.Scene {
         place(entry.pos.x, entry.pos.y, ASSET_MANIFEST.item.textureKey, frame);
       }
     }
+    // A chest and a body are placed because the run put something there, so they
+    // read from the theme rather than from the decoration table. A theme that
+    // names nothing keeps the shared placeholder sheet.
+    const placeThemeObject = (pos: Vec, kind: DungeonThemeObjectKind, fallbackFrame: number): void => {
+      const ref = run.map.procedural ? dungeonThemeObject(dungeonTheme(run.map.procedural.themeId), kind) : undefined;
+      if (!ref) { place(pos.x, pos.y, "object.dungeon", fallbackFrame); return; }
+      const halves = dungeonPieceHalves(ref);
+      const lower = resolveMapAssetFrame(halves.lower.assetId, halves.lower.frame, (key) => this.textures.exists(key));
+      place(pos.x, pos.y, lower.textureKey, lower.frame, 1, halves.lower.assetId);
+      if (!halves.upper || pos.y <= 0) return;
+      const upper = resolveMapAssetFrame(halves.upper.assetId, halves.upper.frame, (key) => this.textures.exists(key));
+      add(this.add.image(pos.x * tile + tile / 2, (pos.y - 1) * tile + tile / 2, upper.textureKey, upper.frame).setDisplaySize(tile, tile).setDepth(depthAt(pos.y)));
+    };
     for (const chest of run.chests) {
       if (!isExplored(run.map, chest.pos.x, chest.pos.y)) continue;
-      place(chest.pos.x, chest.pos.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.chest);
+      placeThemeObject(chest.pos, "chest", DUNGEON_OBJECT_FRAMES.chest);
     }
     for (const body of run.bodies) {
       if (!isExplored(run.map, body.pos.x, body.pos.y)) continue;
-      place(body.pos.x, body.pos.y, "object.dungeon", DUNGEON_OBJECT_FRAMES.bones);
+      placeThemeObject(body.pos, "corpse", DUNGEON_OBJECT_FRAMES.bones);
     }
     for (const enemy of run.enemies) {
       if (!hasDungeonVision(run.map, run.player, enemy.pos)) continue;
@@ -1822,7 +1850,7 @@ export class MerchantScene extends Phaser.Scene {
     for (const adventurer of run.adventurers) {
       if (!hasDungeonVision(run.map, run.player, adventurer.pos)) continue;
       const npc = this.state.npcs.find((entry) => entry.id === adventurer.npcId);
-      const appearance = npc ? NPC_APPEARANCES[npc.appearanceId] : undefined;
+      const appearance = npcAppearanceSprite(npc?.appearanceId);
       const craftpix = appearance ? actorDefinition(appearance) : undefined;
       const textureKey = craftpix ? (this.craftpixActorTexture(craftpix) ?? ASSET_MANIFEST.npc.textureKey) : ASSET_MANIFEST.npc.textureKey;
       const direction = this.dungeonWalkAnimations.get(adventurer.npcId) ?? "down";
@@ -1832,7 +1860,7 @@ export class MerchantScene extends Phaser.Scene {
     }
     if (run.guard) {
       const npc = this.state.npcs.find((entry) => entry.id === run.guard?.guardId);
-      const appearance = npc ? NPC_APPEARANCES[npc.appearanceId] : undefined;
+      const appearance = npcAppearanceSprite(npc?.appearanceId);
       const craftpix = appearance ? actorDefinition(appearance) : undefined;
       const textureKey = craftpix ? (this.craftpixActorTexture(craftpix) ?? ASSET_MANIFEST.npc.textureKey) : "actor.npc.scout";
       const direction = this.dungeonWalkAnimations.get(run.guard.guardId) ?? "down";
@@ -1841,9 +1869,10 @@ export class MerchantScene extends Phaser.Scene {
       if (run.guard.mode === "retreated") sprite.setTint(0x8b8791).setAlpha(0.72);
       add(sprite.setDepth(depthAt(run.guard.pos.y)));
     }
-    const playerTexture = this.craftpixActorTexture(CRAFTPIX_PLAYER_ACTOR) ?? ASSET_MANIFEST.player.textureKey;
+    const protagonist = playerActor();
+    const playerTexture = (protagonist && this.craftpixActorTexture(protagonist)) ?? ASSET_MANIFEST.player.textureKey;
     const player = this.add.sprite(run.player.x * tile + center + (run.guard ? partyOffsets.player.x : 0), run.player.y * tile + tile + (run.guard ? partyOffsets.player.y : 0), playerTexture, 0).setName("actor:player");
-    if (!this.playCraftpixActor(player, CRAFTPIX_PLAYER_ACTOR, "idle", this.playerFacing)) player.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE).play(`player.idle-${this.playerFacing}`);
+    if (!protagonist || !this.playCraftpixActor(player, protagonist, "idle", this.playerFacing)) player.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE).play(`player.idle-${this.playerFacing}`);
     add(player.setDepth(depthAt(run.player.y)));
     // Sorting happens before the overlays so fog and the hunger aura stay on top.
     world.sort("depth");
@@ -1907,7 +1936,6 @@ export class MerchantScene extends Phaser.Scene {
       // 名簿の人物を敵の表から引かないこと。詳細は dungeonActorAppearance を参照。
       const appearance = dungeonActorAppearance(this.state, id);
       if (!appearance) return undefined;
-      if (appearance === "player") return CRAFTPIX_PLAYER_ACTOR;
       return actorDefinition(appearance);
     };
     const actorOffset = (id: string): Vec => {
@@ -2115,7 +2143,8 @@ export class MerchantScene extends Phaser.Scene {
       ? horizontal < 0 ? "player.walk-left" : "player.walk-right"
       : vertical < 0 ? "player.walk-up" : "player.walk-down");
     const facing = direction.endsWith("left") ? "left" : direction.endsWith("right") ? "right" : direction.endsWith("up") ? "up" : "down";
-    if (!this.playCraftpixActor(this.homePlayer, CRAFTPIX_PLAYER_ACTOR, "walk", facing, true, this.homeScale())) {
+    const protagonist = playerActor();
+    if (!protagonist || !this.playCraftpixActor(this.homePlayer, protagonist, "walk", facing, true, this.homeScale())) {
       if (this.homePlayer.anims.currentAnim?.key !== direction) this.homePlayer.play(direction, true);
     }
   }
@@ -2126,7 +2155,7 @@ export class MerchantScene extends Phaser.Scene {
       const center = this.poiPosition(poi);
       const homeScale = this.homeScale();
       const npc = poi.customerId ? this.state.npcs.find((entry) => entry.id === poi.customerId) : undefined;
-      const visual = npc ? NPC_APPEARANCES[npc.appearanceId] : undefined;
+      const visual = npcAppearanceSprite(npc?.appearanceId);
       const craftpix = visual ? actorDefinition(visual) : undefined;
       if (craftpix) {
         const texture = this.craftpixActorTexture(craftpix) ?? ASSET_MANIFEST.npc.textureKey;

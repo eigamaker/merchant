@@ -1,3 +1,4 @@
+import { actorDefinition } from "./actorCatalog";
 import type { AdventurerRank, ItemDefinition, NpcRecord } from "./types";
 
 const item = (
@@ -83,6 +84,11 @@ export const NPC_SEEDS: readonly NpcSeed[] = [
   { id: "rina", name: "リナ", profession: "townsperson", appearanceId: "profession.townsperson.01", adventurer: false, interests: ["medicine", "curio"], budget: 350 },
 ] as const;
 
+/**
+ * The authored cast: an appearance id per hand-written person, mapped to the
+ * sprite it wears. A generated adventurer does not appear here - the roster
+ * names an actor directly, from the sheets marked as adventurers.
+ */
 export const NPC_APPEARANCES: Record<string, string> = {
   "profession.adventurer.swordsman.01": "swordsman_lvl1",
   "profession.adventurer.scout.01": "legacy.guard.mina",
@@ -93,6 +99,16 @@ export const NPC_APPEARANCES: Record<string, string> = {
   "profession.noble.01": "legacy.npc.innkeeper",
   "profession.townsperson.01": "legacy.npc.scout",
 };
+
+/**
+ * The sprite for an appearance id. Authored people name one of the entries
+ * above; anyone the roster generated names an actor, so an id that is already
+ * a registered actor stands for itself.
+ */
+export function npcAppearanceSprite(appearanceId: string | undefined): string | undefined {
+  if (!appearanceId) return undefined;
+  return NPC_APPEARANCES[appearanceId] ?? (actorDefinition(appearanceId) ? appearanceId : undefined);
+}
 
 export function createInitialNpcs(): NpcRecord[] {
   return NPC_SEEDS.map((seed) => ({ ...seed, interests: [...seed.interests], status: "inTown", relation: 0, inventoryIds: [] }));

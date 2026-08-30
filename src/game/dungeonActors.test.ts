@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { beginExpedition, createNewGame } from "./engine";
 import { dungeonActorAppearance } from "./dungeonActors";
 import { CRAFTPIX_ENEMY_ACTORS } from "./craftpixActors";
+import { playerActor } from "./actorCatalog";
 
 const enemyActorIds = new Set(Object.keys(CRAFTPIX_ENEMY_ACTORS));
 
@@ -32,7 +33,9 @@ describe("dungeonActorAppearance", () => {
   it("主人公は主人公のまま、知らないIDには何も返さない", () => {
     const state = createNewGame();
     beginExpedition(state);
-    expect(dungeonActorAppearance(state, "player")).toBe("player");
+    // The protagonist is an ordinary actor, so it answers with the sheet the
+    // character settings marked as the player.
+    expect(dungeonActorAppearance(state, "player")).toBe(playerActor()!.id);
     expect(dungeonActorAppearance(state, "たった今倒された敵")).toBeUndefined();
   });
 });

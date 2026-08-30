@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { beginExpedition, createItem, createNewGame, descend, returnHome, waitTurn } from "./engine";
-import { ADVENTURER_RANKS, ITEM_VISUALS, MERCHANT_ITEM_DEFINITIONS, NPC_APPEARANCES } from "./merchantContent";
+import { ADVENTURER_RANKS, ITEM_VISUALS, MERCHANT_ITEM_DEFINITIONS, NPC_APPEARANCES, npcAppearanceSprite } from "./merchantContent";
+import { npcActorIds } from "./actorCatalog";
 import { acceptCustomerPurchaseRequest, cancelEscortCommission, escortFeeForNpc, postEscortCommission, prepareCustomerPurchaseRequest } from "./merchantEconomy";
 import { startShopSession, summonNextCustomer } from "./merchantSystems";
 import { ADVENTURER_ROSTER_TARGET, ROSTER_RANK_SHAPE, createRosterAdventurer } from "./npcRoster";
@@ -22,7 +23,17 @@ describe("v6 merchant world", () => {
       expect(adventurers.filter((npc) => npc.rank === rank).length).toBe(ROSTER_RANK_SHAPE[rank]);
     }
     expect(state.visitorNpcIds).toHaveLength(0);
-    expect(state.npcs.every((npc) => Boolean(NPC_APPEARANCES[npc.appearanceId]))).toBe(true);
+    // Everyone resolves to a sprite. Authored people name an appearance id from
+    // the table; generated adventurers name one of the actor sheets marked as
+    // adventurers, so nobody in the dungeon is wearing an unchosen face.
+    expect(state.npcs.every((npc) => Boolean(npcAppearanceSprite(npc.appearanceId)))).toBe(true);
+    const adventurerSheets = new Set(npcActorIds("adventurer"));
+    expect(adventurerSheets.size).toBeGreaterThan(0);
+    const generated = state.npcs.filter((npc) => npc.id.startsWith("adventurer-"));
+    expect(generated.length).toBeGreaterThan(0);
+    expect(generated.every((npc) => adventurerSheets.has(npc.appearanceId))).toBe(true);
+    // The fifteen written by hand keep the appearance their entry names.
+    expect(state.npcs.filter((npc) => !npc.id.startsWith("adventurer-")).every((npc) => Boolean(NPC_APPEARANCES[npc.appearanceId]))).toBe(true);
     // 初期装備は台本のある10人だけ。名簿を増やしてもアイテムは増えない。
     expect(Object.keys(state.itemsById)).toHaveLength(10);
     // 名前に通し番号が混じらない。

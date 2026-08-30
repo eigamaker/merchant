@@ -2,9 +2,10 @@ import { configDefaults, defineConfig } from "vitest/config";
 import type { Plugin } from "vite";
 import fs from "node:fs";
 import { randomUUID } from "node:crypto";
-import { DUNGEON_THEME_FILE, MAP_EDITOR_PALETTE_API, MAP_EDITOR_THEME_API, MAP_TILE_INPUT_DIR, MAP_TILE_PALETTE_API, MAP_TILE_PALETTE_FILE, buildMapTileAssets, readDungeonThemes, saveDungeonThemesAtomically, savePaletteAtomically } from "./scripts/map-tile-pipeline.mjs";
+import { DUNGEON_THEME_FILE, MAP_EDITOR_PALETTE_API, MAP_EDITOR_THEME_API, MAP_TILE_INPUT_DIR, MAP_TILE_PALETTE_API, MAP_TILE_PALETTE_FILE, buildMapTileAssets, readDungeonThemes, readTileSheets, saveDungeonThemesAtomically, savePaletteAtomically } from "./scripts/map-tile-pipeline.mjs";
 import { analyzeImport, commitImport } from "./scripts/asset-import-pipeline.mjs";
 import { ACTOR_SOURCE_DIR, buildActorAssets } from "./scripts/build-actor-assets.mjs";
+import { ACTOR_REGISTER_API, registerActorClip, removeRegisteredActor } from "./scripts/actor-registration.mjs";
 import { readActorSettings, writeActorSettingsAtomically } from "./scripts/actor-settings.mjs";
 
 function mapTilePipelinePlugin(): Plugin {
@@ -55,6 +56,25 @@ function mapTilePipelinePlugin(): Plugin {
             response.statusCode = 200;
             response.setHeader("Content-Type", "application/json; charset=utf-8");
             response.end(JSON.stringify({ id, analysis: publicAnalysis(analysis) }));
+          }).catch((error) => { response.statusCode = 400; response.setHeader("Content-Type", "application/json; charset=utf-8"); response.end(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) })); });
+          return;
+        }
+        if (pathname === ACTOR_REGISTER_API) {
+          if (request.method !== "POST" && request.method !== "DELETE") { response.statusCode = 405; response.setHeader("Allow", "POST, DELETE"); response.end("Method Not Allowed"); return; }
+          void jsonBody(request).then((body) => {
+            if (request.method === "DELETE") { removeRegisteredActor(body.id); }
+            else {
+              // The browser names an asset id and the path comes from the
+              // catalogue, so a request can never reach outside the asset folder.
+              const asset = readTileSheets().find((entry: { id: string }) => entry.id === body.assetId);
+              if (!asset) throw new Error(`素材が見つかりません: ${String(body.assetId)}`);
+              registerActorClip({ ...body, sourceFile: asset.sourceFile, sheetLabel: asset.label });
+            }
+            buildActorAssets();
+            server.ws.send({ type: "full-reload" });
+            response.statusCode = 200;
+            response.setHeader("Content-Type", "application/json; charset=utf-8");
+            response.end(JSON.stringify({ ok: true }));
           }).catch((error) => { response.statusCode = 400; response.setHeader("Content-Type", "application/json; charset=utf-8"); response.end(JSON.stringify({ ok: false, error: error instanceof Error ? error.message : String(error) })); });
           return;
         }

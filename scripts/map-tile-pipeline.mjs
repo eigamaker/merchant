@@ -22,11 +22,13 @@ const sourceFormats = new Set(["grid", "wolf-autotile", "section-catalog"]);
 const autotileSchemes = new Set(["blob47"]);
 const BLOB47_TILE_COUNT = 47;
 const idPattern = /^[a-z][a-z0-9._-]*$/;
-const themePlacements = new Set(["floor", "wall", "corner", "deadEnd"]);
+const themePlacements = new Set(["floor", "wall", "wallFace", "corner", "deadEnd"]);
 /** Palette triage vocabulary. Mirrors src/review/paletteModel.ts. */
 const cellRoles = new Set(["floor", "wall", "prop", "stairs", "liquid"]);
 const cellStatuses = new Set(["ready", "unsorted", "rejected"]);
 const spawnRoles = new Set(["common", "elite"]);
+/** Tiles the game places itself. Mirrors DUNGEON_THEME_OBJECT_KINDS. */
+const themeObjectKinds = new Set(["chest", "corpse"]);
 const requiredThemeIds = ["cave", "ruins", "lava"];
 /** Enemies defined in code (src/game/craftpixActors.ts), so not discoverable on disk. */
 const builtInEnemyIds = new Set([
@@ -58,6 +60,114 @@ export function availableEnemyIds(sourceDir = ACTOR_SOURCE_DIR) {
   };
   visit(sourceDir);
   return ids;
+}
+
+/** Alpha at or below this reads as transparent when tracing a silhouette. */
+const STACKED_ALPHA_FLOOR = 8;
+
+function frameSilhouette(png, geometry, frame) {
+  const { tileSize, margin, spacing, columns } = geometry;
+  const step = tileSize + spacing;
+  const originX = margin + (frame % columns) * step;
+  const originY = margin + Math.floor(frame / columns) * step;
+  let opaque = 0;
+  let top = 0n;
+  let bottom = 0n;
+  for (let y = 0; y < tileSize; y += 1) for (let x = 0; x < tileSize; x += 1) {
+    if (png.data[((originY + y) * png.width + (originX + x)) * 4 + 3] <= STACKED_ALPHA_FLOOR) continue;
+    opaque += 1;
+    if (y === 0) top |= 1n << BigInt(x);
+    if (y === tileSize - 1) bottom |= 1n << BigInt(x);
+  }
+  return { coverage: opaque / (tileSize * tileSize), top, bottom };
+}
+
+/**
+ * Frames holding the lower half of a picture two cells tall: the half that sits
+ * in the cell, with the rest drawn one cell above it. An up-staircase is drawn
+ * that way and a down-staircase is not, which is the distinction a theme would
+ * otherwise carry by hand for every sheet it shops from.
+ *
+ * A pair is proposed when the frame above is partly transparent - so it cannot
+ * be a standalone floor or wall - reaches its own bottom edge, and ends on
+ * columns that all continue into this frame's top edge.
+ *
+ * Those tests alone also fit two unrelated tiles that happen to meet at an
+ * opaque seam. What separates the cases is that the scan runs top-down and
+ * consumes both halves of a pair, so the lower half of one piece is never read
+ * as the upper half of the piece below it. That is an assumption about how
+ * sheets are laid out rather than evidence in the pixels, so this stays a
+ * proposal: a theme that disagrees says so with an explicit height.
+ */
+export function detectStackedFrames(png, geometry) {
+  const { columns, rows } = geometry;
+  if (columns < 1 || rows < 2) return [];
+  const silhouettes = [];
+  for (let frame = 0; frame < columns * rows; frame += 1) silhouettes.push(frameSilhouette(png, geometry, frame));
+  const claimed = new Set();
+  const lowerHalves = [];
+  for (let frame = columns; frame < columns * rows; frame += 1) {
+    const above = frame - columns;
+    if (claimed.has(above)) continue;
+    const upper = silhouettes[above];
+    const lower = silhouettes[frame];
+    if (upper.coverage <= 0 || upper.coverage >= 1) continue;
+    if (upper.bottom === 0n || lower.top === 0n) continue;
+    if ((upper.bottom & ~lower.top) !== 0n) continue;
+    claimed.add(above);
+    claimed.add(frame);
+    lowerHalves.push(frame);
+  }
+  return lowerHalves;
+}
+
+/**
+ * Asks the detector about one frame, decoding each sheet at most once and only
+ * when something references it. An autotile sheet never qualifies: its rows are
+ * animation frames, not the top and bottom of one picture.
+ */
+export function stackedFrameLookup(assets) {
+  const assetsById = new Map(assets.map((asset) => [asset.id, asset]));
+  const cache = new Map();
+  return (assetId, frame) => {
+    if (!cache.has(assetId)) {
+      const asset = assetsById.get(assetId);
+      const readable = asset && !asset.autotile && asset.sourceFile && fs.existsSync(asset.sourceFile);
+      cache.set(assetId, readable ? new Set(detectStackedFrames(PNG.sync.read(fs.readFileSync(asset.sourceFile)), asset)) : new Set());
+    }
+    return cache.get(assetId).has(frame);
+  };
+}
+
+/** Applies one transform to every piece a theme places on purpose. */
+function mapThemePieces(document, map) {
+  return {
+    ...document,
+    themes: document.themes.map((theme) => {
+      const objects = theme.objects && Object.fromEntries(Object.entries(theme.objects).map(([kind, ref]) => [kind, map(ref)]));
+      return { ...theme, stairsUp: map(theme.stairsUp), stairsDown: map(theme.stairsDown), ...(objects ? { objects } : {}) };
+    }),
+  };
+}
+
+/** Piece heights the author left unset, filled in from the sheet. */
+export function resolveDungeonThemePieces(document, assets) {
+  const stacked = stackedFrameLookup(assets);
+  return mapThemePieces(document, (ref) => (ref.height === undefined && stacked(ref.assetId, ref.frame) ? { ...ref, height: 2 } : { ...ref }));
+}
+
+/**
+ * The inverse, applied before the authored file is written back. A height the
+ * detector would have produced anyway is dropped, so the source keeps only what
+ * a person actually chose and detection stays free to improve.
+ */
+export function authoredDungeonThemePieces(document, assets) {
+  const stacked = stackedFrameLookup(assets);
+  return mapThemePieces(document, (ref) => {
+    if (ref.height === undefined || ref.height !== (stacked(ref.assetId, ref.frame) ? 2 : 1)) return { ...ref };
+    const { height, ...rest } = ref;
+    return rest;
+  });
 }
 
 function issue(message, file) {
@@ -229,6 +339,18 @@ function validateFrameRef(ref, assetsById, context, { weighted = false, allowCoa
   return asset;
 }
 
+/**
+ * A placed piece, plus the optional height that says it is two cells tall.
+ * The upper half is the frame one row further up, so row 0 can never carry one.
+ */
+function validatePieceRef(ref, assetsById, context) {
+  const asset = validateFrameRef(ref, assetsById, context);
+  if (ref.height === undefined) return asset;
+  if (ref.height !== 1 && ref.height !== 2) throw new Error(`${context} height must be 1 or 2`);
+  if (ref.height === 2 && ref.frame < asset.columns) throw new Error(`${context} height 2 has no upper half above frame ${ref.frame}`);
+  return asset;
+}
+
 export function validateDungeonThemes(value, assets, enemyIds = availableEnemyIds()) {
   if (!value || typeof value !== "object" || Array.isArray(value) || value.version !== 1 || !Array.isArray(value.themes)) throw new Error("dungeon themes must be {version:1,themes:[]}");
   const assetsById = new Map(assets.map((asset) => [asset.id, asset]));
@@ -266,8 +388,16 @@ export function validateDungeonThemes(value, assets, enemyIds = availableEnemyId
       if (!Array.isArray(theme.wallFrameByMask) || theme.wallFrameByMask.length !== 16) throw new Error(`${context} wallFrameByMask must contain 16 entries`);
       theme.wallFrameByMask.forEach((ref, index) => validateFrameRef(ref, assetsById, `${context} wallFrameByMask[${index}]`));
     }
-    validateFrameRef(theme.stairsUp, assetsById, `${context} stairsUp`);
-    validateFrameRef(theme.stairsDown, assetsById, `${context} stairsDown`);
+    validatePieceRef(theme.stairsUp, assetsById, `${context} stairsUp`);
+    validatePieceRef(theme.stairsDown, assetsById, `${context} stairsDown`);
+    // Optional: a theme without these keeps the shared placeholder object sheet.
+    if (theme.objects !== undefined) {
+      if (!theme.objects || typeof theme.objects !== "object" || Array.isArray(theme.objects)) throw new Error(`${context} objects must be an object`);
+      for (const [kind, ref] of Object.entries(theme.objects)) {
+        if (!themeObjectKinds.has(kind)) throw new Error(`${context} objects has unknown kind ${kind}`);
+        validatePieceRef(ref, assetsById, `${context} objects.${kind}`);
+      }
+    }
     if (!Array.isArray(theme.decorations) || theme.decorations.length < 6) throw new Error(`${context} needs at least six decoration rules`);
     const decorationIds = new Set();
     for (const [index, rule] of theme.decorations.entries()) {
@@ -277,6 +407,9 @@ export function validateDungeonThemes(value, assets, enemyIds = availableEnemyId
       if (!themePlacements.has(rule.placement)) throw new Error(`${ruleContext} has invalid placement`);
       if (!Number.isFinite(rule.weight) || rule.weight <= 0) throw new Error(`${ruleContext} weight must be positive`);
       if (!integer(rule.maxPerFloor) || rule.maxPerFloor < 1) throw new Error(`${ruleContext} maxPerFloor must be a positive integer`);
+      // Absent means the rule places props. The six-rule floor counts authored
+      // rules, so switching one off never makes a theme fail its contract.
+      if (rule.enabled !== undefined && typeof rule.enabled !== "boolean") throw new Error(`${ruleContext} enabled must be boolean`);
       if (!Array.isArray(rule.variants) || rule.variants.length === 0) throw new Error(`${ruleContext} needs variants`);
       rule.variants.forEach((ref, variantIndex) => validateFrameRef(ref, assetsById, `${ruleContext} variants[${variantIndex}]`, { weighted: true, allowCoarse: true }));
     }
@@ -310,7 +443,10 @@ export function validateDungeonThemes(value, assets, enemyIds = availableEnemyId
 
 export function readDungeonThemes(file = DUNGEON_THEME_FILE, assets = readTileSheets()) {
   if (!fs.existsSync(file)) throw new Error(`dungeon theme file does not exist: ${file}`);
-  return validateDungeonThemes(JSON.parse(fs.readFileSync(file, "utf8")), assets);
+  const document = validateDungeonThemes(JSON.parse(fs.readFileSync(file, "utf8")), assets);
+  // Both the generated catalogue and the review editor read pieces through here,
+  // so they agree on how tall each one is without either having to guess.
+  return resolveDungeonThemePieces(document, assets);
 }
 
 function prunePaletteUnknownAssets(palette, assets) {
@@ -389,7 +525,7 @@ export function saveDungeonThemesAtomically(value, { themeFile = DUNGEON_THEME_F
   const hadOriginal = fs.existsSync(themeFile);
   let backupCreated = false;
   try {
-    fs.writeFileSync(temporary, JSON.stringify(value, null, 2) + "\n", "utf8");
+    fs.writeFileSync(temporary, JSON.stringify(authoredDungeonThemePieces(value, assets), null, 2) + "\n", "utf8");
     if (hadOriginal) { fs.renameSync(themeFile, backup); backupCreated = true; }
     fs.renameSync(temporary, themeFile);
     const result = generateAssets({ inputDir, themeFile });

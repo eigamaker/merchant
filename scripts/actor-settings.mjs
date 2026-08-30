@@ -4,7 +4,8 @@ import path from "node:path";
 export const ACTOR_SETTINGS_FILE = path.resolve("assets-src/actors/actor-settings.json");
 export const ACTOR_SETTINGS_GENERATED_TS = path.resolve("src/game/actorSettings.generated.ts");
 
-const roles = new Set(["player", "npc", "enemy"]);
+/** Mirrors ActorRole in src/game/actorSettings.ts. */
+const roles = new Set(["player", "npc", "enemy", "townsfolk", "adventurer"]);
 /** Identity, not numbers. The curve lives in src/game/dungeonDifficulty.ts. */
 const archetypes = new Set(["brute", "swarm", "caster", "lurker"]);
 const MAX_TIER = 5;

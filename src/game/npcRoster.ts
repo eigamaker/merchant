@@ -1,4 +1,5 @@
 import { ADVENTURER_RANKS, ADVENTURER_RANK_ORDER, NPC_SEEDS } from "./merchantContent";
+import { npcActorIds } from "./actorCatalog";
 import { ensureGuardProfile } from "./guardProfiles";
 import { generateNpcName } from "./npcNames";
 import type { AdventurerRank, GameState, NpcProfession, NpcRecord, NpcStatus } from "./types";
@@ -17,6 +18,20 @@ export const ADVENTURER_ROSTER_TARGET = 30;
 export const ROSTER_RANK_SHAPE: Record<AdventurerRank, number> = { E: 10, D: 8, C: 6, B: 4, A: 2 };
 
 const ADVENTURER_PROFESSIONS: readonly NpcProfession[] = ["swordsman", "scout", "mercenary"];
+
+/**
+ * The face a generated adventurer wears.
+ *
+ * It used to be inherited from whichever seed shared the profession, which put
+ * roughly twenty people the author never wrote into three borrowed sprites. Now
+ * it comes from the sheets marked `adventurer` in the character settings, so
+ * everyone met in the dungeon is wearing something that was chosen for the job.
+ * With nothing marked, the seed's appearance is still the sensible fallback.
+ */
+function adventurerAppearanceId(seedAppearanceId: string, key: string): string {
+  const pool = npcActorIds("adventurer");
+  return pool.length ? pool[hash(key) % pool.length]! : seedAppearanceId;
+}
 
 function hash(value: string): number {
   let result = 2166136261;
@@ -49,6 +64,7 @@ export function createRosterAdventurer(state: GameState, options: RosterAdventur
     ...template,
     id: `adventurer-${serial}`,
     name,
+    appearanceId: adventurerAppearanceId(template.appearanceId, `${state.campaignId}:${name}:appearance`),
     rank: options.rank,
     baseFee: rankStats.escortFee,
     maxHp: rankStats.baseHp + variation % 4,

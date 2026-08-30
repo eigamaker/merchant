@@ -8,37 +8,32 @@
       "enabled": true,
       "tileSize": 16,
       "wall": {
-        "assetId": "mapchip2-mapchip-kabe-ue-doukutu1",
-        "face": {
-          "assetId": "mapchip2-mapchip-base-s17",
-          "frame": 56
-        },
-        "faceHeight": 2
+        "assetId": "mapchip2-mapchip-kabe-ue-doukutu3"
       },
       "floorVariants": [
         {
-          "assetId": "mapchip2-mapchip-base-s08",
-          "frame": 2,
+          "assetId": "mapchip2-mapchip-base-s17",
+          "frame": 16,
           "weight": 8
         },
         {
-          "assetId": "mapchip2-mapchip-base-s08",
-          "frame": 34,
+          "assetId": "mapchip2-mapchip-base-s17",
+          "frame": 17,
           "weight": 3
         },
         {
-          "assetId": "mapchip2-mapchip-base-s08",
-          "frame": 10,
+          "assetId": "mapchip2-mapchip-base-s17",
+          "frame": 16,
           "weight": 1
         }
       ],
       "stairsUp": {
-        "assetId": "dungeon.stairs-up",
-        "frame": 0
+        "assetId": "mapchip2-mapchip-base-s17",
+        "frame": 26
       },
       "stairsDown": {
-        "assetId": "dungeon.stairs-down",
-        "frame": 0
+        "assetId": "mapchip2-mapchip-base-s17",
+        "frame": 24
       },
       "decorations": [
         {
@@ -90,7 +85,8 @@
             }
           ],
           "weight": 0.02,
-          "maxPerFloor": 6
+          "maxPerFloor": 6,
+          "enabled": false
         },
         {
           "id": "cave-crystals",
@@ -222,7 +218,17 @@
           "role": "elite",
           "maxPerFloor": 1
         }
-      ]
+      ],
+      "objects": {
+        "chest": {
+          "assetId": "mapchip2-mapchip-base-s14",
+          "frame": 5
+        },
+        "corpse": {
+          "assetId": "mapchip2-mapchip-base-s18",
+          "frame": 24
+        }
+      }
     },
     {
       "version": 1,
@@ -231,37 +237,32 @@
       "enabled": true,
       "tileSize": 16,
       "wall": {
-        "assetId": "mapchip2-mapchip-kabe-ue-dungeon1",
-        "face": {
-          "assetId": "mapchip2-mapchip-base-s17",
-          "frame": 136
-        },
-        "faceHeight": 2
+        "assetId": "mapchip2-mapchip-kabe-ue-doukutu1"
       },
       "floorVariants": [
         {
-          "assetId": "mapchip2-mapchip-base-s08",
-          "frame": 1,
+          "assetId": "mapchip2-mapchip-base-s17",
+          "frame": 0,
           "weight": 8
         },
         {
-          "assetId": "mapchip2-mapchip-base-s08",
-          "frame": 17,
+          "assetId": "mapchip2-mapchip-base-s17",
+          "frame": 1,
           "weight": 3
         },
         {
-          "assetId": "mapchip2-mapchip-base-s08",
-          "frame": 21,
+          "assetId": "mapchip2-mapchip-base-s17",
+          "frame": 0,
           "weight": 1
         }
       ],
       "stairsUp": {
-        "assetId": "dungeon.stairs-up",
-        "frame": 0
+        "assetId": "mapchip2-mapchip-base-s17",
+        "frame": 10
       },
       "stairsDown": {
-        "assetId": "dungeon.stairs-down",
-        "frame": 0
+        "assetId": "mapchip2-mapchip-base-s17",
+        "frame": 8
       },
       "decorations": [
         {
@@ -450,7 +451,17 @@
           "role": "elite",
           "maxPerFloor": 1
         }
-      ]
+      ],
+      "objects": {
+        "chest": {
+          "assetId": "mapchip2-mapchip-base-s14",
+          "frame": 5
+        },
+        "corpse": {
+          "assetId": "mapchip2-mapchip-base-s18",
+          "frame": 16
+        }
+      }
     },
     {
       "version": 1,
@@ -459,37 +470,32 @@
       "enabled": true,
       "tileSize": 16,
       "wall": {
-        "assetId": "mapchip2-mapchip-kabe-ue-doukutu2",
-        "face": {
-          "assetId": "mapchip2-mapchip-base-s17",
-          "frame": 72
-        },
-        "faceHeight": 2
+        "assetId": "mapchip2-mapchip-kabe-ue-doukutu2"
       },
       "floorVariants": [
         {
-          "assetId": "mapchip2-mapchip-base-s08",
-          "frame": 37,
+          "assetId": "mapchip2-mapchip-base-s17",
+          "frame": 4,
           "weight": 8
         },
         {
-          "assetId": "mapchip2-mapchip-base-s08",
-          "frame": 36,
+          "assetId": "mapchip2-mapchip-base-s17",
+          "frame": 5,
           "weight": 3
         },
         {
-          "assetId": "mapchip2-mapchip-base-s08",
-          "frame": 27,
+          "assetId": "mapchip2-mapchip-base-s17",
+          "frame": 4,
           "weight": 1
         }
       ],
       "stairsUp": {
-        "assetId": "dungeon.stairs-up",
-        "frame": 0
+        "assetId": "mapchip2-mapchip-base-s17",
+        "frame": 14
       },
       "stairsDown": {
-        "assetId": "dungeon.stairs-down",
-        "frame": 0
+        "assetId": "mapchip2-mapchip-base-s17",
+        "frame": 12
       },
       "decorations": [
         {
@@ -585,7 +591,8 @@
             }
           ],
           "weight": 0.01,
-          "maxPerFloor": 3
+          "maxPerFloor": 3,
+          "enabled": false
         },
         {
           "id": "lava-lever",
@@ -653,7 +660,17 @@
           "role": "elite",
           "maxPerFloor": 1
         }
-      ]
+      ],
+      "objects": {
+        "chest": {
+          "assetId": "mapchip2-mapchip-base-s14",
+          "frame": 5
+        },
+        "corpse": {
+          "assetId": "mapchip2-mapchip-base-s18",
+          "frame": 25
+        }
+      }
     }
   ]
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { BLOB47_FRAME_BY_MASK, E, N, NE, NW, S, SE, SW, W } from "./autotile";
 import { generateDungeonFloor } from "./dungeonGenerator";
-import { createDungeonRenderPlan, dungeonTheme, dungeonThemeIdForFloor, dungeonWallAutotile, dungeonWallFaceHalves, dungeonWallFrame, dungeonWallNeighbourMask, type DungeonThemeDefinition } from "./dungeonThemes";
+import { DUNGEON_THEME_OBJECT_KINDS, createDungeonRenderPlan, dungeonPieceHalves, dungeonTheme, dungeonThemeAssetIds, dungeonThemeIdForFloor, dungeonThemeObject, dungeonWallAutotile, dungeonWallFaceHalves, dungeonWallFrame, dungeonWallNeighbourMask, type DungeonThemeDefinition } from "./dungeonThemes";
 import type { DungeonMap } from "./types";
 
 describe("dungeon theme schedule", () => {
@@ -30,7 +30,16 @@ describe("dungeon render plan", () => {
     expect(ruins.stairsDown).toEqual(cave.stairsDown);
     const first = createDungeonRenderPlan(cave, 8128, 4);
     expect(createDungeonRenderPlan(cave, 8128, 4)).toEqual(first);
-    const alternate = createDungeonRenderPlan(ruins, 8128, 4);
+    // Two themes are free to name the same sheets, so repaint one here: what
+    // this pins down is that the plan follows the theme, not that the shipped
+    // themes currently disagree with each other.
+    const repainted = {
+      ...dungeonTheme("cave"),
+      floorVariants: [{ assetId: "legacy-floor", frame: 0, weight: 1 }],
+      wall: undefined,
+      wallFrameByMask: Array.from({ length: 16 }, (_, mask) => ({ assetId: "legacy-wall", frame: mask })),
+    } as DungeonThemeDefinition;
+    const alternate = createDungeonRenderPlan(cave, 8128, 4, repainted);
     expect(alternate.ground).not.toEqual(first.ground);
     expect(alternate.structure).not.toEqual(first.structure);
   });
@@ -97,6 +106,12 @@ describe("dungeon walls", () => {
   });
 });
 
+/** A theme wearing a two-cell face, whatever the shipped themes carry today. */
+function facedTheme(): DungeonThemeDefinition {
+  const cave = dungeonTheme("cave");
+  return { ...cave, wall: { assetId: cave.wall!.assetId, face: { assetId: "mapchip2-mapchip-base-s17", frame: 56 }, faceHeight: 2 } } as DungeonThemeDefinition;
+}
+
 describe("two-cell wall faces", () => {
   const map = wallStrip();
 
@@ -114,7 +129,7 @@ describe("two-cell wall faces", () => {
   });
 
   it("puts the face on wall cells that front onto floor, and the top elsewhere", () => {
-    const theme = dungeonTheme("cave");
+    const theme = facedTheme();
     const face = dungeonWallFaceHalves(theme.wall)!;
     // (2,1) is wall with floor to the south, so it shows the face's lower half.
     expect(dungeonWallFrame(theme, map, 2, 1)).toEqual(face.lower);
@@ -125,10 +140,13 @@ describe("two-cell wall faces", () => {
   });
 
   it("carries the upper half in the overhang layer, one cell above its wall", () => {
+    const theme = facedTheme();
     const floor = generateDungeonFloor(20260829, 3, "cave");
-    const plan = createDungeonRenderPlan(floor.map, 20260829, 3, dungeonTheme("cave"));
-    const face = dungeonWallFaceHalves(dungeonTheme("cave").wall)!;
-    const cells = plan.overhang.map((ref, index) => ({ ref, index })).filter((entry) => entry.ref);
+    const plan = createDungeonRenderPlan(floor.map, 20260829, 3, theme);
+    const face = dungeonWallFaceHalves(theme.wall)!;
+    // The up-stairs uses the same layer, so it is not one of the wall cells.
+    const stairs = floor.map.stairsUp.y * floor.map.width + floor.map.stairsUp.x;
+    const cells = plan.overhang.map((ref, index) => ({ ref, index })).filter((entry) => entry.ref && entry.index !== stairs);
     expect(cells.length).toBeGreaterThan(0);
     for (const { ref, index } of cells) {
       expect(ref).toEqual(face.upper);
@@ -141,10 +159,169 @@ describe("two-cell wall faces", () => {
     }
   });
 
-  it("leaves the overhang empty for a theme with a flat wall", () => {
+  it("leaves the overhang to the stairs when a theme's wall is flat", () => {
     const theme = { ...dungeonTheme("cave"), wall: { assetId: dungeonTheme("cave").wall!.assetId } } as DungeonThemeDefinition;
     const floor = generateDungeonFloor(20260829, 3, "cave");
     const plan = createDungeonRenderPlan(floor.map, 20260829, 3, theme);
-    expect(plan.overhang.every((ref) => ref === null)).toBe(true);
+    const carried = plan.overhang.map((ref, index) => ({ ref, index })).filter((entry) => entry.ref);
+    expect(carried.map((entry) => entry.index)).toEqual([floor.map.stairsUp.y * floor.map.width + floor.map.stairsUp.x]);
+  });
+});
+
+describe("two-cell stairs", () => {
+  it("takes the upper half from the row above the reference, and only when asked", () => {
+    // mapchip2-mapchip-base-s08 is eight tiles wide, so frame 14 sits below 6.
+    const stair = { assetId: "mapchip2-mapchip-base-s08", frame: 14 } as const;
+    expect(dungeonPieceHalves({ ...stair, height: 2 })).toEqual({
+      lower: { ...stair },
+      upper: { assetId: "mapchip2-mapchip-base-s08", frame: 6 },
+    });
+    expect(dungeonPieceHalves(stair)).toEqual({ lower: { ...stair } });
+    expect(dungeonPieceHalves({ ...stair, height: 1 })).toEqual({ lower: { ...stair } });
+    // The top row of a sheet has nothing above it to borrow.
+    expect(dungeonPieceHalves({ assetId: "mapchip2-mapchip-base-s08", frame: 6, height: 2 })).toEqual({ lower: { assetId: "mapchip2-mapchip-base-s08", frame: 6 } });
+    // An unknown asset has no known width, so it cannot be split.
+    expect(dungeonPieceHalves({ assetId: "missing-sheet", frame: 14, height: 2 })).toEqual({ lower: { assetId: "missing-sheet", frame: 14 } });
+  });
+
+  it("stands the up-stairs in its cell and reaches one cell further up", () => {
+    const floor = generateDungeonFloor(20260829, 3, "cave");
+    const theme = dungeonTheme("cave");
+    const plan = createDungeonRenderPlan(floor.map, 20260829, 3, theme);
+    const index = floor.map.stairsUp.y * floor.map.width + floor.map.stairsUp.x;
+    const halves = dungeonPieceHalves(theme.stairsUp);
+    expect(halves.upper).toBeDefined();
+    expect(plan.decoration[index]).toEqual(halves.lower);
+    expect(plan.overhang[index]).toEqual(halves.upper);
+    expect(floor.map.stairsUp.y).toBeGreaterThan(0);
+  });
+
+  it("keeps the down-stairs inside its own cell", () => {
+    const floor = generateDungeonFloor(20260829, 3, "cave");
+    const theme = dungeonTheme("cave");
+    const plan = createDungeonRenderPlan(floor.map, 20260829, 3, theme);
+    const index = floor.map.stairsDown!.y * floor.map.width + floor.map.stairsDown!.x;
+    expect(plan.decoration[index]).toEqual({ assetId: theme.stairsDown.assetId, frame: theme.stairsDown.frame });
+    expect(plan.overhang[index]).toBeNull();
+  });
+
+  it("carries the detected heights for every built-in theme", () => {
+    for (const id of ["cave", "ruins", "lava"]) {
+      const theme = dungeonTheme(id);
+      // The build reads these from the sheet's alpha: the ladder is two cells
+      // tall and the hole it leads down to is one.
+      expect(theme.stairsUp.height).toBe(2);
+      expect(theme.stairsDown.height).toBeUndefined();
+    }
+  });
+});
+
+describe("themed game objects", () => {
+  it("gives every built-in theme its own chest and body tiles", () => {
+    for (const id of ["cave", "ruins", "lava"]) {
+      const theme = dungeonTheme(id);
+      for (const kind of DUNGEON_THEME_OBJECT_KINDS) {
+        const ref = dungeonThemeObject(theme, kind);
+        expect(ref).toBeDefined();
+        expect(ref!.assetId).toBeTruthy();
+        expect(ref!.frame).toBeGreaterThanOrEqual(0);
+      }
+    }
+    // Each theme picks its own body so it reads against that floor.
+    const corpses = ["cave", "ruins", "lava"].map((id) => dungeonThemeObject(dungeonTheme(id), "corpse")!.frame);
+    expect(new Set(corpses).size).toBe(corpses.length);
+  });
+
+  it("returns nothing for a theme that names no object, so the caller can fall back", () => {
+    const bare = { ...dungeonTheme("cave"), objects: undefined } as DungeonThemeDefinition;
+    expect(dungeonThemeObject(bare, "chest")).toBeUndefined();
+    expect(dungeonThemeObject({ ...bare, objects: { chest: { assetId: "s", frame: 3 } } } as DungeonThemeDefinition, "corpse")).toBeUndefined();
+  });
+
+  it("hands back a copy, so a caller cannot edit the catalogue in place", () => {
+    const ref = dungeonThemeObject(dungeonTheme("cave"), "chest")!;
+    ref.frame = 999;
+    expect(dungeonThemeObject(dungeonTheme("cave"), "chest")!.frame).not.toBe(999);
+  });
+
+  it("loads the object sheets with the rest of a theme's art", () => {
+    const ids = dungeonThemeAssetIds(["cave"]);
+    expect(ids.has(dungeonThemeObject(dungeonTheme("cave"), "corpse")!.assetId)).toBe(true);
+    expect(ids.has(dungeonThemeObject(dungeonTheme("cave"), "chest")!.assetId)).toBe(true);
+  });
+});
+
+describe("wall-mounted decorations", () => {
+  it("keeps a wallFace prop on the side the camera sees, unlike plain wall", () => {
+    const base = dungeonTheme("cave");
+    const survey = (placement: "wall" | "wallFace") => {
+      const theme = { ...base, decorations: base.decorations.map((rule) => (rule.placement === "wall" ? { ...rule, placement } : rule)) } as DungeonThemeDefinition;
+      let total = 0, facing = 0;
+      for (let seed = 1; seed <= 30; seed += 1) {
+        const map = generateDungeonFloor(seed, 3, "cave").map;
+        const plan = createDungeonRenderPlan(map, seed, 3, theme);
+        for (let y = 0; y < map.height; y += 1) for (let x = 0; x < map.width; x += 1) {
+          const index = y * map.width + x;
+          if (!plan.decoration[index] || map.tiles[y]![x] === 0) continue;
+          total += 1;
+          if (map.tiles[y + 1]?.[x] === 0) facing += 1;
+        }
+      }
+      return { total, facing };
+    };
+    const face = survey("wallFace");
+    expect(face.total).toBeGreaterThan(0);
+    // Everything a wallFace rule places is on a wall the player can see, which is
+    // what a torch or a lever needs. Plain wall also uses the hidden far side.
+    expect(face.facing).toBe(face.total);
+    expect(survey("wall").facing).toBeLessThan(survey("wall").total);
+  });
+});
+
+describe("switched-off decorations", () => {
+  const floors = () => Array.from({ length: 12 }, (_, index) => generateDungeonFloor(index + 1, 3, "cave").map);
+  const placedIds = (theme: DungeonThemeDefinition) => {
+    const found = new Set<string>();
+    floors().forEach((map, index) => {
+      const plan = createDungeonRenderPlan(map, index + 1, 3, theme);
+      for (const [cell, ref] of plan.decoration.entries()) {
+        if (!ref || cell === map.stairsUp.y * map.width + map.stairsUp.x) continue;
+        for (const rule of theme.decorations) if (rule.variants.some((variant) => variant.assetId === ref.assetId && variant.frame === ref.frame)) found.add(rule.id);
+      }
+    });
+    return found;
+  };
+
+  it("places nothing for a rule marked enabled: false", () => {
+    const base = dungeonTheme("cave");
+    const target = base.decorations.find((rule) => rule.placement === "floor" && rule.enabled !== false)!;
+    expect(placedIds(base).has(target.id)).toBe(true);
+    const off = { ...base, decorations: base.decorations.map((rule) => (rule.id === target.id ? { ...rule, enabled: false } : rule)) } as DungeonThemeDefinition;
+    expect(placedIds(off).has(target.id)).toBe(false);
+  });
+
+  it("leaves every other rule exactly where it was", () => {
+    const base = dungeonTheme("cave");
+    const target = base.decorations.find((rule) => rule.placement === "floor" && rule.enabled !== false)!;
+    const off = { ...base, decorations: base.decorations.map((rule) => (rule.id === target.id ? { ...rule, enabled: false } : rule)) } as DungeonThemeDefinition;
+    const targetFrames = new Set(target.variants.map((variant) => `${variant.assetId}#${variant.frame}`));
+    floors().forEach((map, index) => {
+      const before = createDungeonRenderPlan(map, index + 1, 3, base).decoration;
+      const after = createDungeonRenderPlan(map, index + 1, 3, off).decoration;
+      for (const [cell, ref] of before.entries()) {
+        // Only the switched-off rule's own cells change; a rule's index salts its
+        // placement hash, so the rest must not shift.
+        if (ref && targetFrames.has(`${ref.assetId}#${ref.frame}`)) continue;
+        expect(after[cell]).toEqual(ref);
+      }
+    });
+  });
+
+  it("keeps the ambient bones off, so a skeleton always means a body to search", () => {
+    for (const id of ["cave", "lava"]) {
+      const theme = dungeonTheme(id);
+      const bones = theme.decorations.find((rule) => rule.id === `${id}-bones`);
+      expect(bones?.enabled).toBe(false);
+    }
   });
 });

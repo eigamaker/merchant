@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { PNG } from "pngjs";
 import { afterEach, describe, expect, it } from "vitest";
-import { DUNGEON_THEME_FILE, MAP_EDITOR_PALETTE_API, MAP_EDITOR_THEME_API, MAP_TILE_PALETTE_API, availableEnemyIds, buildMapTileAssets, readDungeonThemes, readTileSheets, savePaletteAtomically, validateDungeonThemes, validatePalette } from "./map-tile-pipeline.mjs";
+import { DUNGEON_THEME_FILE, MAP_EDITOR_PALETTE_API, MAP_EDITOR_THEME_API, MAP_TILE_PALETTE_API, authoredDungeonThemePieces, availableEnemyIds, buildMapTileAssets, detectStackedFrames, readDungeonThemes, readTileSheets, savePaletteAtomically, validateDungeonThemes, validatePalette } from "./map-tile-pipeline.mjs";
 
 const temporaryDirectories = [];
 afterEach(() => { for (const directory of temporaryDirectories.splice(0)) fs.rmSync(directory, { recursive: true, force: true }); });
@@ -178,5 +178,122 @@ describe("map tile source pipeline", () => {
 
     expect(fs.readFileSync(paletteFile, "utf8")).toBe(originalText);
     expect(fs.readdirSync(inputDir).filter((name) => name.startsWith("palettes.json.") && (name.endsWith(".tmp") || name.endsWith(".bak")))).toEqual([]);
+  });
+});
+
+/** A one-column sheet whose tiles are described row by row. */
+function stripSheet(rows, tileSize = 16) {
+  const image = new PNG({ width: tileSize, height: rows.length * tileSize, colorType: 6 });
+  image.data.fill(0);
+  rows.forEach((row, index) => {
+    for (let y = 0; y < tileSize; y += 1) for (let x = 0; x < tileSize; x += 1) {
+      if (!row(x, y, tileSize)) continue;
+      const offset = ((index * tileSize + y) * tileSize + x) * 4;
+      image.data[offset] = 200;
+      image.data[offset + 1] = 160;
+      image.data[offset + 2] = 90;
+      image.data[offset + 3] = 255;
+    }
+  });
+  return PNG.sync.read(PNG.sync.write(image, { colorType: 6, inputColorType: 6, bitDepth: 8 }));
+}
+
+describe("stacked frame detection", () => {
+  const geometry = { tileSize: 16, margin: 0, spacing: 0, columns: 1 };
+
+  it("pairs a partly transparent tile with the one continuing below it", () => {
+    // Row 0 is a narrow column reaching its bottom edge, row 1 is solid, and
+    // rows 2-3 are a solid tile above an empty one.
+    const png = stripSheet([
+      (x) => x >= 4 && x < 8,
+      () => true,
+      () => true,
+      () => false,
+    ]);
+    // Only row 1 is a lower half. Row 2 is not, even though row 1 is partly
+    // transparent in exactly the way an upper half would be: consuming both
+    // halves of a pair is what keeps one picture from chaining into the next.
+    expect(detectStackedFrames(png, { ...geometry, rows: 4 })).toEqual([1]);
+  });
+
+  it("rejects an upper half that is solid, empty, or ends off the seam", () => {
+    const solidAbove = stripSheet([() => true, () => true]);
+    expect(detectStackedFrames(solidAbove, { ...geometry, rows: 2 })).toEqual([]);
+    const emptyAbove = stripSheet([() => false, () => true]);
+    expect(detectStackedFrames(emptyAbove, { ...geometry, rows: 2 })).toEqual([]);
+    // The upper half ends on columns 0-3 but the lower half starts on 8-11,
+    // so the two are separate pictures that happen to share a row boundary.
+    const offset = stripSheet([(x) => x < 4, (x) => x >= 8 && x < 12]);
+    expect(detectStackedFrames(offset, { ...geometry, rows: 2 })).toEqual([]);
+  });
+
+  it("reads the built-in stair sheet the way the art is drawn", () => {
+    const asset = readTileSheets(path.resolve("assets-src/map-tiles/sheets")).find((entry) => entry.id === "mapchip2-mapchip-base-s08");
+    const detected = new Set(detectStackedFrames(PNG.sync.read(fs.readFileSync(asset.sourceFile)), asset));
+    // Frames 6+14 and 7+15 are ladders two cells tall.
+    expect(detected.has(14)).toBe(true);
+    expect(detected.has(15)).toBe(true);
+    // Frames 22 and 23 are holes leading down, drawn inside one cell.
+    expect(detected.has(22)).toBe(false);
+    expect(detected.has(23)).toBe(false);
+  });
+
+  it("fills in stair heights for the catalogue and keeps them out of the source", () => {
+    const assets = readTileSheets(path.resolve("assets-src/map-tiles/sheets"));
+    const resolved = readDungeonThemes(DUNGEON_THEME_FILE, assets);
+    for (const theme of resolved.themes) {
+      expect(theme.stairsUp.height).toBe(2);
+      expect(theme.stairsDown.height).toBeUndefined();
+    }
+    // A derived height is dropped again on the way back to disk, so the
+    // authored file records only what a person chose.
+    const authored = authoredDungeonThemePieces(resolved, assets);
+    expect(authored.themes.every((theme) => theme.stairsUp.height === undefined)).toBe(true);
+    // An explicit height that disagrees with the sheet survives the round trip.
+    const overridden = { ...resolved, themes: resolved.themes.map((theme) => ({ ...theme, stairsUp: { ...theme.stairsUp, height: 1 } })) };
+    expect(authoredDungeonThemePieces(overridden, assets).themes[0].stairsUp.height).toBe(1);
+  });
+
+  it("accepts a decoration rule switched off, and rejects a non-boolean switch", () => {
+    const assets = readTileSheets(path.resolve("assets-src/map-tiles/sheets"));
+    const themes = structuredClone(readDungeonThemes(DUNGEON_THEME_FILE, assets));
+    themes.themes[0].decorations[0].enabled = false;
+    expect(() => validateDungeonThemes(themes, assets)).not.toThrow();
+    themes.themes[0].decorations[0].enabled = "no";
+    expect(() => validateDungeonThemes(themes, assets)).toThrow(/enabled must be boolean/);
+    // Switching rules off never trips the six-rule contract.
+    const allOff = structuredClone(readDungeonThemes(DUNGEON_THEME_FILE, assets));
+    for (const theme of allOff.themes) for (const rule of theme.decorations) rule.enabled = false;
+    expect(() => validateDungeonThemes(allOff, assets)).not.toThrow();
+  });
+
+  it("checks the tiles a theme names for the game's own objects", () => {
+    const assets = readTileSheets(path.resolve("assets-src/map-tiles/sheets"));
+    const themes = structuredClone(readDungeonThemes(DUNGEON_THEME_FILE, assets));
+    expect(() => validateDungeonThemes(themes, assets)).not.toThrow();
+    // The chest and body sheets are ordinary decoration tiles, one cell each.
+    for (const theme of themes.themes) {
+      expect(theme.objects.chest.height).toBeUndefined();
+      expect(theme.objects.corpse.height).toBeUndefined();
+    }
+    const unknownKind = structuredClone(themes);
+    unknownKind.themes[0].objects.lantern = { assetId: "mapchip2-mapchip-base-s18", frame: 0 };
+    expect(() => validateDungeonThemes(unknownKind, assets)).toThrow(/objects has unknown kind lantern/);
+    const unknownAsset = structuredClone(themes);
+    unknownAsset.themes[0].objects.chest.assetId = "removed-sheet";
+    expect(() => validateDungeonThemes(unknownAsset, assets)).toThrow(/objects.chest references unknown asset removed-sheet/);
+    // Leaving them out is valid: the game keeps its placeholder sheet.
+    const bare = structuredClone(themes);
+    for (const theme of bare.themes) delete theme.objects;
+    expect(() => validateDungeonThemes(bare, assets)).not.toThrow();
+  });
+
+  it("rejects a two-cell stair with no room above it on the sheet", () => {
+    const assets = readTileSheets(path.resolve("assets-src/map-tiles/sheets"));
+    const themes = structuredClone(readDungeonThemes(DUNGEON_THEME_FILE, assets));
+    themes.themes[0].stairsUp = { assetId: "mapchip2-mapchip-base-s08", frame: 3, height: 2 };
+    expect(() => validateDungeonThemes(themes, assets)).toThrow(/height 2 has no upper half/);
+    themes.themes[0].stairsUp = { assetId: "mapchip2-mapchip-base-s08", frame: 14, height: 3 };
+    expect(() => validateDungeonThemes(themes, assets)).toThrow(/height must be 1 or 2/);
   });
 });

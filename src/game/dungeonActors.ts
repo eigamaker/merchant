@@ -1,4 +1,5 @@
-import { NPC_APPEARANCES } from "./merchantContent";
+import { playerActor } from "./actorCatalog";
+import { npcAppearanceSprite } from "./merchantContent";
 import type { GameState } from "./types";
 
 /**
@@ -13,9 +14,11 @@ import type { GameState } from "./types";
  * 別人の動きを付けるよりはるかにましだからである。
  */
 export function dungeonActorAppearance(state: GameState, id: string): string | undefined {
-  if (id === "player") return "player";
+  // The protagonist is an ordinary actor now, named by whoever carries the
+  // player role, so it resolves through the same catalogue as everyone else.
+  if (id === "player") return playerActor()?.id;
   const npc = state.npcs.find((entry) => entry.id === id);
-  if (npc) return NPC_APPEARANCES[npc.appearanceId];
+  if (npc) return npcAppearanceSprite(npc.appearanceId);
   const enemy = state.run?.enemies.find((entry) => entry.id === id);
   return enemy?.actorId;
 }
