@@ -1,5 +1,5 @@
 import { actorDefinition } from "./actorCatalog";
-import type { AdventurerRank, ItemDefinition, NpcRecord } from "./types";
+import type { AdventurerRank, ItemCategory, ItemDefinition, NpcRecord } from "./types";
 
 const item = (
   id: string,
@@ -9,7 +9,7 @@ const item = (
   _legacySize: number,
   rarity: NonNullable<ItemDefinition["rarity"]>,
   description: string,
-  stats: Partial<Pick<ItemDefinition, "attack" | "defense" | "healing" | "cures" | "singular">> = {},
+  stats: Partial<Pick<ItemDefinition, "attack" | "defense" | "healing" | "cures" | "capacity" | "minFloor" | "singular">> = {},
 ): ItemDefinition => ({
   id,
   category,
@@ -39,7 +39,41 @@ export const MERCHANT_ITEM_DEFINITIONS: Record<string, ItemDefinition> = Object.
   item("old-ring", "curio", "古い指輪", 220, 1, "uncommon", "持ち主の分からない古びた銀の指輪。"),
   item("blue-gem", "curio", "青い宝石", 650, 1, "rare", "深い海の色を閉じ込めたような宝石。"),
   item("rune-tablet", "curio", "ルーン石板", 800, 2, "rare", "読めない刻印が並ぶ小さな石板。"),
+  // 道具袋。商人が身に着ける唯一の装備で、持ち帰れる量そのものを決める。
+  // 金では買えず、迷宮の底からしか出てこない。
+  item("cloth-wrap", "bag", "風呂敷", 30, 1, "common", "一枚の布。結べば荷になり、広げれば店になる。", { capacity: 12, minFloor: 99 }),
+  item("shoulder-sack", "bag", "背負い袋", 140, 1, "uncommon", "肩に掛ける麻の袋。両手が空く。", { capacity: 18, minFloor: 3 }),
+  item("pedlar-case", "bag", "行商箱", 420, 1, "rare", "仕切りの入った木箱。割れ物も運べる。", { capacity: 24, minFloor: 5 }),
+  item("caravan-pack", "bag", "隊商荷駄", 950, 1, "rare", "隊商が使う大荷物。ひとりで背負うものではない。", { capacity: 32, minFloor: 7 }),
 ].map((definition) => [definition.id, definition]));
+
+/**
+ * その種類が落ち始める深さ。
+ *
+ * 浅い階で高価な品が出ると、深く潜る意味が消える。地下1〜2階は素材と薬だけの
+ * 仕入れの階で、武器が転がっているのは「そこまで担いで死んだ者がいた」深さからである。
+ */
+export const CATEGORY_MIN_FLOOR: Partial<Record<ItemCategory, number>> = {
+  weapon: 3,
+  armor: 3,
+  curio: 4,
+};
+
+export function itemMinFloor(definition: ItemDefinition): number {
+  if (definition.minFloor !== undefined) return definition.minFloor;
+  if (definition.rarity === "legendary") return 6;
+  return CATEGORY_MIN_FLOOR[definition.category] ?? 1;
+}
+
+/** 商人が最初から持っている道具袋。 */
+export const STARTING_BAG_ID = "cloth-wrap";
+/** 道具袋を失った場合に立ち返る枠数。 */
+export const FALLBACK_BAG_CAPACITY = 12;
+
+export function bagCapacityOf(definitionId: string | undefined): number {
+  const definition = definitionId ? MERCHANT_ITEM_DEFINITIONS[definitionId] : undefined;
+  return definition?.capacity ?? FALLBACK_BAG_CAPACITY;
+}
 
 export const ITEM_VISUALS: Record<string, string> = Object.fromEntries(
   Object.values(MERCHANT_ITEM_DEFINITIONS).map((definition) => [definition.visualId!, `assets/items/${definition.id}.png`]),

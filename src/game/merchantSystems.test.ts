@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DISPLAY_CAPACITY, INVENTORY_CAPACITY, beginExpedition, createItem, createNewGame, moveInventoryItems, moveStoreItemsToInventory, performDungeonCommand, setDisplayedItems } from "./engine";
+import { DISPLAY_CAPACITY, beginExpedition, createItem, createNewGame, moveInventoryItems, moveStoreItemsToInventory, setDisplayedItems } from "./engine";
 import {
   buySupply,
   canOpenShop,
@@ -7,20 +7,40 @@ import {
   consumeDungeonTime,
   dungeonMealProvisionCost,
   dungeonTimeUntilNextMeal,
-  equipItem,
+  depositGold,
+  bagCapacity,
+  equipBag,
   finishCurrentCustomer,
   isShopSessionActive,
-  playerAttackPower,
-  playerDefensePower,
   restUntilMorning,
   startShopSession,
   summonNextCustomer,
+  withdrawGold,
   inventoryItemCount,
   SHOP_CUSTOMER_MAX,
   SHOP_CUSTOMER_MIN,
 } from "./merchantSystems";
 
 describe("v6 merchant systems", () => {
+  it("moves money between carried gold and the safe home vault", () => {
+    const state = createNewGame();
+    expect(state.vaultGold).toBe(0);
+    expect(depositGold(state, 120)).toBe(true);
+    expect(state.gold).toBe(180);
+    expect(state.vaultGold).toBe(120);
+    expect(withdrawGold(state, 50)).toBe(true);
+    expect(state.gold).toBe(230);
+    expect(state.vaultGold).toBe(70);
+    expect(depositGold(state)).toBe(true);
+    expect(state.gold).toBe(0);
+    expect(state.vaultGold).toBe(300);
+
+    beginExpedition(state);
+    expect(withdrawGold(state, 50)).toBe(false);
+    expect(state.gold).toBe(0);
+    expect(state.vaultGold).toBe(300);
+  });
+
   it("keeps supplies outside the twenty-four-item inventory", () => {
     const state = createNewGame();
     expect(inventoryItemCount(state)).toBe(0);
@@ -32,15 +52,16 @@ describe("v6 merchant systems", () => {
     expect(inventoryItemCount(state)).toBe(0);
   });
 
-  it("equips one weapon and armor and exposes their combat values", () => {
+  it("leaves weapons and armour as merchandise, since the merchant cannot wear them", () => {
     const state = createNewGame();
     const sword = createItem(state, "iron-sword", 1);
     const armor = createItem(state, "leather-armor", 1);
     state.inventory.push(sword, armor);
-    expect(equipItem(state, sword.uuid)).toBe(true);
-    expect(equipItem(state, armor.uuid)).toBe(true);
-    expect(playerAttackPower(state)).toBe(2);
-    expect(playerDefensePower(state)).toBe(1);
+    // 身に着けられるのは道具袋だけ。武器も防具も商品か、冒険者へ預ける品でしかない。
+    expect(equipBag(state, sword.uuid)).toBe(false);
+    expect(equipBag(state, armor.uuid)).toBe(false);
+    expect(state.equipment.bagItemId).not.toBe(sword.uuid);
+    expect(state.equipment.bagItemId).not.toBe(armor.uuid);
   });
 
   it("moves checked inventory items in bulk and applies a checked display set", () => {
@@ -83,28 +104,30 @@ describe("v6 merchant systems", () => {
     expect(state.inventory).toEqual(stored.slice(0, 2));
     expect(state.store).toEqual(stored.slice(2));
 
-    const fillers = Array.from({ length: INVENTORY_CAPACITY - state.inventory.length }, () => createItem(state, "old-ring", 1));
+    const fillers = Array.from({ length: bagCapacity(state) - state.inventory.length }, () => createItem(state, "old-ring", 1));
     state.inventory.push(...fillers);
     expect(moveStoreItemsToInventory(state, [stored[2]!.uuid])).toBe(0);
     expect(state.store).toContain(stored[2]);
   });
 
-  it("attacks only the front tile and consumes a turn when a target exists", () => {
+  it("carries what the equipped bag holds, and swaps bags without losing the old one", () => {
     const state = createNewGame();
-    beginExpedition(state);
-    const run = state.run!;
-    const enemy = run.enemies[0]!;
-    run.enemies = [enemy];
-    run.player = { x: 5, y: 5 };
-    enemy.pos = { x: 6, y: 5 };
-    enemy.hp = 3;
-    run.map.tiles[5]![5] = run.map.tiles[5]![6] = 0;
-    const before = run.turn;
-    const hit = performDungeonCommand(state, { type: "attack", direction: { x: 1, y: 0 } });
-    expect(hit.consumedTurn).toBe(true);
-    expect(run.turn).toBe(before + 1);
-    const miss = performDungeonCommand(state, { type: "attack", direction: { x: 0, y: -1 } });
-    expect(miss.consumedTurn).toBe(false);
+    expect(bagCapacity(state)).toBe(12);
+
+    const sack = createItem(state, "shoulder-sack");
+    state.inventory.push(sack);
+    const previousBagId = state.equipment.bagItemId!;
+    expect(equipBag(state, sack.uuid)).toBe(true);
+    expect(bagCapacity(state)).toBe(18);
+    expect(state.equipment.bagItemId).toBe(sack.uuid);
+    // 使っていた袋は捨てない。売り物として鞄へ戻る。
+    expect(state.inventory.map((item) => item.uuid)).toContain(previousBagId);
+
+    // 小さい袋へ戻すと溢れる荷は、持ち替えそのものを断る。
+    state.inventory.push(...Array.from({ length: 16 }, () => createItem(state, "old-ring")));
+    expect(equipBag(state, previousBagId)).toBe(false);
+    expect(state.equipment.bagItemId).toBe(sack.uuid);
+    expect(state.message).toContain("先に荷を減らそう");
   });
 
   it("reveals one hidden customer at a time and closes at night", () => {

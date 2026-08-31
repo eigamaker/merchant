@@ -2,9 +2,9 @@ import type { DungeonBody, DungeonChest, DungeonHeight, DungeonMap, Enemy, GameS
 import { HOME_SPAWN, createHomeMap } from "./homeMap";
 import { loadTrialMapPack, type MapDocument } from "./mapDocument";
 import { isMapPositionWalkable } from "./mapTiles";
-import { initializeMerchantWorld, pruneCampaignRecords } from "./merchantEconomy";
+import { initializeMerchantWorld, pruneCampaignRecords, registerWorldItem } from "./merchantEconomy";
 import { ensureRosterPopulation } from "./npcRoster";
-import { createInitialNpcs } from "./merchantContent";
+import { STARTING_BAG_ID, bagCapacityOf, createInitialNpcs } from "./merchantContent";
 import { initializeGuardProfiles } from "./guardProfiles";
 import { deriveDungeonSeed, DUNGEON_THEME_FALLBACK_ID } from "./dungeonThemes";
 /** v1-v3 saves always used the fixed 32x20, 16px home. */
@@ -33,27 +33,9 @@ type VersionTwoGameState = Omit<GameState, "version"> & { version: 2 };
 
 const DATABASE_NAME = "dungeon-curio-merchant";
 const STORE_NAME = "campaigns";
-const DEAD_CAMPAIGNS_KEY = "dungeon-curio-merchant-dead-campaigns";
-
-function deadCampaigns(): Set<string> {
-  if (typeof localStorage === "undefined") return new Set();
-  try { return new Set(JSON.parse(localStorage.getItem(DEAD_CAMPAIGNS_KEY) ?? "[]") as string[]); }
-  catch { return new Set(); }
-}
-
-export function markCampaignDead(campaignId: string): void {
-  if (typeof localStorage === "undefined") return;
-  const dead = deadCampaigns();
-  dead.add(campaignId);
-  localStorage.setItem(DEAD_CAMPAIGNS_KEY, JSON.stringify([...dead]));
-}
-
-export function isCampaignDead(campaignId: string): boolean {
-  return deadCampaigns().has(campaignId);
-}
 
 export function isSupportedSaveVersion(version: unknown): version is number {
-  return typeof version === "number" && Number.isInteger(version) && version >= 5 && version <= 12;
+  return typeof version === "number" && Number.isInteger(version) && version >= 5 && version <= 14;
 }
 
 function activeHomeMapForSave(): MapDocument {
@@ -113,6 +95,48 @@ function migrateDungeonMap(map: DungeonMap | LegacyDungeonMap, seed = 1, floor =
   }
 }
 
+/**
+ * v14 で商人は戦うのをやめた。
+ *
+ * 武器・防具の装備枠を落とし、代わりに道具袋を持たせる。外した武器防具は消さない ——
+ * 商品として売れるし、冒険者へ預けることもできるからである。
+ *
+ * 枠は24から12へ縮むので、旧セーブの鞄はまず溢れる。溢れた品は捨てずに自宅の
+ * 保管庫へ移す。読み込んだだけで在庫が消えては困る。
+ */
+function migrateToBagEquipment(state: GameState): void {
+  const legacy = state.equipment as unknown as Record<string, unknown>;
+  delete legacy.weaponItemId;
+  delete legacy.armorItemId;
+
+  const equipped = state.equipment.bagItemId ? state.itemsById[state.equipment.bagItemId] : undefined;
+  if (!equipped) {
+    const bag = registerWorldItem(state, {
+      uuid: `item-${state.nextItemId++}`,
+      definitionId: STARTING_BAG_ID,
+      discoveredDay: state.day,
+      knowledge: "identified",
+      clues: [],
+      owner: "player",
+      history: [{ day: state.day, type: "found", detail: "以前から使っている風呂敷" }],
+      location: { kind: "equipped" },
+      historyV2: [{ day: state.day, type: "created", detail: "以前から使っている風呂敷" }],
+    });
+    state.equipment.bagItemId = bag.uuid;
+  }
+
+  const capacity = bagCapacityOf(state.itemsById[state.equipment.bagItemId!]?.definitionId);
+  if (state.inventory.length <= capacity) return;
+  // 溢れるのは後ろから。先頭にある品ほど古くから持ち歩いているため。
+  const overflow = state.inventory.splice(capacity);
+  for (const item of overflow) {
+    item.owner = "store";
+    item.location = { kind: "homeStorage" };
+    item.history.push({ day: state.day, type: "recovered", detail: "道具袋が小さくなり、保管庫へ移した" });
+    state.store.push(item);
+  }
+}
+
 /** v8 で撤去した旧クエスト・旧護衛・罠の残骸を、読み込んだ時点で捨てる。 */
 function stripRetiredFields(state: GameState): void {
   const legacy = state as unknown as Record<string, unknown>;
@@ -132,9 +156,11 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
   const state = raw as unknown as GameState;
   const oldLocation = (state as unknown as { location?: string }).location;
   if (oldLocation === "town" || oldLocation === "interior") state.location = "home";
-  state.version = 12;
+  state.version = 14;
   state.campaignId ??= `legacy-${Date.now()}`;
   state.status ??= "active";
+  if (state.status === "gameOver") state.status = "active";
+  state.vaultGold ??= 0;
   // 追加した任意項目を補い、既存のブラウザ保存を壊さない。
   state.returnStones ??= 1;
   state.smokeBombs ??= 1;
@@ -184,6 +210,8 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
     }
   }
   state.dungeonCorpses ??= [];
+  state.store ??= [];
+  state.inventory ??= [];
   // v11 で護衛と単独潜行者に防御が付いた。読み落としても NaN にならないよう既定値を置く。
   for (const floor of [state.run, ...Object.values(state.run?.floorStates ?? {})]) {
     if (!floor) continue;
@@ -285,10 +313,11 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
       }
     }
   }
+  migrateToBagEquipment(state);
   stripRetiredFields(state);
   // 探索中でなければ、旧セーブに溜まった床の品と通りすがりの記録もここで捨てる。
   if (!state.run) pruneCampaignRecords(state);
-  (state as { version: number }).version = 12;
+  (state as { version: number }).version = 14;
   return state;
 }
 
@@ -306,7 +335,6 @@ function openDatabase(): Promise<IDBDatabase> {
 
 export class SaveRepository {
   async save(slot: SaveSlot, state: GameState): Promise<void> {
-    if (state.status === "gameOver" || isCampaignDead(state.campaignId)) return;
     const database = await openDatabase();
     const payload: StoredSave = { slot, savedAt: new Date().toISOString(), state: structuredClone(state) };
     await new Promise<void>((resolve, reject) => {
@@ -330,12 +358,10 @@ export class SaveRepository {
     const version = (result.state as { version?: number }).version;
     if (!isSupportedSaveVersion(version)) return undefined;
     result.state = migrateSaveState(result.state);
-    if (isCampaignDead(result.state.campaignId) || result.state.status === "gameOver") return undefined;
     return result as StoredSave & { state: GameState };
   }
 
   async deleteCampaign(campaignId: string): Promise<void> {
-    markCampaignDead(campaignId);
     const database = await openDatabase();
     await new Promise<void>((resolve, reject) => {
       const transaction = database.transaction(STORE_NAME, "readwrite");

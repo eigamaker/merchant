@@ -3,14 +3,14 @@ import { beginExpedition, createItem, createNewGame, descend, returnHome, waitTu
 import { ADVENTURER_RANKS, ITEM_VISUALS, MERCHANT_ITEM_DEFINITIONS, NPC_APPEARANCES, npcAppearanceSprite } from "./merchantContent";
 import { npcActorIds } from "./actorCatalog";
 import { acceptCustomerPurchaseRequest, cancelEscortCommission, escortFeeForNpc, postEscortCommission, prepareCustomerPurchaseRequest } from "./merchantEconomy";
-import { startShopSession, summonNextCustomer } from "./merchantSystems";
+import { bagCapacity, depositGold, startShopSession, summonNextCustomer } from "./merchantSystems";
 import { ADVENTURER_ROSTER_TARGET, ROSTER_RANK_SHAPE, createRosterAdventurer } from "./npcRoster";
 
 describe("v6 merchant world", () => {
-  it("defines 15 replaceable item visuals and a ranked NPC roster", () => {
-    expect(Object.keys(MERCHANT_ITEM_DEFINITIONS)).toHaveLength(15);
+  it("defines 19 replaceable item visuals and a ranked NPC roster", () => {
+    expect(Object.keys(MERCHANT_ITEM_DEFINITIONS)).toHaveLength(19);
     expect(new Set(Object.values(MERCHANT_ITEM_DEFINITIONS).map((item) => item.category))).toEqual(
-      new Set(["weapon", "armor", "medicine", "material", "curio"]),
+      new Set(["weapon", "armor", "bag", "medicine", "material", "curio"]),
     );
     expect(Object.values(MERCHANT_ITEM_DEFINITIONS).every((item) => ITEM_VISUALS[item.visualId!]?.endsWith(".png"))).toBe(true);
 
@@ -35,7 +35,8 @@ describe("v6 merchant world", () => {
     // The fifteen written by hand keep the appearance their entry names.
     expect(state.npcs.filter((npc) => !npc.id.startsWith("adventurer-")).every((npc) => Boolean(NPC_APPEARANCES[npc.appearanceId]))).toBe(true);
     // 初期装備は台本のある10人だけ。名簿を増やしてもアイテムは増えない。
-    expect(Object.keys(state.itemsById)).toHaveLength(10);
+    // 加えて商人が背負っている風呂敷が1つ。
+    expect(Object.keys(state.itemsById)).toHaveLength(11);
     // 名前に通し番号が混じらない。
     expect(state.npcs.every((npc) => !/\d/.test(npc.name))).toBe(true);
   });
@@ -177,12 +178,20 @@ describe("v6 merchant world", () => {
     expect(before).toBeGreaterThan(0);
   });
 
-  it("ends the campaign when the merchant reaches zero HP", () => {
+  it("returns home after defeat, losing carried wealth but preserving the vault and home stock", () => {
     const state = createNewGame();
+    const carried = createItem(state, "iron-sword");
+    const stored = createItem(state, "old-ring");
+    state.inventory.push(carried);
+    state.store.push(stored);
+    stored.location = { kind: "homeStorage" };
+    const bagBefore = state.equipment.bagItemId;
+    expect(depositGold(state, 175)).toBe(true);
     beginExpedition(state);
     const run = state.run!;
     const enemy = run.enemies[0]!;
     run.enemies = [enemy];
+    run.adventurers = [];
     run.player = { x: 5, y: 5 };
     enemy.pos = { x: 6, y: 5 };
     enemy.damage = state.hp;
@@ -191,9 +200,21 @@ describe("v6 merchant world", () => {
 
     waitTurn(state);
 
-    expect(state.hp).toBe(0);
-    expect(state.status).toBe("gameOver");
-    expect(state.location).toBe("dungeon");
+    expect(state.hp).toBe(state.maxHp);
+    expect(state.status).toBe("active");
+    expect(state.location).toBe("home");
+    expect(state.run).toBeUndefined();
+    expect(state.gold).toBe(0);
+    expect(state.vaultGold).toBe(175);
+    expect(state.inventory).toEqual([]);
+    // 道具袋は身から離れない。中身は失っても、明日また商いはできる。
+    expect(state.equipment.bagItemId).toBe(bagBefore);
+    expect(bagCapacity(state)).toBe(12);
+    expect(state.store.map((item) => item.uuid)).toContain(stored.uuid);
+    expect(state.provisions).toBe(0);
+    expect(state.smokeBombs).toBe(0);
+    expect(state.returnStones).toBe(0);
+    expect(state.message).toContain("金庫の預金と自宅の在庫は無事");
   });
 });
 
@@ -212,7 +233,8 @@ describe("campaign record pruning", () => {
     }
 
     // 拾わなかった床の品と、迷宮へ担いでいった在庫は残らない。名簿はそのまま生き続ける。
-    expect(Object.keys(state.itemsById)).toHaveLength(10);
+    // 残るのは台本の10人の初期装備と、商人の風呂敷。
+    expect(Object.keys(state.itemsById)).toHaveLength(11);
     expect(state.npcs.filter((npc) => npc.adventurer).length).toBeGreaterThanOrEqual(28);
     expect(state.npcs.filter((npc) => npc.adventurer).length).toBeLessThanOrEqual(40);
     expect(state.npcs.every((npc) => !npc.id.startsWith("generated-"))).toBe(true);

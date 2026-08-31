@@ -54,7 +54,7 @@ export function pruneCampaignRecords(state: GameState): void {
   const liveItemIds = new Set<string>();
   for (const item of [...state.inventory, ...state.store, ...state.archive]) liveItemIds.add(item.uuid);
   for (const id of state.display) liveItemIds.add(id);
-  for (const id of [state.equipment.weaponItemId, state.equipment.armorItemId]) if (id) liveItemIds.add(id);
+  if (state.equipment.bagItemId) liveItemIds.add(state.equipment.bagItemId);
   if (state.shopSession.requestedItemId) liveItemIds.add(state.shopSession.requestedItemId);
   // まだ迷宮に横たわっている遺品。これを外すと、遺体が空のまま残る。
   for (const id of corpseLootIds(state)) liveItemIds.add(id);

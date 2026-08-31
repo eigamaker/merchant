@@ -18,6 +18,7 @@ import {
   waitTurn,
 } from "./engine";
 import { migrateSaveState } from "./save";
+import { MERCHANT_ITEM_DEFINITIONS } from "./merchantContent";
 import { postEscortCommission } from "./merchantEconomy";
 import { DUNGEON_ENTRANCE } from "./homeMap";
 import type { DungeonFloorSnapshot, DungeonMap } from "./types";
@@ -355,7 +356,9 @@ describe("automatic guards", () => {
     const run = state.run!;
     const guard = run.guard!;
     Object.assign(state.npcs.find((npc) => npc.id === guard.guardId)!.guardProfile!, { trust: 20, stress: 0 });
-    Object.assign(state.npcs.find((npc) => npc.id === guard.guardId)!.guardProfile!.personality, { courage: 50, empathy: 0 });
+    // 共感0で踏みとどまらず、忠義は十分あるので逃げもしない —— 後退だけを見る配役。
+    Object.assign(state.npcs.find((npc) => npc.id === guard.guardId)!.guardProfile!.personality,
+      { courage: 50, empathy: 0, integrity: 80, discipline: 60, greed: 20 });
     const [first, second] = run.enemies;
     if (!first || !second) throw new Error("test setup failed");
     run.player = { x: 5, y: 5 };
@@ -378,6 +381,77 @@ describe("automatic guards", () => {
     const profile = state.npcs.find((npc) => npc.id === guard.guardId)!.guardProfile!;
     expect(profile.stress).toBe(8);
     expect(profile.career.retreatCount).toBe(1);
+  });
+
+  it("holds the line to the death when devotion outweighs the wound", () => {
+    const state = createNewGame();
+    unlockAndHire(state);
+    beginExpedition(state);
+    const run = state.run!;
+    const guard = run.guard!;
+    const npc = state.npcs.find((entry) => entry.id === guard.guardId)!;
+    // 共感の深い者は、自分の残量を無視して前に立ち続ける。止める手立ては商人にはない ——
+    // 下がらせれば、次に死ぬのは商人のほうだからである。
+    Object.assign(npc.guardProfile!, { trust: 60, stress: 0 });
+    Object.assign(npc.guardProfile!.personality, { empathy: 95, courage: 60, integrity: 80, discipline: 60, greed: 20 });
+    const enemy = run.enemies[0]!;
+    run.player = { x: 5, y: 5 };
+    guard.pos = { ...run.player };
+    guard.hp = 2;
+    enemy.pos = { x: 6, y: 5 };
+    enemy.hp = 99;
+    enemy.damage = 1;
+    enemy.staggerTurns = 0;
+    run.enemies = [enemy];
+    const playerHp = state.hp;
+
+    waitTurn(state);
+
+    // 退かないので後退の記録は増えず、商人は一撃も受けない。
+    expect(guard.mode).toBe("covering");
+    expect(guard.retreatCount).toBe(0);
+    expect(state.hp).toBe(playerHp);
+
+    waitTurn(state);
+
+    // そして次の一撃で死ぬ。忠義の代償はこれである。
+    expect(run.guard).toBeUndefined();
+    expect(npc.status).toBe("dead");
+  });
+
+  it("abandons the merchant at depth when loyalty runs out, and the guild records it", () => {
+    const state = createNewGame();
+    unlockAndHire(state);
+    beginExpedition(state);
+    const run = state.run!;
+    const guard = run.guard!;
+    const npc = state.npcs.find((entry) => entry.id === guard.guardId)!;
+    // 強欲で不実な相手。踏みとどまりもしないし、退いて付き合いもしない。
+    Object.assign(npc.guardProfile!, { trust: 0, stress: 40 });
+    Object.assign(npc.guardProfile!.personality, { empathy: 10, courage: 50, integrity: 20, discipline: 30, greed: 90 });
+    const enemy = run.enemies[0]!;
+    run.player = { x: 5, y: 5 };
+    guard.pos = { ...run.player };
+    guard.hp = 2;
+    enemy.pos = { x: 6, y: 5 };
+    enemy.hp = 99;
+    enemy.damage = 1;
+    enemy.staggerTurns = 0;
+    run.enemies = [enemy];
+
+    waitTurn(state);
+
+    // 契約ごと消える。護衛料は返らない。
+    expect(run.guard).toBeUndefined();
+    expect(state.hiredGuardId).toBeUndefined();
+    expect(state.escortCommission).toBeUndefined();
+    // 逃げ切った本人は生きている。失うのは信用のほうである。
+    expect(npc.status).toBe("inTown");
+    expect(npc.guardProfile!.career.abandonCount).toBe(1);
+    expect(npc.guardProfile!.career.events.at(-1)?.type).toBe("abandoned");
+    expect(npc.guardProfile!.trust).toBe(0);
+    expect(npc.bonds?.at(-1)?.kind).toBe("abandoned");
+    expect(state.message).toContain("取り残された");
   });
 
   it("resets unsafe recovery and resumes cover after two safe turns", () => {
@@ -560,18 +634,68 @@ describe("independent dungeon adventurers", () => {
 });
 
 describe("inventory choices and early story", () => {
-  it("holds twenty-four items regardless of item type", () => {
+  it("keeps weapons, trinkets and nameless corpses out of the shallow floors", () => {
+    const shallow = new Set<string>();
+    const deep = new Set<string>();
+    let shallowBodies = 0;
+    let deepBodies = 0;
+    for (let seed = 0; seed < 30; seed += 1) {
+      const state = createNewGame();
+      state.campaignId = `spawn-${seed}`;
+      // 迷宮のシードは日付と遠征通し番号から作られる。日を変えないと同じ階を30回見ることになる。
+      state.day = seed + 1;
+      beginExpedition(state);
+      const first = state.run!;
+      for (const entry of first.items) shallow.add(entry.item.definitionId);
+      for (const chest of first.chests) shallow.add(chest.item.definitionId);
+      shallowBodies += first.bodies.length;
+      descend(state);
+      descend(state);
+      descend(state);
+      const fourth = state.run!;
+      expect(fourth.floor).toBe(4);
+      for (const entry of fourth.items) deep.add(entry.item.definitionId);
+      for (const chest of fourth.chests) deep.add(chest.item.definitionId);
+      deepBodies += fourth.bodies.length;
+    }
+
+    // 地下1階は素材と薬だけの仕入れ場。武器が転がっているのは、そこまで担いで死んだ者がいた深さから。
+    const shallowCategories = new Set([...shallow].map((id) => MERCHANT_ITEM_DEFINITIONS[id]!.category));
+    expect(shallowCategories).toEqual(new Set(["material", "medicine"]));
+    expect(deep.size).toBeGreaterThan(0);
+    expect([...deep].some((id) => MERCHANT_ITEM_DEFINITIONS[id]!.category === "weapon")).toBe(true);
+
+    // 身元の分からない遺体も地下4階から。1階で人がたくさん死んでいるのはおかしい。
+    expect(shallowBodies).toBe(0);
+    expect(deepBodies).toBeGreaterThan(0);
+  });
+
+  it("thins one floor down to a handful of finds", () => {
+    for (let seed = 0; seed < 12; seed += 1) {
+      const state = createNewGame();
+      state.campaignId = `density-${seed}`;
+      state.day = seed + 1;
+      beginExpedition(state);
+      const run = state.run!;
+      expect(run.items.length).toBeGreaterThanOrEqual(1);
+      expect(run.items.length).toBeLessThanOrEqual(3);
+      expect(run.chests).toHaveLength(1);
+    }
+  });
+
+  it("holds exactly what the starting cloth wrap holds, regardless of item type", () => {
     const state = createNewGame();
     beginExpedition(state);
     const run = state.run!;
-    state.inventory = Array.from({ length: 23 }, () => createItem(state, "bronze-spear", 1));
+    // 風呂敷は12枠。重さの概念はないので、槍でも薬でも1個で1枠。
+    state.inventory = Array.from({ length: 11 }, () => createItem(state, "bronze-spear", 1));
     const ground = run.items[0]!;
     run.player = { ...ground.pos };
 
     const result = tryPickup(state);
 
     expect(result.consumedTurn).toBe(true);
-    expect(state.inventory).toHaveLength(24);
+    expect(state.inventory).toHaveLength(12);
     expect(state.inventory).toContain(ground.item);
   });
 
@@ -628,7 +752,7 @@ describe("save migration", () => {
     const migrated = migrateSaveState(legacy as never);
     const carried = migrated as unknown as Record<string, unknown>;
 
-    expect(migrated.version).toBe(12);
+    expect(migrated.version).toBe(14);
     for (const key of ["quests", "customers", "guards", "story", "refusedOffers", "guildReputation"]) {
       expect(carried[key]).toBeUndefined();
     }

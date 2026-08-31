@@ -4,7 +4,7 @@ import { HOME_SPAWN, createHomeMap } from "./homeMap";
 import { compileMap, loadTrialMapPack } from "./mapDocument";
 import { createDefaultMapPack } from "./defaultMapPack";
 import { actorDefinition, actorEnemyCost, actorEnemyStatsAt, actorHasEnemyStats } from "./actorCatalog";
-import { ADVENTURER_RANKS, MERCHANT_ITEM_DEFINITIONS } from "./merchantContent";
+import { ADVENTURER_RANKS, MERCHANT_ITEM_DEFINITIONS, STARTING_BAG_ID, itemMinFloor } from "./merchantContent";
 import { SEED_NPC_IDS, initializeMerchantWorld, pruneCampaignRecords, registerWorldItem } from "./merchantEconomy";
 import { selectFloorDelvers } from "./townDay";
 import { npcCombatStats, recordGearDeed } from "./npcGear";
@@ -13,10 +13,12 @@ import { corpsesOnFloor, markCorpseInspected, pruneCorpses, recordCorpse, remove
 import { markExplored } from "./dungeonVision";
 import { DUNGEON_PRICE_CEILING, dungeonVerdict, marketPrice } from "./pricing";
 import { refreshItemLegend, wasEntrusted } from "./itemLegend";
-import { adjustGuardProfile, ensureGuardProfile, recordGuardEvent } from "./guardProfiles";
+import { adjustGuardProfile, ensureGuardProfile, guardStand, recordGuardEvent } from "./guardProfiles";
 import { recordBond } from "./npcBonds";
-import { advanceTime, canReorganizeHomeInventory, consumeDungeonTime, inventoryItemCount, playerAttackPower, playerDefensePower, processDayEvents, resetDailySystems, unequipIfNeeded } from "./merchantSystems";
+import { advanceTime, bagCapacity, canReorganizeHomeInventory, consumeDungeonTime, inventoryItemCount, processDayEvents, recoverMerchantAfterDeath, resetDailySystems, unequipIfNeeded } from "./merchantSystems";
 import { generateDungeonFloor, generatedPlacementCells } from "./dungeonGenerator";
+import { closeStall, openStall, stallAttraction, stallPhase } from "./dungeonStall";
+import { betrayalPhase, payDemand, refuseDemand, rewardLoyalty } from "./guardBetrayal";
 import { depthBand, encounterBudget } from "./dungeonDifficulty";
 import { deriveDungeonSeed, dungeonThemeIdForFloor, dungeonThemeSpawns, snapshotDungeonThemePool, type DungeonSpawnEntry } from "./dungeonThemes";
 import { nextDungeonStep } from "./dungeonPathfinding";
@@ -35,13 +37,15 @@ import type {
   GuardDescentAssessment,
   ItemDefinition,
   ItemInstance,
+  NpcRecord,
   TurnResult,
   Vec,
 } from "./types";
 
-export const INVENTORY_CAPACITY = 24;
 export const DISPLAY_CAPACITY = 8;
 export const DUNGEON_MAX_FLOOR = 8;
+/** 身元の分からない遺体が現れ始める深さ。 */
+export const ANONYMOUS_CORPSE_MIN_FLOOR = 4;
 
 export type DungeonGenerationMode = "fixed" | "procedural" | "manual";
 
@@ -78,12 +82,13 @@ export const DIRECTION: Record<"up" | "down" | "left" | "right", Vec> = {
 
 export function createNewGame(): GameState {
   const state: GameState = {
-    version: 12,
+    version: 14,
     campaignId: typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `campaign-${Date.now()}`,
     status: "active",
     day: 1,
     timeSlot: "morning",
     gold: 300,
+    vaultGold: 0,
     hp: 12,
     maxHp: 12,
     returnStones: 1,
@@ -113,6 +118,7 @@ export function createNewGame(): GameState {
   };
   initializeMerchantWorld(state);
   resetDailySystems(state);
+  equipStartingBag(state);
   // 初期装備は台本のある15人だけに配る。名簿を増やしてもアイテム数は増やさない。
   for (const npc of state.npcs.filter((entry) => entry.adventurer && SEED_NPC_IDS.has(entry.id))) {
     const definitionId = npc.profession === "scout" ? "antidote" : npc.profession === "mercenary" ? "bronze-spear" : "iron-sword";
@@ -122,6 +128,20 @@ export function createNewGame(): GameState {
     npc.inventoryIds.push(gear.uuid);
   }
   return state;
+}
+
+/** いま背負っている袋の名。持ちきれないと告げるとき、袋そのものを名指しする。 */
+function bagName(state: GameState): string {
+  const bag = state.equipment.bagItemId ? state.itemsById[state.equipment.bagItemId] : undefined;
+  return bag ? MERCHANT_ITEM_DEFINITIONS[bag.definitionId]?.trueName ?? "道具袋" : "道具袋";
+}
+
+/** 商人が最初から背負っている風呂敷。枠を使わず、迷宮で死んでも身から離れない。 */
+function equipStartingBag(state: GameState): void {
+  const bag = createItem(state, STARTING_BAG_ID);
+  bag.owner = "player";
+  bag.location = { kind: "equipped" };
+  state.equipment.bagItemId = bag.uuid;
 }
 
 export function itemDefinition(item: ItemInstance): ItemDefinition {
@@ -173,8 +193,8 @@ export function createItem(state: GameState, definitionId: string, floor?: numbe
  * 歩ける升の数が違うので、狭い階ほど数歩ごとに何かが落ちていることになっていた。
  * 鞄は24枠しかない。3階ぶん潜って拾い切れる量を超えないところに置く。
  */
-const GROUND_ITEM_SPACING = 110;
-const CHEST_SPACING = 300;
+const GROUND_ITEM_SPACING = 330;
+const CHEST_SPACING = 900;
 
 function walkableCells(map: DungeonMap): number {
   let total = 0;
@@ -215,7 +235,8 @@ function distance(a: Vec, b: Vec): number {
 function randomItemId(state: GameState, rng: Rng, floor: number): string {
   const definitions = Object.values(MERCHANT_ITEM_DEFINITIONS).filter((definition) => {
     if (definition.singular && state.singularItemIds.includes(definition.id)) return false;
-    if (definition.rarity === "legendary" && floor < 6) return false;
+    // 種類ごとの解禁深度。浅い階は素材と薬だけの仕入れ場にする。
+    if (floor < itemMinFloor(definition)) return false;
     return true;
   });
   const weighted = definitions.flatMap((definition) => {
@@ -324,7 +345,7 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
   const walkable = walkableCells(map);
   const itemCells = generatedPlacementCells(map, ["loot", "combat", "treasure", "tomb"]);
 
-  for (let index = items.length; index < dropCount(walkable, GROUND_ITEM_SPACING, 3, 8); index += 1) {
+  for (let index = items.length; index < dropCount(walkable, GROUND_ITEM_SPACING, 1, 3); index += 1) {
     const pos = freeFloor(map, itemRng, occupied, itemCells);
     occupied.push(pos);
     const generated = createItem(state, randomItemId(state, itemRng, floor), floor);
@@ -341,7 +362,7 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
   const enemies = buildEnemies(enemyRosterRng, enemyPlacementRng, map, floor, occupied);
   const occupiedEntities = [...occupied, ...enemies.map((enemy) => enemy.pos)];
   const chestCells = generatedPlacementCells(map, ["treasure", "loot"]);
-  const chests = Array.from({ length: dropCount(walkable, CHEST_SPACING, 1, 3) }, (_, index) => {
+  const chests = Array.from({ length: dropCount(walkable, CHEST_SPACING, 1, 1) }, (_, index) => {
     const pos = freeFloor(map, chestRng, occupiedEntities, chestCells);
     occupiedEntities.push(pos);
     return { id: `chest-${floor}-${index}`, pos, item: createItem(state, randomItemId(state, chestRng, floor), floor) };
@@ -351,7 +372,9 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
 
   // 身元の分からない古い遺体。名簿の誰でもないので記録は作らず、戦利品だけを置く。
   // 名前のある遺体は台帳から来る（誰かが本当にここで死んだときだけ）。
-  const anonymousCorpseChance = Math.min(0.35, 0.15 + (floor - 1) * 0.03);
+  // 身元の分からない遺体は地下4階から。浅い階で人が死んでいるのはおかしい ——
+  // 実際、名簿の冒険者も推奨階の内側ではまず死なない。
+  const anonymousCorpseChance = floor < ANONYMOUS_CORPSE_MIN_FLOOR ? 0 : Math.min(0.35, 0.15 + (floor - 1) * 0.03);
   const bodyCells = generatedPlacementCells(map, ["tomb", "combat"]);
   if (bodyRng.next() < anonymousCorpseChance) {
     const pos = freeFloor(map, bodyRng, occupiedEntities, bodyCells);
@@ -554,6 +577,7 @@ export function assessGuardDescent(state: GameState, nextFloor: number): GuardDe
 }
 
 export function descend(state: GameState): void {
+  foldStallBeforeLeaving(state);
   const run = state.run;
   if (!run) return;
   if (!run.map.stairsDown) {
@@ -590,6 +614,7 @@ export function descend(state: GameState): void {
 }
 
 export function ascend(state: GameState): void {
+  foldStallBeforeLeaving(state);
   const run = state.run;
   if (!run) return;
   if (run.floor === 1) {
@@ -613,12 +638,64 @@ export function ascend(state: GameState): void {
   state.message = `地下${nextFloor}階へ上がった。`;
 }
 
+/**
+ * 深手を負った護衛が何を選ぶか。
+ *
+ * 下がるのが正しい。ここで退かなければ、次に死ぬのはこの護衛自身である。だから
+ * **踏みとどまるのは合理ではなく人柄**で、置いて逃げるのもまた人柄である。
+ * 商人には止める手立てが無い —— 下がらせれば、次に死ぬのは商人のほうだからだ。
+ */
+function resolveGuardStand(state: GameState, guard: ActiveGuard, guardNpc: NpcRecord | undefined, events: DungeonEvent[]): void {
+  const run = state.run;
+  if (!run) return;
+  const name = activeGuardName(state, guard.guardId);
+  const profile = guardNpc ? ensureGuardProfile(state, guardNpc) : undefined;
+  const stand = profile ? guardStand(profile) : "retreat";
+
+  if (stand === "hold") {
+    // 踏みとどまる者には何も起きない。covering のまま、HPが尽きるまで前に立ち続ける。
+    state.message = `${name}は傷を負いながら、なお前から動かない。`;
+    return;
+  }
+
+  if (stand === "flee") {
+    if (guardNpc && profile) {
+      // 逃げ切った本人は生きている。失うのは信用のほうで、それはギルドの掲示に残る。
+      guardNpc.status = "inTown";
+      profile.career.abandonCount += 1;
+      adjustGuardProfile(profile, -45, 25);
+      recordGuardEvent(state, guardNpc, "abandoned", `地下${run.floor}階で契約を捨てて逃げた`, run.floor);
+      recordBond(state, guardNpc, "abandoned", `地下${run.floor}階に置き去りにされた`, run.floor);
+    }
+    guard.mode = "fled";
+    events.push({ type: "guardMode", guardId: guard.guardId, mode: "fled" });
+    // 護衛料は返らない。契約そのものがここで消える。
+    run.guard = undefined;
+    state.hiredGuardId = undefined;
+    state.hiredGuardFee = undefined;
+    state.escortCommission = undefined;
+    state.message = `${name}は武器を捨てて出口へ走った。地下${run.floor}階に、ひとり取り残された。`;
+    return;
+  }
+
+  guard.mode = "retreated";
+  guard.safeTurns = 0;
+  guard.retreatCount += 1;
+  if (guardNpc && profile) {
+    profile.career.retreatCount += 1;
+    adjustGuardProfile(profile, 0, 8);
+    recordGuardEvent(state, guardNpc, "retreated", `HP${guard.hp}で後退`, run.floor);
+  }
+  events.push({ type: "guardMode", guardId: guard.guardId, mode: "retreated" });
+  state.message = `${name}は危険を感じ、隊列の後方へ下がった。`;
+}
+
 function guardPhase(state: GameState, events: DungeonEvent[]): void {
   const run = state.run;
   const guard = run?.guard;
   if (!run || !guard) return;
   guard.pos = { ...run.player };
-  if (guard.mode === "retreated") return;
+  if (guard.mode !== "covering") return;
   const npc = state.npcs.find((entry) => entry.id === guard.guardId);
   const profile = npc ? ensureGuardProfile(state, npc) : undefined;
   const discipline = profile?.personality.discipline ?? 50;
@@ -678,6 +755,16 @@ function adventurerPhase(state: GameState, events: DungeonEvent[]): void {
   const rng = new Rng(run.seed + run.turn * 53 + run.floor * 11);
   for (const adventurer of [...run.adventurers]) {
     if (consumeNpcMedicine(state, adventurer)) continue;
+    // 露店が開いていて、敵が隣にいないなら、戦うより先に品を見に来る。
+    const counter = stallAttraction(state, adventurer);
+    if (counter) {
+      if (distance(counter, adventurer.pos) <= 1) continue;
+      const from = { ...adventurer.pos };
+      const blocked = [run.player, ...run.enemies.map((enemy) => enemy.pos), ...(run.stall?.slots.map((slot) => slot.pos) ?? []), ...run.adventurers.filter((other) => other.npcId !== adventurer.npcId).map((other) => other.pos)];
+      adventurer.pos = moveToward(adventurer.pos, counter, run, blocked, rng);
+      if (!samePosition(from, adventurer.pos)) events.push({ type: "move", actorId: adventurer.npcId, from, to: { ...adventurer.pos } });
+      continue;
+    }
     const target = [...run.enemies]
       .sort((a, b) => distance(a.pos, adventurer.pos) - distance(b.pos, adventurer.pos) || a.hp - b.hp)[0];
     if (!target) continue;
@@ -782,17 +869,7 @@ function enemyPhase(state: GameState, events: DungeonEvent[]): void {
         state.message = npc ? `${npc.name}は死亡し、その場に所持品を残した。` : `${activeGuardName(state, guard.guardId)}は倒れた。`;
         run.guard = undefined;
       } else if (guard.hp <= guardRetreatThreshold(state, guard)) {
-        guard.mode = "retreated";
-        guard.safeTurns = 0;
-        guard.retreatCount += 1;
-        if (guardNpc) {
-          const profile = ensureGuardProfile(state, guardNpc);
-          profile.career.retreatCount += 1;
-          adjustGuardProfile(profile, 0, 8);
-          recordGuardEvent(state, guardNpc, "retreated", `HP${guard.hp}で後退`, run.floor);
-        }
-        events.push({ type: "guardMode", guardId: guard.guardId, mode: "retreated" });
-        state.message = `${activeGuardName(state, guard.guardId)}は危険を感じ、隊列の後方へ下がった。`;
+        resolveGuardStand(state, guard, guardNpc, events);
       }
       continue;
     }
@@ -806,12 +883,13 @@ function enemyPhase(state: GameState, events: DungeonEvent[]): void {
       continue;
     }
     if (distance(enemy.pos, run.player) === 1) {
-      const damage = Math.max(1, enemy.damage - playerDefensePower(state));
+      // 商人は防具を着けない。護衛が退いた先にあるのは、素で受ける敵の一撃である。
+      const damage = enemy.damage;
       state.hp -= damage;
       events.push({ type: "attack", attackerId: enemy.id, targetId: "player", damage });
       state.message = `${enemy.name}の攻撃。${damage}ダメージ。`;
       if (state.hp <= 0) {
-        merchantGameOver(state, `${enemy.name}の攻撃で命を落とした。`);
+        recoverMerchantAfterDeath(state, `${enemy.name}の攻撃で倒れた。`);
         break;
       }
       continue;
@@ -866,7 +944,11 @@ function finishTurn(state: GameState, events: DungeonEvent[], decrementCooldown 
   markExplored(run);
   if (decrementCooldown && run.shoveCooldown > 0) run.shoveCooldown -= 1;
   guardPhase(state, events);
+  // 護衛が何を考えているかは、戦いのあとに出る。要求は次の手番へ持ち越される。
+  const demand = betrayalPhase(state, events);
   adventurerPhase(state, events);
+  // 客をさばくのは敵が動く前。傷ついた相手が薬を買って、その足で戦いに戻れる。
+  stallPhase(state, events, () => drawDelverToFloor(state));
   enemyPhase(state, events);
   updateGuardRecovery(state, events);
   if (state.run) {
@@ -875,28 +957,7 @@ function finishTurn(state: GameState, events: DungeonEvent[], decrementCooldown 
     markExplored(state.run);
     consumeDungeonTime(state, 1);
   }
-  return { consumedTurn: true, events };
-}
-
-function performAttack(state: GameState, direction: Vec): TurnResult {
-  const run = state.run;
-  if (!run) return emptyResult();
-  const targetPos = { x: run.player.x + direction.x, y: run.player.y + direction.y };
-  const enemy = run.enemies.find((candidate) => samePosition(candidate.pos, targetPos));
-  if (!enemy) {
-    state.message = "正面に攻撃できる敵はいない。";
-    return emptyResult();
-  }
-  const damage = playerAttackPower(state);
-  enemy.hp -= damage;
-  const events: DungeonEvent[] = [{ type: "attack", attackerId: "player", targetId: enemy.id, damage }];
-  state.message = `${enemy.name}へ${damage}ダメージ。`;
-  if (enemy.hp <= 0) {
-    run.enemies = run.enemies.filter((entry) => entry.id !== enemy.id);
-    events.push({ type: "defeated", actorId: enemy.id, pos: { ...enemy.pos } });
-    state.message = `${enemy.name}を倒した。`;
-  }
-  return finishTurn(state, events);
+  return demand ? { consumedTurn: true, events, guardDemand: demand } : { consumedTurn: true, events };
 }
 
 function performMove(state: GameState, direction: Vec): TurnResult {
@@ -961,7 +1022,7 @@ function performShove(state: GameState, direction: Vec): TurnResult {
 }
 
 function swapCandidate(state: GameState, swapOutId?: string): ItemInstance | undefined | null {
-  if (currentItemCount(state) < INVENTORY_CAPACITY) return undefined;
+  if (currentItemCount(state) < bagCapacity(state)) return undefined;
   if (!swapOutId) return null;
   const swap = state.inventory.find((item) => item.uuid === swapOutId);
   if (!swap) return null;
@@ -971,7 +1032,7 @@ function swapCandidate(state: GameState, swapOutId?: string): ItemInstance | und
 function carryItem(state: GameState, incoming: ItemInstance, swapOutId: string | undefined, onSwap: (item: ItemInstance) => void): boolean {
   const swap = swapCandidate(state, swapOutId);
   if (swap === null) {
-    state.message = `持ち物が${INVENTORY_CAPACITY}個でいっぱいだ。1個置いて入れ替えよう。`;
+    state.message = `${bagName(state)}が${bagCapacity(state)}個でいっぱいだ。1個置いて入れ替えよう。`;
     return false;
   }
   if (swap) {
@@ -999,7 +1060,7 @@ function performPickup(state: GameState, swapOutId?: string): TurnResult {
   const ground = run.items[groundIndex]!;
   if (!carryItem(state, ground.item, swapOutId, (item) => run.items.push({ item, pos: { ...run.player } }))) return emptyResult();
   run.items.splice(groundIndex, 1);
-  state.message = `${itemName(ground.item)}を拾った。所持数 ${currentItemCount(state)}/${INVENTORY_CAPACITY}`;
+  state.message = `${itemName(ground.item)}を拾った。所持数 ${currentItemCount(state)}/${bagCapacity(state)}`;
   return finishTurn(state, [{ type: "pickup", itemId: ground.item.uuid }]);
 }
 
@@ -1248,6 +1309,11 @@ function dismissGuardForDescent(state: GameState): string | undefined {
   return npc?.name;
 }
 
+/** 階を移る前と帰る前に風呂敷を畳む。品は鞄にあるので、置き去りにはならない。 */
+function foldStallBeforeLeaving(state: GameState): void {
+  if (state.run?.stall) closeStall(state, []);
+}
+
 function performStairs(state: GameState, guardResponse?: "continue" | "dismiss"): TurnResult {
   const run = state.run;
   if (!run) return emptyResult();
@@ -1274,14 +1340,14 @@ function performStairs(state: GameState, guardResponse?: "continue" | "dismiss")
       dismissedName = dismissGuardForDescent(state);
     }
     consumeDungeonTime(state, 1);
-    if (state.status === "gameOver") return { consumedTurn: true, events: [{ type: "message", text: state.message }] };
+    if (!state.run || state.location !== "dungeon") return { consumedTurn: true, events: [{ type: "message", text: state.message }] };
     descend(state);
     if (dismissedName) state.message = `${dismissedName}を町へ帰し、ひとりで地下${state.run?.floor ?? assessment?.nextFloor}階へ降りた。`;
     return { consumedTurn: true, events: [{ type: "message", text: state.message }] };
   }
   if (samePosition(run.player, run.map.stairsUp)) {
     consumeDungeonTime(state, 1);
-    if (state.status === "gameOver") return { consumedTurn: true, events: [{ type: "message", text: state.message }] };
+    if (!state.run || state.location !== "dungeon") return { consumedTurn: true, events: [{ type: "message", text: state.message }] };
     ascend(state);
     return { consumedTurn: true, events: [{ type: "message", text: state.message }] };
   }
@@ -1289,14 +1355,75 @@ function performStairs(state: GameState, guardResponse?: "continue" | "dismiss")
   return emptyResult();
 }
 
+/**
+ * 噂を聞いて寄ってくる一人。
+ *
+ * 名簿から借りるだけで、鋳造はしない。今日その深さへ潜っている誰かが、
+ * 品物が並んでいると聞いて足を向けた —— という筋である。
+ */
+function drawDelverToFloor(state: GameState): boolean {
+  const run = state.run;
+  if (!run) return false;
+  const placed = new Set(run.adventurers.map((entry) => entry.npcId));
+  const candidate = selectFloorDelvers(state, run.floor, placed).find((npc) => !placed.has(npc.id));
+  if (!candidate) return false;
+  const occupied = [
+    run.player,
+    ...run.enemies.map((enemy) => enemy.pos),
+    ...run.adventurers.map((entry) => entry.pos),
+    ...(run.stall?.slots.map((slot) => slot.pos) ?? []),
+  ];
+  const rng = new Rng(run.seed + run.turn * 977 + run.floor * 31);
+  // 露店のすぐ隣に湧かない。噂を聞いて歩いてくるのが見えるほうがいい。
+  const pos = freeFloor(run.map, rng, occupied, [], (cell) => distance(cell, run.player) >= 4);
+  const stats = npcCombatStats(state, candidate);
+  run.adventurers.push({
+    npcId: candidate.id,
+    pos,
+    hp: Math.max(1, Math.min(stats.maxHp, candidate.conditionHp ?? stats.maxHp)),
+    maxHp: stats.maxHp,
+    damage: stats.damage,
+    defense: stats.defense,
+    gold: Math.max(200, Math.floor(candidate.budget * 0.6)),
+  });
+  state.message = `${candidate.name}が、品が並んでいると聞いて近づいてくる。`;
+  return true;
+}
+
+function performOpenStall(state: GameState, goods: ReadonlyArray<{ itemId: string; price: number }>): TurnResult {
+  const events: DungeonEvent[] = [];
+  if (!openStall(state, goods, events)) return emptyResult();
+  return finishTurn(state, events);
+}
+
+function performCloseStall(state: GameState): TurnResult {
+  const events: DungeonEvent[] = [];
+  if (!closeStall(state, events)) return emptyResult();
+  return finishTurn(state, events);
+}
+
+function performAnswerDemand(state: GameState, pay: boolean): TurnResult {
+  const answered = pay ? payDemand(state) : refuseDemand(state);
+  if (!answered) return emptyResult();
+  return finishTurn(state, [{ type: "message", text: state.message }]);
+}
+
 export function performDungeonCommand(state: GameState, command: DungeonCommand): TurnResult {
+  // 行く手を塞がれているあいだは、返事以外の何もできない。
+  if (state.run?.demand && !state.run.demand.refused && command.type !== "answerDemand") {
+    const name = state.npcs.find((npc) => npc.id === state.run?.demand?.guardId)?.name ?? "護衛";
+    state.message = `${name}が行く手を塞いでいる。返事をするまで動けない。`;
+    return emptyResult();
+  }
   switch (command.type) {
+    case "answerDemand": return performAnswerDemand(state, command.pay);
     case "move": return performMove(state, command.direction);
-    case "attack": return performAttack(state, command.direction);
     case "shove": return performShove(state, command.direction);
     case "wait":
       state.message = "息を整え、周囲の動きを見る。";
       return finishTurn(state, [{ type: "message", text: state.message }]);
+    case "openStall": return performOpenStall(state, command.goods);
+    case "closeStall": return performCloseStall(state);
     case "smoke": return performSmoke(state);
     case "return": return performReturnStone(state);
     case "pickup": return performPickup(state, command.swapOutId);
@@ -1355,15 +1482,9 @@ export function tryStairs(state: GameState, guardResponse?: "continue" | "dismis
   return performDungeonCommand(state, { type: "stairs", guardResponse });
 }
 
-export function merchantGameOver(state: GameState, cause: string): void {
-  if (state.status === "gameOver") return;
-  state.hp = 0;
-  state.status = "gameOver";
-  state.message = `${cause} 商人の物語はここで終わった。`;
-}
-
 /** Return stones use homeSpawn; the first-floor up stair arrives at dungeonEntrance. */
 export function returnHome(state: GameState, arrival: "homeSpawn" | "dungeonEntrance" = "homeSpawn"): void {
+  foldStallBeforeLeaving(state);
   const completedRun = state.run;
   if (completedRun) {
     const survivorIds = new Set([
@@ -1395,6 +1516,8 @@ export function returnHome(state: GameState, arrival: "homeSpawn" | "dungeonEntr
       recordGuardEvent(state, npc, "returned", `地下${completedRun.highestFloor}階から契約を完遂して生還`, completedRun.highestFloor);
       recordBond(state, npc, "foughtTogether", `地下${completedRun.highestFloor}階まで護衛し、共に生還した`, completedRun.highestFloor);
       recordGearDeed(state, npc, { floor: completedRun.highestFloor, returned: true });
+      // 疑う理由があってなお何もしなかった相手は、そのぶん信用が残る。
+      rewardLoyalty(state, npc, completedRun.betrayalPeak, completedRun.demand?.refused === true);
       applySurvivalGrowth(state, npc, profile, completedRun.highestFloor);
       const guard = completedRun.guard;
       if (guard && badlyHurt(guard.hp, guard.maxHp)) {
@@ -1501,7 +1624,7 @@ export function moveStoreItemsToInventory(state: GameState, itemIds: readonly st
   }
   const selectedIds = new Set(itemIds);
   const selected = state.store.filter((item) => selectedIds.has(item.uuid));
-  const available = INVENTORY_CAPACITY - inventoryItemCount(state);
+  const available = bagCapacity(state) - inventoryItemCount(state);
   if (selected.length > available) {
     state.message = `鞄の空きは${Math.max(0, available)}枠だ。`;
     return 0;

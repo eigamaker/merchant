@@ -1,8 +1,10 @@
-import { MERCHANT_ITEM_DEFINITIONS } from "./merchantContent";
-import { isAvailableInTown, prepareCustomerPurchaseRequest } from "./merchantEconomy";
+import { FALLBACK_BAG_CAPACITY, MERCHANT_ITEM_DEFINITIONS, bagCapacityOf } from "./merchantContent";
+import { isAvailableInTown, prepareCustomerPurchaseRequest, pruneCampaignRecords } from "./merchantEconomy";
 import { npcBonds } from "./npcBonds";
 import { adjustGuardProfile, ensureGuardProfile, recordGuardEvent } from "./guardProfiles";
 import { simulateTownDay } from "./townDay";
+import { createHomeMap } from "./homeMap";
+import { loadTrialMapPack } from "./mapDocument";
 import type { GameState, ItemInstance, SupplyKind, TimeSlot } from "./types";
 
 export const SUPPLY_RULES: Record<SupplyKind, { label: string; supplier: string; price: number; dailyStock: number }> = {
@@ -53,44 +55,56 @@ export function inventoryItemCount(state: GameState): number {
   return state.inventory.length;
 }
 
-export function playerAttackPower(state: GameState): number {
-  const item = state.inventory.find((entry) => entry.uuid === state.equipment.weaponItemId);
-  return Math.max(1, item ? definition(item)?.attack ?? 1 : 1);
+/**
+ * いま背負っている道具袋が抱えられる枠数。
+ *
+ * 商人は武器も防具も持たない。身に着けるのは袋ひとつで、それが持ち帰れる量そのもの、
+ * つまり一日の稼ぎの上限になる。袋は金では買えず、迷宮の底からしか出てこない。
+ */
+export function bagCapacity(state: GameState): number {
+  const item = state.equipment.bagItemId ? state.itemsById[state.equipment.bagItemId] : undefined;
+  return item ? bagCapacityOf(item.definitionId) : FALLBACK_BAG_CAPACITY;
 }
 
-export function playerDefensePower(state: GameState): number {
-  const item = state.inventory.find((entry) => entry.uuid === state.equipment.armorItemId);
-  return Math.max(0, item ? definition(item)?.defense ?? 0 : 0);
+export function equippedBag(state: GameState): ItemInstance | undefined {
+  return state.equipment.bagItemId ? state.itemsById[state.equipment.bagItemId] : undefined;
 }
 
-export function equipItem(state: GameState, itemId: string): boolean {
+/**
+ * 見つけた袋へ荷を移す。いま使っている袋は鞄の中へ戻るので、売り物にできる。
+ *
+ * 差し引きの枠は0だが、小さい袋へ替えると溢れる。溢れる持ち替えは断る。
+ */
+export function equipBag(state: GameState, itemId: string): boolean {
   if (!canReorganizeHomeInventory(state)) {
     state.message = "営業中は在庫整理できない。";
     return false;
   }
-  const item = state.inventory.find((entry) => entry.uuid === itemId);
-  const itemDefinition = item ? definition(item) : undefined;
-  if (!item || !itemDefinition) return false;
-  if (itemDefinition.category === "weapon") state.equipment.weaponItemId = item.uuid;
-  else if (itemDefinition.category === "armor") state.equipment.armorItemId = item.uuid;
-  else return false;
-  state.message = `${itemDefinition.trueName}を装備した。`;
+  const incoming = state.inventory.find((entry) => entry.uuid === itemId);
+  const incomingDefinition = incoming ? definition(incoming) : undefined;
+  if (!incoming || incomingDefinition?.category !== "bag") return false;
+  const previous = equippedBag(state);
+  const nextCapacity = incomingDefinition.capacity ?? FALLBACK_BAG_CAPACITY;
+  const carried = state.inventory.length - 1 + (previous ? 1 : 0);
+  if (carried > nextCapacity) {
+    state.message = `${incomingDefinition.trueName}は${nextCapacity}枠しかない。先に荷を減らそう。`;
+    return false;
+  }
+  state.inventory = state.inventory.filter((entry) => entry.uuid !== incoming.uuid);
+  incoming.owner = "player";
+  incoming.location = { kind: "equipped" };
+  state.equipment.bagItemId = incoming.uuid;
+  if (previous) {
+    previous.location = { kind: "playerBag" };
+    state.inventory.push(previous);
+  }
+  state.message = `${incomingDefinition.trueName}へ荷を移した。${nextCapacity}枠になった。`;
   return true;
 }
 
-export function unequipItem(state: GameState, slot: "weapon" | "armor"): void {
-  if (!canReorganizeHomeInventory(state)) {
-    state.message = "営業中は在庫整理できない。";
-    return;
-  }
-  if (slot === "weapon") state.equipment.weaponItemId = undefined;
-  else state.equipment.armorItemId = undefined;
-  state.message = "装備を外した。";
-}
-
+/** 品が手を離れるとき、それが背負っている袋なら外す。 */
 export function unequipIfNeeded(state: GameState, itemId: string): void {
-  if (state.equipment.weaponItemId === itemId) state.equipment.weaponItemId = undefined;
-  if (state.equipment.armorItemId === itemId) state.equipment.armorItemId = undefined;
+  if (state.equipment.bagItemId === itemId) state.equipment.bagItemId = undefined;
 }
 
 export function resetDailySystems(state: GameState): void {
@@ -153,6 +167,76 @@ export function buySupply(state: GameState, kind: SupplyKind, amount = 1): boole
   state[kind] += quantity;
   state.message = `${rule.supplier}から${rule.label}を${quantity}個、${price}Gで仕入れた。`;
   return true;
+}
+
+function canUseVault(state: GameState): boolean {
+  return state.location === "home" && state.status === "active" && !isShopSessionActive(state);
+}
+
+/** 自宅の金庫へ所持金を移す。預金は探索中の死亡では失われない。 */
+export function depositGold(state: GameState, requested = state.gold): boolean {
+  if (!canUseVault(state)) {
+    state.message = state.location === "home" ? "営業中は金庫を開けない。" : "金庫は自宅にある。";
+    return false;
+  }
+  const amount = Math.min(state.gold, Math.max(0, Math.floor(requested)));
+  if (amount <= 0) { state.message = "預けられる所持金がない。"; return false; }
+  state.gold -= amount;
+  state.vaultGold += amount;
+  state.message = `${amount}Gを金庫へ預けた。預金は${state.vaultGold}G。`;
+  return true;
+}
+
+/** 自宅の金庫から、使える所持金へ戻す。 */
+export function withdrawGold(state: GameState, requested = state.vaultGold): boolean {
+  if (!canUseVault(state)) {
+    state.message = state.location === "home" ? "営業中は金庫を開けない。" : "金庫は自宅にある。";
+    return false;
+  }
+  const amount = Math.min(state.vaultGold, Math.max(0, Math.floor(requested)));
+  if (amount <= 0) { state.message = "金庫に引き出せる預金がない。"; return false; }
+  state.vaultGold -= amount;
+  state.gold += amount;
+  state.message = `${amount}Gを金庫から引き出した。預金は${state.vaultGold}G。`;
+  return true;
+}
+
+/**
+ * 主人公が倒れた探索を精算する。
+ * 鞄・装備・探索用品・所持金は失うが、自宅の在庫、預金、NPCへ預けた品は残る。
+ */
+export function recoverMerchantAfterDeath(state: GameState, cause: string): void {
+  const lostGold = state.gold;
+  const lostItems = state.inventory.length;
+  const guardId = state.run?.guard?.guardId ?? state.hiredGuardId;
+  if (guardId) {
+    const guard = state.npcs.find((npc) => npc.id === guardId);
+    if (guard && guard.status !== "dead") guard.status = "inTown";
+  }
+
+  state.gold = 0;
+  state.inventory = [];
+  state.provisions = 0;
+  state.smokeBombs = 0;
+  state.returnStones = 0;
+  state.run = undefined;
+  state.hiredGuardId = undefined;
+  state.hiredGuardFee = undefined;
+  state.escortCommission = undefined;
+  state.location = "home";
+  state.status = "active";
+  state.hp = state.maxHp;
+  state.timeSlot = "night";
+  state.lastExpeditionDay = Math.max(state.lastExpeditionDay, state.day);
+
+  const home = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("autostart") === "world"
+    ? loadTrialMapPack()?.home ?? createHomeMap()
+    : createHomeMap();
+  const marker = home.markers.find((entry) => entry.kind === "homeSpawn") ?? home.markers[0];
+  if (marker) state.homePos = { x: marker.x * home.tileSize + home.tileSize / 2, y: marker.y * home.tileSize + home.tileSize / 2 };
+
+  pruneCampaignRecords(state);
+  state.message = `${cause} 自宅へ運び戻されたが、所持金${lostGold}Gと鞄の品${lostItems}個、探索用品をすべて失った。金庫の預金と自宅の在庫は無事だ。`;
 }
 
 export function canOpenShop(state: GameState): boolean {
@@ -253,7 +337,7 @@ export function consumeDungeonTime(state: GameState, units: number): void {
   if (!run || state.status === "gameOver") return;
   run.timeUnits += units;
   const dueBands = Math.floor(run.timeUnits / DUNGEON_ACTIONS_PER_MEAL);
-  while (run.settledTimeBands < dueBands && state.status !== "gameOver") {
+  while (run.settledTimeBands < dueBands) {
     run.settledTimeBands += 1;
     advanceTime(state, 1);
     const required = dungeonMealProvisionCost(state);
@@ -275,9 +359,8 @@ export function consumeDungeonTime(state: GameState, units: number): void {
       }
       state.message = `一行${required}人分の携行食料が${shortage}個不足し、空腹で2ダメージを受けた。`;
       if (state.hp <= 0) {
-        state.hp = 0;
-        state.status = "gameOver";
-        state.message = "食料が尽き、ダンジョンで力尽きた。商人の物語はここで終わった。";
+        recoverMerchantAfterDeath(state, "食料が尽き、ダンジョンで力尽きた。");
+        return;
       }
     }
   }

@@ -20,8 +20,10 @@ describe("readable canvas presentation", () => {
 
   it("exposes the context action and system menus with mouse-selectable choices", () => {
     const scene = readFileSync(resolve(process.cwd(), "src/scenes/MerchantScene.ts"), "utf8");
-    expect(scene).toContain('if (this.just("space")) { events.push(...performDungeonCommand(this.state, { type: "attack"');
-    expect(scene).toContain('label: "攻撃"');
+    // 商人は戦わない。攻撃の入力も行動一覧の攻撃も、画面から消えていること。
+    expect(scene).not.toContain('type: "attack"');
+    expect(scene).not.toContain('label: "攻撃"');
+    expect(scene).toContain('label: "押し返し"');
     expect(scene).toContain('label: "インベントリ"');
     expect(scene).toContain("this.openSystemMenu()");
     expect(scene).not.toContain('label: "メニュー"');
@@ -31,9 +33,12 @@ describe("readable canvas presentation", () => {
     expect(scene).toContain('hit.on("pointerdown"');
   });
 
-  it("keeps keyboard input active in the game-over menu", () => {
+  it("exposes the safe home vault and no longer enters a game-over menu", () => {
     const scene = readFileSync(resolve(process.cwd(), "src/scenes/MerchantScene.ts"), "utf8");
-    expect(scene).toMatch(/state\.status === "gameOver"[\s\S]*?showGameOver\(\);[\s\S]*?updateModalInput\(\);[\s\S]*?return;/);
+    expect(scene).toContain("private openVault()");
+    expect(scene).toContain('label: `金庫 (${this.state.vaultGold}G)`');
+    expect(scene).not.toContain("showGameOver");
+    expect(scene).not.toContain("deleteCampaign(campaignId)");
   });
 
   it("uses one WASD-adjacent shortcut definition in the help and map HUD", () => {

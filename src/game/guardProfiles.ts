@@ -47,6 +47,9 @@ function emptyCareer(): GuardCareer {
     retreatCount: 0,
     warningsIgnored: 0,
     earlyDepartures: 0,
+    abandonCount: 0,
+    extortionCount: 0,
+    betrayalCount: 0,
     soloDelves: 0,
     soloDeepest: 0,
     events: [],
@@ -82,6 +85,9 @@ function normalizeProfile(profile: GuardProfile): GuardProfile {
   career.retreatCount ??= 0;
   career.warningsIgnored ??= 0;
   career.earlyDepartures ??= 0;
+  career.abandonCount ??= 0;
+  career.extortionCount ??= 0;
+  career.betrayalCount ??= 0;
   career.soloDelves ??= 0;
   career.soloDeepest ??= 0;
   career.events = (career.events ?? []).slice(-32);
@@ -137,6 +143,39 @@ export function recordGuardEvent(
   return event;
 }
 
+/**
+ * 深手を負ったとき、その人が何を選ぶか。
+ *
+ * 逃げるのが正しい。護衛が退かなければ、次に死ぬのはその護衛自身である。
+ * だから踏みとどまるのは合理ではなく人柄で、置いて逃げるのも人柄である。
+ *
+ * 二つの軸で決める。**献身**は「退くべき場面で残るか」、**忠義**は「契約を破って
+ * 迷宮を出るか」。性格が主で、信頼はどちらの軸も押すが、原型の天井は越えない ——
+ * 強欲な傭兵は信頼を尽くしても死んではくれず、共感の深い者は信頼が無くても置き去りにしない。
+ */
+export type GuardStand = "hold" | "retreat" | "flee";
+
+/** これ以上なら、自分の傷を無視して主人の前に立ち続ける。 */
+export const DEVOTION_HOLD = 58;
+/** これを下回ると、契約を捨てて迷宮を出る。 */
+export const LOYALTY_FLEE = 22;
+
+export function guardDevotion(profile: GuardProfile): number {
+  const { empathy, courage } = profile.personality;
+  return empathy * 0.55 + courage * 0.2 + profile.trust * 0.25 - profile.stress * 0.25;
+}
+
+export function guardLoyalty(profile: GuardProfile): number {
+  const { integrity, discipline, greed } = profile.personality;
+  return integrity * 0.5 + discipline * 0.2 + profile.trust * 0.3 - greed * 0.35 - profile.stress * 0.2;
+}
+
+export function guardStand(profile: GuardProfile): GuardStand {
+  if (guardDevotion(profile) >= DEVOTION_HOLD) return "hold";
+  if (guardLoyalty(profile) < LOYALTY_FLEE) return "flee";
+  return "retreat";
+}
+
 export function guardTrustLabel(trust: number): string {
   if (trust < 20) return "よそよそしい";
   if (trust < 40) return "仕事仲間";
@@ -167,6 +206,13 @@ export function guardObservationLines(npc: NpcRecord): string[] {
   if (hireCount >= 5) {
     lines.push(band(profile.personality.integrity, "約束には用心が必要そうだ。", "契約内容には忠実だ。", "交わした約束を重く見る。"));
     lines.push(band(profile.personality.greed, "報酬より仕事を重く見る。", "相応の報酬を求める。", "実入りにはかなり敏感だ。"));
+    // 深手を負ったときに何を選ぶかは、5回いっしょに潜って初めて見当がつく。
+    const stand = guardStand(profile);
+    lines.push(stand === "hold"
+      ? "追い詰められても、あなたの前から動かないだろう。"
+      : stand === "flee"
+        ? "危うくなれば、ひとりで出口へ向かうかもしれない。"
+        : "退き際はわきまえている。下がっても、また前に出る。");
   }
   return lines;
 }

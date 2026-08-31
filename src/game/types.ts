@@ -1,4 +1,4 @@
-export type ItemCategory = "weapon" | "armor" | "medicine" | "material" | "curio" | "arcane" | "relic" | "gem" | "book" | "art";
+export type ItemCategory = "weapon" | "armor" | "bag" | "medicine" | "material" | "curio" | "arcane" | "relic" | "gem" | "book" | "art";
 export type ItemRarity = "common" | "uncommon" | "rare" | "legendary" | "unique";
 export type KnowledgeLevel = "unknown" | "suspected" | "identified";
 export type MapKind = "home" | "dungeon";
@@ -26,11 +26,17 @@ export interface ItemDefinition {
   defense?: number;
   healing?: number;
   cures?: "poison";
+  /** 道具袋が抱えられる枠数。category が "bag" の品だけが持つ。 */
+  capacity?: number;
+  /** この深さより浅い階には落ちない。既定は種類から決まる。 */
+  minFloor?: number;
   singular?: boolean;
 }
 
 export type ItemLocation =
   | { kind: "playerBag" }
+  /** いま背負っている道具袋。枠を消費しない唯一の置き場。 */
+  | { kind: "equipped" }
   | { kind: "homeStorage" }
   | { kind: "shopStock" }
   | { kind: "dungeonGround"; floor: number; pos: Vec }
@@ -114,7 +120,11 @@ export interface ActiveGuard {
   hp: number;
   maxHp: number;
   damage: number;
-  mode: "covering" | "retreated";
+  /**
+   * `retreated` は隊列の後ろへ下がるだけで、安全になれば戻る。
+   * `fled` は契約を捨てて迷宮を出た者で、二度と戻らない。
+   */
+  mode: "covering" | "retreated" | "fled";
   safeTurns: number;
   /** Trust earned from medicine is capped per expedition. */
   healingTrustGained: number;
@@ -174,6 +184,12 @@ export type GuardCareerEventType =
   | "healed"
   | "warningIgnored"
   | "leftEarly"
+  /** 深手を負い、契約を捨てて商人を置いて逃げた。 */
+  | "abandoned"
+  /** 深層で取り分の上乗せを強要した。 */
+  | "extorted"
+  /** 誰も見ていない深層で、荷を奪って去った。 */
+  | "betrayed"
   | "starved"
   | "died";
 
@@ -193,6 +209,12 @@ export interface GuardCareer {
   retreatCount: number;
   warningsIgnored: number;
   earlyDepartures: number;
+  /** 商人を迷宮に置いて逃げた回数。ギルドの掲示に出る。 */
+  abandonCount: number;
+  /** 深層で取り分を強要した回数。 */
+  extortionCount: number;
+  /** 荷を奪って去った回数。これが付いた者を二度と雇う商人はいない。 */
+  betrayalCount: number;
   /** 商人と関係なく自分で潜った回数。画面外の結果は件数だけ数え、経歴イベントには積まない。 */
   soloDelves: number;
   soloDeepest: number;
@@ -223,6 +245,12 @@ export type BondKind =
   | "looted"
   | "served"
   | "entrusted"
+  /** 迷宮に置き去りにされた。 */
+  | "abandoned"
+  /** 深層で取り分を強要された。 */
+  | "extorted"
+  /** 荷を奪われた。 */
+  | "betrayed"
   | "lost";
 
 export interface NpcBond {
@@ -318,6 +346,38 @@ export interface DungeonCorpse {
   stocked: boolean;
   /** 銘や功績を負った品が残っている遺体。無関係な死に押し出されて消えては困る。 */
   keepsake?: true;
+}
+
+/**
+ * 床に広げた風呂敷の一枠。
+ *
+ * `itemId` は鞄の中の品を指す参照であって、別の置き場ではない。並べても品は商人のもので、
+ * 枠を食い続ける。露店は在庫を移すのではなく、鞄の中身を床に見せているだけである。
+ */
+export interface StallSlot {
+  itemId: string;
+  pos: Vec;
+  /** 商人の言い値。 */
+  price: number;
+}
+
+/**
+ * 迷宮で広げた露店。
+ *
+ * 深い階には他に店がない。傷ついた冒険者の前で回復薬を並べているのが自分だけなら、
+ * 値は町の相場とは別のところで決まる。ただし広げているあいだ商人は動けないので、
+ * 敵は寄り、食料は減り、護衛は消耗する。
+ */
+export interface DungeonStall {
+  openedTurn: number;
+  slots: StallSlot[];
+  /** 一度見て何も買わなかった相手。並べ替えるまで戻ってこない。 */
+  passedNpcIds: string[];
+  /** 噂を聞いて寄ってきた人数。呼び込みには限りがある。 */
+  drawnCount: number;
+  /** 売り上げの累計。畳むときに一行で報せる。 */
+  earned: number;
+  soldCount: number;
 }
 
 export interface EscortCommission {
@@ -450,11 +510,24 @@ export interface DungeonRun {
   settledTimeBands: number;
   /** Keyed by floor number. The current floor is stored just before moving away. */
   floorStates: Record<string, DungeonFloorSnapshot>;
+  /** 広げている露店。階を移れば畳まれるので、階の記録には持たせない。 */
+  stall?: DungeonStall;
+  /** 護衛が行く手を塞いでいる。返事をするまで先へ進めない。 */
+  demand?: GuardDemand;
+  /** この探索で護衛の心に差した影の深さ。裏切らずに帰れば、そのぶん信用になる。 */
+  betrayalPeak?: number;
+  /** 一度きりの予兆を出したか。 */
+  betrayalOmenShown?: true;
 }
 
+/**
+ * 商人が身に着けるもの。
+ *
+ * 商人は戦わないので武器も防具も持たない —— 持っても使いこなせないからである。
+ * 身に着けるのは道具袋ひとつで、それが持ち帰れる量そのものを決める。
+ */
 export interface EquipmentState {
-  weaponItemId?: string;
-  armorItemId?: string;
+  bagItemId?: string;
 }
 
 export interface ShopSession {
@@ -485,12 +558,14 @@ export interface TimedEvent {
 }
 
 export interface GameState {
-  version: 12;
+  version: 14;
   campaignId: string;
   status: "active" | "gameOver";
   day: number;
   timeSlot: TimeSlot;
   gold: number;
+  /** 自宅の金庫に預けた、探索中の死亡では失われない資金。 */
+  vaultGold: number;
   hp: number;
   maxHp: number;
   returnStones: number;
@@ -534,12 +609,37 @@ export type DungeonEvent =
   | { type: "defeated"; actorId: string; pos?: Vec }
   | { type: "guardMode"; guardId: string; mode: ActiveGuard["mode"] }
   | { type: "pickup"; itemId: string }
+  | { type: "stallOpened"; slots: number }
+  | { type: "stallSold"; npcId: string; itemId: string; price: number }
+  | { type: "stallClosed"; earned: number }
+  | { type: "guardDemand"; guardId: string; amount: number }
+  | { type: "guardBetrayed"; guardId: string; gold: number; items: number }
   | { type: "message"; text: string };
 
 export interface TurnResult {
   consumedTurn: boolean;
   events: DungeonEvent[];
   guardDescent?: GuardDescentAssessment;
+  /** この手番で護衛が行く手を塞いだ。画面はここから問いを出す。 */
+  guardDemand?: GuardDemand;
+}
+
+/**
+ * 深層での強請り。
+ *
+ * 傷を負って逃げるのとは別の話である。無傷の護衛が、誰も見ていないことと、
+ * 商人の鞄が重いことに気づいて足を止める —— これは臆病ではなく、計算である。
+ */
+export interface GuardDemand {
+  guardId: string;
+  /** 要求額。商人がいま持ち歩いている金の範囲でしか吹っかけない。 */
+  amount: number;
+  floor: number;
+  turn: number;
+  /** 断られた要求。次に何が起きてもおかしくない。 */
+  refused?: true;
+  /** 断られた手番。腹を決めるのは次の一手で、商人にはそのぶんだけ隙がある。 */
+  refusedTurn?: number;
 }
 
 export interface GuardDescentAssessment {
@@ -552,7 +652,6 @@ export interface GuardDescentAssessment {
 
 export type DungeonCommand =
   | { type: "move"; direction: Vec }
-  | { type: "attack"; direction: Vec }
   | { type: "shove"; direction: Vec }
   | { type: "wait" }
   | { type: "smoke" }
@@ -566,6 +665,11 @@ export type DungeonCommand =
   | { type: "buyFromAdventurer"; npcId: string; itemId: string; swapOutId?: string }
   /** `price` は商人の言い値。省略すれば相場どおり。 */
   | { type: "sellToAdventurer"; npcId: string; itemId: string; price?: number }
+  /** 風呂敷を広げる。`goods` は並べる品と言い値。 */
+  | { type: "openStall"; goods: ReadonlyArray<{ itemId: string; price: number }> }
+  | { type: "closeStall" }
+  /** 強請りへの返事。 */
+  | { type: "answerDemand"; pay: boolean }
   | { type: "stairs"; guardResponse?: "continue" | "dismiss" };
 
 export type MenuAction = () => void;

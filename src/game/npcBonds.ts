@@ -16,7 +16,10 @@ export const REMEMBERED_ABSENT_LIMIT = 12;
  * 生死に関わるものが先、商いだけの関係が後。
  */
 const BOND_WEIGHT: Record<BondKind, number> = {
+  betrayed: 6,
   lost: 5,
+  abandoned: 5,
+  extorted: 4,
   gouged: 4,
   foughtTogether: 4,
   entrusted: 3,
@@ -75,6 +78,9 @@ function headline(bond: NpcBond): string {
     case "entrusted": return "武器防具を預けた相手";
     case "aided": return `${where}薬を譲った相手`;
     case "looted": return "遺体から遺品を引き取った相手";
+    case "betrayed": return `${where}あなたの荷を奪った相手`;
+    case "extorted": return `${where}取り分を強要した相手`;
+    case "abandoned": return `${where}あなたを置いて逃げた相手`;
     case "gouged": return `${where}足元を見られた相手`;
     case "traded": return `${where}取引した相手`;
     case "served": return "店で品を買ってくれた客";

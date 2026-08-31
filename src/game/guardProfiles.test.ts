@@ -17,7 +17,7 @@ import {
 } from "./engine";
 import { guardObservationLines, guardTrustLabel, initializeGuardProfiles } from "./guardProfiles";
 import { acceptCustomerPurchaseRequest, escortFeeForNpc, postEscortCommission, prepareCustomerPurchaseRequest } from "./merchantEconomy";
-import { advanceTime, canReorganizeHomeInventory, closeShopSession, consumeDungeonTime, equipItem, resetDailySystems, unequipItem } from "./merchantSystems";
+import { advanceTime, canReorganizeHomeInventory, closeShopSession, consumeDungeonTime, equipBag, resetDailySystems } from "./merchantSystems";
 
 function fixedCampaign(id = "guard-profile-test") {
   const state = createNewGame();
@@ -69,8 +69,9 @@ describe("guard personality and reputation", () => {
     expect(guardObservationLines(npc)).toHaveLength(1);
     npc.guardProfile!.career.hireCount = 3;
     expect(guardObservationLines(npc)).toHaveLength(3);
+    // 5回目で、深手を負ったときに何を選ぶ人なのかまで見当がつく。
     npc.guardProfile!.career.hireCount = 5;
-    expect(guardObservationLines(npc)).toHaveLength(5);
+    expect(guardObservationLines(npc)).toHaveLength(6);
     expect(guardTrustLabel(80)).toBe("固い絆");
     expect(JSON.stringify(guardObservationLines(npc))).not.toMatch(/courage|discipline|empathy|integrity|greed|\d{2}/);
   });
@@ -167,16 +168,16 @@ describe("daily expedition and shop locks", () => {
     const state = fixedCampaign();
     const sword = createItem(state, "iron-sword");
     const ring = createItem(state, "old-ring");
-    state.inventory.push(sword);
+    const sack = createItem(state, "shoulder-sack");
+    state.inventory.push(sword, sack);
     ring.owner = "store";
     ring.location = { kind: "homeStorage" };
     state.store.push(ring);
-    state.equipment.weaponItemId = sword.uuid;
+    const carriedBefore = state.equipment.bagItemId;
     state.shopSession.status = status;
     expect(canReorganizeHomeInventory(state)).toBe(false);
-    expect(equipItem(state, sword.uuid)).toBe(false);
-    unequipItem(state, "weapon");
-    expect(state.equipment.weaponItemId).toBe(sword.uuid);
+    expect(equipBag(state, sack.uuid)).toBe(false);
+    expect(state.equipment.bagItemId).toBe(carriedBefore);
     expect(moveInventoryItems(state, [sword.uuid], "storage")).toBe(0);
     expect(moveStoreItemsToInventory(state, [ring.uuid])).toBe(0);
     toggleDisplay(state, ring);

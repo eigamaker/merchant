@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { beginExpedition, createNewGame, descend } from "./engine";
+import { beginExpedition, createItem, createNewGame, descend } from "./engine";
 import { isSupportedSaveVersion, migrateSaveState, normalizeHomePositionForMap } from "./save";
 import { addMarker, createManualMap } from "./mapDocument";
 import { HOME_SPAWN } from "./homeMap";
@@ -12,12 +12,14 @@ describe("save migration", () => {
     expect(isSupportedSaveVersion(10)).toBe(true);
     expect(isSupportedSaveVersion(11)).toBe(true);
     expect(isSupportedSaveVersion(12)).toBe(true);
-    expect(isSupportedSaveVersion(13)).toBe(false);
+    expect(isSupportedSaveVersion(13)).toBe(true);
+    expect(isSupportedSaveVersion(14)).toBe(true);
+    expect(isSupportedSaveVersion(15)).toBe(false);
   });
   it.each([1,2,3])("migrates v%d town/interior saves to home", (version) => {
     const state:any = createNewGame(); state.version=version; state.location=version===2?"interior":"town"; state.townPos={x:4,y:4}; delete state.homePos; delete state.homeMapRevision;
     const migrated=migrateSaveState(state);
-    expect(migrated.version).toBe(12); expect(migrated.location).toBe("home"); expect(migrated.homePos).toEqual({x:HOME_SPAWN.x*16+8,y:HOME_SPAWN.y*16+8});
+    expect(migrated.version).toBe(14); expect(migrated.location).toBe("home"); expect(migrated.homePos).toEqual({x:HOME_SPAWN.x*16+8,y:HOME_SPAWN.y*16+8});
   });
   it("migrates legacy dungeon connector fields and adds the floor snapshot dictionary", () => {
     const state:any = createNewGame(); beginExpedition(state);
@@ -41,7 +43,8 @@ describe("save migration", () => {
 
     const migrated: any = migrateSaveState(state);
 
-    expect(migrated.version).toBe(12);
+    expect(migrated.version).toBe(14);
+    expect(migrated.vaultGold).toBe(0);
     expect(migrated.npcs.find((npc: any) => npc.id === escort.id).status).toBe("escorting");
     const migratedSolo = migrated.npcs.find((npc: any) => npc.id === solo.id);
     expect(migratedSolo.status).toBe("delving");
@@ -124,5 +127,36 @@ describe("save migration", () => {
     expect(normalizeHomePositionForMap(map,{x:200,y:-1})).toEqual({x:112,y:16});
     map.collision.fill(false);
     expect(normalizeHomePositionForMap(map,{x:16,y:16})).toEqual({x:80,y:80});
+  });
+
+  it("v14 drops the merchant's weapon and armour, grants a bag, and shelves the overflow", () => {
+    const state = createNewGame();
+    // v13 までの姿を作る。24個担いで、武器と防具を身に着けている。
+    const carried = Array.from({ length: 24 }, () => createItem(state, "old-ring", 1));
+    state.inventory = carried;
+    const legacyEquipment = state.equipment as unknown as Record<string, unknown>;
+    legacyEquipment.weaponItemId = carried[0]!.uuid;
+    legacyEquipment.armorItemId = carried[1]!.uuid;
+    delete legacyEquipment.bagItemId;
+    (state as unknown as { version: number }).version = 13;
+    const storedBefore = state.store.length;
+
+    const migrated = migrateSaveState(state as never);
+
+    expect(migrated.version).toBe(14);
+    expect((migrated.equipment as unknown as Record<string, unknown>).weaponItemId).toBeUndefined();
+    expect((migrated.equipment as unknown as Record<string, unknown>).armorItemId).toBeUndefined();
+    expect(migrated.equipment.bagItemId).toBeDefined();
+    // 風呂敷は12枠。溢れた12個は捨てずに自宅の保管庫へ移す。
+    expect(migrated.inventory).toHaveLength(12);
+    expect(migrated.store).toHaveLength(storedBefore + 12);
+    for (const item of migrated.store.slice(storedBefore)) {
+      expect(item.location).toEqual({ kind: "homeStorage" });
+      expect(item.owner).toBe("store");
+    }
+    // 武器も防具も消えていない。売り物として、あるいは冒険者へ預ける品として残る。
+    const survivors = new Set([...migrated.inventory, ...migrated.store].map((item) => item.uuid));
+    expect(survivors.has(carried[0]!.uuid)).toBe(true);
+    expect(survivors.has(carried[1]!.uuid)).toBe(true);
   });
 });
