@@ -162,7 +162,7 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
   if (state.status === "gameOver") state.status = "active";
   state.vaultGold ??= 0;
   // 追加した任意項目を補い、既存のブラウザ保存を壊さない。
-  state.returnStones ??= 1;
+  state.returnStones ??= 0;
   state.smokeBombs ??= 1;
   state.provisions ??= 3;
   state.timeSlot ??= "morning";

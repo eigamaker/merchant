@@ -1,8 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  APOTHECARY_MEDICINE_IDS,
+  RETURN_STONE_CHEST_CHANCE,
+  RETURN_STONE_MIN_FLOOR,
   ascend,
   beginExpedition,
   buildInitialEnemies,
+  buyMedicineAtApothecary,
   createItem,
   createNewGame,
   currentItemCount,
@@ -15,7 +19,9 @@ import {
   movePlayer,
   performDungeonCommand,
   returnHome,
+  returnStoneChestFor,
   shoveEnemy,
+  tryOpenChest,
   tryPickup,
   tryStairs,
   useSmokeBomb,
@@ -92,6 +98,7 @@ describe("canonical dungeon stairs", () => {
     const state = createNewGame();
     beginExpedition(state);
     state.provisions = 3;
+    state.returnStones = 1;
     state.run!.timeUnits = 29;
 
     performDungeonCommand(state, { type: "return" });
@@ -692,6 +699,52 @@ describe("independent dungeon adventurers", () => {
     adventurer.pos = { x: run.player.x + 1, y: run.player.y };
     waitTurn(state);
     expect(adventurer.pos).toEqual({ x: run.player.x + 1, y: run.player.y });
+  });
+});
+
+describe("rare return stones and town medicine", () => {
+  it("removes the starting return stone and only rolls one in deep-floor chests", () => {
+    const state = createNewGame();
+    expect(state.returnStones).toBe(0);
+    expect(RETURN_STONE_MIN_FLOOR).toBe(13);
+    expect(RETURN_STONE_CHEST_CHANCE).toBe(0.05);
+    for (let seed = 0; seed < 100; seed += 1) {
+      expect(returnStoneChestFor(seed, RETURN_STONE_MIN_FLOOR - 1)).toBe(false);
+    }
+    const deepFinds = Array.from({ length: 1000 }, (_, seed) => returnStoneChestFor(seed, RETURN_STONE_MIN_FLOOR)).filter(Boolean).length;
+    expect(deepFinds).toBeGreaterThan(20);
+    expect(deepFinds).toBeLessThan(100);
+  });
+
+  it("adds the rare return stone when its deep chest is opened", () => {
+    const state = createNewGame();
+    beginExpedition(state);
+    const run = state.run!;
+    const chest = run.chests[0]!;
+    chest.returnStone = true;
+    run.player = { ...chest.pos };
+
+    const result = tryOpenChest(state, chest.id);
+
+    expect(result.consumedTurn).toBe(true);
+    expect(state.returnStones).toBe(1);
+    expect(state.message).toContain("帰還石");
+  });
+
+  it("buys identified healing medicine from the apothecary as a normal bag item", () => {
+    const state = createNewGame();
+    state.gold = 1_000;
+    const beforeSlots = currentItemCount(state);
+    const definitionId = APOTHECARY_MEDICINE_IDS[0];
+    const price = MERCHANT_ITEM_DEFINITIONS[definitionId].baseValue;
+
+    expect(buyMedicineAtApothecary(state, definitionId)).toBe(true);
+
+    const bought = state.inventory.at(-1)!;
+    expect(bought.definitionId).toBe(definitionId);
+    expect(bought.knowledge).toBe("identified");
+    expect(currentItemCount(state)).toBe(beforeSlots + 1);
+    expect(state.gold).toBe(1_000 - price);
   });
 });
 

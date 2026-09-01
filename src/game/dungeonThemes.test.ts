@@ -255,7 +255,10 @@ describe("wall-mounted decorations", () => {
   it("keeps a wallFace prop on the side the camera sees, unlike plain wall", () => {
     const base = dungeonTheme("cave");
     const survey = (placement: "wall" | "wallFace") => {
-      const theme = { ...base, decorations: base.decorations.map((rule) => (rule.placement === "wall" ? { ...rule, placement } : rule)) } as DungeonThemeDefinition;
+      const theme = {
+        ...base,
+        decorations: base.decorations.map((rule) => (rule.placement === "wall" ? { ...rule, placement, enabled: true } : rule)),
+      } as DungeonThemeDefinition;
       let total = 0, facing = 0;
       for (let seed = 1; seed <= 30; seed += 1) {
         const map = generateDungeonFloor(seed, 3, "cave").map;
@@ -293,16 +296,24 @@ describe("switched-off decorations", () => {
   };
 
   it("places nothing for a rule marked enabled: false", () => {
-    const base = dungeonTheme("cave");
-    const target = base.decorations.find((rule) => rule.placement === "floor" && rule.enabled !== false)!;
+    const theme = dungeonTheme("cave");
+    const target = theme.decorations.find((rule) => rule.placement === "floor")!;
+    const base = {
+      ...theme,
+      decorations: theme.decorations.map((rule) => (rule.id === target.id ? { ...rule, enabled: true } : rule)),
+    } as DungeonThemeDefinition;
     expect(placedIds(base).has(target.id)).toBe(true);
     const off = { ...base, decorations: base.decorations.map((rule) => (rule.id === target.id ? { ...rule, enabled: false } : rule)) } as DungeonThemeDefinition;
     expect(placedIds(off).has(target.id)).toBe(false);
   });
 
   it("leaves every other rule exactly where it was", () => {
-    const base = dungeonTheme("cave");
-    const target = base.decorations.find((rule) => rule.placement === "floor" && rule.enabled !== false)!;
+    const theme = dungeonTheme("cave");
+    const target = theme.decorations.find((rule) => rule.placement === "floor")!;
+    const base = {
+      ...theme,
+      decorations: theme.decorations.map((rule) => (rule.id === target.id ? { ...rule, enabled: true } : rule)),
+    } as DungeonThemeDefinition;
     const off = { ...base, decorations: base.decorations.map((rule) => (rule.id === target.id ? { ...rule, enabled: false } : rule)) } as DungeonThemeDefinition;
     const targetFrames = new Set(target.variants.map((variant) => `${variant.assetId}#${variant.frame}`));
     floors().forEach((map, index) => {

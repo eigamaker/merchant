@@ -103,6 +103,8 @@ export interface DungeonChest {
   id: string;
   pos: Vec;
   item: ItemInstance;
+  /** 地下深層でだけ、通常の中身と一緒に見つかる希少な帰還石。 */
+  returnStone?: true;
 }
 
 export interface DungeonBody {

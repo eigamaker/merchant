@@ -11,9 +11,11 @@ import { CRAFTPIX_ENEMY_ACTORS, actorFrame, type ActorAction, type ActorDirectio
 import { ACTOR_CATALOG, actorDefinition, actorSupportsDirectionalMovement, playerActor } from "../game/actorCatalog";
 import { CRAFTPIX_UI } from "../game/craftpixUi";
 import {
+  APOTHECARY_MEDICINE_IDS,
   DIRECTION,
   DISPLAY_CAPACITY,
   beginExpedition,
+  buyMedicineAtApothecary,
   canBeginExpedition,
   createNewGame,
   currentItemCount,
@@ -47,7 +49,7 @@ import { carriedValue } from "../game/guardBetrayal";
 import { willRescue } from "../game/dungeonTraffic";
 import { dungeonActorAppearance } from "../game/dungeonActors";
 import { DUNGEON_PRICE_TIERS, SHOP_PRICE_TIERS, marketPrice } from "../game/pricing";
-import { askingPriceFor } from "../game/merchantEconomy";
+import { askingPriceFor, canSellInHomeShop } from "../game/merchantEconomy";
 import { rankAdventurers, rankingLine, recentLosses } from "../game/adventurerRanking";
 import { SaveRepository, type SaveSlot } from "../game/save";
 import { HOME_POI, HOME_SPAWN, createHomeMap } from "../game/homeMap";
@@ -84,7 +86,7 @@ import {
   summonNextCustomer,
   withdrawGold,
 } from "../game/merchantSystems";
-import { ADVENTURER_RANK_ORDER, ADVENTURER_RANKS, ITEM_VISUALS, NPC_SEEDS, npcAppearanceSprite } from "../game/merchantContent";
+import { ADVENTURER_RANK_ORDER, ADVENTURER_RANKS, ITEM_VISUALS, MERCHANT_ITEM_DEFINITIONS, NPC_SEEDS, npcAppearanceSprite } from "../game/merchantContent";
 import type { AdventurerRank, DungeonCommand, DungeonEvent, DungeonHoldup, GameState, GuardCareer, GuardDemand, GuardDescentAssessment, ItemInstance, ItemRarity, MenuChoice, NpcRecord, Vec } from "../game/types";
 import {
   FLOATING_INK,
@@ -1150,20 +1152,40 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private openSupplyShop(): void {
-    this.openMenu("街の仕入先", [`携行食料は${PROVISIONS_PER_SLOT}個まで1枠。煙玉・帰還石は枠を使わない。`, `所持金 ${this.state.gold}G　鞄 ${currentItemCount(this.state)}/${bagCapacity(this.state)}枠`], [
-      ...(["provisions", "smokeBombs", "returnStones"] as const).map((kind) => {
-        const rule = SUPPLY_RULES[kind];
-        const stockLabel = rule.dailyStock === null ? "在庫制限なし" : `残${this.state.dailySupplyStock[kind]}`;
+    const food = SUPPLY_RULES.provisions;
+    const smoke = SUPPLY_RULES.smokeBombs;
+    this.openMenu("街の仕入先", [
+      `携行食料は${PROVISIONS_PER_SLOT}個まで1枠。回復薬は1本で1枠。煙玉は枠を使わない。`,
+      "帰還石は町では売られていない。地下13階以深の宝箱から、まれに見つかる。",
+      `所持金 ${this.state.gold}G　鞄 ${currentItemCount(this.state)}/${bagCapacity(this.state)}枠`,
+    ], [
+      { label: "薬師ネヴァの薬屋", action: () => this.openApothecaryShop() },
+      { label: `${food.supplier}: ${food.label} ${food.price}G（在庫制限なし）`, action: () => this.openProvisionPurchaseMenu() },
+      {
+        label: `${smoke.supplier}: ${smoke.label} ${smoke.price}G（残${this.state.dailySupplyStock.smokeBombs}）`,
+        disabled: this.state.dailySupplyStock.smokeBombs <= 0,
+        action: () => { buySupply(this.state, "smokeBombs", 1); this.openSupplyShop(); },
+      },
+      { label: "閉じる", action: () => this.closeMenu() },
+    ]);
+  }
+
+  private openApothecaryShop(): void {
+    const hasRoom = currentItemCount(this.state) < bagCapacity(this.state);
+    this.openMenu("薬師ネヴァの薬屋", [
+      `所持金 ${this.state.gold}G　鞄 ${currentItemCount(this.state)}/${bagCapacity(this.state)}枠`,
+      "冒険者は町ではこの薬屋を利用する。自宅の店頭では売れないが、迷宮では取引できる。",
+      "自分や護衛の回復にも使用できる。",
+    ], [
+      ...APOTHECARY_MEDICINE_IDS.map((definitionId) => {
+        const definition = MERCHANT_ITEM_DEFINITIONS[definitionId]!;
         return {
-          label: `${rule.supplier}: ${rule.label} ${rule.price}G（${stockLabel}）`,
-          disabled: rule.dailyStock !== null && this.state.dailySupplyStock[kind] <= 0,
-          action: () => {
-            if (kind === "provisions") this.openProvisionPurchaseMenu();
-            else { buySupply(this.state, kind, 1); this.openSupplyShop(); }
-          },
+          label: `${definition.trueName}（HP ${definition.healing}回復） ${definition.baseValue}G`,
+          disabled: !hasRoom || this.state.gold < definition.baseValue,
+          action: () => { buyMedicineAtApothecary(this.state, definitionId); this.openApothecaryShop(); },
         };
       }),
-      { label: "閉じる", action: () => this.closeMenu() },
+      { label: "仕入先一覧へ戻る", action: () => this.openSupplyShop() },
     ]);
   }
 
@@ -2876,16 +2898,17 @@ export class MerchantScene extends Phaser.Scene {
     }, selectable.length === 0);
 
     const ids = selected.map((item) => item.uuid);
+    const includesHomeUnsellable = selected.some((item) => !canSellInHomeShop(item));
     if (view.tab === "bag") {
       const displaySlots = Math.max(0, DISPLAY_CAPACITY - this.state.display.length);
       this.addActionButton(160, 327, 122, 18, "保管庫へ", "", () => { moveInventoryItems(this.state, ids, "storage"); finish(); }, selected.length === 0);
-      this.addActionButton(286, 327, 122, 18, `店頭へ（空${displaySlots}）`, "", () => { moveInventoryItems(this.state, ids, "display"); finish(); }, selected.length === 0 || selected.length > displaySlots);
+      this.addActionButton(286, 327, 122, 18, includesHomeUnsellable ? "薬は店頭販売不可" : `店頭へ（空${displaySlots}）`, "", () => { moveInventoryItems(this.state, ids, "display"); finish(); }, selected.length === 0 || selected.length > displaySlots || includesHomeUnsellable);
     } else if (view.tab === "storage") {
       const newDisplayItems = selected.filter((item) => !this.state.display.includes(item.uuid));
       const displaySlots = Math.max(0, DISPLAY_CAPACITY - this.state.display.length);
       const bagSlots = bagCapacity(this.state) - currentItemCount(this.state);
       this.addActionButton(160, 327, 122, 18, `鞄へ（空${bagSlots}）`, "", () => { moveStoreItemsToInventory(this.state, ids); finish(); }, selected.length === 0 || selected.length > bagSlots);
-      this.addActionButton(286, 327, 122, 18, `店頭へ（空${displaySlots}）`, "", () => { setDisplayedItems(this.state, [...this.state.display, ...ids]); finish(); }, newDisplayItems.length === 0 || newDisplayItems.length > displaySlots);
+      this.addActionButton(286, 327, 122, 18, includesHomeUnsellable ? "薬は店頭販売不可" : `店頭へ（空${displaySlots}）`, "", () => { setDisplayedItems(this.state, [...this.state.display, ...ids]); finish(); }, newDisplayItems.length === 0 || newDisplayItems.length > displaySlots || includesHomeUnsellable);
     } else if (view.tab === "display") {
       this.addActionButton(160, 327, 122, 18, "保管庫へ戻す", "", () => {
         const selectedIds = new Set(ids);
@@ -2931,7 +2954,8 @@ export class MerchantScene extends Phaser.Scene {
         this.render();
       }, false, medicine && this.state.location === "dungeon" ? 2 : 1);
     } else if (tab === "storage") {
-      button(this.state.display.includes(item.uuid) ? "店頭から下げる" : "店頭商品にする", () => { toggleDisplay(this.state, item); this.render(); });
+      const showing = this.state.display.includes(item.uuid);
+      button(showing ? "店頭から下げる" : canSellInHomeShop(item) ? "店頭商品にする" : "回復薬は店頭販売できない", () => { toggleDisplay(this.state, item); this.render(); }, !showing && !canSellInHomeShop(item));
       button("鞄へ戻す", () => { this.retrieveItemToInventory(item); this.render(); }, currentItemCount(this.state) >= bagCapacity(this.state), 1);
     } else if (tab === "display") {
       button("値を付ける", () => this.openShelfPriceMenu(item));

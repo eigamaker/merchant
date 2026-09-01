@@ -115,6 +115,15 @@ describe("readable canvas presentation", () => {
     expect(scene).toContain("捨てる: 携行食料");
   });
 
+  it("routes healing medicine through the apothecary and return stones through deep chests", () => {
+    const scene = readFileSync(resolve(process.cwd(), "src/scenes/MerchantScene.ts"), "utf8");
+    expect(scene).toContain("private openApothecaryShop()");
+    expect(scene).toContain("薬師ネヴァの薬屋");
+    expect(scene).toContain("回復薬は店頭販売できない");
+    expect(scene).toContain("地下13階以深の宝箱");
+    expect(scene).not.toContain('["provisions", "smokeBombs", "returnStones"]');
+  });
+
   it("shows a context prompt and a context-labelled investigate button", () => {
     const scene = readFileSync(resolve(process.cwd(), "src/scenes/MerchantScene.ts"), "utf8");
     expect(scene).toContain("private investigateContext()");

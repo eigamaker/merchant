@@ -5,7 +5,7 @@ import { compileMap, loadTrialMapPack } from "./mapDocument";
 import { createDefaultMapPack } from "./defaultMapPack";
 import { actorDefinition, actorEnemyCost, actorEnemyStatsAt, actorHasEnemyStats } from "./actorCatalog";
 import { ADVENTURER_RANKS, MERCHANT_ITEM_DEFINITIONS, STARTING_BAG_ID, itemMinFloor } from "./merchantContent";
-import { SEED_NPC_IDS, initializeMerchantWorld, pruneCampaignRecords, registerWorldItem } from "./merchantEconomy";
+import { SEED_NPC_IDS, canSellInHomeShop, initializeMerchantWorld, pruneCampaignRecords, registerWorldItem } from "./merchantEconomy";
 import { selectFloorDelvers } from "./townDay";
 import { npcCombatStats, recordGearDeed } from "./npcGear";
 import { applySurvivalGrowth } from "./adventurerGrowth";
@@ -47,6 +47,15 @@ export const DISPLAY_CAPACITY = 8;
 export { DUNGEON_MAX_FLOOR } from "./dungeonDifficulty";
 /** 身元の分からない遺体が現れ始める深さ。 */
 export const ANONYMOUS_CORPSE_MIN_FLOOR = 4;
+/** 帰還石が宝箱から見つかり始める深さ。 */
+export const RETURN_STONE_MIN_FLOOR = 13;
+/** 対象階の宝箱に帰還石が加わる確率。 */
+export const RETURN_STONE_CHEST_CHANCE = 0.05;
+
+export function returnStoneChestFor(seed: number, floor: number): boolean {
+  if (floor < RETURN_STONE_MIN_FLOOR) return false;
+  return new Rng(deriveDungeonSeed(seed, "return-stone", floor)).next() < RETURN_STONE_CHEST_CHANCE;
+}
 
 export type DungeonGenerationMode = "fixed" | "procedural" | "manual";
 
@@ -92,12 +101,12 @@ export function createNewGame(): GameState {
     vaultGold: 0,
     hp: 12,
     maxHp: 12,
-    returnStones: 1,
+    returnStones: 0,
     smokeBombs: 1,
     provisions: 3,
     equipment: {},
     shopSession: { day: 1, status: "closed", queueNpcIds: [], servedNpcIds: [] },
-    dailySupplyStock: { day: 1, smokeBombs: 2, returnStones: 1, provisions: 0 },
+    dailySupplyStock: { day: 1, smokeBombs: 2, returnStones: 0, provisions: 0 },
     location: "home",
     homePos: { x: HOME_SPAWN.x * 16 + 8, y: HOME_SPAWN.y * 16 + 8 },
     expeditionSerial: 0,
@@ -162,6 +171,30 @@ export function itemName(item: ItemInstance): string {
 
 export function currentItemCount(state: GameState): number {
   return inventoryItemCount(state);
+}
+
+/** 町の薬屋が常備する回復薬。どちらも通常アイテムとして1枠を使う。 */
+export const APOTHECARY_MEDICINE_IDS = ["minor-healing-potion", "major-healing-potion"] as const;
+
+export function buyMedicineAtApothecary(state: GameState, definitionId: typeof APOTHECARY_MEDICINE_IDS[number]): boolean {
+  const definition = MERCHANT_ITEM_DEFINITIONS[definitionId];
+  if (state.location !== "home" || !canReorganizeHomeInventory(state) || definition?.category !== "medicine") return false;
+  if (currentItemCount(state) >= bagCapacity(state)) {
+    state.message = "鞄に回復薬を入れる空きがない。回復薬は1本で1枠使う。";
+    return false;
+  }
+  if (state.gold < definition.baseValue) {
+    state.message = `${definition.trueName}を買うには${definition.baseValue}G必要だ。`;
+    return false;
+  }
+  state.gold -= definition.baseValue;
+  const medicine = createItem(state, definitionId);
+  medicine.knowledge = "identified";
+  medicine.history[0]!.detail = `薬師ネヴァから${definition.baseValue}Gで購入`;
+  medicine.historyV2![0]!.detail = "薬師ネヴァから購入";
+  state.inventory.push(medicine);
+  state.message = `薬師ネヴァから${definition.trueName}を${definition.baseValue}Gで買った。自宅の店頭では売れない。`;
+  return true;
 }
 
 export function createItem(state: GameState, definitionId: string, floor?: number): ItemInstance {
@@ -366,7 +399,13 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
   const chests = Array.from({ length: dropCount(walkable, CHEST_SPACING, 1, 1) }, (_, index) => {
     const pos = freeFloor(map, chestRng, occupiedEntities, chestCells);
     occupiedEntities.push(pos);
-    return { id: `chest-${floor}-${index}`, pos, item: createItem(state, randomItemId(state, chestRng, floor), floor) };
+    const returnStone = index === 0 && returnStoneChestFor(seed, floor);
+    return {
+      id: `chest-${floor}-${index}`,
+      pos,
+      item: createItem(state, randomItemId(state, chestRng, floor), floor),
+      ...(returnStone ? { returnStone: true as const } : {}),
+    };
   });
   const bodies: DungeonBody[] = [];
   const adventurers: DungeonAdventurer[] = [];
@@ -1102,8 +1141,15 @@ function performOpenChest(state: GameState, chestId: string, swapOutId?: string)
   const chest = run.chests[index]!;
   if (!carryItem(state, chest.item, swapOutId, (item) => run.items.push({ item, pos: { ...run.player } }))) return emptyResult();
   run.chests.splice(index, 1);
-  state.message = `宝箱から${itemName(chest.item)}を見つけた。`;
-  return finishTurn(state, [{ type: "pickup", itemId: chest.item.uuid }]);
+  if (chest.returnStone) state.returnStones += 1;
+  const found = chest.returnStone
+    ? `宝箱から${itemName(chest.item)}と帰還石を見つけた。帰還石は残り${state.returnStones}個。`
+    : `宝箱から${itemName(chest.item)}を見つけた。`;
+  state.message = found;
+  const result = finishTurn(state, [{ type: "pickup", itemId: chest.item.uuid }]);
+  // 希少品の発見は同じターンの戦闘ログで流さず、必ず読ませる。
+  if (chest.returnStone) state.message = found;
+  return result;
 }
 
 function performInspectBody(state: GameState, bodyId: string): TurnResult {
@@ -1725,6 +1771,10 @@ export function moveInventoryItems(state: GameState, itemIds: readonly string[],
   }
   const selectedIds = new Set(itemIds);
   const selected = state.inventory.filter((item) => selectedIds.has(item.uuid));
+  if (destination === "display" && selected.some((item) => !canSellInHomeShop(item))) {
+    state.message = "回復薬は町の薬屋が扱っているため、自宅の店頭では売れない。";
+    return 0;
+  }
   if (destination === "display" && selected.length > DISPLAY_CAPACITY - state.display.length) {
     state.message = `展示台の空きは${Math.max(0, DISPLAY_CAPACITY - state.display.length)}枠だ。`;
     return 0;
@@ -1774,6 +1824,8 @@ export function toggleDisplay(state: GameState, item: ItemInstance): void {
     state.message = "展示を取り下げた。";
   } else if (state.display.length >= DISPLAY_CAPACITY) {
     state.message = `展示台は${DISPLAY_CAPACITY}枠までだ。`;
+  } else if (!canSellInHomeShop(item)) {
+    state.message = "回復薬は町の薬屋が扱っているため、自宅の店頭では売れない。";
   } else {
     state.display.push(item.uuid);
     item.location = { kind: "shopStock" };
@@ -1796,6 +1848,10 @@ export function setDisplayedItems(state: GameState, itemIds: readonly string[]):
   }
   const validStoreIds = new Set(state.store.map((item) => item.uuid));
   const desiredIds = new Set(itemIds.filter((id) => validStoreIds.has(id)));
+  if ([...desiredIds].some((id) => !canSellInHomeShop(state.itemsById[id]!))) {
+    state.message = "回復薬は町の薬屋が扱っているため、自宅の店頭では売れない。";
+    return 0;
+  }
   if (desiredIds.size > DISPLAY_CAPACITY) {
     state.message = `展示台は${DISPLAY_CAPACITY}枠までだ。`;
     return 0;

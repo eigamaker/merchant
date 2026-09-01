@@ -1,5 +1,5 @@
 import { FALLBACK_BAG_CAPACITY, MERCHANT_ITEM_DEFINITIONS, bagCapacityOf } from "./merchantContent";
-import { isAvailableInTown, prepareCustomerPurchaseRequest, pruneCampaignRecords } from "./merchantEconomy";
+import { canSellInHomeShop, isAvailableInTown, prepareCustomerPurchaseRequest, pruneCampaignRecords } from "./merchantEconomy";
 import { npcBonds } from "./npcBonds";
 import { adjustGuardProfile, ensureGuardProfile, recordGuardEvent } from "./guardProfiles";
 import { simulateTownDay } from "./townDay";
@@ -8,10 +8,10 @@ import { loadTrialMapPack } from "./mapDocument";
 import type { GameState, ItemInstance, SupplyKind, TimeSlot } from "./types";
 
 export const SUPPLY_RULES = {
-  smokeBombs: { label: "煙玉", supplier: "薬師ネヴァ", price: 50, dailyStock: 2 },
-  returnStones: { label: "帰還石", supplier: "冒険者ギルド", price: 150, dailyStock: 1 },
-  provisions: { label: "携行食料", supplier: "食品商", price: 15, dailyStock: null },
-} satisfies Record<SupplyKind, { label: string; supplier: string; price: number; dailyStock: number | null }>;
+  smokeBombs: { label: "煙玉", supplier: "薬師ネヴァ", price: 50, dailyStock: 2, purchasable: true },
+  returnStones: { label: "帰還石", supplier: "―", price: 0, dailyStock: 0, purchasable: false },
+  provisions: { label: "携行食料", supplier: "食品商", price: 15, dailyStock: null, purchasable: true },
+} satisfies Record<SupplyKind, { label: string; supplier: string; price: number; dailyStock: number | null; purchasable: boolean }>;
 
 export const SHOP_CUSTOMER_MIN = 3;
 export const SHOP_CUSTOMER_MAX = 6;
@@ -174,6 +174,10 @@ export function buySupply(state: GameState, kind: SupplyKind, amount = 1): boole
   const available = state.dailySupplyStock[kind];
   const price = rule.price * quantity;
   if (state.location !== "home") return false;
+  if (!rule.purchasable) {
+    state.message = "帰還石は町では手に入らない。地下13階以深の宝箱を探そう。";
+    return false;
+  }
   if (limitedStock && available < quantity) { state.message = `${rule.label}は本日分が売り切れている。`; return false; }
   if (state.gold < price) { state.message = `${price}Gを支払えない。`; return false; }
   if (kind === "provisions" && quantity > provisionCapacityRemaining(state)) {
@@ -262,7 +266,10 @@ export function canOpenShop(state: GameState): boolean {
     && (state.timeSlot === "morning" || state.timeSlot === "afternoon")
     && state.shopSession.day === state.day
     && state.shopSession.status === "closed"
-    && state.display.some((id) => state.itemsById[id]?.location?.kind === "shopStock");
+    && state.display.some((id) => {
+      const item = state.itemsById[id];
+      return item?.location?.kind === "shopStock" && canSellInHomeShop(item);
+    });
 }
 
 export function isShopSessionActive(state: GameState): boolean {

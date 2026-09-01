@@ -76,12 +76,36 @@ describe("v6 merchant systems", () => {
     expect(state.message).toContain("食料は10個ごとに1枠");
   });
 
-  it("keeps the daily limits for smoke bombs and return stones", () => {
+  it("keeps the daily smoke-bomb limit and never sells return stones", () => {
     const state = createNewGame();
     expect(buySupply(state, "smokeBombs", 3)).toBe(false);
     expect(buySupply(state, "smokeBombs", 2)).toBe(true);
     expect(state.dailySupplyStock.smokeBombs).toBe(0);
     expect(buySupply(state, "smokeBombs")).toBe(false);
+    state.gold = 10_000;
+    expect(buySupply(state, "returnStones")).toBe(false);
+    expect(state.returnStones).toBe(0);
+    expect(state.message).toContain("地下13階以深");
+  });
+
+  it("keeps healing potions off the home shop shelves without blocking other medicine", () => {
+    const state = createNewGame();
+    const potion = createItem(state, "minor-healing-potion");
+    const antidote = createItem(state, "antidote");
+    state.inventory.push(potion);
+
+    expect(moveInventoryItems(state, [potion.uuid], "display")).toBe(0);
+    expect(state.inventory).toContain(potion);
+    expect(state.display).not.toContain(potion.uuid);
+    expect(state.message).toContain("自宅の店頭では売れない");
+
+    expect(moveInventoryItems(state, [potion.uuid], "storage")).toBe(1);
+    expect(setDisplayedItems(state, [potion.uuid])).toBe(0);
+    expect(canOpenShop(state)).toBe(false);
+
+    state.inventory.push(antidote);
+    expect(moveInventoryItems(state, [antidote.uuid], "display")).toBe(1);
+    expect(canOpenShop(state)).toBe(true);
   });
 
   it.each(["morning", "afternoon", "evening", "night"] as const)("rests at home during %s and advances to the next morning", (timeSlot) => {

@@ -128,6 +128,14 @@ export function merchantItemName(item: ItemInstance): string | undefined {
   return MERCHANT_ITEM_DEFINITIONS[item.definitionId]?.trueName;
 }
 
+/**
+ * HPを回復する薬は町の薬屋が常備しているため、自宅の店では販売品にならない。
+ * 迷宮内の直接取引や露店にはこの制限を掛けない。
+ */
+export function canSellInHomeShop(item: ItemInstance): boolean {
+  return (MERCHANT_ITEM_DEFINITIONS[item.definitionId]?.healing ?? 0) <= 0;
+}
+
 export function escortFeeForNpc(state: GameState, npc: NpcRecord): number {
   const baseFee = ADVENTURER_RANKS[npc.rank ?? "E"].escortFee;
   const profile = ensureGuardProfile(state, npc);
@@ -221,9 +229,9 @@ export function prepareCustomerPurchaseRequest(state: GameState, npcId: string):
   const stock = session.status === "serving"
     ? state.display
       .map((id) => state.itemsById[id])
-      .filter((item): item is ItemInstance => Boolean(item) && item.location?.kind === "shopStock")
+      .filter((item): item is ItemInstance => Boolean(item) && item.location?.kind === "shopStock" && canSellInHomeShop(item))
     : [];
-  const selected = existing?.location?.kind === "shopStock"
+  const selected = existing?.location?.kind === "shopStock" && canSellInHomeShop(existing)
     ? existing
     : stock
       .map((item) => {
@@ -274,5 +282,3 @@ export function acceptCustomerPurchaseRequest(state: GameState): { accepted: boo
   recordBond(state, npc, "served", `${merchantItemName(item) ?? item.definitionId}を${price}Gで買っていった`);
   return { accepted: true, message: `${merchantItemName(item) ?? item.definitionId}を${npc.name}へ${price}Gで売却した。` };
 }
-
-
