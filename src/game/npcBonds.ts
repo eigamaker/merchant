@@ -17,8 +17,10 @@ export const REMEMBERED_ABSENT_LIMIT = 12;
  */
 const BOND_WEIGHT: Record<BondKind, number> = {
   betrayed: 6,
+  rescued: 6,
   lost: 5,
   abandoned: 5,
+  waylaid: 5,
   extorted: 4,
   gouged: 4,
   foughtTogether: 4,
@@ -79,6 +81,8 @@ function headline(bond: NpcBond): string {
     case "aided": return `${where}薬を譲った相手`;
     case "looted": return "遺体から遺品を引き取った相手";
     case "betrayed": return `${where}あなたの荷を奪った相手`;
+    case "rescued": return `${where}追いはぎからあなたを守った相手`;
+    case "waylaid": return `${where}あなたを待ち伏せた相手`;
     case "extorted": return `${where}取り分を強要した相手`;
     case "abandoned": return `${where}あなたを置いて逃げた相手`;
     case "gouged": return `${where}足元を見られた相手`;

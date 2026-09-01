@@ -50,6 +50,8 @@ function emptyCareer(): GuardCareer {
     abandonCount: 0,
     extortionCount: 0,
     betrayalCount: 0,
+    holdupCount: 0,
+    rescueCount: 0,
     soloDelves: 0,
     soloDeepest: 0,
     events: [],
@@ -88,6 +90,8 @@ function normalizeProfile(profile: GuardProfile): GuardProfile {
   career.abandonCount ??= 0;
   career.extortionCount ??= 0;
   career.betrayalCount ??= 0;
+  career.holdupCount ??= 0;
+  career.rescueCount ??= 0;
   career.soloDelves ??= 0;
   career.soloDeepest ??= 0;
   career.events = (career.events ?? []).slice(-32);

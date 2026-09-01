@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { beginExpedition, createNewGame } from "./engine";
 import { restUntilMorning } from "./merchantSystems";
-import { preferredDelveFloor, resolveDelveOutcome, simulateTownDay } from "./townDay";
+import { FLOOR_ADVENTURER_MAX, preferredDelveFloor, resolveDelveOutcome, simulateTownDay } from "./townDay";
 import { ensureGuardProfile } from "./guardProfiles";
 import { ADVENTURER_ROSTER_TARGET } from "./npcRoster";
 import { escortFeeForNpc } from "./merchantEconomy";
 import { ADVENTURER_RANKS } from "./merchantContent";
+import { DUNGEON_MAX_FLOOR } from "./dungeonDifficulty";
 import type { GameState } from "./types";
 
 /** 夜まで進めてから寝る。町の一日が回る唯一の入口。 */
@@ -15,17 +16,17 @@ function sleepUntilNextMorning(state: GameState): void {
 }
 
 describe("delve outcomes", () => {
-  const base = { rank: "C" as const, floor: 5, hpRatio: 1, courage: 50, discipline: 50, roll: 0.06 };
+  const base = { rank: "C" as const, floor: 12, hpRatio: 1, courage: 50, discipline: 50, roll: 0.06 };
 
   it("gets deadlier the further past the recommended depth they go", () => {
     // 同じ出目でも、深くなるほど悪い結末へ倒れる。
-    expect(resolveDelveOutcome({ ...base, floor: 5 })).toBe("returned");
-    expect(resolveDelveOutcome({ ...base, floor: 7 })).not.toBe("returned");
-    expect(resolveDelveOutcome({ ...base, floor: 9, roll: 0.2 })).toBe("died");
+    expect(resolveDelveOutcome({ ...base, floor: 12 })).toBe("returned");
+    expect(resolveDelveOutcome({ ...base, floor: 14 })).not.toBe("returned");
+    expect(resolveDelveOutcome({ ...base, floor: 16, roll: 0.2 })).toBe("died");
   });
 
   it("rewards courage and discipline with survival", () => {
-    const reckless = { ...base, floor: 8, courage: 10, discipline: 10, roll: 0.28 };
+    const reckless = { ...base, floor: 16, courage: 10, discipline: 10, roll: 0.28 };
     expect(resolveDelveOutcome(reckless)).toBe("died");
     expect(resolveDelveOutcome({ ...reckless, courage: 95, discipline: 95 })).not.toBe("died");
   });
@@ -47,11 +48,29 @@ describe("delve outcomes", () => {
     const timid = preferredDelveFloor(npc, profile, 0.5);
     expect(bold).toBeGreaterThan(timid);
     expect(preferredDelveFloor(npc, profile, 0)).toBeGreaterThanOrEqual(1);
-    expect(preferredDelveFloor(npc, profile, 1)).toBeLessThanOrEqual(8);
+    expect(preferredDelveFloor(npc, profile, 1)).toBeLessThanOrEqual(DUNGEON_MAX_FLOOR);
+  });
+
+  it("keeps even A-rank adventurers near their limit at the bottom", () => {
+    expect(ADVENTURER_RANKS.A.recommendedFloor).toBeLessThan(DUNGEON_MAX_FLOOR);
+    const result = resolveDelveOutcome({
+      rank: "A",
+      floor: DUNGEON_MAX_FLOOR,
+      hpRatio: 1,
+      courage: 75,
+      discipline: 75,
+      gearPower: 6,
+      roll: 0.2,
+    });
+    expect(result).not.toBe("returned");
   });
 });
 
 describe("the town turns on its own", () => {
+  it("starts each floor with half as many adventurers as before", () => {
+    expect(FLOOR_ADVENTURER_MAX).toBe(1);
+  });
+
   it("runs a given day exactly once", () => {
     const state = createNewGame();
     state.day += 1;

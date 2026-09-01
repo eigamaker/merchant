@@ -18,6 +18,9 @@ import {
   createNewGame,
   currentItemCount,
   dungeonAdventurerBuyPrice,
+  dungeonProvisionBuyPrice,
+  dungeonProvisionDemand,
+  dungeonProvisionDemandRemaining,
   isDesperateFor,
   dungeonAdventurerSellPrice,
   dropItem,
@@ -41,6 +44,7 @@ import {
 import { dungeonFogOpacity, hasDungeonVision, isExplored } from "../game/dungeonVision";
 import { stallCapacity, stallGoods, stallReadiness } from "../game/dungeonStall";
 import { carriedValue } from "../game/guardBetrayal";
+import { willRescue } from "../game/dungeonTraffic";
 import { dungeonActorAppearance } from "../game/dungeonActors";
 import { DUNGEON_PRICE_TIERS, SHOP_PRICE_TIERS, marketPrice } from "../game/pricing";
 import { askingPriceFor } from "../game/merchantEconomy";
@@ -56,10 +60,11 @@ import { createDefaultMapPack } from "../game/defaultMapPack";
 import { acceptCustomerPurchaseRequest, cancelEscortCommission, escortFeeForNpc, isHireable, merchantItemName, postEscortCommission, prepareCustomerPurchaseRequest } from "../game/merchantEconomy";
 import { ensureGuardProfile, guardConditionLabel, guardObservationLines, guardTrustLabel } from "../game/guardProfiles";
 import { bondSummary, npcBonds } from "../game/npcBonds";
-import { carriedGearItems, entrustGear, gearSlots, gearSlotFor, isRetained, reclaimGear, type GearSlotName } from "../game/npcGear";
+import { carriedGearItems, entrustGear, gearSlots, gearSlotFor, isRetained, npcCombatStats, reclaimGear, type GearSlotName } from "../game/npcGear";
 import { itemLegendLines, wasEntrusted } from "../game/itemLegend";
 import {
   SUPPLY_RULES,
+  PROVISIONS_PER_SLOT,
   buySupply,
   canOpenShop,
   canReorganizeHomeInventory,
@@ -72,13 +77,15 @@ import {
   equippedBag,
   finishCurrentCustomer,
   isShopSessionActive,
+  provisionCapacityRemaining,
+  provisionSlotCount,
   restUntilMorning,
   startShopSession,
   summonNextCustomer,
   withdrawGold,
 } from "../game/merchantSystems";
 import { ADVENTURER_RANK_ORDER, ADVENTURER_RANKS, ITEM_VISUALS, NPC_SEEDS, npcAppearanceSprite } from "../game/merchantContent";
-import type { AdventurerRank, DungeonCommand, DungeonEvent, GameState, GuardDemand, GuardDescentAssessment, ItemInstance, ItemRarity, MenuChoice, NpcRecord, Vec } from "../game/types";
+import type { AdventurerRank, DungeonCommand, DungeonEvent, DungeonHoldup, GameState, GuardCareer, GuardDemand, GuardDescentAssessment, ItemInstance, ItemRarity, MenuChoice, NpcRecord, Vec } from "../game/types";
 import {
   FLOATING_INK,
   UI_COLORS,
@@ -120,14 +127,14 @@ const MAP_W = 448;
 const MAP_H = 288;
 const LOG_Y = 288;
 const LOG_H = 72;
-/** ログ本文の行取り。11pxの行はおよそ17px分の高さを使う。 */
+/** 古い一件は一行、最新の一件は残りの高さで折り返して読ませる。 */
 const LOG_ROW_COUNT = 2;
-const LOG_ROW_TOP = 9;
-const LOG_ROW_PITCH = 17;
-const LOG_ROW_H = 17;
-const LOG_DIVIDER_Y = 45;
-const LOG_HINT_Y = 49;
-const LOG_HINT_H = 15;
+const LOG_TEXT_X = 10;
+const LOG_TEXT_W = MAP_W - LOG_TEXT_X * 2;
+const LOG_PREVIOUS_Y = 8;
+const LOG_PREVIOUS_H = 16;
+const LOG_LATEST_SINGLE_Y = 9;
+const LOG_LATEST_AFTER_PREVIOUS_Y = 25;
 const PANEL_X = 448;
 const PANEL_W = 192;
 /** 枠の内側1pxを余白にして、文字が金物に触れないようにする。 */
@@ -164,8 +171,6 @@ const DUNGEON_CONTROL_LINES = [
   `${SHORTCUTS.inventory}: インベントリ`,
   `${SHORTCUTS.menu}: メニュー`,
 ];
-const HOME_SHORTCUT_HINT = `${SHORTCUTS.investigate} 調べる　${SHORTCUTS.talk} 話す　${SHORTCUTS.inventory} 在庫管理　${SHORTCUTS.shop} 開店　${SHORTCUTS.menu} メニュー`;
-const DUNGEON_SHORTCUT_HINT = `${SHORTCUTS.investigate} 調べる　${SHORTCUTS.shove} 押し返し　${SHORTCUTS.inventory} インベントリ　${SHORTCUTS.menu} メニュー`;
 
 type HomePoint = { id: string; name: string; kind: "entrance" | "guild" | "visitors" | "customer"; pos: { x: number; y: number }; customerId?: string };
 const HOME_POINTS: HomePoint[] = [
@@ -660,7 +665,7 @@ export class MerchantScene extends Phaser.Scene {
     }
     switch (poi.kind) {
       case "entrance":
-        beginExpedition(this.state);
+        this.requestExpeditionStart();
         return;
       case "guild":
         this.openGuildMenu();
@@ -732,6 +737,11 @@ export class MerchantScene extends Phaser.Scene {
       this.render();
       return;
     }
+    if (result.holdup) {
+      this.openHoldupPrompt(result.holdup);
+      this.render();
+      return;
+    }
     this.render();
     this.animateDungeonEvents(result.events);
   }
@@ -775,6 +785,39 @@ export class MerchantScene extends Phaser.Scene {
         action: () => this.executeDungeonCommand({ type: "answerDemand", pay: true }),
       },
       { label: "断る", action: () => this.executeDungeonCommand({ type: "answerDemand", pay: false }) },
+    ]);
+  }
+
+  /**
+   * 追いはぎに呼び止められた。
+   *
+   * 商人は戦えないので、断った先にあるのは自分の身体ではなく、**誰が前に出るか**である。
+   * 護衛が仕事をするかもしれないし、居合わせた顔なじみが庇うかもしれないし、
+   * 誰も動かないかもしれない。
+   */
+  private openHoldupPrompt(holdup: DungeonHoldup): void {
+    const npc = this.state.npcs.find((entry) => entry.id === holdup.npcId);
+    const name = npc?.name ?? "追いはぎ";
+    const guard = this.state.run?.guard;
+    const guardNpc = guard ? this.state.npcs.find((entry) => entry.id === guard.guardId) : undefined;
+    // 庇ってくれそうな顔ぶれ。確約はしない —— 実際にどうするかは、その時になってみないと分からない。
+    const bystanders = (this.state.run?.adventurers ?? [])
+      .filter((entry) => entry.npcId !== holdup.npcId)
+      .map((entry) => this.state.npcs.find((candidate) => candidate.id === entry.npcId))
+      .filter((entry): entry is NpcRecord => Boolean(entry) && willRescue(entry!, ensureGuardProfile(this.state, entry!)));
+    this.openMenu("行く手を塞がれた", [
+      holdup.takesGoods
+        ? `${name}「その荷を置いていけ。ここで何があったか、誰も知らない」`
+        : `${name}「${holdup.amount}G。出せば通してやる」`,
+      `地下${holdup.floor}階　所持金 ${this.state.gold}G　鞄 ${currentItemCount(this.state)}/${bagCapacity(this.state)}枠`,
+      guard?.mode === "covering" ? `${guardNpc?.name ?? "護衛"}が前に立っている。` : "前に立ってくれる者はいない。",
+      bystanders.length ? `${bystanders.map((entry) => entry.name).join("、")}がこちらを見ている。` : "",
+    ], [
+      {
+        label: holdup.takesGoods ? `荷の半分を差し出す` : `${holdup.amount}Gを渡す`,
+        action: () => this.executeDungeonCommand({ type: "answerHoldup", hand: true }),
+      },
+      { label: "断る", action: () => this.executeDungeonCommand({ type: "answerHoldup", hand: false }) },
     ]);
   }
 
@@ -861,15 +904,27 @@ export class MerchantScene extends Phaser.Scene {
     ]);
   }
 
-  private openSwapMenu(incoming: ItemInstance, onSwap: (swapOutId: string) => void, onBack: () => void = () => this.closeMenu()): void {
+  private openSwapMenu(incoming: ItemInstance, onSwap: (swapOutId?: string) => void, onBack: () => void = () => this.closeMenu()): void {
+    const slotsNeeded = Math.max(1, currentItemCount(this.state) - bagCapacity(this.state) + 1);
+    const currentFoodSlots = provisionSlotCount(this.state.provisions);
+    const foodToDiscard = currentFoodSlots >= slotsNeeded
+      ? Math.max(0, this.state.provisions - (currentFoodSlots - slotsNeeded) * PROVISIONS_PER_SLOT)
+      : 0;
     this.openMenu("持ち物を入れ替える", [
-      `鞄は${bagCapacity(this.state)}個でいっぱいだ。${itemName(incoming)}を持つには1個置く必要がある。`,
-      "どのアイテムも1枠。置いた品は足元に残る。",
+      `鞄は${bagCapacity(this.state)}枠でいっぱいだ。${itemName(incoming)}を持つには1枠空ける必要がある。`,
+      `品物は1点で1枠、携行食料は${PROVISIONS_PER_SLOT}個まで1枠。置いた品物は足元に残る。`,
     ], [
       ...this.state.inventory.map((item) => ({
         label: `置く: ${itemName(item)}`,
         action: () => onSwap(item.uuid),
       })),
+      ...(foodToDiscard > 0 ? [{
+        label: `捨てる: 携行食料${foodToDiscard}個（${slotsNeeded}枠空ける）`,
+        action: () => {
+          this.state.provisions -= foodToDiscard;
+          onSwap(undefined);
+        },
+      }] : []),
       { label: "やめる", action: onBack },
     ]);
   }
@@ -919,8 +974,19 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private async saveManual(slot: SaveSlot): Promise<void> {
-    await this.saves.save(slot, this.state);
-    this.state.message = `${slot.replace("manual-", "手動保存 ")}へ記録した。`;
+    const label = slot.replace("manual-", "手動保存 ");
+    try {
+      await this.saves.save(slot, this.state);
+      this.state.message = `${label}へ記録した。`;
+      this.openMenu("保存しました", [`${label}へ現在の進行を記録しました。`], [
+        { label: "メニューへ戻る", action: () => this.openSystemMenu() },
+        { label: "ゲームへ戻る", action: () => this.closeMenu() },
+      ]);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : "不明なエラー";
+      this.state.message = `${label}への保存に失敗した。`;
+      this.openMenu("保存できませんでした", [reason], [{ label: "メニューへ戻る", action: () => this.openSystemMenu() }]);
+    }
     this.render();
   }
 
@@ -936,7 +1002,7 @@ export class MerchantScene extends Phaser.Scene {
     const inventoryLocked = !canReorganizeHomeInventory(this.state);
     this.openMenu("メニュー", [
       this.state.location === "dungeon" ? "探索中はメニューを開いてもターンは進まない。" : `自宅兼店舗 ${this.state.day}日目`,
-      `所持金 ${this.state.gold}G　預金 ${this.state.vaultGold}G　所持数 ${currentItemCount(this.state)}/${bagCapacity(this.state)}`,
+      `所持金 ${this.state.gold}G　預金 ${this.state.vaultGold}G　鞄 ${currentItemCount(this.state)}/${bagCapacity(this.state)}枠`,
     ], [
       { label: inventoryLocked ? "在庫管理（営業中）" : this.state.location === "home" ? "在庫管理" : "持ち物", action: () => this.openInventory() },
       { label: "護衛募集", action: () => this.openEscortCommission() },
@@ -1084,13 +1150,40 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private openSupplyShop(): void {
-    this.openMenu("街の仕入先", ["食料・煙玉・帰還石はアイテム枠を使わない。", `所持金 ${this.state.gold}G`], [
-      ...(["provisions", "smokeBombs", "returnStones"] as const).map((kind) => ({
-        label: `${SUPPLY_RULES[kind].supplier}: ${SUPPLY_RULES[kind].label} ${SUPPLY_RULES[kind].price}G（残${this.state.dailySupplyStock[kind]}）`,
-        disabled: this.state.dailySupplyStock[kind] <= 0,
-        action: () => { buySupply(this.state, kind, 1); this.openSupplyShop(); },
-      })),
+    this.openMenu("街の仕入先", [`携行食料は${PROVISIONS_PER_SLOT}個まで1枠。煙玉・帰還石は枠を使わない。`, `所持金 ${this.state.gold}G　鞄 ${currentItemCount(this.state)}/${bagCapacity(this.state)}枠`], [
+      ...(["provisions", "smokeBombs", "returnStones"] as const).map((kind) => {
+        const rule = SUPPLY_RULES[kind];
+        const stockLabel = rule.dailyStock === null ? "在庫制限なし" : `残${this.state.dailySupplyStock[kind]}`;
+        return {
+          label: `${rule.supplier}: ${rule.label} ${rule.price}G（${stockLabel}）`,
+          disabled: rule.dailyStock !== null && this.state.dailySupplyStock[kind] <= 0,
+          action: () => {
+            if (kind === "provisions") this.openProvisionPurchaseMenu();
+            else { buySupply(this.state, kind, 1); this.openSupplyShop(); }
+          },
+        };
+      }),
       { label: "閉じる", action: () => this.closeMenu() },
+    ]);
+  }
+
+  /** 在庫制限のない食料を、必要数だけ一度に仕入れる。 */
+  private openProvisionPurchaseMenu(): void {
+    const rule = SUPPLY_RULES.provisions;
+    const affordable = Math.floor(this.state.gold / rule.price);
+    const capacity = provisionCapacityRemaining(this.state);
+    const maximum = Math.min(affordable, capacity);
+    const quantities = [...new Set([1, 5, 10, maximum])].filter((amount) => amount > 0).sort((a, b) => a - b);
+    this.openMenu("携行食料を仕入れる", [
+      `1個 ${rule.price}G　所持 ${this.state.provisions}個（${provisionSlotCount(this.state.provisions)}枠）　所持金 ${this.state.gold}G`,
+      `食品商の在庫に上限はない。食料は${PROVISIONS_PER_SLOT}個まで1枠で、現在あと${capacity}個積める。`,
+    ], [
+      ...quantities.map((amount) => ({
+        label: amount === maximum ? `積めるだけ（${amount}個・${amount * rule.price}G）` : `${amount}個（${amount * rule.price}G）`,
+        disabled: amount > maximum,
+        action: () => { buySupply(this.state, "provisions", amount); this.openProvisionPurchaseMenu(); },
+      })),
+      { label: "仕入先一覧へ戻る", action: () => this.openSupplyShop() },
     ]);
   }
 
@@ -1121,7 +1214,7 @@ export class MerchantScene extends Phaser.Scene {
         `危険時の後退基準: HP ${Math.round(guardRetreatRatio(this.state, npc.id) * 100)}%以下`,
         "出発すると契約の取消と返金はできない。",
       ], [
-        { label: expedition.allowed ? "一緒にダンジョンへ出発" : "次の遠征を待つ", disabled: !expedition.allowed, action: () => { beginExpedition(this.state); this.closeMenu(); } },
+        { label: expedition.allowed ? "ダンジョンへ出発" : "次の遠征を待つ", disabled: !expedition.allowed, action: () => this.requestExpeditionStart() },
         { label: "護衛依頼を取り消す", action: () => { cancelEscortCommission(this.state); this.closeMenu(); } },
         { label: "閉じる", action: () => this.closeMenu() },
       ]);
@@ -1153,7 +1246,6 @@ export class MerchantScene extends Phaser.Scene {
           this.finishCustomerAndContinue();
         } },
       ] : []),
-      ...(npc.adventurer ? [{ label: "装備を預ける", action: () => this.openNpcGear(npc.id) }] : []),
       { label: this.state.shopSession.currentNpcId === npc.id ? "接客を終える" : "閉じる", action: () => this.state.shopSession.currentNpcId === npc.id ? this.finishCustomerAndContinue() : this.closeMenu() },
     ]);
   }
@@ -1205,20 +1297,56 @@ export class MerchantScene extends Phaser.Scene {
     const adventurer = this.state.run?.adventurers.find((entry) => entry.npcId === npcId);
     const npc = this.state.npcs.find((entry) => entry.id === npcId);
     if (!adventurer || !npc) { this.closeMenu(); return; }
+    const floor = this.state.run?.floor ?? 1;
+    const provisionDemand = dungeonProvisionDemandRemaining(adventurer, floor);
     const wanted = this.state.inventory.filter((item) => {
       const definition = itemDefinition(item);
-      return npc.interests.includes(definition.category) || (adventurer.hp < adventurer.maxHp && (definition.healing ?? 0) > 0);
+      return npc.interests.includes(definition.category) || isDesperateFor(adventurer, item, floor);
     }).slice(0, 8);
     this.openMenu(`${npc.name}へ売る`, [
       `相手の所持金 ${adventurer.gold}G`,
-      wanted.length ? `探している品: ${npc.interests.map((category) => this.categoryLabel(category)).join("・")}` : "相手が欲しがる品を持っていない。",
+      wanted.length || provisionDemand > 0
+        ? `探している品: ${npc.interests.map((category) => this.categoryLabel(category)).join("・")}`
+        : floor <= 3 ? "浅層なので食料や回復品には困っていない。" : "相手が欲しがる品を持っていない。",
     ], [
+      ...(provisionDemand > 0 ? [{
+        label: `携行食料をまとめて売る（相場${dungeonProvisionBuyPrice(floor)}G/個・需要${provisionDemand}個）`,
+        disabled: this.state.provisions <= 0,
+        action: () => this.openDungeonProvisionPriceMenu(npcId),
+      }] : []),
       ...wanted.map((item) => ({
         label: `値を付ける: ${itemName(item)}（相場${dungeonAdventurerBuyPrice(item)}G）`,
         action: () => this.openDungeonPriceMenu(npcId, item),
       })),
       { label: "戻る", action: () => this.openDungeonAdventurer(npcId) },
     ]);
+  }
+
+  private openDungeonProvisionPriceMenu(npcId: string): void {
+    const adventurer = this.state.run?.adventurers.find((entry) => entry.npcId === npcId);
+    const npc = this.state.npcs.find((entry) => entry.id === npcId);
+    const floor = this.state.run?.floor ?? 1;
+    if (!adventurer || !npc) { this.closeMenu(); return; }
+    const baseline = dungeonProvisionBuyPrice(floor);
+    const demand = dungeonProvisionDemandRemaining(adventurer, floor);
+    const desperate = dungeonProvisionDemand(floor) >= 3;
+    this.openMenu("携行食料に値を付ける", [
+      `${npc.name}の所持金 ${adventurer.gold}G　相場 ${baseline}G/個　需要 ${demand}個`,
+      desperate ? `${npc.name}は深層で食料が尽きかけている。` : `${npc.name}にはまだ余裕があり、大幅な上乗せには応じにくい。`,
+      `こちらの持ち込み ${this.state.provisions}個。成立価格で買える分をまとめて売る。`,
+    ], [
+      ...DUNGEON_PRICE_TIERS.map((tier) => {
+        const unitPrice = Math.max(1, Math.round(baseline * tier.rate));
+        const quantity = Math.min(this.state.provisions, demand, Math.floor(adventurer.gold / unitPrice));
+        return {
+          label: `${tier.label} ${unitPrice}G/個（最大${quantity}個）`,
+          disabled: quantity <= 0,
+          action: () => this.executeDungeonCommand({ type: "sellProvisionsToAdventurer", npcId, unitPrice }),
+        };
+      }),
+      { label: "やめる", action: () => this.openDungeonAdventurerBuyback(npcId) },
+    ]);
+    this.render();
   }
 
   /**
@@ -1233,7 +1361,7 @@ export class MerchantScene extends Phaser.Scene {
     const npc = this.state.npcs.find((entry) => entry.id === npcId);
     if (!adventurer || !npc) { this.closeMenu(); return; }
     const baseline = dungeonAdventurerBuyPrice(item);
-    const desperate = isDesperateFor(adventurer, item);
+    const desperate = isDesperateFor(adventurer, item, this.state.run?.floor ?? 1);
     this.openMenu(`${itemName(item)}に値を付ける`, [
       `${npc.name}の所持金 ${adventurer.gold}G　相場 ${baseline}G`,
       desperate ? `${npc.name}は深く傷ついている。この薬を欲している。` : `${npc.name}は差し迫ってはいない。上乗せには応じないだろう。`,
@@ -1309,7 +1437,8 @@ export class MerchantScene extends Phaser.Scene {
    */
   private openStallPriceMenu(item: ItemInstance): void {
     const baseline = dungeonAdventurerBuyPrice(item);
-    const wounded = this.state.run?.adventurers.filter((entry) => isDesperateFor(entry, item)) ?? [];
+    const floor = this.state.run?.floor ?? 1;
+    const wounded = this.state.run?.adventurers.filter((entry) => isDesperateFor(entry, item, floor)) ?? [];
     this.openMenu(`${itemName(item)}に値を付ける`, [
       `相場 ${baseline}G`,
       wounded.length > 0
@@ -1336,14 +1465,68 @@ export class MerchantScene extends Phaser.Scene {
     return ({ weapon: "武器", armor: "防具", bag: "道具袋", medicine: "薬品", material: "素材", curio: "珍品", arcane: "魔法品", relic: "遺物", gem: "宝石", book: "書物", art: "美術品" } as const)[category];
   }
 
+  private beginExpeditionNow(): void {
+    beginExpedition(this.state);
+    this.closeMenu();
+  }
+
+  /** 雇用済みの護衛と装備を、出発操作の中で必ず確認できるようにする。 */
+  private requestExpeditionStart(): void {
+    const expedition = canBeginExpedition(this.state);
+    if (!expedition.allowed) {
+      this.state.message = expedition.message;
+      this.closeMenu();
+      return;
+    }
+    const commission = this.state.escortCommission;
+    if (commission?.status !== "accepted" || !commission.npcId) {
+      this.beginExpeditionNow();
+      return;
+    }
+    const guard = this.state.npcs.find((npc) => npc.id === commission.npcId && npc.status === "contracted");
+    if (!guard) {
+      this.beginExpeditionNow();
+      return;
+    }
+    const stats = npcCombatStats(this.state, guard);
+    this.openMenu("護衛を連れていきますか？", [
+      `${guard.rank ?? "E"}ランクの${guard.name}と護衛契約中。護衛料 ${commission.offeredFee}G 支払済み。`,
+      `同行時 HP ${stats.maxHp}　攻撃 ${stats.damage}　防御 ${stats.defense}`,
+      this.gearSummaryLine(guard) || "追加で預けた武器・防具はない。",
+      "本人へ話しかけ直さなくても、このまま同行させられる。",
+    ], [
+      { label: `${guard.name}を連れていく`, action: () => this.beginExpeditionNow() },
+      { label: "出発前に護衛装備を整える", action: () => this.openNpcGear(guard.id, () => this.requestExpeditionStart()) },
+      { label: "護衛なしで入る", action: () => this.openSoloExpeditionNotice(guard) },
+      { label: "出発しない", action: () => this.closeMenu() },
+    ]);
+  }
+
+  private openSoloExpeditionNotice(guard: NpcRecord): void {
+    const fee = this.state.escortCommission?.offeredFee ?? this.state.hiredGuardFee ?? 0;
+    this.openMenu("護衛を連れずに入りますか？", [
+      `${guard.name}との護衛契約を取り消し、支払い済みの${fee}Gは返金される。`,
+      "この探索には護衛が同行しない。",
+    ], [
+      {
+        label: "契約を取り消して単独で入る",
+        action: () => { cancelEscortCommission(this.state); this.beginExpeditionNow(); },
+      },
+      { label: `${guard.name}を連れていく`, action: () => this.beginExpeditionNow() },
+      { label: "戻る", action: () => this.requestExpeditionStart() },
+    ]);
+  }
+
   private openGuildMenu(): void {
     const contracted = this.state.escortCommission?.npcId ? this.state.npcs.find((npc) => npc.id === this.state.escortCommission?.npcId) : undefined;
     const expedition = canBeginExpedition(this.state);
     this.openMenu("探索準備", [
       contracted ? `${contracted.rank ?? "E"}ランクの${contracted.name}が店で出発を待っている。` : "ランクを選び、能力を見比べて護衛を指定する。",
-      expedition.allowed ? "護衛なしで出発することもできる。" : expedition.message,
+      expedition.allowed
+        ? contracted ? "出発時に、護衛の同行・装備準備・単独行を確認する。" : "護衛なしで出発することもできる。"
+        : expedition.message,
     ], [
-      { label: expedition.allowed ? "地下迷宮へ入る" : "本日の探索済み", disabled: !expedition.allowed, action: () => { beginExpedition(this.state); this.closeMenu(); } },
+      { label: expedition.allowed ? "地下迷宮へ入る" : "本日の探索済み", disabled: !expedition.allowed, action: () => this.requestExpeditionStart() },
       { label: contracted ? "護衛依頼を確認" : "護衛を指定する", action: () => this.openEscortCommission() },
       { label: "冒険者の序列表を見る", action: () => this.openRankingBoard() },
       { label: "閉じる", action: () => this.closeMenu() },
@@ -1410,7 +1593,7 @@ export class MerchantScene extends Phaser.Scene {
     if (current?.status === "accepted" && current.npcId) {
       const npc = this.state.npcs.find((entry) => entry.id === current.npcId)!;
       const rank = npc.rank ?? "E";
-      this.openMenu("護衛依頼", [`${rank}ランクの${npc.name}が${current.offeredFee}Gで受注済み。`, `HP ${npc.maxHp ?? 0}　攻撃 ${npc.damage ?? 0}　推奨 地下${ADVENTURER_RANKS[rank].recommendedFloor}階まで`, `後退基準: HP ${Math.round(guardRetreatRatio(this.state, npc.id) * 100)}%以下`, "店内の本人へ話しかけると一緒に出発できる。"], [
+      this.openMenu("護衛依頼", [`${rank}ランクの${npc.name}が${current.offeredFee}Gで受注済み。`, `HP ${npc.maxHp ?? 0}　攻撃 ${npc.damage ?? 0}　推奨 地下${ADVENTURER_RANKS[rank].recommendedFloor}階まで`, `後退基準: HP ${Math.round(guardRetreatRatio(this.state, npc.id) * 100)}%以下`, "次にダンジョンへ入る際、会話し直さなくても同行する。"], [
         { label: "依頼を取り消して返金", action: () => { cancelEscortCommission(this.state); this.openGuildMenu(); } },
         { label: "戻る", action: () => this.openGuildMenu() },
       ]);
@@ -1448,6 +1631,22 @@ export class MerchantScene extends Phaser.Scene {
     ]);
   }
 
+  /**
+   * ギルドの掲示に出る不名誉。
+   *
+   * 置き去り・強請り・強奪・追いはぎは、雇う前に必ず読める。**ギルドはこれを隠さない** ——
+   * 誰を連れて深く潜るかを決めるのは商人であり、決めるための材料は揃っている。
+   */
+  private guildRecordLine(career: GuardCareer): string {
+    const marks = [
+      career.betrayalCount > 0 ? `依頼主の荷を奪ったことが${career.betrayalCount}度` : "",
+      career.holdupCount > 0 ? `迷宮で人を襲ったことが${career.holdupCount}度` : "",
+      career.abandonCount > 0 ? `依頼主を迷宮に置いて逃げたことが${career.abandonCount}度` : "",
+      career.extortionCount > 0 ? `深層で取り分を要求したことが${career.extortionCount}度` : "",
+    ].filter(Boolean);
+    return marks.length ? `ギルド記録: ${marks.join("、")}ある。` : "";
+  }
+
   private openEscortProfile(npcId: string): void {
     const npc = this.state.npcs.find((entry) => entry.id === npcId && entry.adventurer);
     if (!npc) { this.openEscortCommission(); return; }
@@ -1463,11 +1662,8 @@ export class MerchantScene extends Phaser.Scene {
       `雇用 ${career.hireCount}回　生還 ${career.successfulReturns}回　最深 地下${career.deepestFloor || "―"}階`,
       `撃破 ${career.enemiesDefeated}体　肩代わり ${career.damageCovered}ダメージ　撤退 ${career.retreatCount}回`,
       // 置き去り・強請り・強奪は、雇う前に必ず読める。ギルドはこれを隠さない。
-      career.betrayalCount > 0
-        ? `ギルド記録: 依頼主の荷を奪ったことが${career.betrayalCount}度ある。`
-        : career.abandonCount > 0 || career.extortionCount > 0
-          ? `ギルド記録: ${[career.abandonCount > 0 ? `依頼主を迷宮に置いて逃げたことが${career.abandonCount}度` : "", career.extortionCount > 0 ? `深層で取り分を要求したことが${career.extortionCount}度` : ""].filter(Boolean).join("、")}ある。`
-          : "",
+      this.guildRecordLine(career),
+      career.rescueCount > 0 ? `評判: 迷宮で追いはぎから人をかばったことが${career.rescueCount}度ある。` : "",
       npc.famous ? `評判: 地下${career.deepestFloor}階からの生還が${career.successfulReturns}度、名の知れた冒険者だ。` : "",
       this.growthLine(npc),
       isRetained(npc) ? `第${npc.retainedSince}日から、あなたのお抱え。` : "",
@@ -1484,7 +1680,7 @@ export class MerchantScene extends Phaser.Scene {
       },
       { label: "観察記録を読む", disabled: observations.length === 0, action: () => this.openEscortObservations(npc.id) },
       { label: "遠征履歴を見る", disabled: career.events.length === 0, action: () => this.openEscortHistory(npc.id) },
-      { label: "装備を預ける", action: () => this.openNpcGear(npc.id) },
+      { label: "護衛装備を整える", action: () => this.openNpcGear(npc.id) },
       { label: "この人との縁を読む", disabled: npcBonds(npc).length === 0, action: () => this.openNpcBonds(npc.id) },
       { label: "候補一覧へ戻る", action: () => this.openEscortRank(npc.rank ?? "E") },
     ]);
@@ -1516,7 +1712,7 @@ export class MerchantScene extends Phaser.Scene {
    * 貸与は次に町で会ったときに返ってくる。譲渡は返らないが、信頼が大きく動き、
    * その武器が持ち主の物語を背負っていく。
    */
-  private openNpcGear(npcId: string): void {
+  private openNpcGear(npcId: string, onBack: () => void = () => this.openEscortProfile(npcId)): void {
     const npc = this.state.npcs.find((entry) => entry.id === npcId);
     if (!npc) { this.closeMenu(); return; }
     const reorganizable = canReorganizeHomeInventory(this.state);
@@ -1527,7 +1723,7 @@ export class MerchantScene extends Phaser.Scene {
         return [{
           label: `${label}を預ける`,
           disabled: !reorganizable,
-          action: () => this.openEntrustGear(npc.id, slot),
+          action: () => this.openEntrustGear(npc.id, slot, onBack),
         }];
       }
       const item = this.state.itemsById[entry.itemId];
@@ -1536,18 +1732,18 @@ export class MerchantScene extends Phaser.Scene {
         disabled: entry.term === "given" || !reorganizable,
         action: () => {
           this.state.message = reclaimGear(this.state, npc, slot).message;
-          this.openNpcGear(npc.id);
+          this.openNpcGear(npc.id, onBack);
         },
       }];
     });
     this.openMenu(`${npc.name}へ預ける`, [
       reorganizable ? "貸した品は次に町で会ったときに返してもらう。譲った品は返らない。" : "接客中は在庫を動かせない。",
       this.gearSummaryLine(npc) || "まだ何も預けていない。",
-    ], [...slotChoices, { label: "戻る", action: () => this.openEscortProfile(npc.id) }]);
+    ], [...slotChoices, { label: "戻る", action: onBack }]);
   }
 
   /** 預けられる品を鞄と保管庫から集める。 */
-  private openEntrustGear(npcId: string, slot: GearSlotName): void {
+  private openEntrustGear(npcId: string, slot: GearSlotName, onBack: () => void): void {
     const npc = this.state.npcs.find((entry) => entry.id === npcId);
     if (!npc) { this.closeMenu(); return; }
     // 迷宮では鞄の中の物しか渡せない。保管庫は家にある。
@@ -1555,7 +1751,7 @@ export class MerchantScene extends Phaser.Scene {
     const candidates = source.filter((item) => gearSlotFor(item) === slot).slice(0, 12);
     const hand = (itemId: string, term: "lent" | "given"): void => {
       this.state.message = entrustGear(this.state, npc, itemId, term).message;
-      this.openNpcGear(npc.id);
+      this.openNpcGear(npc.id, onBack);
     };
     this.openMenu(`${slot === "weapon" ? "武器" : "防具"}を選ぶ`, [
       candidates.length ? "貸すか譲るかを選ぶ。譲ると信頼が大きく上がる。" : "預けられる品を持っていない。",
@@ -1568,7 +1764,7 @@ export class MerchantScene extends Phaser.Scene {
           { label: `譲る: ${itemName(item)}（${power}）`, action: () => hand(item.uuid, "given") },
         ];
       }),
-      { label: "戻る", action: () => this.openNpcGear(npc.id) },
+      { label: "戻る", action: () => this.openNpcGear(npc.id, onBack) },
     ]);
   }
 
@@ -2009,6 +2205,7 @@ export class MerchantScene extends Phaser.Scene {
       if (!actorDefinition || !this.playCraftpixActor(sprite, actorDefinition, "idle", direction)) sprite.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE).play(`${textureKey}.idle-${direction}`);
       add(sprite.setDepth(depthAt(enemy.pos.y)));
     }
+    const robberId = run.holdup?.npcId;
     for (const adventurer of run.adventurers) {
       if (!hasDungeonVision(run.map, run.player, adventurer.pos)) continue;
       const npc = this.state.npcs.find((entry) => entry.id === adventurer.npcId);
@@ -2018,6 +2215,8 @@ export class MerchantScene extends Phaser.Scene {
       const direction = this.dungeonWalkAnimations.get(adventurer.npcId) ?? "down";
       const sprite = this.add.sprite(adventurer.pos.x * tile + center, adventurer.pos.y * tile + tile, textureKey, 0).setName(`actor:${adventurer.npcId}`);
       if (!craftpix || !this.playCraftpixActor(sprite, craftpix, "idle", direction)) sprite.setOrigin(0.5, LEGACY_ACTOR_ORIGIN_Y).setScale(LEGACY_ACTOR_SCALE).play(`${textureKey}.idle-${direction}`);
+      // 荷を狙って立っている相手は、ひと目でそうと分かる。
+      if (adventurer.npcId === robberId) sprite.setTint(0xff8a7a);
       add(sprite.setDepth(depthAt(adventurer.pos.y)));
     }
     if (run.guard) {
@@ -2441,22 +2640,28 @@ export class MerchantScene extends Phaser.Scene {
     }
   }
 
-  /** 画面下のメッセージ窓。本文と操作ヒントを罫線で分ける。 */
-  /** 直近3件を古い順に積む。新しい行だけを調子の色で見せ、古い行は沈める。 */
+  /** 画面下のメッセージ窓。最新の文章は省略せず、複数行で読ませる。 */
   private renderMessageWindow(): void {
     addWindow(this, 0, LOG_Y, MAP_W, LOG_H);
     const entries = this.messageLog.slice(-LOG_ROW_COUNT);
-    entries.forEach((entry, index) => {
-      const newest = index === entries.length - 1;
-      const line = addSingleLineText(this, 10, LOG_Y + LOG_ROW_TOP + index * LOG_ROW_PITCH, MAP_W - 20, LOG_ROW_H, entry.text, {
+    const previous = entries.length > 1 ? entries[0] : undefined;
+    const newest = entries.at(-1);
+    if (previous) {
+      addSingleLineText(this, LOG_TEXT_X, LOG_Y + LOG_PREVIOUS_Y, LOG_TEXT_W, LOG_PREVIOUS_H, previous.text, {
         fontSize: "11px",
-        color: newest ? toneInk(entry.tone) : UI_INK.dim,
-      });
-      if (!newest) line.setAlpha(0.6);
-    });
-    addDivider(this, 10, LOG_Y + LOG_DIVIDER_Y, MAP_W - 20, false);
-    const hint = this.state.location === "home" ? HOME_SHORTCUT_HINT : DUNGEON_SHORTCUT_HINT;
-    addSingleLineText(this, 10, LOG_Y + LOG_HINT_Y, MAP_W - 20, LOG_HINT_H, hint, { fontSize: "10px", color: UI_INK.dim });
+        color: UI_INK.dim,
+      }).setAlpha(0.6);
+    }
+    if (newest) {
+      const top = previous ? LOG_LATEST_AFTER_PREVIOUS_Y : LOG_LATEST_SINGLE_Y;
+      this.add.text(LOG_TEXT_X, LOG_Y + top, newest.text, {
+        fontSize: "11px",
+        color: toneInk(newest.tone),
+        lineSpacing: 2,
+        wordWrap: { width: LOG_TEXT_W, useAdvancedWrap: true },
+        maxLines: previous ? 3 : 4,
+      }).setFixedSize(LOG_TEXT_W, LOG_H - top - 5);
+    }
   }
 
   private renderActionButtons(startY: number): void {
@@ -2476,8 +2681,8 @@ export class MerchantScene extends Phaser.Scene {
           { label: `金庫 (${this.state.vaultGold}G)`, key: "", action: () => this.openVault() },
           { label: "探索用品", key: "", action: () => this.openSupplyShop() },
           { label: "護衛依頼", key: "", action: () => this.openEscortCommission() },
-          { label: expedition.allowed ? "ダンジョン" : expedition.reason === "alreadyExplored" ? "本日の探索済み" : "ダンジョン", key: "", action: () => { beginExpedition(this.state); this.render(); }, disabled: !expedition.allowed },
-          { label: "休む", key: "", action: () => { restUntilMorning(this.state); this.render(); }, disabled: this.state.timeSlot === "morning" || this.state.timeSlot === "afternoon" },
+          { label: expedition.allowed ? "ダンジョン" : expedition.reason === "alreadyExplored" ? "本日の探索済み" : "ダンジョン", key: "", action: () => this.requestExpeditionStart(), disabled: !expedition.allowed },
+          { label: "休む", key: "", action: () => { restUntilMorning(this.state); this.render(); } },
         ]
       : [
         { label: this.investigateContext() ?? "調べる", key: SHORTCUTS.investigate, action: () => { this.interactDungeon(); this.render(); }, disabled: !this.investigateContext() },
@@ -2520,11 +2725,11 @@ export class MerchantScene extends Phaser.Scene {
     this.add.rectangle(320, 180, 640, 360, 0x08070c, 0.94);
     addWindow(this, 10, 10, 620, 340, { shadow: 4 });
     this.add.text(26, 20, this.state.location === "home" ? "在庫管理" : "インベントリ", { fontSize: "17px", color: UI_INK.title });
-    this.add.text(614, 26, `鞄 ${currentItemCount(this.state)}/${bagCapacity(this.state)}個　食料${this.state.provisions} 煙玉${this.state.smokeBombs} 帰還石${this.state.returnStones}`, { fontSize: "10px", color: "#cdd8df" }).setOrigin(1, 0);
+    this.add.text(614, 26, `鞄 ${currentItemCount(this.state)}/${bagCapacity(this.state)}枠　食料${this.state.provisions}（${provisionSlotCount(this.state.provisions)}枠） 煙玉${this.state.smokeBombs} 帰還石${this.state.returnStones}`, { fontSize: "10px", color: "#cdd8df" }).setOrigin(1, 0);
     addDivider(this, 26, 46, 588);
     const equipmentCount = this.state.equipment.bagItemId ? 1 : 0;
     const tabs: Array<[InventoryTab, string]> = [
-      ["bag", `鞄 ${this.state.inventory.length}`],
+      ["bag", `鞄 ${currentItemCount(this.state)}`],
       ["equipment", `道具袋 ${equipmentCount}`],
       ["storage", `保管庫 ${this.state.store.length}`],
       ["display", `店頭 ${this.state.display.length}/${DISPLAY_CAPACITY}`],
@@ -2646,7 +2851,7 @@ export class MerchantScene extends Phaser.Scene {
       ].join("\n"), { fontSize: "11px", color: UI_INK.body, lineSpacing: 7, wordWrap: { width: 258 } });
     }
     if (this.state.location === "home" && view.tab !== "equipment") this.renderInventoryBatchToolbar(items);
-    else this.add.text(26, 328, `${SHORTCUTS.inventory} / Esc で閉じる。どのアイテムも1個で1枠。`, { fontSize: "10px", color: UI_INK.dim });
+    else this.add.text(26, 328, `${SHORTCUTS.inventory} / Esc で閉じる。品物は1点1枠、食料は${PROVISIONS_PER_SLOT}個で1枠。`, { fontSize: "10px", color: UI_INK.dim });
   }
 
   private renderInventoryBatchToolbar(items: ItemInstance[]): void {
@@ -2774,8 +2979,12 @@ export class MerchantScene extends Phaser.Scene {
     addWindow(this, 40, 20, 560, 320, { shadow: 4 });
     this.add.text(56, 32, modal.title, { fontSize: "16px", color: UI_INK.title });
     addDivider(this, 56, 56, 528);
-    modal.body.forEach((line, index) => this.add.text(56, 64 + index * 18, line, { fontSize: "11px", color: UI_INK.body, lineSpacing: 2, wordWrap: { width: 528 } }));
-    const choiceStart = Math.max(140, 74 + modal.body.length * 18 + 8);
+    let bodyBottom = 64;
+    modal.body.forEach((line) => {
+      const text = this.add.text(56, bodyBottom, line, { fontSize: "11px", color: UI_INK.body, lineSpacing: 2, wordWrap: { width: 528, useAdvancedWrap: true } });
+      bodyBottom += Math.max(18, text.height + 4);
+    });
+    const choiceStart = Math.max(140, bodyBottom + 8);
     const visibleCount = Math.max(1, Math.min(8, Math.floor((309 - choiceStart) / 20)));
     const firstChoice = Phaser.Math.Clamp(modal.index - visibleCount + 1, 0, Math.max(0, modal.choices.length - visibleCount));
     if (firstChoice > 0) this.add.text(584, choiceStart - 12, "▲", { fontSize: "10px", color: UI_INK.dim }).setOrigin(1, 0);

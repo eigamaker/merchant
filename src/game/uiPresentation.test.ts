@@ -41,7 +41,7 @@ describe("readable canvas presentation", () => {
     expect(scene).not.toContain("deleteCampaign(campaignId)");
   });
 
-  it("uses one WASD-adjacent shortcut definition in the help and map HUD", () => {
+  it("keeps shortcuts in help and the right action panel, not under every message", () => {
     const scene = readFileSync(resolve(process.cwd(), "src/scenes/MerchantScene.ts"), "utf8");
     expect(scene).toContain('investigate: "E"');
     expect(scene).toContain('inventory: "R"');
@@ -49,7 +49,8 @@ describe("readable canvas presentation", () => {
     expect(scene).toContain('shop: "F"');
     expect(scene).toContain('menu: "Tab / Esc"');
     expect(scene).toContain('const controls = this.state.location === "home" ? HOME_CONTROL_LINES : DUNGEON_CONTROL_LINES');
-    expect(scene).toContain('const hint = this.state.location === "home" ? HOME_SHORTCUT_HINT : DUNGEON_SHORTCUT_HINT');
+    expect(scene).not.toContain("HOME_SHORTCUT_HINT");
+    expect(scene).not.toContain("DUNGEON_SHORTCUT_HINT");
     expect(scene).not.toMatch(/KeyCodes\.(?:I|O|M|L|H|Z)\b/);
     expect(scene).not.toContain("E/Enter");
     expect(scene).not.toContain("M/Esc");
@@ -81,30 +82,37 @@ describe("readable canvas presentation", () => {
     expect(top + 14 + 7 * pitch + height).toBeLessThanOrEqual(353);
   });
 
-  it("fits the message log rows, divider and hint inside the log window", () => {
+  it("wraps the latest message across the full log window without a shortcut footer", () => {
     const scene = readFileSync(resolve(process.cwd(), "src/scenes/MerchantScene.ts"), "utf8");
     const value = (name: string): number => Number(new RegExp(`const ${name} = (\\d+);`).exec(scene)?.[1]);
     const logHeight = value("LOG_H");
     const rows = value("LOG_ROW_COUNT");
-    const top = value("LOG_ROW_TOP");
-    const pitch = value("LOG_ROW_PITCH");
-    const rowHeight = value("LOG_ROW_H");
-    const dividerY = value("LOG_DIVIDER_Y");
-    const hintY = value("LOG_HINT_Y");
-    const hintHeight = value("LOG_HINT_H");
-    // 窓枠は7px。本文はその内側から始まり、ヒントの下端も内側で終わる。
-    const border = 7;
+    const previousY = value("LOG_PREVIOUS_Y");
+    const previousHeight = value("LOG_PREVIOUS_H");
+    const latestY = value("LOG_LATEST_AFTER_PREVIOUS_Y");
     expect(rows).toBeGreaterThanOrEqual(2);
-    expect(top).toBeGreaterThanOrEqual(border);
-    expect(pitch).toBeGreaterThanOrEqual(rowHeight);
-    // 最終行が罫線に食い込まない。
-    expect(top + (rows - 1) * pitch + rowHeight).toBeLessThanOrEqual(dividerY);
-    // ヒストリの保持数と行数が一致する。
-    expect(scene).toContain("this.messageLog.length > LOG_ROW_COUNT");
+    expect(previousY + previousHeight).toBeLessThanOrEqual(latestY);
+    expect(latestY).toBeLessThan(logHeight - 7);
     expect(scene).toContain("this.messageLog.slice(-LOG_ROW_COUNT)");
-    // ヒントの下端が窓の内側に収まる。
-    expect(hintY).toBeGreaterThan(dividerY);
-    expect(hintY + hintHeight).toBeLessThanOrEqual(logHeight - border);
+    expect(scene).toContain("wordWrap: { width: LOG_TEXT_W, useAdvancedWrap: true }");
+    expect(scene).toContain("maxLines: previous ? 3 : 4");
+    expect(scene).not.toContain("LOG_HINT");
+    expect(scene).not.toContain("LOG_DIVIDER");
+  });
+
+  it("reports whether a manual save succeeded", () => {
+    const scene = readFileSync(resolve(process.cwd(), "src/scenes/MerchantScene.ts"), "utf8");
+    expect(scene).toContain('this.openMenu("保存しました"');
+    expect(scene).toContain('this.openMenu("保存できませんでした"');
+  });
+
+  it("offers unlimited shop stock while provisions consume bag slots", () => {
+    const scene = readFileSync(resolve(process.cwd(), "src/scenes/MerchantScene.ts"), "utf8");
+    expect(scene).toContain("private openProvisionPurchaseMenu()");
+    expect(scene).toContain("積めるだけ");
+    expect(scene).toContain("食品商の在庫に上限はない");
+    expect(scene).toContain("携行食料は${PROVISIONS_PER_SLOT}個まで1枠");
+    expect(scene).toContain("捨てる: 携行食料");
   });
 
   it("shows a context prompt and a context-labelled investigate button", () => {
@@ -129,9 +137,20 @@ describe("readable canvas presentation", () => {
     const scene = readFileSync(resolve(process.cwd(), "src/scenes/MerchantScene.ts"), "utf8");
     expect(scene).toContain("private openNpcGear(");
     expect(scene).toContain("private openEntrustGear(");
-    expect(scene).toContain('label: "装備を預ける"');
+    expect(scene).toContain('label: "護衛装備を整える"');
     // 接客中は在庫を動かせない、という既存の規則に従う。
     expect(scene).toContain("canReorganizeHomeInventory(this.state)");
+  });
+
+  it("keeps gear hand-over out of customer service and confirms escort departure", () => {
+    const scene = readFileSync(resolve(process.cwd(), "src/scenes/MerchantScene.ts"), "utf8");
+    const visitorMenu = scene.slice(scene.indexOf("private openNpcVisitor("), scene.indexOf("private openDungeonAdventurer("));
+    expect(visitorMenu).not.toContain('label: "装備を預ける"');
+    expect(scene).toContain("private requestExpeditionStart()");
+    expect(scene).toContain('this.openMenu("護衛を連れていきますか？"');
+    expect(scene).toContain('this.openMenu("護衛を連れずに入りますか？"');
+    expect(scene).toContain('label: "出発前に護衛装備を整える"');
+    expect(scene).toContain('label: "契約を取り消して単独で入る"');
   });
 
   it("renders the opening separately and keeps location headings out of the map", () => {

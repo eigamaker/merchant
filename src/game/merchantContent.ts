@@ -90,11 +90,11 @@ export interface AdventurerRankDefinition {
 }
 
 export const ADVENTURER_RANKS: Record<AdventurerRank, AdventurerRankDefinition> = {
-  E: { rank: "E", escortFee: 100, baseHp: 10, baseDamage: 3, recommendedFloor: 2 },
-  D: { rank: "D", escortFee: 180, baseHp: 15, baseDamage: 4, recommendedFloor: 3 },
-  C: { rank: "C", escortFee: 320, baseHp: 21, baseDamage: 6, recommendedFloor: 5 },
-  B: { rank: "B", escortFee: 550, baseHp: 29, baseDamage: 8, recommendedFloor: 6 },
-  A: { rank: "A", escortFee: 900, baseHp: 40, baseDamage: 11, recommendedFloor: 8 },
+  E: { rank: "E", escortFee: 100, baseHp: 10, baseDamage: 3, recommendedFloor: 3 },
+  D: { rank: "D", escortFee: 180, baseHp: 15, baseDamage: 4, recommendedFloor: 6 },
+  C: { rank: "C", escortFee: 320, baseHp: 21, baseDamage: 6, recommendedFloor: 12 },
+  B: { rank: "B", escortFee: 550, baseHp: 29, baseDamage: 8, recommendedFloor: 20 },
+  A: { rank: "A", escortFee: 900, baseHp: 40, baseDamage: 11, recommendedFloor: 27 },
 };
 
 export const ADVENTURER_RANK_ORDER: readonly AdventurerRank[] = ["E", "D", "C", "B", "A"];
@@ -147,4 +147,3 @@ export function npcAppearanceSprite(appearanceId: string | undefined): string | 
 export function createInitialNpcs(): NpcRecord[] {
   return NPC_SEEDS.map((seed) => ({ ...seed, interests: [...seed.interests], status: "inTown", relation: 0, inventoryIds: [] }));
 }
-

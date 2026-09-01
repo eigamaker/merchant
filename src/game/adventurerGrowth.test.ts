@@ -17,7 +17,7 @@ describe("growing an adventurer", () => {
     const profile = ensureGuardProfile(state, npc);
     const before = { maxHp: npc.maxHp, damage: npc.damage };
 
-    // Eランクの推奨は地下2階。1階を往復しても身にはならない。
+    // Eランクの推奨は地下3階。1階を往復しても身にはならない。
     for (let day = 1; day <= 30; day += 1) {
       state.day = day;
       applySurvivalGrowth(state, npc, profile, 1);
@@ -36,7 +36,7 @@ describe("growing an adventurer", () => {
     for (let day = 1; day <= 80; day += 1) {
       state.day = day;
       profile.career.soloDelves += 1;
-      applySurvivalGrowth(state, npc, profile, 2);
+      applySurvivalGrowth(state, npc, profile, ADVENTURER_RANKS.E.recommendedFloor);
       if (npc.rank !== "E") break;
     }
 
@@ -112,7 +112,7 @@ describe("growing an adventurer", () => {
     const veteran = state.npcs.find((npc) => npc.adventurer && npc.rank === "A")!;
     const profile = ensureGuardProfile(state, veteran);
     profile.career.soloDelves = 100;
-    profile.career.soloDeepest = 8;
+    profile.career.soloDeepest = 30;
     expect(readyForPromotion(veteran, profile)).toBe(false);
   });
 });

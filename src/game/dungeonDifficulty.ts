@@ -22,6 +22,11 @@ export interface EnemyStats {
   damage: number;
 }
 
+/** 通常生成ダンジョンの最深部。町側の潜行シミュレーションとも共有する。 */
+export const DUNGEON_MAX_FLOOR = 30;
+/** テーマと同じく、戦力も3階をひと区切りとして上がる。 */
+export const DIFFICULTY_ZONE_FLOORS = 3;
+
 /** Floor-one values for a tier-one enemy of each kind. */
 const ARCHETYPE_BASE: Record<ActorArchetype, EnemyStats> = {
   brute: { maxHp: 5, damage: 2 },
@@ -37,13 +42,17 @@ const TIER_SCALE: Record<ActorTier, number> = { 1: 1, 2: 1.25, 3: 1.55, 4: 1.9, 
  * Depth growth. Hit points climb faster than damage: a deep floor should take
  * longer to clear without turning a single mistake into a death.
  */
-export const DEPTH_HP_PER_FLOOR = 0.15;
-export const DEPTH_DAMAGE_PER_FLOOR = 0.08;
+export const DEPTH_HP_PER_ZONE = 0.45;
+export const DEPTH_DAMAGE_PER_ZONE = 0.24;
 /** A champion of its kind, used sparingly by the spawn table. */
 export const ELITE_SCALE = 1.8;
 
-export function depthScale(floor: number, perFloor: number): number {
-  return 1 + perFloor * Math.max(0, floor - 1);
+export function difficultyZone(floor: number): number {
+  return Math.floor(Math.max(0, floor - 1) / DIFFICULTY_ZONE_FLOORS);
+}
+
+export function depthScale(floor: number, perZone: number): number {
+  return 1 + perZone * difficultyZone(floor);
 }
 
 /** The one definition of where the shallow/middle/deep bands start. */
@@ -67,8 +76,8 @@ export function enemyStatsAt(profile: ActorProfile, floor: number, elite = false
   const tier = TIER_SCALE[profile.tier];
   const champion = elite ? ELITE_SCALE : 1;
   return {
-    maxHp: Math.max(1, Math.round(base.maxHp * tier * depthScale(floor, DEPTH_HP_PER_FLOOR) * champion)),
-    damage: Math.max(1, Math.round(base.damage * tier * depthScale(floor, DEPTH_DAMAGE_PER_FLOOR) * champion)),
+    maxHp: Math.max(1, Math.round(base.maxHp * tier * depthScale(floor, DEPTH_HP_PER_ZONE) * champion)),
+    damage: Math.max(1, Math.round(base.damage * tier * depthScale(floor, DEPTH_DAMAGE_PER_ZONE) * champion)),
   };
 }
 
@@ -88,8 +97,7 @@ export function enemyCost(profile: ActorProfile, elite = false): number {
  * the first six floors, then keeps creeping up instead of flattening.
  */
 export function encounterBudget(floor: number): number {
-  const level = Math.max(1, floor);
-  return 6 + Math.min(level, 6) + Math.max(0, level - 6) * 0.5;
+  return 7 + difficultyZone(floor) * 2;
 }
 
 /** Legacy per-actor numbers, kept working for actors not yet given a tier. */

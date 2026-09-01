@@ -17,6 +17,9 @@ import {
   summonNextCustomer,
   withdrawGold,
   inventoryItemCount,
+  PROVISIONS_PER_SLOT,
+  provisionCapacityRemaining,
+  provisionSlotCount,
   SHOP_CUSTOMER_MAX,
   SHOP_CUSTOMER_MIN,
 } from "./merchantSystems";
@@ -41,15 +44,54 @@ describe("v6 merchant systems", () => {
     expect(state.vaultGold).toBe(300);
   });
 
-  it("keeps supplies outside the twenty-four-item inventory", () => {
+  it("packs up to ten provisions into each inventory slot", () => {
     const state = createNewGame();
-    expect(inventoryItemCount(state)).toBe(0);
+    expect(PROVISIONS_PER_SLOT).toBe(10);
+    expect(provisionSlotCount(0)).toBe(0);
+    expect(provisionSlotCount(1)).toBe(1);
+    expect(provisionSlotCount(10)).toBe(1);
+    expect(provisionSlotCount(11)).toBe(2);
+    expect(provisionSlotCount(30)).toBe(3);
+    expect(inventoryItemCount(state)).toBe(1); // 初期食料3個の束
     const gold = state.gold;
-    expect(buySupply(state, "provisions")).toBe(true);
-    expect(state.provisions).toBe(4);
-    expect(state.gold).toBe(gold - 15);
-    expect(state.dailySupplyStock.provisions).toBe(5);
-    expect(inventoryItemCount(state)).toBe(0);
+    expect(buySupply(state, "provisions", 7)).toBe(true);
+    expect(state.provisions).toBe(10);
+    expect(state.gold).toBe(gold - 15 * 7);
+    expect(state.dailySupplyStock.provisions).toBe(0);
+    expect(inventoryItemCount(state)).toBe(1);
+    expect(buySupply(state, "provisions", 1)).toBe(true);
+    expect(inventoryItemCount(state)).toBe(2);
+  });
+
+  it("limits provision purchases by bag slots instead of shop stock", () => {
+    const state = createNewGame();
+    state.gold = 2_000;
+    state.provisions = 30;
+    expect(inventoryItemCount(state)).toBe(3);
+    state.inventory.push(...Array.from({ length: bagCapacity(state) - 3 }, () => createItem(state, "old-ring")));
+    expect(inventoryItemCount(state)).toBe(bagCapacity(state));
+    expect(provisionCapacityRemaining(state)).toBe(0);
+    expect(buySupply(state, "provisions", 1)).toBe(false);
+    expect(state.provisions).toBe(30);
+    expect(state.message).toContain("食料は10個ごとに1枠");
+  });
+
+  it("keeps the daily limits for smoke bombs and return stones", () => {
+    const state = createNewGame();
+    expect(buySupply(state, "smokeBombs", 3)).toBe(false);
+    expect(buySupply(state, "smokeBombs", 2)).toBe(true);
+    expect(state.dailySupplyStock.smokeBombs).toBe(0);
+    expect(buySupply(state, "smokeBombs")).toBe(false);
+  });
+
+  it.each(["morning", "afternoon", "evening", "night"] as const)("rests at home during %s and advances to the next morning", (timeSlot) => {
+    const state = createNewGame();
+    state.timeSlot = timeSlot;
+    const day = state.day;
+
+    expect(restUntilMorning(state)).toBe(true);
+    expect(state.day).toBe(day + 1);
+    expect(state.timeSlot).toBe("morning");
   });
 
   it("leaves weapons and armour as merchandise, since the merchant cannot wear them", () => {

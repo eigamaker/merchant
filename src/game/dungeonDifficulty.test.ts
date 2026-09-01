@@ -3,7 +3,18 @@ import { actorEnemyCost, actorEnemyStatsAt, actorProfile, actorDefinition } from
 import { buildInitialEnemies } from "./engine";
 import { generateDungeonFloor } from "./dungeonGenerator";
 import { dungeonThemeEnemyRoster, dungeonThemeSpawns } from "./dungeonThemes";
-import { DEPTH_BANDS, ELITE_SCALE, depthBand, encounterBudget, enemyCost, enemyStatsAt, legacyEnemyStatsAt } from "./dungeonDifficulty";
+import {
+  DEPTH_BANDS,
+  DIFFICULTY_ZONE_FLOORS,
+  DUNGEON_MAX_FLOOR,
+  ELITE_SCALE,
+  depthBand,
+  difficultyZone,
+  encounterBudget,
+  enemyCost,
+  enemyStatsAt,
+  legacyEnemyStatsAt,
+} from "./dungeonDifficulty";
 
 describe("difficulty curve", () => {
   it("grows both hit points and damage with depth", () => {
@@ -49,8 +60,16 @@ describe("difficulty curve", () => {
     expect(depthBand(DEPTH_BANDS.deep)).toBe("deep");
   });
 
-  it("keeps the encounter budget rising with depth", () => {
-    const budgets = [1, 2, 5, 6, 10, 20].map(encounterBudget);
+  it("raises enemy strength and encounter budget every three floors", () => {
+    const brute = { archetype: "brute", tier: 1 } as const;
+    expect(DIFFICULTY_ZONE_FLOORS).toBe(3);
+    expect(difficultyZone(1)).toBe(difficultyZone(3));
+    expect(difficultyZone(4)).toBe(difficultyZone(6));
+    expect(enemyStatsAt(brute, 1)).toEqual(enemyStatsAt(brute, 3));
+    expect(enemyStatsAt(brute, 4).maxHp).toBeGreaterThan(enemyStatsAt(brute, 3).maxHp);
+    expect(encounterBudget(1)).toBe(encounterBudget(3));
+    expect(encounterBudget(4)).toBe(encounterBudget(6));
+    const budgets = [1, 4, 7, 10, 19, 28].map(encounterBudget);
     for (let index = 1; index < budgets.length; index += 1) expect(budgets[index]!).toBeGreaterThan(budgets[index - 1]!);
   });
 });
@@ -84,9 +103,10 @@ describe("spawn tables", () => {
     expect(dungeonThemeEnemyRoster("cave", 1)).toEqual([...new Set(shallow)]);
   });
 
-  it("gives every floor from one to twenty something to meet", () => {
+  it("gives every floor down to the thirtieth something to meet", () => {
+    expect(DUNGEON_MAX_FLOOR).toBe(30);
     for (const id of ["cave", "ruins", "lava"]) {
-      for (let floor = 1; floor <= 20; floor += 1) expect(dungeonThemeSpawns(id, floor).length).toBeGreaterThan(0);
+      for (let floor = 1; floor <= DUNGEON_MAX_FLOOR; floor += 1) expect(dungeonThemeSpawns(id, floor).length).toBeGreaterThan(0);
     }
   });
 

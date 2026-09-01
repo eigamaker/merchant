@@ -19,7 +19,8 @@ import { advanceTime, bagCapacity, canReorganizeHomeInventory, consumeDungeonTim
 import { generateDungeonFloor, generatedPlacementCells } from "./dungeonGenerator";
 import { closeStall, openStall, stallAttraction, stallPhase } from "./dungeonStall";
 import { betrayalPhase, payDemand, refuseDemand, rewardLoyalty } from "./guardBetrayal";
-import { depthBand, encounterBudget } from "./dungeonDifficulty";
+import { handOverToRobber, refuseRobber, trafficPhase } from "./dungeonTraffic";
+import { DUNGEON_MAX_FLOOR, depthBand, difficultyZone, encounterBudget } from "./dungeonDifficulty";
 import { deriveDungeonSeed, dungeonThemeIdForFloor, dungeonThemeSpawns, snapshotDungeonThemePool, type DungeonSpawnEntry } from "./dungeonThemes";
 import { nextDungeonStep } from "./dungeonPathfinding";
 import { hasDungeonVision } from "./dungeonVision";
@@ -43,7 +44,7 @@ import type {
 } from "./types";
 
 export const DISPLAY_CAPACITY = 8;
-export const DUNGEON_MAX_FLOOR = 8;
+export { DUNGEON_MAX_FLOOR } from "./dungeonDifficulty";
 /** 身元の分からない遺体が現れ始める深さ。 */
 export const ANONYMOUS_CORPSE_MIN_FLOOR = 4;
 
@@ -96,7 +97,7 @@ export function createNewGame(): GameState {
     provisions: 3,
     equipment: {},
     shopSession: { day: 1, status: "closed", queueNpcIds: [], servedNpcIds: [] },
-    dailySupplyStock: { day: 1, smokeBombs: 2, returnStones: 1, provisions: 6 },
+    dailySupplyStock: { day: 1, smokeBombs: 2, returnStones: 1, provisions: 0 },
     location: "home",
     homePos: { x: HOME_SPAWN.x * 16 + 8, y: HOME_SPAWN.y * 16 + 8 },
     expeditionSerial: 0,
@@ -749,6 +750,25 @@ function moveToward(from: Vec, target: Vec, run: DungeonRun, blocked: Vec[], rng
   return nextDungeonStep(run.map, from, target, blocked, rng.int(0, 3));
 }
 
+/** 敵を倒した後も、その冒険者自身の探索は続く。重傷者だけはその場で休ませる。 */
+function patrolAdventurer(adventurer: DungeonAdventurer, run: DungeonRun, rng: Rng): Vec {
+  // 商人の隣は会話・取引・通せんぼが起こる場所なので、その場で応対する。
+  // それ以外では、敵を倒した後も立ち尽くさず探索を再開する。
+  if (distance(adventurer.pos, run.player) <= 1) return adventurer.pos;
+  if (adventurer.hp <= adventurer.maxHp * 0.35) return adventurer.pos;
+  const blocked = [
+    run.player,
+    ...run.enemies.map((enemy) => enemy.pos),
+    ...(run.stall?.slots.map((slot) => slot.pos) ?? []),
+    ...run.adventurers.filter((other) => other.npcId !== adventurer.npcId).map((other) => other.pos),
+  ];
+  const directions = [...Object.values(DIRECTION)].sort(() => rng.next() - 0.5);
+  return directions
+    .map((direction) => ({ x: adventurer.pos.x + direction.x, y: adventurer.pos.y + direction.y }))
+    .find((next) => canTraverse(run.map, adventurer.pos, next) && !blocked.some((pos) => samePosition(pos, next)))
+    ?? adventurer.pos;
+}
+
 function adventurerPhase(state: GameState, events: DungeonEvent[]): void {
   const run = state.run;
   if (!run) return;
@@ -767,7 +787,12 @@ function adventurerPhase(state: GameState, events: DungeonEvent[]): void {
     }
     const target = [...run.enemies]
       .sort((a, b) => distance(a.pos, adventurer.pos) - distance(b.pos, adventurer.pos) || a.hp - b.hp)[0];
-    if (!target) continue;
+    if (!target) {
+      const from = { ...adventurer.pos };
+      adventurer.pos = patrolAdventurer(adventurer, run, rng);
+      if (!samePosition(from, adventurer.pos)) events.push({ type: "move", actorId: adventurer.npcId, from, to: { ...adventurer.pos } });
+      continue;
+    }
     if (distance(target.pos, adventurer.pos) === 1) {
       target.hp -= adventurer.damage;
       events.push({ type: "attack", attackerId: adventurer.npcId, targetId: target.id, damage: adventurer.damage });
@@ -947,6 +972,9 @@ function finishTurn(state: GameState, events: DungeonEvent[], decrementCooldown 
   // 護衛が何を考えているかは、戦いのあとに出る。要求は次の手番へ持ち越される。
   const demand = betrayalPhase(state, events);
   adventurerPhase(state, events);
+  // 階へ人が出入りし、居合わせた誰かが荷に目をつける。護衛の裏切りとは別の危険で、
+  // 同時に、それを止めてくれる唯一のものでもある。
+  const holdup = trafficPhase(state, events, () => trafficArrivalCell(state));
   // 客をさばくのは敵が動く前。傷ついた相手が薬を買って、その足で戦いに戻れる。
   stallPhase(state, events, () => drawDelverToFloor(state));
   enemyPhase(state, events);
@@ -957,7 +985,9 @@ function finishTurn(state: GameState, events: DungeonEvent[], decrementCooldown 
     markExplored(state.run);
     consumeDungeonTime(state, 1);
   }
-  return demand ? { consumedTurn: true, events, guardDemand: demand } : { consumedTurn: true, events };
+  if (demand) return { consumedTurn: true, events, guardDemand: demand };
+  if (holdup) return { consumedTurn: true, events, holdup };
+  return { consumedTurn: true, events };
 }
 
 function performMove(state: GameState, direction: Vec): TurnResult {
@@ -1186,6 +1216,25 @@ export function dungeonAdventurerBuyPrice(item: ItemInstance): number {
   return Math.max(1, Math.floor(itemDefinition(item).baseValue * 0.6));
 }
 
+/** 浅層には余裕があり、3階を越えてから食料需要が段階的に増える。 */
+export function dungeonProvisionDemand(floor: number): number {
+  return Math.min(7, difficultyZone(floor));
+}
+
+export function dungeonProvisionDemandRemaining(adventurer: DungeonAdventurer, floor: number): number {
+  return Math.max(0, dungeonProvisionDemand(floor) - (adventurer.provisionsBought ?? 0));
+}
+
+/** 食品商の15Gを基準に、3階ごとの運搬距離を価格へ乗せる。 */
+export function dungeonProvisionBuyPrice(floor: number): number {
+  return Math.round(15 * (1 + difficultyZone(floor) * 0.6));
+}
+
+/** 深層ほど、軽傷のうちに薬を確保しようとする。 */
+export function dungeonMedicineNeedRatio(floor: number): number {
+  return Math.min(0.9, 0.4 + difficultyZone(floor) * 0.06);
+}
+
 function performBuyFromAdventurer(state: GameState, npcId: string, itemId: string, swapOutId?: string): TurnResult {
   const adventurer = nearbyAdventurer(state, npcId);
   const npc = state.npcs.find((entry) => entry.id === npcId);
@@ -1204,8 +1253,8 @@ function performBuyFromAdventurer(state: GameState, npcId: string, itemId: strin
 }
 
 /** 傷が深いほど、回復品は言い値で通る。ここが迷宮と店の決定的な違いである。 */
-export function isDesperateFor(adventurer: DungeonAdventurer, item: ItemInstance): boolean {
-  return adventurer.hp < adventurer.maxHp * 0.7 && (itemDefinition(item).healing ?? 0) > 0;
+export function isDesperateFor(adventurer: DungeonAdventurer, item: ItemInstance, floor = 1): boolean {
+  return adventurer.hp < adventurer.maxHp * dungeonMedicineNeedRatio(floor) && (itemDefinition(item).healing ?? 0) > 0;
 }
 
 /** 迷宮で提案できる最高額。他に店が無いぶん、桁が変わる。 */
@@ -1219,11 +1268,12 @@ function performSellToAdventurer(state: GameState, npcId: string, itemId: string
   const item = state.inventory.find((entry) => entry.uuid === itemId);
   if (!adventurer || !npc || !item) return emptyResult();
   const definition = itemDefinition(item);
-  const needsMedicine = adventurer.hp < adventurer.maxHp && (definition.healing ?? 0) > 0;
+  const floor = state.run?.floor ?? 1;
+  const needsMedicine = isDesperateFor(adventurer, item, floor);
   if (!npc.interests.includes(definition.category) && !needsMedicine) { state.message = `${npc.name}はその品を探していない。`; return emptyResult(); }
   const baseline = dungeonAdventurerBuyPrice(item);
   const price = Math.max(1, Math.min(Math.round(asking ?? baseline), dungeonAskingCeiling(item)));
-  const desperate = isDesperateFor(adventurer, item);
+  const desperate = isDesperateFor(adventurer, item, floor);
   const profile = npc.guardProfile ?? ensureGuardProfile(state, npc);
   const verdict = dungeonVerdict(npc, price, baseline, adventurer.gold, desperate, profile.personality);
   if (verdict.reaction === "refuse") {
@@ -1239,7 +1289,6 @@ function performSellToAdventurer(state: GameState, npcId: string, itemId: string
   item.location = { kind: "npcInventory", npcId: npc.id };
   item.history.push({ day: state.day, type: "sold", detail: `${npc.name}へダンジョン内で売却`, value: price });
   // 同じ取引でも、相手の受け取り方で残るものが変わる。
-  const floor = state.run?.floor;
   if (verdict.sentiment === "resented") {
     recordBond(state, npc, "gouged", `${itemName(item)}を${price}Gで買わされた`, floor);
     adjustGuardProfile(profile, -8);
@@ -1257,6 +1306,47 @@ function performSellToAdventurer(state: GameState, npcId: string, itemId: string
   state.message = sold;
   const result = finishTurn(state, [{ type: "message", text: sold }]);
   // 足元を見た商いは、同じターンの戦闘ログに流させない。恨みが生まれた場面は必ず読ませる。
+  if (verdict.sentiment !== "fair") state.message = sold;
+  return result;
+}
+
+function performSellProvisionsToAdventurer(state: GameState, npcId: string, asking?: number): TurnResult {
+  const adventurer = nearbyAdventurer(state, npcId);
+  const npc = state.npcs.find((entry) => entry.id === npcId);
+  const floor = state.run?.floor ?? 1;
+  if (!adventurer || !npc) return emptyResult();
+  const remaining = dungeonProvisionDemandRemaining(adventurer, floor);
+  if (remaining <= 0) { state.message = `${npc.name}はこの階を抜けるぶんの食料を確保している。`; return emptyResult(); }
+  if (state.provisions <= 0) { state.message = "売れる携行食料を持っていない。"; return emptyResult(); }
+  const baseline = dungeonProvisionBuyPrice(floor);
+  const unitPrice = Math.max(1, Math.min(Math.round(asking ?? baseline), baseline * DUNGEON_PRICE_CEILING));
+  const desperate = dungeonProvisionDemand(floor) >= 3;
+  const profile = npc.guardProfile ?? ensureGuardProfile(state, npc);
+  const verdict = dungeonVerdict(npc, unitPrice, baseline, adventurer.gold, desperate, profile.personality);
+  if (verdict.reaction === "refuse") {
+    state.message = verdict.line;
+    return emptyResult();
+  }
+  const quantity = Math.min(state.provisions, remaining, Math.floor(adventurer.gold / unitPrice));
+  if (quantity <= 0) { state.message = `${npc.name}は食料代を支払えない。`; return emptyResult(); }
+  const total = unitPrice * quantity;
+  state.provisions -= quantity;
+  state.gold += total;
+  adventurer.gold -= total;
+  adventurer.provisionsBought = (adventurer.provisionsBought ?? 0) + quantity;
+  if (verdict.sentiment === "resented") {
+    recordBond(state, npc, "gouged", `地下${floor}階で携行食料${quantity}個を${total}Gで買わされた`, floor);
+    adjustGuardProfile(profile, -6);
+    npc.relation = Math.max(-100, npc.relation - 4);
+  } else if (verdict.sentiment === "grateful") {
+    recordBond(state, npc, "aided", `地下${floor}階で携行食料${quantity}個を届けてもらった`, floor);
+    adjustGuardProfile(profile, 3);
+  } else {
+    recordBond(state, npc, "traded", `地下${floor}階で携行食料${quantity}個を${total}Gで買った`, floor);
+  }
+  const sold = `${npc.name}へ携行食料を${quantity}個、計${total}Gで売った。${verdict.line}`;
+  state.message = sold;
+  const result = finishTurn(state, [{ type: "message", text: sold }]);
   if (verdict.sentiment !== "fair") state.message = sold;
   return result;
 }
@@ -1402,6 +1492,29 @@ function performCloseStall(state: GameState): TurnResult {
   return finishTurn(state, events);
 }
 
+/** 往来で入ってくる人の立ち位置。商人から離れたところに現れ、歩いてくるのが見える。 */
+function trafficArrivalCell(state: GameState): Vec | undefined {
+  const run = state.run;
+  if (!run) return undefined;
+  const occupied = [
+    run.player,
+    ...run.enemies.map((enemy) => enemy.pos),
+    ...run.adventurers.map((entry) => entry.pos),
+    ...run.chests.map((chest) => chest.pos),
+    ...run.bodies.map((body) => body.pos),
+    ...(run.stall?.slots.map((slot) => slot.pos) ?? []),
+  ];
+  const rng = new Rng(run.seed + run.turn * 1543 + run.floor * 67);
+  return freeFloor(run.map, rng, occupied, [], (cell) => distance(cell, run.player) >= 5);
+}
+
+function performAnswerHoldup(state: GameState, hand: boolean): TurnResult {
+  const events: DungeonEvent[] = [];
+  const answered = hand ? handOverToRobber(state, events) : refuseRobber(state);
+  if (!answered) return emptyResult();
+  return finishTurn(state, events.length ? events : [{ type: "message", text: state.message }]);
+}
+
 function performAnswerDemand(state: GameState, pay: boolean): TurnResult {
   const answered = pay ? payDemand(state) : refuseDemand(state);
   if (!answered) return emptyResult();
@@ -1415,8 +1528,14 @@ export function performDungeonCommand(state: GameState, command: DungeonCommand)
     state.message = `${name}が行く手を塞いでいる。返事をするまで動けない。`;
     return emptyResult();
   }
+  if (state.run?.holdup && !state.run.holdup.refused && command.type !== "answerHoldup") {
+    const name = state.npcs.find((npc) => npc.id === state.run?.holdup?.npcId)?.name ?? "追いはぎ";
+    state.message = `${name}が行く手に立っている。返事をするまで動けない。`;
+    return emptyResult();
+  }
   switch (command.type) {
     case "answerDemand": return performAnswerDemand(state, command.pay);
+    case "answerHoldup": return performAnswerHoldup(state, command.hand);
     case "move": return performMove(state, command.direction);
     case "shove": return performShove(state, command.direction);
     case "wait":
@@ -1434,6 +1553,7 @@ export function performDungeonCommand(state: GameState, command: DungeonCommand)
     case "useMedicine": return performUseMedicine(state, command.itemId, command.target);
     case "buyFromAdventurer": return performBuyFromAdventurer(state, command.npcId, command.itemId, command.swapOutId);
     case "sellToAdventurer": return performSellToAdventurer(state, command.npcId, command.itemId, command.price);
+    case "sellProvisionsToAdventurer": return performSellProvisionsToAdventurer(state, command.npcId, command.unitPrice);
     case "stairs": return performStairs(state, command.guardResponse);
   }
 }

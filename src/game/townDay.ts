@@ -5,6 +5,7 @@ import { recordCorpse } from "./dungeonCorpses";
 import { ADVENTURER_ROSTER_TARGET, createRosterAdventurer, thinnestRank } from "./npcRoster";
 import { carriedGearItems, gearPower, isRetained, recordGearDeed, settleLentGear, updateRetainer } from "./npcGear";
 import { applySurvivalGrowth } from "./adventurerGrowth";
+import { DUNGEON_MAX_FLOOR } from "./dungeonDifficulty";
 import type { AdventurerRank, GameState, GuardProfile, ItemInstance, NpcRecord } from "./types";
 
 /**
@@ -55,7 +56,7 @@ export interface DelveInput {
 export function resolveDelveOutcome(input: DelveInput): DelveOutcome {
   const recommended = ADVENTURER_RANKS[input.rank].recommendedFloor;
   const excess = Math.max(0, input.floor - recommended);
-  // 装備の効きには上限を置く。良い装備で地下8階が作業になっては、深さが意味を失う。
+  // 装備の効きには上限を置く。良い装備だけで最深部が作業になっては、深さが意味を失う。
   const gear = Math.min(0.10, (input.gearPower ?? 0) * 0.012);
   const death = clamp(
     0.05 + excess * 0.09 + (1 - clamp(input.hpRatio, 0, 1)) * 0.25 - input.courage / 1000 - input.discipline / 800 - gear,
@@ -72,7 +73,7 @@ export function preferredDelveFloor(npc: NpcRecord, profile: GuardProfile, sampl
   const recommended = ADVENTURER_RANKS[npc.rank ?? "E"].recommendedFloor;
   const ambition = (profile.personality.courage - 50) / 50;
   // 良い装備を持たされた者は、一段深くを狙う。
-  return clamp(Math.round(recommended + ambition * 1.5 + (sample * 3 - 1) + Math.min(1, gear / 8)), 1, 8);
+  return clamp(Math.round(recommended + ambition * 1.5 + (sample * 3 - 1) + Math.min(1, gear / 8)), 1, DUNGEON_MAX_FLOOR);
 }
 
 /** いま主人公の探索に居合わせている人物。画面外で勝手に決着させてはいけない。 */
@@ -255,9 +256,9 @@ function scheduleArrival(state: GameState): void {
 }
 
 /** 1つの階に置く冒険者の上限。 */
-export const FLOOR_ADVENTURER_MAX = 2;
+export const FLOOR_ADVENTURER_MAX = 1;
 /** 商人と行き合わせるために、その日のうちに繰り上げ出発させてよい人数。 */
-const RETROACTIVE_DEPARTURES_PER_DAY = 2;
+const RETROACTIVE_DEPARTURES_PER_DAY = 1;
 
 /**
  * その階で行き合う冒険者を名簿から選ぶ。

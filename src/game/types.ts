@@ -137,10 +137,14 @@ export interface ActiveGuard {
 export interface DungeonAdventurer {
   npcId: string;
   pos: Vec;
+  /** この階に現れた手番。長居はせず、自分の探索へ戻っていく。 */
+  arrivedTurn?: number;
   hp: number;
   maxHp: number;
   damage: number;
   gold: number;
+  /** この階で商人から買った携行食料。深度ごとの需要上限に使う。 */
+  provisionsBought?: number;
   /** 預かった防具ぶんの軽減。装備が無ければ未設定。 */
   defense?: number;
 }
@@ -190,6 +194,12 @@ export type GuardCareerEventType =
   | "extorted"
   /** 誰も見ていない深層で、荷を奪って去った。 */
   | "betrayed"
+  /** 契約とは関係なく、迷宮で商人を襲った。 */
+  | "heldUp"
+  /** 追いはぎに立ち向かい、商人をかばった。 */
+  | "rescued"
+  /** 商人が襲われているのを、そこに立って見ていた。 */
+  | "stoodBy"
   | "starved"
   | "died";
 
@@ -213,6 +223,10 @@ export interface GuardCareer {
   abandonCount: number;
   /** 深層で取り分を強要した回数。 */
   extortionCount: number;
+  /** 迷宮で商人を襲った回数。護衛の契約とは無関係に、ギルドの掲示に出る。 */
+  holdupCount: number;
+  /** 追いはぎから商人をかばった回数。 */
+  rescueCount: number;
   /** 荷を奪って去った回数。これが付いた者を二度と雇う商人はいない。 */
   betrayalCount: number;
   /** 商人と関係なく自分で潜った回数。画面外の結果は件数だけ数え、経歴イベントには積まない。 */
@@ -249,6 +263,10 @@ export type BondKind =
   | "abandoned"
   /** 深層で取り分を強要された。 */
   | "extorted"
+  /** 迷宮で待ち伏せられ、荷を要求された。 */
+  | "waylaid"
+  /** 追いはぎから守ってもらった。 */
+  | "rescued"
   /** 荷を奪われた。 */
   | "betrayed"
   | "lost";
@@ -514,6 +532,12 @@ export interface DungeonRun {
   stall?: DungeonStall;
   /** 護衛が行く手を塞いでいる。返事をするまで先へ進めない。 */
   demand?: GuardDemand;
+  /** 護衛ではない誰かに、迷宮で呼び止められている。 */
+  holdup?: DungeonHoldup;
+  /** もう話のついた相手。「出せば通してやる」と言った以上、二度は呼び止めない。 */
+  holdupSettledNpcIds?: string[];
+  /** 次に往来を引くまでの手番。 */
+  nextTrafficTurn?: number;
   /** この探索で護衛の心に差した影の深さ。裏切らずに帰れば、そのぶん信用になる。 */
   betrayalPeak?: number;
   /** 一度きりの予兆を出したか。 */
@@ -613,6 +637,11 @@ export type DungeonEvent =
   | { type: "stallSold"; npcId: string; itemId: string; price: number }
   | { type: "stallClosed"; earned: number }
   | { type: "guardDemand"; guardId: string; amount: number }
+  | { type: "arrived"; npcId: string; friendly: boolean }
+  | { type: "departed"; npcId: string }
+  | { type: "holdup"; npcId: string; amount: number }
+  | { type: "robbed"; npcId: string; gold: number; items: number }
+  | { type: "rescued"; npcId: string; fromNpcId: string }
   | { type: "guardBetrayed"; guardId: string; gold: number; items: number }
   | { type: "message"; text: string };
 
@@ -622,6 +651,8 @@ export interface TurnResult {
   guardDescent?: GuardDescentAssessment;
   /** この手番で護衛が行く手を塞いだ。画面はここから問いを出す。 */
   guardDemand?: GuardDemand;
+  /** この手番で誰かに呼び止められた。 */
+  holdup?: DungeonHoldup;
 }
 
 /**
@@ -640,6 +671,25 @@ export interface GuardDemand {
   refused?: true;
   /** 断られた手番。腹を決めるのは次の一手で、商人にはそのぶんだけ隙がある。 */
   refusedTurn?: number;
+}
+
+/**
+ * 追いはぎ。
+ *
+ * 護衛の裏切りとは別で、契約も何もない相手が荷を寄越せと言ってくる。断れば
+ * 本当に斬りかかってくる —— **商人は戦えないので、頼れるのは護衛か、その場に
+ * 居合わせた誰かの気まぐれだけである。**
+ */
+export interface DungeonHoldup {
+  npcId: string;
+  /** 要求額。払える持ち合わせが無ければ、荷そのものを寄越せと言う。 */
+  amount: number;
+  /** 金では足りず、荷を差し出すしかない。 */
+  takesGoods: boolean;
+  floor: number;
+  turn: number;
+  /** 断られた。次の一手から斬りかかってくる。 */
+  refused?: true;
 }
 
 export interface GuardDescentAssessment {
@@ -665,11 +715,15 @@ export type DungeonCommand =
   | { type: "buyFromAdventurer"; npcId: string; itemId: string; swapOutId?: string }
   /** `price` は商人の言い値。省略すれば相場どおり。 */
   | { type: "sellToAdventurer"; npcId: string; itemId: string; price?: number }
+  /** `unitPrice` は携行食料1個あたりの言い値。需要と所持金の範囲でまとめて売る。 */
+  | { type: "sellProvisionsToAdventurer"; npcId: string; unitPrice?: number }
   /** 風呂敷を広げる。`goods` は並べる品と言い値。 */
   | { type: "openStall"; goods: ReadonlyArray<{ itemId: string; price: number }> }
   | { type: "closeStall" }
   /** 強請りへの返事。 */
   | { type: "answerDemand"; pay: boolean }
+  /** 追いはぎへの返事。 */
+  | { type: "answerHoldup"; hand: boolean }
   | { type: "stairs"; guardResponse?: "continue" | "dismiss" };
 
 export type MenuAction = () => void;

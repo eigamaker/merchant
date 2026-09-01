@@ -7,11 +7,11 @@ import { createHomeMap } from "./homeMap";
 import { loadTrialMapPack } from "./mapDocument";
 import type { GameState, ItemInstance, SupplyKind, TimeSlot } from "./types";
 
-export const SUPPLY_RULES: Record<SupplyKind, { label: string; supplier: string; price: number; dailyStock: number }> = {
+export const SUPPLY_RULES = {
   smokeBombs: { label: "煙玉", supplier: "薬師ネヴァ", price: 50, dailyStock: 2 },
   returnStones: { label: "帰還石", supplier: "冒険者ギルド", price: 150, dailyStock: 1 },
-  provisions: { label: "携行食料", supplier: "食品商", price: 15, dailyStock: 6 },
-};
+  provisions: { label: "携行食料", supplier: "食品商", price: 15, dailyStock: null },
+} satisfies Record<SupplyKind, { label: string; supplier: string; price: number; dailyStock: number | null }>;
 
 export const SHOP_CUSTOMER_MIN = 3;
 export const SHOP_CUSTOMER_MAX = 6;
@@ -23,6 +23,8 @@ export const SHOP_CUSTOMER_MAX = 6;
  */
 export const SHOP_FAMILIARITY_WEIGHT = 0.45;
 export const DUNGEON_ACTIONS_PER_MEAL = 30;
+/** 携行食料は束ねて運ぶ。端数も一束として1枠を使う。 */
+export const PROVISIONS_PER_SLOT = 10;
 
 const TIME_ORDER: TimeSlot[] = ["morning", "afternoon", "evening", "night"];
 
@@ -51,8 +53,12 @@ function hash(value: string): number {
   return result >>> 0;
 }
 
+export function provisionSlotCount(provisions: number): number {
+  return Math.ceil(Math.max(0, Math.floor(provisions)) / PROVISIONS_PER_SLOT);
+}
+
 export function inventoryItemCount(state: GameState): number {
-  return state.inventory.length;
+  return state.inventory.length + provisionSlotCount(state.provisions);
 }
 
 /**
@@ -64,6 +70,12 @@ export function inventoryItemCount(state: GameState): number {
 export function bagCapacity(state: GameState): number {
   const item = state.equipment.bagItemId ? state.itemsById[state.equipment.bagItemId] : undefined;
   return item ? bagCapacityOf(item.definitionId) : FALLBACK_BAG_CAPACITY;
+}
+
+/** 現在の品物を残したまま、追加で積める食料の個数。 */
+export function provisionCapacityRemaining(state: GameState): number {
+  const slotsForProvisions = Math.max(0, bagCapacity(state) - state.inventory.length);
+  return Math.max(0, slotsForProvisions * PROVISIONS_PER_SLOT - state.provisions);
 }
 
 export function equippedBag(state: GameState): ItemInstance | undefined {
@@ -85,7 +97,7 @@ export function equipBag(state: GameState, itemId: string): boolean {
   if (!incoming || incomingDefinition?.category !== "bag") return false;
   const previous = equippedBag(state);
   const nextCapacity = incomingDefinition.capacity ?? FALLBACK_BAG_CAPACITY;
-  const carried = state.inventory.length - 1 + (previous ? 1 : 0);
+  const carried = state.inventory.length - 1 + (previous ? 1 : 0) + provisionSlotCount(state.provisions);
   if (carried > nextCapacity) {
     state.message = `${incomingDefinition.trueName}は${nextCapacity}枠しかない。先に荷を減らそう。`;
     return false;
@@ -115,7 +127,8 @@ export function resetDailySystems(state: GameState): void {
     day: state.day,
     smokeBombs: SUPPLY_RULES.smokeBombs.dailyStock,
     returnStones: SUPPLY_RULES.returnStones.dailyStock,
-    provisions: SUPPLY_RULES.provisions.dailyStock,
+    // セーブ互換用の欄。食料は常時仕入れられるので、在庫数としては使わない。
+    provisions: 0,
   };
   // 町で身体を休めている者だけ消耗が抜ける。療養中はより早く。
   for (const npc of state.npcs) {
@@ -140,7 +153,7 @@ export function advanceTime(state: GameState, bands = 1): void {
 }
 
 export function restUntilMorning(state: GameState): boolean {
-  if (state.location !== "home" || (state.timeSlot !== "evening" && state.timeSlot !== "night")) return false;
+  if (state.location !== "home") return false;
   state.day += 1;
   state.timeSlot = "morning";
   state.hp = state.maxHp;
@@ -157,13 +170,18 @@ export function restUntilMorning(state: GameState): boolean {
 export function buySupply(state: GameState, kind: SupplyKind, amount = 1): boolean {
   const quantity = Math.max(1, Math.floor(amount));
   const rule = SUPPLY_RULES[kind];
+  const limitedStock = rule.dailyStock !== null;
   const available = state.dailySupplyStock[kind];
   const price = rule.price * quantity;
   if (state.location !== "home") return false;
-  if (available < quantity) { state.message = `${rule.label}は本日分が売り切れている。`; return false; }
+  if (limitedStock && available < quantity) { state.message = `${rule.label}は本日分が売り切れている。`; return false; }
   if (state.gold < price) { state.message = `${price}Gを支払えない。`; return false; }
+  if (kind === "provisions" && quantity > provisionCapacityRemaining(state)) {
+    state.message = `鞄に食料${quantity}個を積む空きがない。食料は${PROVISIONS_PER_SLOT}個ごとに1枠使う。`;
+    return false;
+  }
   state.gold -= price;
-  state.dailySupplyStock[kind] -= quantity;
+  if (limitedStock) state.dailySupplyStock[kind] -= quantity;
   state[kind] += quantity;
   state.message = `${rule.supplier}から${rule.label}を${quantity}個、${price}Gで仕入れた。`;
   return true;

@@ -168,7 +168,7 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
   state.timeSlot ??= "morning";
   state.equipment ??= {};
   state.shopSession ??= { day: state.day, status: "closed", queueNpcIds: [], servedNpcIds: [] };
-  state.dailySupplyStock ??= { day: state.day, smokeBombs: 2, returnStones: 1, provisions: 6 };
+  state.dailySupplyStock ??= { day: state.day, smokeBombs: 2, returnStones: 1, provisions: 0 };
   state.archive ??= [];
   state.expeditionSerial ??= 0;
   state.lastExpeditionDay ??= state.run ? state.day : 0;

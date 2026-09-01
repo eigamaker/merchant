@@ -5,7 +5,11 @@ import {
   buildInitialEnemies,
   createItem,
   createNewGame,
+  currentItemCount,
   descend,
+  dungeonMedicineNeedRatio,
+  dungeonProvisionBuyPrice,
+  dungeonProvisionDemand,
   generateDungeon,
   guardRetreatThreshold,
   movePlayer,
@@ -631,6 +635,64 @@ describe("independent dungeon adventurers", () => {
     expect(potion.location).toEqual({ kind: "consumed", actorId: npc.id });
     expect(npc.inventoryIds).not.toContain(potion.uuid);
   });
+
+  it("creates almost no supply demand in the shallows and sells batches at a deep-floor premium", () => {
+    const state = createNewGame();
+    const adventurer = placeBesidePlayer(state);
+    const npc = state.npcs.find((entry) => entry.id === adventurer.npcId)!;
+    const run = state.run!;
+    state.provisions = 11;
+    adventurer.gold = 1000;
+    const startingSlots = currentItemCount(state);
+
+    expect(dungeonProvisionDemand(1)).toBe(0);
+    const shallow = performDungeonCommand(state, { type: "sellProvisionsToAdventurer", npcId: npc.id });
+    expect(shallow.consumedTurn).toBe(false);
+    expect(state.provisions).toBe(11);
+
+    run.floor = 10;
+    const demand = dungeonProvisionDemand(run.floor);
+    const unitPrice = dungeonProvisionBuyPrice(run.floor);
+    const startingGold = state.gold;
+    const deep = performDungeonCommand(state, { type: "sellProvisionsToAdventurer", npcId: npc.id, unitPrice });
+
+    expect(deep.consumedTurn).toBe(true);
+    expect(demand).toBe(3);
+    expect(state.provisions).toBe(11 - demand);
+    expect(currentItemCount(state)).toBe(startingSlots - 1);
+    expect(state.gold).toBe(startingGold + unitPrice * demand);
+    expect(adventurer.provisionsBought).toBe(demand);
+    expect(state.message).toContain(`携行食料を${demand}個`);
+    expect(dungeonProvisionBuyPrice(30)).toBeGreaterThan(unitPrice);
+  });
+
+  it("makes medicine demand begin earlier as adventurers go deeper", () => {
+    expect(dungeonMedicineNeedRatio(1)).toBeLessThan(dungeonMedicineNeedRatio(30));
+  });
+
+  it("resumes exploring after combat but lets wounded adventurers and traders stop", () => {
+    const state = createNewGame();
+    const adventurer = placeBesidePlayer(state);
+    const run = state.run!;
+    run.nextTrafficTurn = 999;
+    run.player = { x: 2, y: 2 };
+    adventurer.pos = { x: 6, y: 5 };
+    for (let y = 3; y <= 7; y += 1) for (let x = 4; x <= 8; x += 1) run.map.tiles[y]![x] = 0;
+    const before = { ...adventurer.pos };
+
+    waitTurn(state);
+    expect(adventurer.pos).not.toEqual(before);
+
+    adventurer.hp = Math.floor(adventurer.maxHp * 0.3);
+    const woundedAt = { ...adventurer.pos };
+    waitTurn(state);
+    expect(adventurer.pos).toEqual(woundedAt);
+
+    adventurer.hp = adventurer.maxHp;
+    adventurer.pos = { x: run.player.x + 1, y: run.player.y };
+    waitTurn(state);
+    expect(adventurer.pos).toEqual({ x: run.player.x + 1, y: run.player.y });
+  });
 });
 
 describe("inventory choices and early story", () => {
@@ -687,15 +749,17 @@ describe("inventory choices and early story", () => {
     const state = createNewGame();
     beginExpedition(state);
     const run = state.run!;
-    // 風呂敷は12枠。重さの概念はないので、槍でも薬でも1個で1枠。
-    state.inventory = Array.from({ length: 11 }, () => createItem(state, "bronze-spear", 1));
+    // 風呂敷は12枠。食料10個で1枠、品物は1点で1枠。
+    state.provisions = 10;
+    state.inventory = Array.from({ length: 10 }, () => createItem(state, "bronze-spear", 1));
     const ground = run.items[0]!;
     run.player = { ...ground.pos };
 
     const result = tryPickup(state);
 
     expect(result.consumedTurn).toBe(true);
-    expect(state.inventory).toHaveLength(12);
+    expect(state.inventory).toHaveLength(11);
+    expect(currentItemCount(state)).toBe(12);
     expect(state.inventory).toContain(ground.item);
   });
 

@@ -210,11 +210,11 @@ describe("guard depth decisions", () => {
     npc.guardProfile!.personality.courage = 30;
     Object.assign(npc.guardProfile!, { trust: 20, stress: 0 });
     state.provisions = 3;
-    state.run!.floor = 2;
+    state.run!.floor = 3;
     state.run!.player = { ...state.run!.map.stairsDown! };
     guard.hp = guard.maxHp;
     state.hp = state.maxHp;
-    expect(assessGuardDescent(state, 3)?.severity).toBe("warn");
+    expect(assessGuardDescent(state, 4)?.severity).toBe("warn");
     const time = state.run!.timeUnits;
     const prompt = performDungeonCommand(state, { type: "stairs" });
     expect(prompt.consumedTurn).toBe(false);
@@ -223,7 +223,7 @@ describe("guard depth decisions", () => {
 
     const result = performDungeonCommand(state, { type: "stairs", guardResponse: "continue" });
     expect(result.consumedTurn).toBe(true);
-    expect(state.run!.floor).toBe(3);
+    expect(state.run!.floor).toBe(4);
     expect(npc.guardProfile!.trust).toBe(18);
     expect(npc.guardProfile!.stress).toBe(5);
     expect(npc.guardProfile!.career.warningsIgnored).toBe(1);
@@ -234,14 +234,14 @@ describe("guard depth decisions", () => {
     npc.guardProfile!.personality.courage = 0;
     Object.assign(npc.guardProfile!, { trust: 20, stress: 100 });
     state.provisions = 0;
-    state.run!.floor = 2;
+    state.run!.floor = 3;
     state.run!.player = { ...state.run!.map.stairsDown! };
     guard.hp = 1;
     state.hp = 1;
-    expect(assessGuardDescent(state, 3)?.severity).toBe("refuse");
+    expect(assessGuardDescent(state, 4)?.severity).toBe("refuse");
     const result = performDungeonCommand(state, { type: "stairs", guardResponse: "dismiss" });
     expect(result.consumedTurn).toBe(true);
-    expect(state.run!.floor).toBe(3);
+    expect(state.run!.floor).toBe(4);
     expect(state.run!.guard).toBeUndefined();
     // HP1で帰した相手は、翌日すぐには雇えない。
     expect(npc.status).toBe("recovering");

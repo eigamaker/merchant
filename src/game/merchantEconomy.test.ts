@@ -3,7 +3,7 @@ import { beginExpedition, createItem, createNewGame, descend, returnHome, waitTu
 import { ADVENTURER_RANKS, ITEM_VISUALS, MERCHANT_ITEM_DEFINITIONS, NPC_APPEARANCES, npcAppearanceSprite } from "./merchantContent";
 import { npcActorIds } from "./actorCatalog";
 import { acceptCustomerPurchaseRequest, cancelEscortCommission, escortFeeForNpc, postEscortCommission, prepareCustomerPurchaseRequest } from "./merchantEconomy";
-import { bagCapacity, depositGold, startShopSession, summonNextCustomer } from "./merchantSystems";
+import { bagCapacity, depositGold, restUntilMorning, startShopSession, summonNextCustomer } from "./merchantSystems";
 import { ADVENTURER_ROSTER_TARGET, ROSTER_RANK_SHAPE, createRosterAdventurer } from "./npcRoster";
 
 describe("v6 merchant world", () => {
@@ -101,6 +101,22 @@ describe("v6 merchant world", () => {
     expect(selected?.rank).toBe("A");
     expect(state.run?.guard).toMatchObject({ guardId: "astrid", maxHp: 44, damage: 12 });
     expect(state.gold).toBe(100);
+  });
+
+  it("keeps a hired escort overnight and brings them on the next expedition without another conversation", () => {
+    const state = createNewGame();
+    const guard = state.npcs.find((npc) => npc.id === "rolf")!;
+    state.gold += 1000;
+    expect(postEscortCommission(state, guard.id)?.id).toBe(guard.id);
+    state.timeSlot = "night";
+
+    expect(restUntilMorning(state)).toBe(true);
+    expect(guard.status).toBe("contracted");
+    expect(state.escortCommission?.status).toBe("accepted");
+    expect(beginExpedition(state)).toBe(true);
+
+    expect(state.run?.guard?.guardId).toBe(guard.id);
+    expect(state.escortCommission?.status).toBe("active");
   });
 
   it("generates floor-ranked adventurers with varied stats", () => {
