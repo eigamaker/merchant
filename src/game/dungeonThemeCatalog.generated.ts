@@ -57,7 +57,8 @@ export const DUNGEON_THEME_CATALOG = [
           }
         ],
         "weight": 0.08,
-        "maxPerFloor": 10
+        "maxPerFloor": 10,
+        "enabled": false
       },
       {
         "id": "cave-bones",
@@ -109,7 +110,8 @@ export const DUNGEON_THEME_CATALOG = [
           }
         ],
         "weight": 0.015,
-        "maxPerFloor": 5
+        "maxPerFloor": 5,
+        "enabled": false
       },
       {
         "id": "cave-stones",
@@ -132,7 +134,8 @@ export const DUNGEON_THEME_CATALOG = [
           }
         ],
         "weight": 0.3,
-        "maxPerFloor": 4
+        "maxPerFloor": 4,
+        "enabled": false
       },
       {
         "id": "cave-pots",
@@ -150,7 +153,8 @@ export const DUNGEON_THEME_CATALOG = [
           }
         ],
         "weight": 0.008,
-        "maxPerFloor": 3
+        "maxPerFloor": 3,
+        "enabled": false
       },
       {
         "id": "cave-lever",
@@ -168,7 +172,8 @@ export const DUNGEON_THEME_CATALOG = [
           }
         ],
         "weight": 0.01,
-        "maxPerFloor": 3
+        "maxPerFloor": 3,
+        "enabled": false
       }
     ],
     "spawns": [
@@ -282,7 +287,8 @@ export const DUNGEON_THEME_CATALOG = [
           }
         ],
         "weight": 0.06,
-        "maxPerFloor": 8
+        "maxPerFloor": 8,
+        "enabled": false
       },
       {
         "id": "ruins-rubble",
@@ -310,7 +316,8 @@ export const DUNGEON_THEME_CATALOG = [
           }
         ],
         "weight": 0.03,
-        "maxPerFloor": 8
+        "maxPerFloor": 8,
+        "enabled": false
       },
       {
         "id": "ruins-crater",
@@ -338,7 +345,8 @@ export const DUNGEON_THEME_CATALOG = [
           }
         ],
         "weight": 0.02,
-        "maxPerFloor": 5
+        "maxPerFloor": 5,
+        "enabled": false
       },
       {
         "id": "ruins-sticks",
@@ -384,7 +392,8 @@ export const DUNGEON_THEME_CATALOG = [
           }
         ],
         "weight": 0.008,
-        "maxPerFloor": 3
+        "maxPerFloor": 3,
+        "enabled": false
       },
       {
         "id": "ruins-door",
@@ -402,7 +411,8 @@ export const DUNGEON_THEME_CATALOG = [
           }
         ],
         "weight": 0.01,
-        "maxPerFloor": 3
+        "maxPerFloor": 3,
+        "enabled": false
       }
     ],
     "spawns": [
@@ -521,7 +531,8 @@ export const DUNGEON_THEME_CATALOG = [
           }
         ],
         "weight": 0.08,
-        "maxPerFloor": 10
+        "maxPerFloor": 10,
+        "enabled": false
       },
       {
         "id": "lava-crystal",
@@ -539,7 +550,8 @@ export const DUNGEON_THEME_CATALOG = [
           }
         ],
         "weight": 0.015,
-        "maxPerFloor": 5
+        "maxPerFloor": 5,
+        "enabled": false
       },
       {
         "id": "lava-rock",
@@ -557,7 +569,8 @@ export const DUNGEON_THEME_CATALOG = [
           }
         ],
         "weight": 0.04,
-        "maxPerFloor": 8
+        "maxPerFloor": 8,
+        "enabled": false
       },
       {
         "id": "lava-vent",
@@ -575,7 +588,8 @@ export const DUNGEON_THEME_CATALOG = [
           }
         ],
         "weight": 0.3,
-        "maxPerFloor": 4
+        "maxPerFloor": 4,
+        "enabled": false
       },
       {
         "id": "lava-bones",
@@ -612,7 +626,8 @@ export const DUNGEON_THEME_CATALOG = [
           }
         ],
         "weight": 0.01,
-        "maxPerFloor": 3
+        "maxPerFloor": 3,
+        "enabled": false
       }
     ],
     "spawns": [
