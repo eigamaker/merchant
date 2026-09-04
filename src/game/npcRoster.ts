@@ -47,6 +47,36 @@ export interface RosterAdventurerOptions {
 }
 
 /**
+ * 町の人間を一人加える。
+ *
+ * 冒険者と違って人数の目標は持たない。**その需要が町に必要になったときだけ呼ぶ** ——
+ * 一品物を持ち帰った商人のもとへ蒐集家が訪ねてくる、というような場面がそれである。
+ */
+export function createTownsperson(
+  state: GameState,
+  profession: NpcProfession,
+  options: { interests: NpcRecord["interests"]; budget: number; status?: NpcStatus } = { interests: [], budget: 500 },
+): NpcRecord {
+  const serial = state.nextNpcId++;
+  const taken = new Set(state.npcs.map((npc) => npc.name));
+  const template = NPC_SEEDS.find((npc) => npc.profession === profession);
+  const npc: NpcRecord = {
+    id: `townsfolk-${serial}`,
+    name: generateNpcName(state.campaignId, serial, taken),
+    profession,
+    appearanceId: template?.appearanceId ?? `profession.${profession}.01`,
+    adventurer: false,
+    status: options.status ?? "inTown",
+    relation: 0,
+    interests: [...options.interests],
+    budget: options.budget,
+    inventoryIds: [],
+  };
+  state.npcs.push(npc);
+  return npc;
+}
+
+/**
  * 名簿に一人加える。
  *
  * 能力の導き方は旧 `createGeneratedAdventurer` をそのまま引き継ぐ。違うのは起点だけで、

@@ -2,6 +2,7 @@ import { isWalkableCell, samePosition } from "./dungeonRules";
 import { MERCHANT_ITEM_DEFINITIONS } from "./merchantContent";
 import { adjustGuardProfile, ensureGuardProfile } from "./guardProfiles";
 import { recordBond } from "./npcBonds";
+import { wantsItem } from "./npcDemand";
 import { bagCapacity } from "./merchantSystems";
 import { dungeonVerdict } from "./pricing";
 import type {
@@ -249,7 +250,7 @@ function serveCustomer(state: GameState, adventurer: DungeonAdventurer, events: 
       if (!definition) return undefined;
       const desperate = desperateFor(adventurer, item);
       // 要らない品は何倍だろうと要らない。倍率がものを言うのは、本当に困っているときだけ。
-      if (!npc.interests.includes(definition.category) && !desperate) return undefined;
+      if (!wantsItem(npc, item) && !desperate) return undefined;
       return { slot, item, desperate };
     })
     .filter((offer): offer is { slot: StallSlot; item: ItemInstance; desperate: boolean } => Boolean(offer))

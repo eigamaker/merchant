@@ -1,16 +1,18 @@
 import { describe, expect, it } from "vitest";
 import { beginExpedition, createItem, createNewGame, descend, returnHome, waitTurn } from "./engine";
-import { ADVENTURER_RANKS, ITEM_VISUALS, MERCHANT_ITEM_DEFINITIONS, NPC_APPEARANCES, npcAppearanceSprite } from "./merchantContent";
+import { ADVENTURER_RANKS, ITEM_VISUALS, MERCHANT_ITEM_DEFINITIONS, NPC_APPEARANCES, NPC_SEEDS, npcAppearanceSprite } from "./merchantContent";
 import { npcActorIds } from "./actorCatalog";
+import { wantsItem } from "./npcDemand";
 import { acceptCustomerPurchaseRequest, cancelEscortCommission, escortFeeForNpc, postEscortCommission, prepareCustomerPurchaseRequest } from "./merchantEconomy";
 import { bagCapacity, depositGold, restUntilMorning, startShopSession, summonNextCustomer } from "./merchantSystems";
 import { ADVENTURER_ROSTER_TARGET, ROSTER_RANK_SHAPE, createRosterAdventurer } from "./npcRoster";
 
 describe("v6 merchant world", () => {
-  it("defines 19 replaceable item visuals and a ranked NPC roster", () => {
-    expect(Object.keys(MERCHANT_ITEM_DEFINITIONS)).toHaveLength(19);
+  it("defines a replaceable visual for every item and a ranked NPC roster", () => {
+    // 品目は増える。数を固定するのではなく、**どの品にも差し替え可能な絵がある**ことを守る。
+    expect(Object.keys(MERCHANT_ITEM_DEFINITIONS).length).toBeGreaterThanOrEqual(19);
     expect(new Set(Object.values(MERCHANT_ITEM_DEFINITIONS).map((item) => item.category))).toEqual(
-      new Set(["weapon", "armor", "bag", "medicine", "material", "curio"]),
+      new Set(["weapon", "armor", "bag", "medicine", "material", "curio", "arcane", "gem"]),
     );
     expect(Object.values(MERCHANT_ITEM_DEFINITIONS).every((item) => ITEM_VISUALS[item.visualId!]?.endsWith(".png"))).toBe(true);
 
@@ -18,7 +20,8 @@ describe("v6 merchant world", () => {
     const adventurers = state.npcs.filter((npc) => npc.adventurer);
     // 台本のある15人に、生成された名簿が足されて目標人数になる。
     expect(adventurers).toHaveLength(ADVENTURER_ROSTER_TARGET);
-    expect(state.npcs).toHaveLength(ADVENTURER_ROSTER_TARGET + 5);
+    // 台本の非冒険者は増える。数を焼き付けず、台本そのものから導く。
+    expect(state.npcs).toHaveLength(ADVENTURER_ROSTER_TARGET + NPC_SEEDS.filter((seed) => !seed.adventurer).length);
     for (const rank of ["E", "D", "C", "B", "A"] as const) {
       expect(adventurers.filter((npc) => npc.rank === rank).length).toBe(ROSTER_RANK_SHAPE[rank]);
     }
@@ -85,8 +88,13 @@ describe("v6 merchant world", () => {
     expect(escortFeeForNpc(state, high)).toBeGreaterThanOrEqual(Math.floor(ADVENTURER_RANKS.A.escortFee * 0.88));
     expect(high.maxHp).toBeGreaterThan(low.maxHp!);
     expect(high.damage).toBeGreaterThan(low.damage!);
+    // 払えないときの断り文句が護衛料を名指しすること。初期資金の額には依存させない
+    // —— 護衛料は性格の抽選で振れるうえ、初期資金は調整対象なので、
+    //    「初期資金では買えない」を前提に置くと調整のたびに壊れる。
+    const highFee = escortFeeForNpc(state, high);
+    state.gold = highFee - 1;
     expect(postEscortCommission(state, high.id)).toBeUndefined();
-    expect(state.message).toContain(`${escortFeeForNpc(state, high)}G`);
+    expect(state.message).toContain(`${highFee}G`);
   });
 
   it("starts an expedition with the exact high-rank escort selected by the merchant", () => {
@@ -130,9 +138,10 @@ describe("v6 merchant world", () => {
     expect(deep.damage).toBeGreaterThan(shallow.damage!);
   });
 
-  it("lets the customer request an interesting shelf item at their price", () => {
+  it("lets a customer take the shelf item their trade calls for", () => {
     const state = createNewGame();
-    const buyer = state.npcs.find((npc) => npc.id === "godwin")!;
+    // 剣を買うのは剣を振る者。鍛冶は剣を打つ側なので、同じ品でも買わない。
+    const buyer = state.npcs.find((npc) => npc.id === "toma")!;
     buyer.status = "visiting";
     state.visitorNpcIds = [buyer.id];
     state.shopSession = { day: state.day, status: "serving", queueNpcIds: [], currentNpcId: buyer.id, servedNpcIds: [] };
@@ -148,6 +157,10 @@ describe("v6 merchant world", () => {
     expect(request?.price).toBeLessThanOrEqual(buyer.budget);
     expect(prepareCustomerPurchaseRequest(state, buyer.id)).toEqual(request);
 
+    // 同じ棚を、鍛冶は素通りする。買う理由が無いからで、値の問題ではない。
+    const smith = state.npcs.find((npc) => npc.id === "godwin")!;
+    expect(wantsItem(smith, sword)).toBe(false);
+
     const accepted = acceptCustomerPurchaseRequest(state);
 
     expect(accepted.accepted).toBe(true);
@@ -160,13 +173,13 @@ describe("v6 merchant world", () => {
 
   it("names a singular legendary item on first sale and keeps its history", () => {
     const state = createNewGame();
-    const buyer = state.npcs.find((npc) => npc.id === "godwin")!;
+    // 一品物を買うのは蒐集する者。使うためではなく、所有するために買う。
+    const buyer = state.npcs.find((npc) => npc.id === "roden")!;
     buyer.status = "visiting";
     state.visitorNpcIds = [buyer.id];
     state.shopSession = { day: state.day, status: "serving", queueNpcIds: [], currentNpcId: buyer.id, servedNpcIds: [] };
     const sword = createItem(state, "nameless-black-blade", 7);
     sword.location = { kind: "shopStock" };
-    // 相場1800Gはゴドウィンの所持金を超える。買える値を付けなければ、彼はよそをあたる。
     sword.askingPrice = 1200;
     state.store.push(sword);
     state.display.push(sword.uuid);

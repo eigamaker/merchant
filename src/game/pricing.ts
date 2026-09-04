@@ -1,4 +1,4 @@
-import { MERCHANT_ITEM_DEFINITIONS } from "./merchantContent";
+import { MERCHANT_ITEM_DEFINITIONS, itemChargeRatio } from "./merchantContent";
 import type { GuardPersonality, ItemInstance, NpcRecord } from "./types";
 
 /**
@@ -26,14 +26,22 @@ export const DUNGEON_PRICE_CEILING = 10;
 /** これを超える上乗せから「足元を見た」商いになる。 */
 export const GOUGE_THRESHOLD = 1.5;
 
-/** 品そのものの相場。由来のある品はそのぶん高い。客ごとの事情は含まない。 */
+/** 束ねている数。束ねられない品は常に1。 */
+const countOf = (item: ItemInstance): number => Math.max(1, Math.floor(item.count ?? 1));
+
+/**
+ * 品そのものの相場。由来のある品はそのぶん高い。客ごとの事情は含まない。
+ *
+ * 束は数だけ値が動く。由来は個体に宿るものなので、束ねられる品（素材）には付かない。
+ */
 export function marketPrice(item: ItemInstance): number {
   const definition = MERCHANT_ITEM_DEFINITIONS[item.definitionId];
   if (!definition) return 1;
   const notable = (item.historyV2 ?? [])
     .filter((event) => event.type === "ownerDied" || event.type === "named" || event.type === "lootedFromCorpse").length;
   const cap = (item.deeds?.ownersLost ?? 0) > 0 ? 1 : 0.5;
-  return Math.max(1, Math.round(definition.baseValue * (1 + Math.min(cap, notable * 0.05))));
+  // 使いかけの薬は残量のぶんだけ安い。「使うか、売るか」がその場の判断になる。
+  return Math.max(1, Math.round(definition.baseValue * (1 + Math.min(cap, notable * 0.05)) * countOf(item) * itemChargeRatio(item)));
 }
 
 /** 店頭に並べる値の候補。相場を中心に、下は捌くため、上は欲張るため。 */

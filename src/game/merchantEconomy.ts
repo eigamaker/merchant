@@ -6,6 +6,7 @@ import { corpseLootIds } from "./dungeonCorpses";
 import { gearSlots, isRetained, RETAINER_FEE_RATE } from "./npcGear";
 import { assignCounterName } from "./itemLegend";
 import { marketPrice, shopVerdict, type ShopReaction } from "./pricing";
+import { demandMultiplier, wantsItem } from "./npcDemand";
 import type { GameState, ItemInstance, NpcRecord } from "./types";
 
 function hash(value: string): number {
@@ -88,8 +89,10 @@ export function pruneCampaignRecords(state: GameState): void {
 
   // 名簿は世界そのものなので、生きている冒険者は全員残す。
   // 台本のある15人と、手元の品が名指ししている人物も同じく残す。
+  // 町の人間は数が少なく、そのぶん一人ずつが需要そのものになっている。冒険者と同じく、
+  // 生きているあいだは名簿に残す —— 剪定で消えると、その需要が世界から消える。
   const required = (npc: NpcRecord): boolean =>
-    SEED_NPC_IDS.has(npc.id) || (npc.adventurer && npc.status !== "dead") || namedNpcIds.has(npc.id);
+    SEED_NPC_IDS.has(npc.id) || (npc.status !== "dead") || namedNpcIds.has(npc.id);
   // 故人は、縁がある間だけ覚えている。誰とも関わらなかった死者は名簿から落ちる。
   const absent = state.npcs.filter((npc) => !required(npc) && hasBond(npc));
   const remembered = retainedNpcIds(absent);
@@ -123,9 +126,11 @@ export function registerWorldItem(state: GameState, instance: ItemInstance): Ite
 }
 
 export function merchantItemName(item: ItemInstance): string | undefined {
-  if (item.currentName) return item.currentName;
-  if (item.singular && !item.namedByNpcId) return "？？？の剣";
-  return MERCHANT_ITEM_DEFINITIONS[item.definitionId]?.trueName;
+  const base = item.currentName
+    ?? (item.singular && !item.namedByNpcId ? "？？？の剣" : MERCHANT_ITEM_DEFINITIONS[item.definitionId]?.trueName);
+  if (base === undefined) return undefined;
+  const count = Math.max(1, Math.floor(item.count ?? 1));
+  return count > 1 ? `${base}×${count}` : base;
 }
 
 /**
@@ -186,14 +191,17 @@ export function cancelEscortCommission(state: GameState): void {
 function saleLimit(npc: NpcRecord, item: ItemInstance): number {
   const definition = MERCHANT_ITEM_DEFINITIONS[item.definitionId];
   if (!definition) return 0;
-  const interest = npc.interests.includes(definition.category) ? 1.3 : 0.65;
+  // 買う理由が無ければ、いくらであろうと買わない。
+  const interest = demandMultiplier(npc, item);
+  if (interest <= 0) return 0;
   const relation = 1 + npc.relation / 200;
   const notable = (item.historyV2 ?? [])
     .filter((event) => event.type === "ownerDied" || event.type === "named" || event.type === "lootedFromCorpse").length;
   // 持ち主を看取った品は語れることが桁違いに多い。上限をそこだけ倍にする。
   const cap = (item.deeds?.ownersLost ?? 0) > 0 ? 1 : 0.5;
   const history = 1 + Math.min(cap, notable * 0.05);
-  return Math.min(npc.budget, Math.max(1, Math.floor(definition.baseValue * interest * relation * history)));
+  const count = Math.max(1, Math.floor(item.count ?? 1));
+  return Math.min(npc.budget, Math.max(1, Math.floor(definition.baseValue * count * interest * relation * history)));
 }
 
 export interface CustomerPurchaseRequest {
@@ -231,15 +239,17 @@ export function prepareCustomerPurchaseRequest(state: GameState, npcId: string):
       .map((id) => state.itemsById[id])
       .filter((item): item is ItemInstance => Boolean(item) && item.location?.kind === "shopStock" && canSellInHomeShop(item))
     : [];
-  const selected = existing?.location?.kind === "shopStock" && canSellInHomeShop(existing)
+  const selected = existing?.location?.kind === "shopStock" && canSellInHomeShop(existing) && wantsItem(npc, existing)
     ? existing
     : stock
-      .map((item) => {
-        const itemDefinition = MERCHANT_ITEM_DEFINITIONS[item.definitionId];
-        const interested = itemDefinition && npc.interests.includes(itemDefinition.category) ? 1 : 0;
-        return { item, interested, order: hash(`${state.campaignId}:${state.day}:purchase:${npc.id}:${item.uuid}`) };
-      })
-      .sort((a, b) => b.interested - a.interested || a.order - b.order)[0]?.item;
+      // 買う理由のある品しか手に取らない。棚に何も無ければ、その客は何も見ずに帰る。
+      .filter((item) => wantsItem(npc, item))
+      .map((item) => ({
+        item,
+        eager: demandMultiplier(npc, item),
+        order: hash(`${state.campaignId}:${state.day}:purchase:${npc.id}:${item.uuid}`),
+      }))
+      .sort((a, b) => b.eager - a.eager || a.order - b.order)[0]?.item;
   if (!selected) {
     session.requestedItemId = undefined;
     session.requestedPrice = undefined;

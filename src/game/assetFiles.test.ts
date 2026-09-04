@@ -31,7 +31,8 @@ describe("runtime pixel-art assets", () => {
   });
 
   it("ships one transparent 32px sprite for every merchant item visual", () => {
-    expect(Object.keys(ITEM_VISUALS)).toHaveLength(19);
+    // 品目は増える。守るのは枚数ではなく、**定義した品には必ず絵がある**という契約。
+    expect(Object.keys(ITEM_VISUALS).length).toBeGreaterThanOrEqual(19);
     for (const [visualId, assetPath] of Object.entries(ITEM_VISUALS)) {
       const path = resolve(process.cwd(), "public", assetPath);
       expect(existsSync(path), visualId).toBe(true);

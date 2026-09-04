@@ -62,6 +62,8 @@ import { createDefaultMapPack } from "../game/defaultMapPack";
 import { acceptCustomerPurchaseRequest, cancelEscortCommission, escortFeeForNpc, isHireable, merchantItemName, postEscortCommission, prepareCustomerPurchaseRequest } from "../game/merchantEconomy";
 import { ensureGuardProfile, guardConditionLabel, guardObservationLines, guardTrustLabel } from "../game/guardProfiles";
 import { bondSummary, npcBonds } from "../game/npcBonds";
+import { demandFor, demandLabel } from "../game/npcDemand";
+import { acceptBulkOffer, bulkOrders, canDeliverBulkOrder, declineBulkOffer, deliverBulkOrder, refreshBulkOffer, stockedFor } from "../game/bulkOrders";
 import { carriedGearItems, entrustGear, gearSlots, gearSlotFor, isRetained, npcCombatStats, reclaimGear, type GearSlotName } from "../game/npcGear";
 import { itemLegendLines, wasEntrusted } from "../game/itemLegend";
 import {
@@ -87,7 +89,7 @@ import {
   withdrawGold,
 } from "../game/merchantSystems";
 import { ADVENTURER_RANK_ORDER, ADVENTURER_RANKS, ITEM_VISUALS, MERCHANT_ITEM_DEFINITIONS, NPC_SEEDS, npcAppearanceSprite } from "../game/merchantContent";
-import type { AdventurerRank, DungeonCommand, DungeonEvent, DungeonHoldup, GameState, GuardCareer, GuardDemand, GuardDescentAssessment, ItemInstance, ItemRarity, MenuChoice, NpcRecord, Vec } from "../game/types";
+import type { BulkOrder, AdventurerRank, DungeonCommand, DungeonEvent, DungeonHoldup, GameState, GuardCareer, GuardDemand, GuardDescentAssessment, ItemInstance, ItemRarity, MenuChoice, NpcRecord, Vec } from "../game/types";
 import {
   FLOATING_INK,
   UI_COLORS,
@@ -1166,6 +1168,7 @@ export class MerchantScene extends Phaser.Scene {
         disabled: this.state.dailySupplyStock.smokeBombs <= 0,
         action: () => { buySupply(this.state, "smokeBombs", 1); this.openSupplyShop(); },
       },
+      { label: "大口取引へ戻る", action: () => this.openBulkOrders() },
       { label: "閉じる", action: () => this.closeMenu() },
     ]);
   }
@@ -1209,6 +1212,66 @@ export class MerchantScene extends Phaser.Scene {
     ]);
   }
 
+  /** 大口の話が来ているか、期日が近いかを、ボタンの名前で伝える。 */
+  private bulkBadge(): string {
+    const offer = refreshBulkOffer(this.state);
+    const orders = bulkOrders(this.state);
+    if (offer) return "大口取引（新しい話）";
+    if (orders.length) {
+      const nearest = Math.min(...orders.map((order) => order.dueDay - this.state.day));
+      return `大口取引（あと${Math.max(0, nearest)}日）`;
+    }
+    return "大口取引";
+  }
+
+  private bulkOrderLine(order: BulkOrder): string {
+    const name = MERCHANT_ITEM_DEFINITIONS[order.definitionId]?.trueName ?? order.definitionId;
+    return `${name} ${stockedFor(this.state, order.definitionId)}/${order.quantity}　第${order.dueDay}日まで（あと${Math.max(0, order.dueDay - this.state.day)}日）`;
+  }
+
+  /**
+   * 大口取引。
+   *
+   * 条件は書面として出す —— 数量・単価・納期・違約金・いま揃っている数。
+   * 商人がそう言うのだから、こちらもそのとおり読めなければならない。
+   */
+  private openBulkOrders(): void {
+    const offer = refreshBulkOffer(this.state);
+    const orders = bulkOrders(this.state);
+    const body: string[] = [`所持金 ${this.state.gold}G`];
+    if (orders.length) {
+      body.push("── 受けている約束 ──");
+      for (const order of orders) body.push(this.bulkOrderLine(order));
+    }
+    if (offer) {
+      const npc = this.state.npcs.find((entry) => entry.id === offer.npcId);
+      const name = MERCHANT_ITEM_DEFINITIONS[offer.definitionId]?.trueName ?? offer.definitionId;
+      body.push("── 今日の話 ──");
+      body.push(`${npc?.name ?? "商人"}: ${name} ${offer.quantity}個 —— ${offer.unitPrice * offer.quantity}G（1個 ${offer.unitPrice}G）`);
+      body.push(`納期 第${offer.dueDay}日まで　落とせば違約金 ${offer.penalty}G`);
+      body.push(`いま揃っているのは ${stockedFor(this.state, offer.definitionId)}個（鞄と保管庫の合計）`);
+    } else if (!orders.length) {
+      body.push("今日は大口の話は来ていない。");
+    }
+    const choices: MenuChoice[] = [];
+    for (const order of orders) {
+      const ready = canDeliverBulkOrder(this.state, order.id);
+      const name = MERCHANT_ITEM_DEFINITIONS[order.definitionId]?.trueName ?? order.definitionId;
+      choices.push({
+        label: ready ? `${name}を納める（${order.unitPrice * order.quantity}G）` : `${name}はまだ足りない`,
+        disabled: !ready,
+        action: () => { deliverBulkOrder(this.state, order.id); this.openBulkOrders(); },
+      });
+    }
+    if (offer) {
+      choices.push({ label: `受ける（落とせば違約金 ${offer.penalty}G）`, action: () => { acceptBulkOffer(this.state); this.openBulkOrders(); } });
+      choices.push({ label: "断る", action: () => { declineBulkOffer(this.state); this.openBulkOrders(); } });
+    }
+    choices.push({ label: "街の仕入先へ", action: () => this.openSupplyShop() });
+    choices.push({ label: "閉じる", action: () => this.closeMenu() });
+    this.openMenu("大口取引", body, choices);
+  }
+
   private openVault(): void {
     const locked = !canReorganizeHomeInventory(this.state);
     this.openMenu("自宅の金庫", [
@@ -1246,7 +1309,7 @@ export class MerchantScene extends Phaser.Scene {
     const requestedItem = request ? this.state.itemsById[request.itemId] : undefined;
     const visitorBond = bondSummary(npc);
     this.openMenu(`${npc.rank ?? "E"}ランク ${npc.name} — ${this.professionLabel(npc)}`, [
-      `興味: ${npc.interests.map((interest) => this.categoryLabel(interest)).join(" / ")}`,
+      `${demandLabel(demandFor(npc))} —— ${npc.interests.map((interest) => this.categoryLabel(interest)).join(" / ")}`,
       ...(visitorBond ? [`縁: ${visitorBond}`] : []),
       requestedItem && request
         ? `${merchantItemName(requestedItem) ?? itemName(requestedItem)}を手に取っている。付け値 ${request.asking}G`
@@ -1480,7 +1543,7 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private professionLabel(npc: NpcRecord): string {
-    return ({ swordsman: "剣士", scout: "斥候", mercenary: "傭兵", merchant: "商人", blacksmith: "鍛冶師", apothecary: "薬師", noble: "貴族", townsperson: "街人" } as const)[npc.profession];
+    return ({ swordsman: "剣士", scout: "斥候", mercenary: "傭兵", merchant: "商人", blacksmith: "鍛冶師", apothecary: "薬師", alchemist: "錬金術師", mage: "魔法使い", noble: "貴族", collector: "蒐集家", townsperson: "街人" } as const)[npc.profession];
   }
 
   private categoryLabel(category: NpcRecord["interests"][number]): string {
@@ -2701,7 +2764,7 @@ export class MerchantScene extends Phaser.Scene {
           { label: canOpenShop(this.state) ? "開店" : "開店準備", key: SHORTCUTS.shop, action: () => this.openShopForDay() },
           { label: "在庫管理", key: SHORTCUTS.inventory, action: () => this.openInventory() },
           { label: `金庫 (${this.state.vaultGold}G)`, key: "", action: () => this.openVault() },
-          { label: "探索用品", key: "", action: () => this.openSupplyShop() },
+          { label: this.bulkBadge(), key: "", action: () => this.openBulkOrders() },
           { label: "護衛依頼", key: "", action: () => this.openEscortCommission() },
           { label: expedition.allowed ? "ダンジョン" : expedition.reason === "alreadyExplored" ? "本日の探索済み" : "ダンジョン", key: "", action: () => this.requestExpeditionStart(), disabled: !expedition.allowed },
           { label: "休む", key: "", action: () => { restUntilMorning(this.state); this.render(); } },

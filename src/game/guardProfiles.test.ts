@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { NPC_SEEDS } from "./merchantContent";
+import { ADVENTURER_RANKS, NPC_SEEDS } from "./merchantContent";
 import {
   assessGuardDescent,
   beginExpedition,
@@ -17,7 +17,7 @@ import {
 } from "./engine";
 import { guardObservationLines, guardTrustLabel, initializeGuardProfiles } from "./guardProfiles";
 import { acceptCustomerPurchaseRequest, escortFeeForNpc, postEscortCommission, prepareCustomerPurchaseRequest } from "./merchantEconomy";
-import { advanceTime, canReorganizeHomeInventory, closeShopSession, consumeDungeonTime, equipBag, resetDailySystems } from "./merchantSystems";
+import { DUNGEON_ACTIONS_PER_MEAL, advanceTime, canReorganizeHomeInventory, closeShopSession, consumeDungeonTime, equipBag, resetDailySystems } from "./merchantSystems";
 
 function fixedCampaign(id = "guard-profile-test") {
   const state = createNewGame();
@@ -84,7 +84,7 @@ describe("guard personality and reputation", () => {
     profile.career.deepestFloor = 5;
     profile.career.successfulReturns = 4;
     profile.trust = 60;
-    const expected = Math.floor(100 * 1 * 1.14 * 0.88);
+    const expected = Math.floor(ADVENTURER_RANKS.E.escortFee * 1 * 1.14 * 0.88);
     expect(escortFeeForNpc(state, npc)).toBe(expected);
   });
 
@@ -133,7 +133,7 @@ describe("guard personality and reputation", () => {
   it("applies food-shortage trust and stress consequences to the active guard", () => {
     const { state, npc } = hireMina();
     state.provisions = 0;
-    consumeDungeonTime(state, 30);
+    consumeDungeonTime(state, DUNGEON_ACTIONS_PER_MEAL);
     expect(npc.guardProfile!.trust).toBe(14);
     expect(npc.guardProfile!.stress).toBe(15);
     expect(npc.guardProfile!.career.events.at(-1)?.type).toBe("starved");
@@ -192,7 +192,7 @@ describe("daily expedition and shop locks", () => {
 
   it("still permits the current customer purchase while inventory is locked", () => {
     const state = fixedCampaign();
-    const buyer = state.npcs.find((npc) => npc.id === "godwin")!;
+    const buyer = state.npcs.find((npc) => npc.id === "toma")!;
     const sword = createItem(state, "iron-sword");
     sword.location = { kind: "shopStock" };
     state.store.push(sword);

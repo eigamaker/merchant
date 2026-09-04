@@ -170,6 +170,7 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
   state.shopSession ??= { day: state.day, status: "closed", queueNpcIds: [], servedNpcIds: [] };
   state.dailySupplyStock ??= { day: state.day, smokeBombs: 2, returnStones: 1, provisions: 0 };
   state.archive ??= [];
+  state.bulkOrders ??= [];
   state.expeditionSerial ??= 0;
   state.lastExpeditionDay ??= state.run ? state.day : 0;
   state.itemsById ??= {};
@@ -192,6 +193,8 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
       }
     }
   }
+  // 等級を持たない旧セーブは護衛料から推定する。**この閾値は当時の護衛料であって、現在の
+  // ADVENTURER_RANKS ではない。** 基準額を改定しても、ここは書かれた当時の値のままにする。
   for (const npc of state.npcs) if (npc.adventurer && !npc.rank) {
     npc.rank = (npc.baseFee ?? 0) >= 900 ? "A" : (npc.baseFee ?? 0) >= 550 ? "B" : (npc.baseFee ?? 0) >= 320 ? "C" : (npc.baseFee ?? 0) >= 180 ? "D" : "E";
   }

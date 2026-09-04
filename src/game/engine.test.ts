@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
+import { DUNGEON_ACTIONS_PER_MEAL, PROVISIONS_PER_SLOT } from "./merchantSystems";
 import {
   APOTHECARY_MEDICINE_IDS,
   RETURN_STONE_CHEST_CHANCE,
   RETURN_STONE_MIN_FLOOR,
+  SHALLOW_GROUND_FLOORS,
   ascend,
   beginExpedition,
   buildInitialEnemies,
@@ -10,6 +12,8 @@ import {
   createItem,
   createNewGame,
   currentItemCount,
+  itemCount,
+  itemName,
   descend,
   dungeonMedicineNeedRatio,
   dungeonProvisionBuyPrice,
@@ -28,8 +32,9 @@ import {
   waitTurn,
 } from "./engine";
 import { migrateSaveState } from "./save";
-import { MERCHANT_ITEM_DEFINITIONS } from "./merchantContent";
+import { MATERIAL_STACK_SIZE, MERCHANT_ITEM_DEFINITIONS } from "./merchantContent";
 import { postEscortCommission } from "./merchantEconomy";
+import { marketPrice } from "./pricing";
 import { DUNGEON_ENTRANCE } from "./homeMap";
 import type { DungeonFloorSnapshot, DungeonMap } from "./types";
 
@@ -79,27 +84,27 @@ describe("canonical dungeon stairs", () => {
     expect(state.homePos).toEqual({ x: DUNGEON_ENTRANCE.x * 16 + 8, y: DUNGEON_ENTRANCE.y * 16 + 8 });
   });
 
-  it("counts stair travel as one of the thirty actions before a meal", () => {
+  it("counts stair travel as one of the actions before a meal", () => {
     const state = createNewGame();
     beginExpedition(state);
     state.provisions = 1;
-    state.run!.timeUnits = 29;
+    state.run!.timeUnits = DUNGEON_ACTIONS_PER_MEAL - 1;
     state.run!.settledTimeBands = 0;
     state.run!.player = { ...state.run!.map.stairsDown! };
 
     tryStairs(state);
 
-    expect(state.run?.timeUnits).toBe(30);
+    expect(state.run?.timeUnits).toBe(DUNGEON_ACTIONS_PER_MEAL);
     expect(state.run?.settledTimeBands).toBe(1);
     expect(state.provisions).toBe(0);
   });
 
-  it("does not charge a partial meal when returning before thirty actions", () => {
+  it("does not charge a partial meal when returning before a full meal interval", () => {
     const state = createNewGame();
     beginExpedition(state);
     state.provisions = 3;
     state.returnStones = 1;
-    state.run!.timeUnits = 29;
+    state.run!.timeUnits = DUNGEON_ACTIONS_PER_MEAL - 1;
 
     performDungeonCommand(state, { type: "return" });
 
@@ -648,14 +653,15 @@ describe("independent dungeon adventurers", () => {
     const adventurer = placeBesidePlayer(state);
     const npc = state.npcs.find((entry) => entry.id === adventurer.npcId)!;
     const run = state.run!;
-    state.provisions = 11;
+    // 端数が1枠を余分に使っている状態から始める。売れば枠がちょうど1つ空く。
+    state.provisions = PROVISIONS_PER_SLOT + 1;
     adventurer.gold = 1000;
     const startingSlots = currentItemCount(state);
 
     expect(dungeonProvisionDemand(1)).toBe(0);
     const shallow = performDungeonCommand(state, { type: "sellProvisionsToAdventurer", npcId: npc.id });
     expect(shallow.consumedTurn).toBe(false);
-    expect(state.provisions).toBe(11);
+    expect(state.provisions).toBe(PROVISIONS_PER_SLOT + 1);
 
     run.floor = 10;
     const demand = dungeonProvisionDemand(run.floor);
@@ -665,7 +671,7 @@ describe("independent dungeon adventurers", () => {
 
     expect(deep.consumedTurn).toBe(true);
     expect(demand).toBe(3);
-    expect(state.provisions).toBe(11 - demand);
+    expect(state.provisions).toBe(PROVISIONS_PER_SLOT + 1 - demand);
     expect(currentItemCount(state)).toBe(startingSlots - 1);
     expect(state.gold).toBe(startingGold + unitPrice * demand);
     expect(adventurer.provisionsBought).toBe(demand);
@@ -785,17 +791,105 @@ describe("inventory choices and early story", () => {
     expect(deepBodies).toBeGreaterThan(0);
   });
 
-  it("thins one floor down to a handful of finds", () => {
+  it("thickens the shallow floors with materials and thins the deeper ones", () => {
     for (let seed = 0; seed < 12; seed += 1) {
       const state = createNewGame();
       state.campaignId = `density-${seed}`;
       state.day = seed + 1;
       beginExpedition(state);
       const run = state.run!;
-      expect(run.items.length).toBeGreaterThanOrEqual(1);
-      expect(run.items.length).toBeLessThanOrEqual(3);
+      // 地下1〜3階は素材の稼ぎ場。床の品を厚く置く。
+      expect(run.items.length).toBeGreaterThanOrEqual(5);
+      expect(run.items.length).toBeLessThanOrEqual(8);
+      // 床に落ちているのは素材だけ。珍しいものは宝箱にしか入っていない。
+      for (const entry of run.items) {
+        expect(MERCHANT_ITEM_DEFINITIONS[entry.item.definitionId]!.category).toBe("material");
+      }
       expect(run.chests).toHaveLength(1);
     }
+  });
+
+  it("leaves only a handful of finds below the shallow band", () => {
+    const state = createNewGame();
+    beginExpedition(state);
+    for (let step = 0; step < SHALLOW_GROUND_FLOORS; step += 1) descend(state);
+    const deep = state.run!;
+    expect(deep.floor).toBe(SHALLOW_GROUND_FLOORS + 1);
+    // 拾い集めて鞄を満たせるほどの数は落ちていない。深層の実りは宝箱にある。
+    expect(deep.items.length).toBeGreaterThanOrEqual(1);
+    expect(deep.items.length).toBeLessThanOrEqual(3);
+    expect(deep.chests).toHaveLength(1);
+  });
+
+  it("bundles materials into one slot and starts a new bundle when the first is full", () => {
+    const state = createNewGame();
+    beginExpedition(state);
+    const run = state.run!;
+    state.inventory = [];
+    const limit = MATERIAL_STACK_SIZE;
+
+    // 同じ素材を一束ぶん拾う。枠は1つしか使わない。
+    for (let picked = 0; picked < limit; picked += 1) {
+      run.items.push({ item: createItem(state, "moon-fungus", 1), pos: { ...run.player } });
+      expect(tryPickup(state).consumedTurn).toBe(true);
+      expect(state.inventory).toHaveLength(1);
+      expect(itemCount(state.inventory[0]!)).toBe(picked + 1);
+    }
+
+    // 一束を超えた分は新しい束になる。ここで初めて枠がもう1つ要る。
+    run.items.push({ item: createItem(state, "moon-fungus", 1), pos: { ...run.player } });
+    expect(tryPickup(state).consumedTurn).toBe(true);
+    expect(state.inventory).toHaveLength(2);
+    expect(state.inventory.map(itemCount)).toEqual([limit, 1]);
+
+    // 束へ合流した実体は世界から落とす。セーブに死んだIDを残さない。
+    const merged = createItem(state, "moon-fungus", 1);
+    run.items.push({ item: merged, pos: { ...run.player } });
+    tryPickup(state);
+    expect(state.itemsById[merged.uuid]).toBeUndefined();
+    expect(state.inventory.map(itemCount)).toEqual([limit, 2]);
+
+    // 名前も値も、数まで含めて動く。
+    expect(itemName(state.inventory[0]!)).toContain(`×${limit}`);
+    expect(marketPrice(state.inventory[0]!)).toBe(marketPrice(state.inventory[1]!) / 2 * limit);
+  });
+
+  it("keeps a multi-charge flask in the bag until its last draught", () => {
+    const state = createNewGame();
+    beginExpedition(state);
+    state.inventory = [];
+    const flask = createItem(state, "field-flask", 6);
+    state.inventory.push(flask);
+    const total = MERCHANT_ITEM_DEFINITIONS["field-flask"]!.charges!;
+    const full = marketPrice(flask);
+    state.hp = 1;
+
+    // 一度使っても鞄に残る。深層の薬が強いのは量ではなく回数である。
+    expect(performDungeonCommand(state, { type: "useMedicine", itemId: flask.uuid, target: "player" }).consumedTurn).toBe(true);
+    expect(state.inventory).toContain(flask);
+    expect(itemName(flask)).toContain(`残${total - 1}`);
+    // 使いかけはそのぶん安い。使うか売るかが、その場の判断になる。
+    expect(marketPrice(flask)).toBeLessThan(full);
+
+    for (let draught = 1; draught < total; draught += 1) {
+      state.hp = 1;
+      performDungeonCommand(state, { type: "useMedicine", itemId: flask.uuid, target: "player" });
+    }
+    expect(state.inventory).not.toContain(flask);
+    expect(flask.location?.kind).toBe("consumed");
+  });
+
+  it("never bundles a weapon, because a story lives on the individual piece", () => {
+    const state = createNewGame();
+    beginExpedition(state);
+    const run = state.run!;
+    state.inventory = [];
+    for (let picked = 0; picked < 2; picked += 1) {
+      run.items.push({ item: createItem(state, "iron-sword", 3), pos: { ...run.player } });
+      expect(tryPickup(state).consumedTurn).toBe(true);
+    }
+    expect(state.inventory).toHaveLength(2);
+    expect(state.inventory.every((item) => itemCount(item) === 1)).toBe(true);
   });
 
   it("holds exactly what the starting cloth wrap holds, regardless of item type", () => {

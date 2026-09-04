@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { beginExpedition, createItem, createNewGame, descend } from "./engine";
+import { ADVENTURER_RANKS, NPC_SEEDS } from "./merchantContent";
+import { ADVENTURER_ROSTER_TARGET } from "./npcRoster";
 import { isSupportedSaveVersion, migrateSaveState, normalizeHomePositionForMap } from "./save";
 import { addMarker, createManualMap } from "./mapDocument";
 import { HOME_SPAWN } from "./homeMap";
@@ -118,8 +120,8 @@ describe("save migration", () => {
 
     // 旧セーブは自分の campaignId から目標人数まで育つ。台本の15人は必ず戻る。
     expect(migrated.npcs.filter((npc) => npc.adventurer)).toHaveLength(30);
-    expect(migrated.npcs).toHaveLength(35);
-    expect(migrated.npcs.find((npc) => npc.id === "rolf")).toMatchObject({ rank: "D", baseFee: 180, maxHp: 16 });
+    expect(migrated.npcs).toHaveLength(ADVENTURER_ROSTER_TARGET + NPC_SEEDS.filter((seed) => !seed.adventurer).length);
+    expect(migrated.npcs.find((npc) => npc.id === "rolf")).toMatchObject({ rank: "D", baseFee: ADVENTURER_RANKS.D.escortFee, maxHp: 16 });
     expect(migrated.npcs.find((npc) => npc.id === "astrid")).toMatchObject({ rank: "A", maxHp: 44, damage: 12 });
   });
   it("normalizes current positions using a custom 32px home grid and marker", () => {

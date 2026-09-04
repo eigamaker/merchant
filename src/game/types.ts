@@ -25,11 +25,23 @@ export interface ItemDefinition {
   attack?: number;
   defense?: number;
   healing?: number;
+  /**
+   * 一本で何回使えるか。省略すれば1回。
+   *
+   * 深層の薬は回復量ではなく**回数**で強い。道具袋の枠が一日の稼ぎの上限である以上、
+   * 5回分が1枠に収まること自体が効果になる。
+   */
+  charges?: number;
   cures?: "poison";
   /** 道具袋が抱えられる枠数。category が "bag" の品だけが持つ。 */
   capacity?: number;
-  /** この深さより浅い階には落ちない。既定は種類から決まる。 */
-  minFloor?: number;
+  /**
+   * 一束の数。省略すれば束ねない（1点で1枠）。
+   *
+   * 束ねられるのは代替の利く品 —— つまり素材だけである。武器や防具は個体で、
+   * 来歴と銘がそこに宿るので、束ねてはいけない。
+   */
+  stackSize?: number;
   singular?: boolean;
 }
 
@@ -64,6 +76,10 @@ export interface ItemInstance {
   rarity?: ItemRarity;
   location?: ItemLocation;
   singular?: boolean;
+  /** 束ねている数。省略すれば1個。`stackSize` を持つ品だけが増える。 */
+  count?: number;
+  /** 残っている回数。省略すれば定義どおり満タン。使うたびに減る。 */
+  chargesLeft?: number;
   currentName?: string;
   /** 担がれて積み上がった功績。銘はここから育つ。 */
   deeds?: ItemDeeds;
@@ -151,7 +167,7 @@ export interface DungeonAdventurer {
   defense?: number;
 }
 
-export type NpcProfession = "swordsman" | "scout" | "mercenary" | "merchant" | "blacksmith" | "apothecary" | "noble" | "townsperson";
+export type NpcProfession = "swordsman" | "scout" | "mercenary" | "merchant" | "blacksmith" | "apothecary" | "alchemist" | "mage" | "noble" | "collector" | "townsperson";
 /**
  * 名簿は一つで、状態がその人の今日を決める。
  *
@@ -328,6 +344,12 @@ export interface NpcRecord {
   status: NpcStatus;
   relation: number;
   interests: ItemCategory[];
+  /**
+   * 買う理由。省略すれば職業から決まる（`demandFor`）。
+   *
+   * `interests` が「何を」なら、こちらは「なぜ」。値段はこの二つから決まる。
+   */
+  demand?: import("./npcDemand").DemandKind;
   budget: number;
   inventoryIds: string[];
   rank?: AdventurerRank;
@@ -583,6 +605,31 @@ export interface TimedEvent {
   effect?: { kind: "arrival"; npcId: string };
 }
 
+/**
+ * 商人からの大量発注。
+ *
+ * **素材だけ。** 霊薬も一品物も宝箱からしか出ないので、10個20個まとめて揃えることは
+ * 原理的にできない。受けるかどうかを慎重に判断させるため、**未達の違約金は重い**。
+ *
+ * 名前に注意。`state.quests` は読み込みのたびに無条件で削除される旧フィールド名なので、
+ * ここは `bulkOrders` でなければならない（`save.ts` の `stripRetiredFields`）。
+ */
+export interface BulkOrder {
+  id: string;
+  /** 発注元。町の商人。 */
+  npcId: string;
+  definitionId: string;
+  quantity: number;
+  /** 1個あたりの言い値。相場の6割前後。 */
+  unitPrice: number;
+  /** この日までに納める。 */
+  dueDay: number;
+  /** 落としたときに払う額。提示額の3割。 */
+  penalty: number;
+  /** 受けた日。まだ受けていない提示には無い。 */
+  acceptedDay?: number;
+}
+
 export interface GameState {
   version: 14;
   campaignId: string;
@@ -625,6 +672,10 @@ export interface GameState {
   npcs: NpcRecord[];
   visitorNpcIds: string[];
   escortCommission?: EscortCommission;
+  /** 受けている大量発注。提示されただけのものは持たない。 */
+  bulkOrders?: BulkOrder[];
+  /** 今日の提示。受けるか断るかを決めるまで残る。 */
+  bulkOffer?: BulkOrder;
   singularItemIds: string[];
 }
 

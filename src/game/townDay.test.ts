@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { beginExpedition, createNewGame } from "./engine";
+import { beginExpedition, createItem, createNewGame } from "./engine";
 import { restUntilMorning } from "./merchantSystems";
-import { FLOOR_ADVENTURER_MAX, preferredDelveFloor, resolveDelveOutcome, simulateTownDay } from "./townDay";
+import { FLOOR_ADVENTURER_MAX, announceSingularFind, preferredDelveFloor, resolveDelveOutcome, simulateTownDay } from "./townDay";
 import { ensureGuardProfile } from "./guardProfiles";
 import { ADVENTURER_ROSTER_TARGET } from "./npcRoster";
 import { escortFeeForNpc } from "./merchantEconomy";
@@ -193,5 +193,32 @@ describe("famous newcomers", () => {
     // 評判はあっても面識はない。観察記録は雇うまで開かない。
     expect(newcomer.guardProfile!.career.hireCount).toBe(0);
     expect(escortFeeForNpc(state, newcomer)).toBeGreaterThan(ADVENTURER_RANKS[newcomer.rank!].escortFee);
+  });
+});
+
+describe("一品物の噂", () => {
+  it("初めて持ち帰った日に噂が立ち、蒐集家が町へ向かう", () => {
+    const state = createNewGame();
+    const blade = createItem(state, "nameless-black-blade", 7);
+
+    expect(announceSingularFind(state, blade)).toBe(true);
+    const collector = state.npcs.find((npc) => npc.profession === "collector");
+    expect(collector).toBeDefined();
+    // 噂が本人より先に届く。訪ねてくるのは数日後。
+    expect(collector!.status).toBe("traveling");
+    expect(state.events.some((event) => event.id.startsWith("singular-rumour-"))).toBe(true);
+    const arrival = state.events.find((event) => event.effect?.kind === "arrival" && event.effect.npcId === collector!.id);
+    expect(arrival?.dueDay).toBeGreaterThan(state.day);
+
+    // 二人目は来ない。一品物が客層を開くのは、その一度だけである。
+    expect(announceSingularFind(state, blade)).toBe(false);
+    expect(state.npcs.filter((npc) => npc.profession === "collector")).toHaveLength(1);
+  });
+
+  it("ありふれた品では誰も動かない", () => {
+    const state = createNewGame();
+    const sword = createItem(state, "iron-sword", 3);
+    expect(announceSingularFind(state, sword)).toBe(false);
+    expect(state.npcs.some((npc) => npc.profession === "collector")).toBe(false);
   });
 });

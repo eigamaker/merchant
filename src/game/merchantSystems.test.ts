@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DISPLAY_CAPACITY, beginExpedition, createItem, createNewGame, moveInventoryItems, moveStoreItemsToInventory, setDisplayedItems } from "./engine";
+import { prepareCustomerPurchaseRequest } from "./merchantEconomy";
 import {
   buySupply,
   canOpenShop,
@@ -17,6 +18,7 @@ import {
   summonNextCustomer,
   withdrawGold,
   inventoryItemCount,
+  DUNGEON_ACTIONS_PER_MEAL,
   PROVISIONS_PER_SLOT,
   provisionCapacityRemaining,
   provisionSlotCount,
@@ -27,36 +29,39 @@ import {
 describe("v6 merchant systems", () => {
   it("moves money between carried gold and the safe home vault", () => {
     const state = createNewGame();
+    // 初期資金そのものは調整対象なので、金額ではなく出入りの差分で確かめる。
+    const opening = state.gold;
     expect(state.vaultGold).toBe(0);
     expect(depositGold(state, 120)).toBe(true);
-    expect(state.gold).toBe(180);
+    expect(state.gold).toBe(opening - 120);
     expect(state.vaultGold).toBe(120);
     expect(withdrawGold(state, 50)).toBe(true);
-    expect(state.gold).toBe(230);
+    expect(state.gold).toBe(opening - 70);
     expect(state.vaultGold).toBe(70);
     expect(depositGold(state)).toBe(true);
     expect(state.gold).toBe(0);
-    expect(state.vaultGold).toBe(300);
+    expect(state.vaultGold).toBe(opening);
 
     beginExpedition(state);
     expect(withdrawGold(state, 50)).toBe(false);
     expect(state.gold).toBe(0);
-    expect(state.vaultGold).toBe(300);
+    expect(state.vaultGold).toBe(opening);
   });
 
-  it("packs up to ten provisions into each inventory slot", () => {
+  it("packs provisions into each inventory slot up to the stack size", () => {
     const state = createNewGame();
-    expect(PROVISIONS_PER_SLOT).toBe(10);
+    // 一束の数は調整対象なので、境界そのものを定数から導いて確かめる。
     expect(provisionSlotCount(0)).toBe(0);
     expect(provisionSlotCount(1)).toBe(1);
-    expect(provisionSlotCount(10)).toBe(1);
-    expect(provisionSlotCount(11)).toBe(2);
-    expect(provisionSlotCount(30)).toBe(3);
+    expect(provisionSlotCount(PROVISIONS_PER_SLOT)).toBe(1);
+    expect(provisionSlotCount(PROVISIONS_PER_SLOT + 1)).toBe(2);
+    expect(provisionSlotCount(PROVISIONS_PER_SLOT * 3)).toBe(3);
     expect(inventoryItemCount(state)).toBe(1); // 初期食料3個の束
     const gold = state.gold;
-    expect(buySupply(state, "provisions", 7)).toBe(true);
-    expect(state.provisions).toBe(10);
-    expect(state.gold).toBe(gold - 15 * 7);
+    const toFillOneSlot = PROVISIONS_PER_SLOT - state.provisions;
+    expect(buySupply(state, "provisions", toFillOneSlot)).toBe(true);
+    expect(state.provisions).toBe(PROVISIONS_PER_SLOT);
+    expect(state.gold).toBe(gold - 15 * toFillOneSlot);
     expect(state.dailySupplyStock.provisions).toBe(0);
     expect(inventoryItemCount(state)).toBe(1);
     expect(buySupply(state, "provisions", 1)).toBe(true);
@@ -65,15 +70,15 @@ describe("v6 merchant systems", () => {
 
   it("limits provision purchases by bag slots instead of shop stock", () => {
     const state = createNewGame();
-    state.gold = 2_000;
-    state.provisions = 30;
+    state.gold = 20_000;
+    state.provisions = PROVISIONS_PER_SLOT * 3;
     expect(inventoryItemCount(state)).toBe(3);
     state.inventory.push(...Array.from({ length: bagCapacity(state) - 3 }, () => createItem(state, "old-ring")));
     expect(inventoryItemCount(state)).toBe(bagCapacity(state));
     expect(provisionCapacityRemaining(state)).toBe(0);
     expect(buySupply(state, "provisions", 1)).toBe(false);
-    expect(state.provisions).toBe(30);
-    expect(state.message).toContain("食料は10個ごとに1枠");
+    expect(state.provisions).toBe(PROVISIONS_PER_SLOT * 3);
+    expect(state.message).toContain(`食料は${PROVISIONS_PER_SLOT}個ごとに1枠`);
   });
 
   it("keeps the daily smoke-bomb limit and never sells return stones", () => {
@@ -212,6 +217,12 @@ describe("v6 merchant systems", () => {
     const first = summonNextCustomer(state);
     expect(first).toBeTruthy();
     expect(state.visitorNpcIds).toEqual([first]);
+    // 誰が来るかは抽選なので、来た相手を剣を探している者にしてから品を選ばせる。
+    // この試験が見ているのは客の並びであって、需要でも値付けでもない。
+    const customer = state.npcs.find((npc) => npc.id === first)!;
+    customer.demand = "use";
+    customer.interests = ["weapon"];
+    prepareCustomerPurchaseRequest(state, customer.id);
     expect(state.shopSession.requestedItemId).toBe(item.uuid);
     expect(state.shopSession.requestedPrice).toBe(20);
     finishCurrentCustomer(state);
@@ -244,28 +255,28 @@ describe("v6 merchant systems", () => {
     expect(counts.size).toBeGreaterThan(1);
   });
 
-  it("consumes one provision per party member every thirty actions and damages shortages", () => {
+  it("consumes one provision per party member every meal interval and damages shortages", () => {
     const state = createNewGame();
     beginExpedition(state);
     state.provisions = 3;
     expect(dungeonMealProvisionCost(state)).toBe(1);
-    expect(dungeonTimeUntilNextMeal(state)).toBe(30);
+    expect(dungeonTimeUntilNextMeal(state)).toBe(DUNGEON_ACTIONS_PER_MEAL);
     consumeDungeonTime(state, 10);
-    expect(dungeonTimeUntilNextMeal(state)).toBe(20);
-    consumeDungeonTime(state, 20);
+    expect(dungeonTimeUntilNextMeal(state)).toBe(DUNGEON_ACTIONS_PER_MEAL - 10);
+    consumeDungeonTime(state, DUNGEON_ACTIONS_PER_MEAL - 10);
     expect(state.provisions).toBe(2);
     expect(state.timeSlot).toBe("evening");
     expect(state.message).toContain("食料を1個");
-    expect(dungeonTimeUntilNextMeal(state)).toBe(30);
+    expect(dungeonTimeUntilNextMeal(state)).toBe(DUNGEON_ACTIONS_PER_MEAL);
 
     state.run!.guard = { guardId: "test-guard", pos: { ...state.run!.player }, hp: 10, maxHp: 10, damage: 2, mode: "covering", safeTurns: 0, healingTrustGained: 0, retreatCount: 0 };
     expect(dungeonMealProvisionCost(state)).toBe(2);
     const hp = state.hp;
-    consumeDungeonTime(state, 30);
+    consumeDungeonTime(state, DUNGEON_ACTIONS_PER_MEAL);
     expect(state.provisions).toBe(0);
     expect(state.hp).toBe(hp);
     expect(state.message).toContain("食料を2個");
-    consumeDungeonTime(state, 30);
+    consumeDungeonTime(state, DUNGEON_ACTIONS_PER_MEAL);
     expect(state.hp).toBe(hp - 2);
     expect(state.message).toContain("2人分");
     expect(state.message).toContain("2個不足");

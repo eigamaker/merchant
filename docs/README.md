@@ -5,6 +5,9 @@
 - [GAMEPLAY_IMPLEMENTATION_PLAN.md](GAMEPLAY_IMPLEMENTATION_PLAN.md) — Web版の自宅店舗⇄ダンジョンのゲームループ、直接操作、インベントリ、店舗運営、実装順序
 - [HOME_DUNGEON_AUTOTILE_PLAN.md](HOME_DUNGEON_AUTOTILE_PLAN.md) — 旧街一枚絵を廃止し、家／複数階層ダンジョンと手動配置レイヤーへ移行する実装仕様
 - [DUNGEON_THEMES.md](DUNGEON_THEMES.md) — 手続き生成ダンジョン、テーマ契約、壁マスク順、アセット差し替え・検証手順
+- [MERCHANT_LOOP.md](MERCHANT_LOOP.md) — 商人ゲームループの仕様。道具袋、護衛、露店、値付け、名簿、銘、遺体
+- [DESIGN_BACKLOG.md](DESIGN_BACKLOG.md) — 設計提案と判断の台帳。採用・見送り・保留の理由を残し、全体レビューの起点にする
+- [ECONOMY_BALANCE.md](ECONOMY_BALANCE.md) — 深度ごとのアイテム価格、護衛料、食料、一品物の価格帯と買い手。実測値と提案する梯子
 
 ## アセット制作
 

@@ -4,9 +4,9 @@ import { HOME_SPAWN, createHomeMap } from "./homeMap";
 import { compileMap, loadTrialMapPack } from "./mapDocument";
 import { createDefaultMapPack } from "./defaultMapPack";
 import { actorDefinition, actorEnemyCost, actorEnemyStatsAt, actorHasEnemyStats } from "./actorCatalog";
-import { ADVENTURER_RANKS, MERCHANT_ITEM_DEFINITIONS, STARTING_BAG_ID, itemMinFloor } from "./merchantContent";
+import { ADVENTURER_RANKS, CHEST_LOOT, GROUND_LOOT, MERCHANT_ITEM_DEFINITIONS, STARTING_BAG_ID, itemCharges, lootEntriesFor, type LootEntry } from "./merchantContent";
 import { SEED_NPC_IDS, canSellInHomeShop, initializeMerchantWorld, pruneCampaignRecords, registerWorldItem } from "./merchantEconomy";
-import { selectFloorDelvers } from "./townDay";
+import { announceSingularFind, selectFloorDelvers } from "./townDay";
 import { npcCombatStats, recordGearDeed } from "./npcGear";
 import { applySurvivalGrowth } from "./adventurerGrowth";
 import { corpsesOnFloor, markCorpseInspected, pruneCorpses, recordCorpse, removeCorpseLoot } from "./dungeonCorpses";
@@ -15,6 +15,7 @@ import { DUNGEON_PRICE_CEILING, dungeonVerdict, marketPrice } from "./pricing";
 import { refreshItemLegend, wasEntrusted } from "./itemLegend";
 import { adjustGuardProfile, ensureGuardProfile, guardStand, recordGuardEvent } from "./guardProfiles";
 import { recordBond } from "./npcBonds";
+import { wantsItem } from "./npcDemand";
 import { advanceTime, bagCapacity, canReorganizeHomeInventory, consumeDungeonTime, inventoryItemCount, processDayEvents, recoverMerchantAfterDeath, resetDailySystems, unequipIfNeeded } from "./merchantSystems";
 import { generateDungeonFloor, generatedPlacementCells } from "./dungeonGenerator";
 import { closeStall, openStall, stallAttraction, stallPhase } from "./dungeonStall";
@@ -97,7 +98,7 @@ export function createNewGame(): GameState {
     status: "active",
     day: 1,
     timeSlot: "morning",
-    gold: 300,
+    gold: 1000,
     vaultGold: 0,
     hp: 12,
     maxHp: 12,
@@ -160,7 +161,31 @@ export function itemDefinition(item: ItemInstance): ItemDefinition {
   return definition;
 }
 
+/** 束ねている数。束ねられない品は常に1。 */
+export function itemCount(item: ItemInstance): number {
+  return Math.max(1, Math.floor(item.count ?? 1));
+}
+
+/** 一束に入る数。束ねられない品は1。 */
+export function stackLimit(item: ItemInstance): number {
+  return Math.max(1, MERCHANT_ITEM_DEFINITIONS[item.definitionId]?.stackSize ?? 1);
+}
+
+/**
+ * 表示名。**束は数まで含めて名前とする** —— 表示はすべてここを通るので、
+ * 一覧も取引画面もメッセージも、束であることが一箇所で伝わる。
+ */
 export function itemName(item: ItemInstance): string {
+  const base = itemBaseName(item);
+  const count = itemCount(item);
+  const total = MERCHANT_ITEM_DEFINITIONS[item.definitionId]?.charges ?? 1;
+  // 束は数を、回数のある薬は残量を、名前の側に出す。表示はすべてここを通る。
+  if (total > 1) return `${base}（残${itemCharges(item)}）`;
+  return count > 1 ? `${base}×${count}` : base;
+}
+
+/** 数を付けない名。銘と鑑定の段だけを見る。 */
+export function itemBaseName(item: ItemInstance): string {
   if (item.currentName) return item.currentName;
   if (item.singular && !item.namedByNpcId) return "？？？の剣";
   const definition = itemDefinition(item);
@@ -229,6 +254,20 @@ export function createItem(state: GameState, definitionId: string, floor?: numbe
  */
 const GROUND_ITEM_SPACING = 330;
 const CHEST_SPACING = 900;
+/**
+ * 浅い階には素材を厚く置く。
+ *
+ * 地下1〜3階は序盤の稼ぎ場で、床の素材を運ぶことが商いになる。深く潜れるようになる前に、
+ * 運べる量で稼ぐ段階を置く。深層では逆に、床の素材より宝箱の一点のほうが枠あたり高い。
+ */
+export const SHALLOW_GROUND_FLOORS = 3;
+const SHALLOW_GROUND_SPACING = 110;
+
+function groundItemCount(walkable: number, floor: number): number {
+  return floor <= SHALLOW_GROUND_FLOORS
+    ? dropCount(walkable, SHALLOW_GROUND_SPACING, 5, 8)
+    : dropCount(walkable, GROUND_ITEM_SPACING, 1, 3);
+}
 
 function walkableCells(map: DungeonMap): number {
   let total = 0;
@@ -266,21 +305,31 @@ export function generateDungeon(seed: number, floor: number, themeId = "cave"): 
 function distance(a: Vec, b: Vec): number {
   return Math.abs(a.x - b.x) + Math.abs(a.y - b.y);
 }
-function randomItemId(state: GameState, rng: Rng, floor: number): string {
-  const definitions = Object.values(MERCHANT_ITEM_DEFINITIONS).filter((definition) => {
-    if (definition.singular && state.singularItemIds.includes(definition.id)) return false;
-    // 種類ごとの解禁深度。浅い階は素材と薬だけの仕入れ場にする。
-    if (floor < itemMinFloor(definition)) return false;
-    return true;
+/**
+ * 表から一点引く。
+ *
+ * 一点物は既に世に出ていれば表から落とす。万一その深さで引ける行が無ければ、
+ * 表の先頭へ落として階を空手にしない。
+ */
+function rollLoot(state: GameState, rng: Rng, floor: number, table: readonly LootEntry[]): string {
+  const rows = lootEntriesFor(table, floor).filter((entry) => {
+    const definition = MERCHANT_ITEM_DEFINITIONS[entry.itemId];
+    if (!definition) return false;
+    return !(definition.singular && state.singularItemIds.includes(definition.id));
   });
-  const weighted = definitions.flatMap((definition) => {
-    const rarityWeight = definition.rarity === "common" ? Math.max(2, 9 - floor)
-      : definition.rarity === "uncommon" ? 5
-        : definition.rarity === "rare" ? Math.max(1, floor - 1)
-          : floor >= 6 ? 1 : 0;
-    return Array<string>(rarityWeight).fill(definition.id);
-  });
+  const weighted = rows.flatMap((entry) => Array<string>(Math.max(1, Math.round(entry.weight))).fill(entry.itemId));
+  if (!weighted.length) return table[0]!.itemId;
   return rng.pick(weighted);
+}
+
+/** 床に落ちているもの。素材だけ。 */
+function rollGroundItem(state: GameState, rng: Rng, floor: number): string {
+  return rollLoot(state, rng, floor, GROUND_LOOT);
+}
+
+/** 宝箱・遺体・冒険者の手持ち。珍しいものはここにしか入っていない。 */
+function rollChestItem(state: GameState, rng: Rng, floor: number): string {
+  return rollLoot(state, rng, floor, CHEST_LOOT);
 }
 
 /**
@@ -379,10 +428,10 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
   const walkable = walkableCells(map);
   const itemCells = generatedPlacementCells(map, ["loot", "combat", "treasure", "tomb"]);
 
-  for (let index = items.length; index < dropCount(walkable, GROUND_ITEM_SPACING, 1, 3); index += 1) {
+  for (let index = items.length; index < groundItemCount(walkable, floor); index += 1) {
     const pos = freeFloor(map, itemRng, occupied, itemCells);
     occupied.push(pos);
-    const generated = createItem(state, randomItemId(state, itemRng, floor), floor);
+    const generated = createItem(state, rollGroundItem(state, itemRng, floor), floor);
     generated.location = { kind: "dungeonGround", floor, pos: { ...pos } };
     items.push({ item: generated, pos });
   }
@@ -403,7 +452,7 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
     return {
       id: `chest-${floor}-${index}`,
       pos,
-      item: createItem(state, randomItemId(state, chestRng, floor), floor),
+      item: createItem(state, rollChestItem(state, chestRng, floor), floor),
       ...(returnStone ? { returnStone: true as const } : {}),
     };
   });
@@ -419,7 +468,7 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
   if (bodyRng.next() < anonymousCorpseChance) {
     const pos = freeFloor(map, bodyRng, occupiedEntities, bodyCells);
     occupiedEntities.push(pos);
-    const loot = Array.from({ length: bodyRng.int(1, 2) }, () => createItem(state, randomItemId(state, bodyRng, floor), floor));
+    const loot = Array.from({ length: bodyRng.int(1, 2) }, () => createItem(state, rollChestItem(state, bodyRng, floor), floor));
     for (const found of loot) {
       found.owner = "ground";
       found.location = { kind: "dungeonGround", floor, pos: { ...pos } };
@@ -435,7 +484,7 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
     occupiedEntities.push(pos);
     if (!corpse.stocked) {
       // 誰にも見つけられないまま死んだ相手の遺品は、最初に行き当たった時に決まる。
-      const generated = Array.from({ length: bodyRng.int(1, 2) }, () => createItem(state, randomItemId(state, bodyRng, floor), floor));
+      const generated = Array.from({ length: bodyRng.int(1, 2) }, () => createItem(state, rollChestItem(state, bodyRng, floor), floor));
       for (const found of generated) {
         found.owner = deadNpc.id;
         found.location = { kind: "corpse", npcId: deadNpc.id, floor };
@@ -459,8 +508,8 @@ function buildRun(state: GameState, floor: number, seed: number, carriedGuard?: 
     const roamingPos = freeFloor(map, npcRng, occupiedEntities, npcCells);
     occupiedEntities.push(roamingPos);
     const stockIds = index === 0
-      ? ["minor-healing-potion", randomItemId(state, npcRng, floor)]
-      : [randomItemId(state, npcRng, floor)];
+      ? ["minor-healing-potion", rollChestItem(state, npcRng, floor)]
+      : [rollChestItem(state, npcRng, floor)];
     for (const definitionId of stockIds) {
       const stock = createItem(state, definitionId, floor);
       stock.owner = delver.id;
@@ -1098,7 +1147,28 @@ function swapCandidate(state: GameState, swapOutId?: string): ItemInstance | und
   return swap;
 }
 
+/**
+ * 鞄の中で、この品を受け入れられる束。
+ *
+ * 束ねられるのは素材だけで、床から拾う品は必ず1個ずつなので、空きのある束を一つ探せば足りる。
+ */
+function stackTarget(state: GameState, incoming: ItemInstance): ItemInstance | undefined {
+  const limit = stackLimit(incoming);
+  if (limit <= 1) return undefined;
+  return state.inventory.find((entry) =>
+    entry.definitionId === incoming.definitionId
+    && !entry.currentName
+    && itemCount(entry) + itemCount(incoming) <= limit);
+}
+
 function carryItem(state: GameState, incoming: ItemInstance, swapOutId: string | undefined, onSwap: (item: ItemInstance) => void): boolean {
+  // 束へ合流するなら枠を新しく使わない。鞄が満杯でも入れ替えは要らない。
+  const stack = stackTarget(state, incoming);
+  if (stack) {
+    stack.count = itemCount(stack) + itemCount(incoming);
+    delete state.itemsById[incoming.uuid];
+    return true;
+  }
   const swap = swapCandidate(state, swapOutId);
   if (swap === null) {
     state.message = `${bagName(state)}が${bagCapacity(state)}個でいっぱいだ。1個置いて入れ替えよう。`;
@@ -1227,6 +1297,10 @@ function performUseMedicine(state: GameState, itemId: string, target: "player" |
   const healing = item ? itemDefinition(item).healing ?? 0 : 0;
   const guard = target === "guard" ? state.run?.guard : undefined;
   const actor = target === "guard" ? guard : state;
+  if (item && itemCharges(item) <= 0) {
+    state.message = `${itemName(item)}はもう空だ。`;
+    return emptyResult();
+  }
   if (!item || healing <= 0 || !actor) {
     state.message = target === "guard" ? "回復できる護衛がいない。" : "その品は回復に使えない。";
     return emptyResult();
@@ -1237,9 +1311,15 @@ function performUseMedicine(state: GameState, itemId: string, target: "player" |
   }
   const recovered = Math.min(healing, actor.maxHp - actor.hp);
   actor.hp += recovered;
-  state.inventory = state.inventory.filter((entry) => entry.uuid !== item.uuid);
-  unequipIfNeeded(state, item.uuid);
-  item.location = { kind: "consumed", actorId: guard?.guardId ?? "player" };
+  // 回数のある薬は、使っても残量を抱えて鞄に残る。深層の薬が強いのは量ではなく回数である。
+  const remaining = itemCharges(item) - 1;
+  if (remaining > 0) item.chargesLeft = remaining;
+  else {
+    item.chargesLeft = 0;
+    state.inventory = state.inventory.filter((entry) => entry.uuid !== item.uuid);
+    unequipIfNeeded(state, item.uuid);
+    item.location = { kind: "consumed", actorId: guard?.guardId ?? "player" };
+  }
   if (guard) {
     const npc = state.npcs.find((entry) => entry.id === guard.guardId);
     if (npc) {
@@ -1255,11 +1335,11 @@ function performUseMedicine(state: GameState, itemId: string, target: "player" |
 }
 
 export function dungeonAdventurerSellPrice(item: ItemInstance): number {
-  return Math.max(1, Math.ceil(itemDefinition(item).baseValue * 0.8));
+  return Math.max(1, Math.ceil(itemDefinition(item).baseValue * 0.8 * itemCount(item)));
 }
 
 export function dungeonAdventurerBuyPrice(item: ItemInstance): number {
-  return Math.max(1, Math.floor(itemDefinition(item).baseValue * 0.6));
+  return Math.max(1, Math.floor(itemDefinition(item).baseValue * 0.6 * itemCount(item)));
 }
 
 /** 浅層には余裕があり、3階を越えてから食料需要が段階的に増える。 */
@@ -1313,10 +1393,10 @@ function performSellToAdventurer(state: GameState, npcId: string, itemId: string
   const npc = state.npcs.find((entry) => entry.id === npcId);
   const item = state.inventory.find((entry) => entry.uuid === itemId);
   if (!adventurer || !npc || !item) return emptyResult();
-  const definition = itemDefinition(item);
   const floor = state.run?.floor ?? 1;
   const needsMedicine = isDesperateFor(adventurer, item, floor);
-  if (!npc.interests.includes(definition.category) && !needsMedicine) { state.message = `${npc.name}はその品を探していない。`; return emptyResult(); }
+  // 買う理由が無ければ売れない。ただし本当に傷ついていれば、薬だけは理由を問わない。
+  if (!wantsItem(npc, item) && !needsMedicine) { state.message = `${npc.name}はその品を探していない。`; return emptyResult(); }
   const baseline = dungeonAdventurerBuyPrice(item);
   const price = Math.max(1, Math.min(Math.round(asking ?? baseline), dungeonAskingCeiling(item)));
   const desperate = isDesperateFor(adventurer, item, floor);
@@ -1692,6 +1772,8 @@ export function returnHome(state: GameState, arrival: "homeSpawn" | "dungeonEntr
       } else delete npc.conditionHp;
     }
   }
+  // 一品物を持ち帰った日、噂が立つ。蒐集家が町へ向かうのはこの一度だけである。
+  for (const carried of state.inventory) if (announceSingularFind(state, carried)) break;
   state.lastExpeditionDay = Math.max(state.lastExpeditionDay, state.day);
   state.location = "home";
   const home = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("autostart") === "world"

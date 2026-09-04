@@ -2,7 +2,7 @@ import { ADVENTURER_RANKS, MERCHANT_ITEM_DEFINITIONS } from "./merchantContent";
 import { adjustGuardProfile, ensureGuardProfile } from "./guardProfiles";
 import { hasBond } from "./npcBonds";
 import { recordCorpse } from "./dungeonCorpses";
-import { ADVENTURER_ROSTER_TARGET, createRosterAdventurer, thinnestRank } from "./npcRoster";
+import { ADVENTURER_ROSTER_TARGET, createRosterAdventurer, createTownsperson, thinnestRank } from "./npcRoster";
 import { carriedGearItems, gearPower, isRetained, recordGearDeed, settleLentGear, updateRetainer } from "./npcGear";
 import { applySurvivalGrowth } from "./adventurerGrowth";
 import { DUNGEON_MAX_FLOOR } from "./dungeonDifficulty";
@@ -253,6 +253,37 @@ function scheduleArrival(state: GameState): void {
       : `${newcomer.name}という${rank}ランクの冒険者が町へ移ってきた。`,
     effect: { kind: "arrival", npcId: newcomer.id },
   });
+}
+
+/**
+ * 一品物を初めて持ち帰った日、噂が立つ。
+ *
+ * 蒐集家は店の格では現れない。**深く潜って一品物を見つけたことが、そのまま客層を開く。**
+ * 噂が本人より先に町へ届き、聞きつけた一人が数日後に訪ねてくる。
+ *
+ * 一度きりである。二人目の蒐集家は、いまのところ町へ来ない。
+ */
+export function announceSingularFind(state: GameState, item: ItemInstance): boolean {
+  if (!item.singular) return false;
+  if (state.npcs.some((npc) => npc.profession === "collector")) return false;
+  const name = item.currentName ?? MERCHANT_ITEM_DEFINITIONS[item.definitionId]?.trueName ?? "見たこともない品";
+  const collector = createTownsperson(state, "collector", {
+    interests: ["gem", "art", "relic", "curio"],
+    budget: 40_000,
+    status: "traveling",
+  });
+  state.events.push({
+    id: `singular-rumour-${item.uuid}`,
+    dueDay: state.day,
+    text: `${name}を持ち帰ったという話が、その日のうちに町を回った。`,
+  });
+  state.events.push({
+    id: `collector-${collector.id}`,
+    dueDay: state.day + 2 + (hash(`${state.campaignId}:${item.uuid}:collector`) % 2),
+    text: `${collector.name}という蒐集家が、噂を聞きつけて店を訪ねてきた。珍しいものにしか興味がないという。`,
+    effect: { kind: "arrival", npcId: collector.id },
+  });
+  return true;
 }
 
 /** 1つの階に置く冒険者の上限。 */

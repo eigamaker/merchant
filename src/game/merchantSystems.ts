@@ -3,6 +3,7 @@ import { canSellInHomeShop, isAvailableInTown, prepareCustomerPurchaseRequest, p
 import { npcBonds } from "./npcBonds";
 import { adjustGuardProfile, ensureGuardProfile, recordGuardEvent } from "./guardProfiles";
 import { simulateTownDay } from "./townDay";
+import { refreshBulkOffer, settleOverdueBulkOrders } from "./bulkOrders";
 import { createHomeMap } from "./homeMap";
 import { loadTrialMapPack } from "./mapDocument";
 import type { GameState, ItemInstance, SupplyKind, TimeSlot } from "./types";
@@ -22,9 +23,9 @@ export const SHOP_CUSTOMER_MAX = 6;
  * 「昨日薬を買っていった相手が今日また来る」が届くかどうかは、この一箇所で決まる。
  */
 export const SHOP_FAMILIARITY_WEIGHT = 0.45;
-export const DUNGEON_ACTIONS_PER_MEAL = 30;
+export const DUNGEON_ACTIONS_PER_MEAL = 40;
 /** 携行食料は束ねて運ぶ。端数も一束として1枠を使う。 */
-export const PROVISIONS_PER_SLOT = 10;
+export const PROVISIONS_PER_SLOT = 25;
 
 const TIME_ORDER: TimeSlot[] = ["morning", "afternoon", "evening", "night"];
 
@@ -120,6 +121,9 @@ export function unequipIfNeeded(state: GameState, itemId: string): void {
 }
 
 export function resetDailySystems(state: GameState): void {
+  // 期日を落とした約束は、朝いちばんに清算される。
+  settleOverdueBulkOrders(state);
+  refreshBulkOffer(state);
   for (const npc of state.npcs) if (npc.status === "visiting") npc.status = "inTown";
   state.visitorNpcIds = [];
   state.shopSession = { day: state.day, status: "closed", queueNpcIds: [], servedNpcIds: [] };
