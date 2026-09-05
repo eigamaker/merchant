@@ -3377,6 +3377,230 @@
         "animationFrames": 1
       },
       "path": "/assets/map-tiles/generated/mapchip2-mapchip-yuki.png"
+    },
+    {
+      "id": "home.merchant-barrel",
+      "label": "樽",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 1,
+      "rows": 2,
+      "frameCount": 2,
+      "mapKinds": [
+        "home"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/home.merchant-barrel.png"
+    },
+    {
+      "id": "home.merchant-bed",
+      "label": "ベッド",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 2,
+      "rows": 3,
+      "frameCount": 6,
+      "mapKinds": [
+        "home"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/home.merchant-bed.png"
+    },
+    {
+      "id": "home.merchant-chest",
+      "label": "宝箱",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 2,
+      "rows": 1,
+      "frameCount": 2,
+      "mapKinds": [
+        "home"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/home.merchant-chest.png"
+    },
+    {
+      "id": "home.merchant-counter",
+      "label": "店のカウンター",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 4,
+      "rows": 2,
+      "frameCount": 8,
+      "mapKinds": [
+        "home"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/home.merchant-counter.png"
+    },
+    {
+      "id": "home.merchant-crate",
+      "label": "木箱",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "mapKinds": [
+        "home"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/home.merchant-crate.png"
+    },
+    {
+      "id": "home.merchant-desk",
+      "label": "探索準備の机",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 2,
+      "rows": 1,
+      "frameCount": 2,
+      "mapKinds": [
+        "home"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/home.merchant-desk.png"
+    },
+    {
+      "id": "home.merchant-door",
+      "label": "開いたドア",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 2,
+      "rows": 2,
+      "frameCount": 4,
+      "mapKinds": [
+        "home"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": true,
+      "path": "/assets/map-tiles/generated/home.merchant-door.png"
+    },
+    {
+      "id": "home.merchant-floor",
+      "label": "木の床",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "mapKinds": [
+        "home"
+      ],
+      "defaultLayer": "ground",
+      "defaultWalkable": true,
+      "path": "/assets/map-tiles/generated/home.merchant-floor.png"
+    },
+    {
+      "id": "home.merchant-lantern",
+      "label": "壁のランタン",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "mapKinds": [
+        "home"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/home.merchant-lantern.png"
+    },
+    {
+      "id": "home.merchant-rug",
+      "label": "カーペット",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 4,
+      "rows": 3,
+      "frameCount": 12,
+      "mapKinds": [
+        "home"
+      ],
+      "defaultLayer": "structure",
+      "defaultWalkable": true,
+      "path": "/assets/map-tiles/generated/home.merchant-rug.png"
+    },
+    {
+      "id": "home.merchant-shelf",
+      "label": "商品棚",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 3,
+      "rows": 2,
+      "frameCount": 6,
+      "mapKinds": [
+        "home"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/home.merchant-shelf.png"
+    },
+    {
+      "id": "home.merchant-stool",
+      "label": "スツール",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 1,
+      "rows": 1,
+      "frameCount": 1,
+      "mapKinds": [
+        "home"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/home.merchant-stool.png"
+    },
+    {
+      "id": "home.merchant-table",
+      "label": "テーブル",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 2,
+      "rows": 2,
+      "frameCount": 4,
+      "mapKinds": [
+        "home"
+      ],
+      "defaultLayer": "decoration",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/home.merchant-table.png"
+    },
+    {
+      "id": "home.merchant-wall",
+      "label": "木梁と漆喰の壁",
+      "tileSize": 16,
+      "margin": 0,
+      "spacing": 0,
+      "columns": 4,
+      "rows": 1,
+      "frameCount": 4,
+      "mapKinds": [
+        "home"
+      ],
+      "defaultLayer": "structure",
+      "defaultWalkable": false,
+      "path": "/assets/map-tiles/generated/home.merchant-wall.png"
     }
   ]
 }

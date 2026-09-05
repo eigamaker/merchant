@@ -3376,6 +3376,230 @@ export const MAP_ASSET_CATALOG = [
       "animationFrames": 1
     },
     "path": "/assets/map-tiles/generated/mapchip2-mapchip-yuki.png"
+  },
+  {
+    "id": "home.merchant-barrel",
+    "label": "樽",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 2,
+    "frameCount": 2,
+    "mapKinds": [
+      "home"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": false,
+    "path": "/assets/map-tiles/generated/home.merchant-barrel.png"
+  },
+  {
+    "id": "home.merchant-bed",
+    "label": "ベッド",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 2,
+    "rows": 3,
+    "frameCount": 6,
+    "mapKinds": [
+      "home"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": false,
+    "path": "/assets/map-tiles/generated/home.merchant-bed.png"
+  },
+  {
+    "id": "home.merchant-chest",
+    "label": "宝箱",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 2,
+    "rows": 1,
+    "frameCount": 2,
+    "mapKinds": [
+      "home"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": false,
+    "path": "/assets/map-tiles/generated/home.merchant-chest.png"
+  },
+  {
+    "id": "home.merchant-counter",
+    "label": "店のカウンター",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 4,
+    "rows": 2,
+    "frameCount": 8,
+    "mapKinds": [
+      "home"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": false,
+    "path": "/assets/map-tiles/generated/home.merchant-counter.png"
+  },
+  {
+    "id": "home.merchant-crate",
+    "label": "木箱",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 1,
+    "frameCount": 1,
+    "mapKinds": [
+      "home"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": false,
+    "path": "/assets/map-tiles/generated/home.merchant-crate.png"
+  },
+  {
+    "id": "home.merchant-desk",
+    "label": "探索準備の机",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 2,
+    "rows": 1,
+    "frameCount": 2,
+    "mapKinds": [
+      "home"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": false,
+    "path": "/assets/map-tiles/generated/home.merchant-desk.png"
+  },
+  {
+    "id": "home.merchant-door",
+    "label": "開いたドア",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 2,
+    "rows": 2,
+    "frameCount": 4,
+    "mapKinds": [
+      "home"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": true,
+    "path": "/assets/map-tiles/generated/home.merchant-door.png"
+  },
+  {
+    "id": "home.merchant-floor",
+    "label": "木の床",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 1,
+    "frameCount": 1,
+    "mapKinds": [
+      "home"
+    ],
+    "defaultLayer": "ground",
+    "defaultWalkable": true,
+    "path": "/assets/map-tiles/generated/home.merchant-floor.png"
+  },
+  {
+    "id": "home.merchant-lantern",
+    "label": "壁のランタン",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 1,
+    "frameCount": 1,
+    "mapKinds": [
+      "home"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": false,
+    "path": "/assets/map-tiles/generated/home.merchant-lantern.png"
+  },
+  {
+    "id": "home.merchant-rug",
+    "label": "カーペット",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 4,
+    "rows": 3,
+    "frameCount": 12,
+    "mapKinds": [
+      "home"
+    ],
+    "defaultLayer": "structure",
+    "defaultWalkable": true,
+    "path": "/assets/map-tiles/generated/home.merchant-rug.png"
+  },
+  {
+    "id": "home.merchant-shelf",
+    "label": "商品棚",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 3,
+    "rows": 2,
+    "frameCount": 6,
+    "mapKinds": [
+      "home"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": false,
+    "path": "/assets/map-tiles/generated/home.merchant-shelf.png"
+  },
+  {
+    "id": "home.merchant-stool",
+    "label": "スツール",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 1,
+    "frameCount": 1,
+    "mapKinds": [
+      "home"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": false,
+    "path": "/assets/map-tiles/generated/home.merchant-stool.png"
+  },
+  {
+    "id": "home.merchant-table",
+    "label": "テーブル",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 2,
+    "rows": 2,
+    "frameCount": 4,
+    "mapKinds": [
+      "home"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": false,
+    "path": "/assets/map-tiles/generated/home.merchant-table.png"
+  },
+  {
+    "id": "home.merchant-wall",
+    "label": "木梁と漆喰の壁",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 4,
+    "rows": 1,
+    "frameCount": 4,
+    "mapKinds": [
+      "home"
+    ],
+    "defaultLayer": "structure",
+    "defaultWalkable": false,
+    "path": "/assets/map-tiles/generated/home.merchant-wall.png"
   }
 ] as const;
 export const MAP_ASSET_IDS = MAP_ASSET_CATALOG.map((asset) => asset.id);
@@ -3387,24 +3611,58 @@ export const DEFAULT_PALETTE_LAYOUT = {
       "label": "家・基本",
       "mapKind": "home",
       "tileSize": 16,
-      "width": 4,
-      "height": 4,
+      "width": 6,
+      "height": 2,
       "cells": [
         {
           "x": 0,
           "y": 0,
-          "assetId": "home.floor",
+          "assetId": "home.merchant-floor",
           "frame": 0,
           "layer": "ground",
-          "walkable": true
+          "walkable": true,
+          "role": "floor",
+          "status": "ready"
         },
         {
           "x": 1,
           "y": 0,
-          "assetId": "home.wall",
+          "assetId": "home.merchant-wall",
           "frame": 0,
           "layer": "structure",
-          "walkable": false
+          "walkable": false,
+          "role": "wall",
+          "status": "ready"
+        },
+        {
+          "x": 2,
+          "y": 0,
+          "assetId": "home.merchant-wall",
+          "frame": 1,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready"
+        },
+        {
+          "x": 3,
+          "y": 0,
+          "assetId": "home.merchant-wall",
+          "frame": 2,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready"
+        },
+        {
+          "x": 4,
+          "y": 0,
+          "assetId": "home.merchant-wall",
+          "frame": 3,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready"
         }
       ]
     },
@@ -3447,6 +3705,555 @@ export const DEFAULT_PALETTE_LAYOUT = {
           "frame": 0,
           "layer": "decoration",
           "walkable": true
+        }
+      ]
+    },
+    {
+      "id": "home-furniture",
+      "label": "家・家具（範囲選択で一括配置）",
+      "mapKind": "home",
+      "tileSize": 16,
+      "width": 16,
+      "height": 11,
+      "cells": [
+        {
+          "x": 0,
+          "y": 0,
+          "assetId": "home.merchant-shelf",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "商品棚 3×2タイル"
+        },
+        {
+          "x": 1,
+          "y": 0,
+          "assetId": "home.merchant-shelf",
+          "frame": 1,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "商品棚 3×2タイル"
+        },
+        {
+          "x": 2,
+          "y": 0,
+          "assetId": "home.merchant-shelf",
+          "frame": 2,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "商品棚 3×2タイル"
+        },
+        {
+          "x": 0,
+          "y": 1,
+          "assetId": "home.merchant-shelf",
+          "frame": 3,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "商品棚 3×2タイル"
+        },
+        {
+          "x": 1,
+          "y": 1,
+          "assetId": "home.merchant-shelf",
+          "frame": 4,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "商品棚 3×2タイル"
+        },
+        {
+          "x": 2,
+          "y": 1,
+          "assetId": "home.merchant-shelf",
+          "frame": 5,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "商品棚 3×2タイル"
+        },
+        {
+          "x": 4,
+          "y": 0,
+          "assetId": "home.merchant-bed",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "ベッド 2×3タイル"
+        },
+        {
+          "x": 5,
+          "y": 0,
+          "assetId": "home.merchant-bed",
+          "frame": 1,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "ベッド 2×3タイル"
+        },
+        {
+          "x": 4,
+          "y": 1,
+          "assetId": "home.merchant-bed",
+          "frame": 2,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "ベッド 2×3タイル"
+        },
+        {
+          "x": 5,
+          "y": 1,
+          "assetId": "home.merchant-bed",
+          "frame": 3,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "ベッド 2×3タイル"
+        },
+        {
+          "x": 4,
+          "y": 2,
+          "assetId": "home.merchant-bed",
+          "frame": 4,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "ベッド 2×3タイル"
+        },
+        {
+          "x": 5,
+          "y": 2,
+          "assetId": "home.merchant-bed",
+          "frame": 5,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "ベッド 2×3タイル"
+        },
+        {
+          "x": 7,
+          "y": 0,
+          "assetId": "home.merchant-chest",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "宝箱 2×1タイル"
+        },
+        {
+          "x": 8,
+          "y": 0,
+          "assetId": "home.merchant-chest",
+          "frame": 1,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "宝箱 2×1タイル"
+        },
+        {
+          "x": 10,
+          "y": 0,
+          "assetId": "home.merchant-table",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "テーブル 2×2タイル"
+        },
+        {
+          "x": 11,
+          "y": 0,
+          "assetId": "home.merchant-table",
+          "frame": 1,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "テーブル 2×2タイル"
+        },
+        {
+          "x": 10,
+          "y": 1,
+          "assetId": "home.merchant-table",
+          "frame": 2,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "テーブル 2×2タイル"
+        },
+        {
+          "x": 11,
+          "y": 1,
+          "assetId": "home.merchant-table",
+          "frame": 3,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "テーブル 2×2タイル"
+        },
+        {
+          "x": 0,
+          "y": 4,
+          "assetId": "home.merchant-rug",
+          "frame": 0,
+          "layer": "structure",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "カーペット 4×3タイル"
+        },
+        {
+          "x": 1,
+          "y": 4,
+          "assetId": "home.merchant-rug",
+          "frame": 1,
+          "layer": "structure",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "カーペット 4×3タイル"
+        },
+        {
+          "x": 2,
+          "y": 4,
+          "assetId": "home.merchant-rug",
+          "frame": 2,
+          "layer": "structure",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "カーペット 4×3タイル"
+        },
+        {
+          "x": 3,
+          "y": 4,
+          "assetId": "home.merchant-rug",
+          "frame": 3,
+          "layer": "structure",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "カーペット 4×3タイル"
+        },
+        {
+          "x": 0,
+          "y": 5,
+          "assetId": "home.merchant-rug",
+          "frame": 4,
+          "layer": "structure",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "カーペット 4×3タイル"
+        },
+        {
+          "x": 1,
+          "y": 5,
+          "assetId": "home.merchant-rug",
+          "frame": 5,
+          "layer": "structure",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "カーペット 4×3タイル"
+        },
+        {
+          "x": 2,
+          "y": 5,
+          "assetId": "home.merchant-rug",
+          "frame": 6,
+          "layer": "structure",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "カーペット 4×3タイル"
+        },
+        {
+          "x": 3,
+          "y": 5,
+          "assetId": "home.merchant-rug",
+          "frame": 7,
+          "layer": "structure",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "カーペット 4×3タイル"
+        },
+        {
+          "x": 0,
+          "y": 6,
+          "assetId": "home.merchant-rug",
+          "frame": 8,
+          "layer": "structure",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "カーペット 4×3タイル"
+        },
+        {
+          "x": 1,
+          "y": 6,
+          "assetId": "home.merchant-rug",
+          "frame": 9,
+          "layer": "structure",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "カーペット 4×3タイル"
+        },
+        {
+          "x": 2,
+          "y": 6,
+          "assetId": "home.merchant-rug",
+          "frame": 10,
+          "layer": "structure",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "カーペット 4×3タイル"
+        },
+        {
+          "x": 3,
+          "y": 6,
+          "assetId": "home.merchant-rug",
+          "frame": 11,
+          "layer": "structure",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "カーペット 4×3タイル"
+        },
+        {
+          "x": 5,
+          "y": 4,
+          "assetId": "home.merchant-counter",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "店のカウンター 4×2タイル"
+        },
+        {
+          "x": 6,
+          "y": 4,
+          "assetId": "home.merchant-counter",
+          "frame": 1,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "店のカウンター 4×2タイル"
+        },
+        {
+          "x": 7,
+          "y": 4,
+          "assetId": "home.merchant-counter",
+          "frame": 2,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "店のカウンター 4×2タイル"
+        },
+        {
+          "x": 8,
+          "y": 4,
+          "assetId": "home.merchant-counter",
+          "frame": 3,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "店のカウンター 4×2タイル"
+        },
+        {
+          "x": 5,
+          "y": 5,
+          "assetId": "home.merchant-counter",
+          "frame": 4,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "店のカウンター 4×2タイル"
+        },
+        {
+          "x": 6,
+          "y": 5,
+          "assetId": "home.merchant-counter",
+          "frame": 5,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "店のカウンター 4×2タイル"
+        },
+        {
+          "x": 7,
+          "y": 5,
+          "assetId": "home.merchant-counter",
+          "frame": 6,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "店のカウンター 4×2タイル"
+        },
+        {
+          "x": 8,
+          "y": 5,
+          "assetId": "home.merchant-counter",
+          "frame": 7,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "店のカウンター 4×2タイル"
+        },
+        {
+          "x": 10,
+          "y": 4,
+          "assetId": "home.merchant-barrel",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "樽 1×2タイル"
+        },
+        {
+          "x": 10,
+          "y": 5,
+          "assetId": "home.merchant-barrel",
+          "frame": 1,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "樽 1×2タイル"
+        },
+        {
+          "x": 12,
+          "y": 4,
+          "assetId": "home.merchant-crate",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "木箱 1×1タイル"
+        },
+        {
+          "x": 0,
+          "y": 8,
+          "assetId": "home.merchant-door",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "開いたドア 2×2タイル"
+        },
+        {
+          "x": 1,
+          "y": 8,
+          "assetId": "home.merchant-door",
+          "frame": 1,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "開いたドア 2×2タイル"
+        },
+        {
+          "x": 0,
+          "y": 9,
+          "assetId": "home.merchant-door",
+          "frame": 2,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "開いたドア 2×2タイル"
+        },
+        {
+          "x": 1,
+          "y": 9,
+          "assetId": "home.merchant-door",
+          "frame": 3,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "開いたドア 2×2タイル"
+        },
+        {
+          "x": 3,
+          "y": 8,
+          "assetId": "home.merchant-stool",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "スツール 1×1タイル"
+        },
+        {
+          "x": 5,
+          "y": 8,
+          "assetId": "home.merchant-desk",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "探索準備の机 2×1タイル"
+        },
+        {
+          "x": 6,
+          "y": 8,
+          "assetId": "home.merchant-desk",
+          "frame": 1,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "探索準備の机 2×1タイル"
+        },
+        {
+          "x": 8,
+          "y": 8,
+          "assetId": "home.merchant-lantern",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "壁のランタン 1×1タイル"
         }
       ]
     }

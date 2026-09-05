@@ -22,4 +22,15 @@ describe("authored default map pack", () => {
     first.home.collision.fill(false);
     expect(createDefaultMapPack().home.collision.some(Boolean)).toBe(true);
   });
+
+  it("keeps both doors and service positions reachable around solid furniture", () => {
+    const { home } = createDefaultMapPack();
+    const spawn = home.markers.find((marker) => marker.kind === "homeSpawn")!;
+    for (const marker of home.markers) {
+      expect(findHomeVisitorPath(home, spawn, marker).length).toBeGreaterThan(0);
+    }
+    for (const [x, y] of [[1, 3], [7, 4], [7, 5], [3, 6], [12, 4]]) {
+      expect(home.collision[y * home.width + x]).toBe(false);
+    }
+  });
 });

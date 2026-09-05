@@ -2533,8 +2533,14 @@ export class MerchantScene extends Phaser.Scene {
   private updateHomePresentation(immediate = false): void {
     if (!this.homeWorld || !this.homePlayer) return;
     this.homePlayer.setPosition(this.state.homePos.x, this.state.homePos.y + this.homeMap.tileSize / 2);
-    const targetX = Phaser.Math.Clamp(this.state.homePos.x - MAP_W / 2, 0, Math.max(0, this.homeMap.width * this.homeMap.tileSize - MAP_W));
-    const targetY = Phaser.Math.Clamp(this.state.homePos.y - MAP_H / 2, 0, Math.max(0, this.homeMap.height * this.homeMap.tileSize - MAP_H));
+    // Small interiors use integer pixel enlargement without changing save coordinates.
+    const zoom = this.homeMap.width * this.homeMap.tileSize <= MAP_W / 2 ? 2 : 1;
+    this.homeWorld.setScale(zoom);
+    this.homeBackdrop?.setScale(zoom);
+    const width = this.homeMap.width * this.homeMap.tileSize * zoom;
+    const height = this.homeMap.height * this.homeMap.tileSize * zoom;
+    const targetX = width < MAP_W ? -(MAP_W - width) / 2 : Phaser.Math.Clamp(this.state.homePos.x * zoom - MAP_W / 2, 0, width - MAP_W);
+    const targetY = height < MAP_H ? -(MAP_H - height) / 2 : Phaser.Math.Clamp(this.state.homePos.y * zoom - MAP_H / 2, 0, height - MAP_H);
     const currentX = -this.homeWorld.x;
     const currentY = -this.homeWorld.y;
     const nextX = -Math.round(immediate ? targetX : Phaser.Math.Linear(currentX, targetX, 0.18));
