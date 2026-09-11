@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createNewGame } from "./engine";
 import { RANKING_BOARD_SIZE, adventurerStanding, rankAdventurers, rankingLine } from "./adventurerRanking";
 import { ensureGuardProfile } from "./guardProfiles";
+import { witnessNpcDeath } from "./playerKnowledge";
 import type { GameState, NpcRecord } from "./types";
 
 const adventurers = (state: GameState): NpcRecord[] => state.npcs.filter((npc) => npc.adventurer);
@@ -36,6 +37,7 @@ describe("adventurerRanking", () => {
     const npc = adventurers(state)[0]!;
     npc.rank = "A";
     npc.status = "dead";
+    witnessNpcDeath(state, npc.id, npc.name, 6);
     state.dungeonCorpses.push({ npcId: npc.id, floor: 6, diedDay: state.day, lootIds: [], inspected: false, stocked: false });
 
     const listedNow = rankAdventurers(state, 30).find((entry) => entry.npcId === npc.id);
@@ -90,6 +92,7 @@ describe("recentLosses", () => {
     const state = createNewGame();
     const npc = state.npcs.find((entry) => entry.adventurer)!;
     npc.status = "dead";
+    witnessNpcDeath(state, npc.id, npc.name, 5);
     const career = ensureGuardProfile(state, npc).career;
     career.deathDay = state.day;
     career.deathFloor = 5;

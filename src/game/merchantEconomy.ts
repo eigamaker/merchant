@@ -3,6 +3,7 @@ import { ensureGuardProfile, initializeGuardProfiles } from "./guardProfiles";
 import { hasBond, recordBond, retainedNpcIds } from "./npcBonds";
 import { ensureRosterPopulation, seedOpeningRosterActivity } from "./npcRoster";
 import { corpseLootIds } from "./dungeonCorpses";
+import { pruneKnowledge } from "./playerKnowledge";
 import { gearSlots, isRetained, RETAINER_FEE_RATE } from "./npcGear";
 import { assignCounterName } from "./itemLegend";
 import { marketPrice, shopVerdict, type ShopReaction } from "./pricing";
@@ -98,6 +99,8 @@ export function pruneCampaignRecords(state: GameState): void {
   const remembered = retainedNpcIds(absent);
 
   state.npcs = state.npcs.filter((npc) => required(npc) || remembered.has(npc.id));
+  // 名簿から消えた相手の訃報まで覚えていても、もう誰も参照しない。
+  pruneKnowledge(state, new Set(state.npcs.map((npc) => npc.id)));
   for (const npc of state.npcs) {
     npc.inventoryIds = npc.inventoryIds.filter((id) => id in keptItems);
     // 剪定で消えた品を gear が指し続けないようにする。

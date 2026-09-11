@@ -16,12 +16,13 @@ describe("save migration", () => {
     expect(isSupportedSaveVersion(12)).toBe(true);
     expect(isSupportedSaveVersion(13)).toBe(true);
     expect(isSupportedSaveVersion(14)).toBe(true);
-    expect(isSupportedSaveVersion(15)).toBe(false);
+    expect(isSupportedSaveVersion(15)).toBe(true);
+    expect(isSupportedSaveVersion(16)).toBe(false);
   });
   it.each([1,2,3])("migrates v%d town/interior saves to home", (version) => {
     const state:any = createNewGame(); state.version=version; state.location=version===2?"interior":"town"; state.townPos={x:4,y:4}; delete state.homePos; delete state.homeMapRevision;
     const migrated=migrateSaveState(state);
-    expect(migrated.version).toBe(14); expect(migrated.location).toBe("home"); expect(migrated.homePos).toEqual({x:HOME_SPAWN.x*16+8,y:HOME_SPAWN.y*16+8});
+    expect(migrated.version).toBe(15); expect(migrated.location).toBe("home"); expect(migrated.homePos).toEqual({x:HOME_SPAWN.x*16+8,y:HOME_SPAWN.y*16+8});
   });
   it("migrates legacy dungeon connector fields and adds the floor snapshot dictionary", () => {
     const state:any = createNewGame(); beginExpedition(state);
@@ -45,7 +46,7 @@ describe("save migration", () => {
 
     const migrated: any = migrateSaveState(state);
 
-    expect(migrated.version).toBe(14);
+    expect(migrated.version).toBe(15);
     expect(migrated.vaultGold).toBe(0);
     expect(migrated.npcs.find((npc: any) => npc.id === escort.id).status).toBe("escorting");
     const migratedSolo = migrated.npcs.find((npc: any) => npc.id === solo.id);
@@ -145,7 +146,7 @@ describe("save migration", () => {
 
     const migrated = migrateSaveState(state as never);
 
-    expect(migrated.version).toBe(14);
+    expect(migrated.version).toBe(15);
     expect((migrated.equipment as unknown as Record<string, unknown>).weaponItemId).toBeUndefined();
     expect((migrated.equipment as unknown as Record<string, unknown>).armorItemId).toBeUndefined();
     expect(migrated.equipment.bagItemId).toBeDefined();

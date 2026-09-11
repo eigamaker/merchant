@@ -3,6 +3,7 @@ import { canSellInHomeShop, isAvailableInTown, prepareCustomerPurchaseRequest, p
 import { npcBonds } from "./npcBonds";
 import { adjustGuardProfile, ensureGuardProfile, recordGuardEvent } from "./guardProfiles";
 import { simulateTownDay } from "./townDay";
+import { deliverReports, queueReport } from "./playerKnowledge";
 import { refreshBulkOffer, settleOverdueBulkOrders } from "./bulkOrders";
 import { createHomeMap } from "./homeMap";
 import { loadTrialMapPack } from "./mapDocument";
@@ -29,18 +30,45 @@ export const PROVISIONS_PER_SLOT = 25;
 
 const TIME_ORDER: TimeSlot[] = ["morning", "afternoon", "evening", "night"];
 
-/** その日に届いた報せを返す。呼び出し側が本文へ混ぜられるようにするため。 */
-export function processDayEvents(state: GameState): string | undefined {
+/** 一行に並べて読める報せの数。これを超えたら件数だけ報せて日誌へ送る。 */
+const DIGEST_THRESHOLD = 2;
+
+/**
+ * 期日の来た予定を世界へ反映する。
+ *
+ * **世界の変化は待たせない。** 主人公が地下にいることは、町で人が着くのを止める理由に
+ * ならない。一方で本文は報告として積むだけで、ここでは誰にも届かない。
+ */
+export function applyDueWorldEvents(state: GameState): void {
   const due = state.events.filter((event) => event.dueDay <= state.day);
+  if (!due.length) return;
   state.events = state.events.filter((event) => event.dueDay > state.day);
-  if (!due.length) return undefined;
   for (const event of due) {
-    if (event.effect?.kind !== "arrival") continue;
-    // 噂が立った時点で人物は作られている。到着の日に、ようやく町の一員になる。
-    const arriving = state.npcs.find((npc) => npc.id === event.effect?.npcId);
-    if (arriving && arriving.status === "traveling") arriving.status = "inTown";
+    const effect = event.effect;
+    if (effect?.kind === "arrival") {
+      // 噂が立った時点で人物は作られている。到着の日に、ようやく町の一員になる。
+      const arriving = state.npcs.find((npc) => npc.id === effect.npcId);
+      if (arriving && arriving.status === "traveling") arriving.status = "inTown";
+    }
+    if (!event.text) continue;
+    queueReport(state, { id: event.id, occurredDay: event.dueDay, text: event.text, reach: "town", subject: event.subject });
   }
-  state.message = due.map((event) => event.text).join(" ");
+}
+
+/**
+ * 期日を消化し、届く報せだけを主人公へ渡す。
+ *
+ * 戻り値はその日に**届いた**本文で、起きたこと全部ではない。地下にいるあいだは
+ * 何も返らず、報告は配信待ちのまま町で溜まっていく。
+ */
+export function processDayEvents(state: GameState): string | undefined {
+  applyDueWorldEvents(state);
+  const delivered = deliverReports(state);
+  if (!delivered.length) return undefined;
+  // 何日も地下にいれば、帰った日に何件もまとめて届く。一行に詰め込まず、日誌へ送る。
+  state.message = delivered.length > DIGEST_THRESHOLD
+    ? `${delivered.length}件の報せが届いた。日誌で確かめよう。`
+    : delivered.map((report) => report.text).join(" ");
   return state.message;
 }
 

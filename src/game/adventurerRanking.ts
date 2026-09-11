@@ -1,6 +1,7 @@
 import { persistDaysFor } from "./dungeonCorpses";
 import { ADVENTURER_RANKS, ADVENTURER_RANK_ORDER } from "./merchantContent";
 import { isRetained } from "./npcGear";
+import { knowsNpcDeath } from "./playerKnowledge";
 import type { AdventurerRank, GameState, NpcRecord } from "./types";
 
 /**
@@ -9,6 +10,10 @@ import type { AdventurerRank, GameState, NpcRecord } from "./types";
  * 町の冒険者を等級と実績で並べ、いま誰がどこにいるかを一枚に収める。
  * 死んだ者は「消息不明」として、遺体がまだ迷宮にあるあいだだけ残る ——
  * 掲示を見て取りに行ける相手だけが載る、という約束である。
+ *
+ * **掲示が読むのは主人公の知識であって、世界の事実ではない。** 誰かが地下で死んだことは
+ * 名簿の `status` に即座に書かれるが、訃報が届くまで、あるいは遺体を自分で見つけるまで、
+ * 掲示はその人をまだ帰らぬ者としてしか扱わない。
  */
 
 export const RANKING_BOARD_SIZE = 8;
@@ -52,6 +57,10 @@ function restingPlace(state: GameState, npcId: string): number | undefined {
 }
 
 export function adventurerStanding(state: GameState, npc: NpcRecord): { standing: AdventurerStanding; status: string } {
+  // 死を知らないあいだは、掲示も町も、その人がまだ戻っていないとしか言えない。
+  if (npc.status === "dead" && !knowsNpcDeath(state, npc.id)) {
+    return { standing: "away", status: "消息を聞かない" };
+  }
   if (npc.status === "dead") {
     // 遺体がまだ迷宮にあるあいだは「消息不明」—— 取りに行けば連れ戻せる。
     const floor = restingPlace(state, npc.id);
@@ -76,13 +85,16 @@ export function adventurerStanding(state: GameState, npc: NpcRecord): { standing
 /** 序列表に載る資格。生きているか、まだ迷宮から連れ戻せるか。 */
 function listed(state: GameState, npc: NpcRecord): boolean {
   if (!npc.adventurer) return false;
-  return npc.status !== "dead" || restingPlace(state, npc.id) !== undefined;
+  if (npc.status !== "dead") return true;
+  // 訃報を聞いていない相手は、掲示の上ではまだ潜っているだけの人である。
+  if (!knowsNpcDeath(state, npc.id)) return true;
+  return restingPlace(state, npc.id) !== undefined;
 }
 
 /** 遺体はもう迷宮に無いが、町がまだ覚えている者。序列表ではなく弔いの欄に載る。 */
 export function recentLosses(state: GameState, withinDays: number = MEMORIAL_DAYS): RankedAdventurer[] {
   return state.npcs
-    .filter((npc) => npc.adventurer && npc.status === "dead" && restingPlace(state, npc.id) === undefined)
+    .filter((npc) => npc.adventurer && npc.status === "dead" && knowsNpcDeath(state, npc.id) && restingPlace(state, npc.id) === undefined)
     .filter((npc) => {
       const died = npc.guardProfile?.career.deathDay;
       return died !== undefined && state.day - died <= withinDays;
@@ -103,7 +115,8 @@ function describe(state: GameState, npc: NpcRecord): RankedAdventurer {
     standing,
     status,
     acquainted: (npc.bonds?.length ?? 0) > 0,
-    diedDay: npc.guardProfile?.career.deathDay,
+    // 訃報を受け取っていない死は、掲示の日付にもしない。
+    diedDay: knowsNpcDeath(state, npc.id) ? npc.guardProfile?.career.deathDay : undefined,
   } satisfies RankedAdventurer;
 }
 

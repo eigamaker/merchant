@@ -603,6 +603,67 @@ export interface TimedEvent {
   text: string;
   /** 予告された出来事。日が来たときに名簿へ反映する。 */
   effect?: { kind: "arrival"; npcId: string };
+  /** 本文が伝えている事実。表示文とは別に、機能が読める形で持つ。 */
+  subject?: ReportSubject;
+}
+
+/** 報せが主人公へ届く経路。 */
+export type ReportReach = "town" | "immediate";
+
+/**
+ * 報告が伝える事実。
+ *
+ * 文面は人が語ったもので、こちらは機能が読む中身である。両方を持つのは、
+ * 「地下8階で死んだ」と書かれた報告と、序列表の表示を別々に扱うため。
+ */
+export type ReportSubject = { kind: "npcDeath"; npcId: string; floor: number };
+
+/**
+ * 誰かの報告。
+ *
+ * 世界の事実そのものではなく、主人公へ届きうる主張である。届くまでは知識にならない。
+ */
+export interface InformationReport {
+  id: string;
+  /** 出来事が起きた日。 */
+  occurredDay: number;
+  /** この日以降でなければ配信しない。噂が伝わるまでの間を置ける。 */
+  availableDay: number;
+  reach: ReportReach;
+  text: string;
+  subject?: ReportSubject;
+}
+
+/** 主人公が受け取った報告。起きた日と、知った日の両方を残す。 */
+export interface KnownReport {
+  id: string;
+  occurredDay: number;
+  learnedDay: number;
+  text: string;
+}
+
+/** 人物の死について主人公が知っていること。 */
+export interface KnownDeath {
+  learnedDay: number;
+  /** 知らされた階。報告に含まれていなければ持たない。 */
+  floor?: number;
+}
+
+/**
+ * 主人公が知っていること。
+ *
+ * 名簿や遺体台帳（世界の事実）とは別に持つ。画面へ渡してよいのはこちらだけで、
+ * 冒険者が死んだという事実は、報せが届くまで表示に出してはならない。
+ */
+export interface PlayerKnowledge {
+  /** まだ届いていない報告。 */
+  pending: InformationReport[];
+  /** 受け取った報告。新しいものが末尾。 */
+  received: KnownReport[];
+  /** まだ日誌で読んでいない報告のID。 */
+  unread: string[];
+  /** 死を知っている人物。 */
+  deaths: Record<string, KnownDeath>;
 }
 
 /**
@@ -631,7 +692,7 @@ export interface BulkOrder {
 }
 
 export interface GameState {
-  version: 14;
+  version: 15;
   campaignId: string;
   status: "active" | "gameOver";
   day: number;
@@ -662,6 +723,8 @@ export interface GameState {
   /** Product UUID -> furniture-local display position. Optional for old saves. */
   displayPlacements?: Record<string, string>;
   events: TimedEvent[];
+  /** 主人公が知っていること。世界の事実とは別に持つ。 */
+  knowledge: PlayerKnowledge;
   /** 迷宮に残る遺体。階の再生成を越えて持ち越す。 */
   dungeonCorpses: DungeonCorpse[];
   /** 町の一日を回した最後の日。二重に回さないための印。 */

@@ -53,6 +53,7 @@ import { dungeonActorAppearance } from "../game/dungeonActors";
 import { DUNGEON_PRICE_TIERS, SHOP_PRICE_TIERS, marketPrice } from "../game/pricing";
 import { askingPriceFor, canSellInHomeShop } from "../game/merchantEconomy";
 import { rankAdventurers, rankingLine, recentLosses } from "../game/adventurerRanking";
+import { journalEntries, journalLine, markJournalRead, unreadReportCount } from "../game/playerKnowledge";
 import { SaveRepository, type SaveSlot } from "../game/save";
 import { HOME_POI, HOME_SPAWN, createHomeMap } from "../game/homeMap";
 import { moveMapPosition } from "../game/mapTiles";
@@ -1036,6 +1037,7 @@ export class MerchantScene extends Phaser.Scene {
       { label: inventoryLocked ? "在庫管理（営業中）" : this.state.location === "home" ? "在庫管理" : "持ち物", action: () => this.openInventory() },
       { label: "護衛募集", action: () => this.openEscortCommission() },
       { label: "商人の記録", action: () => this.openLedger() },
+      { label: ((unread) => unread ? `商人の日誌（未読${unread}）` : "商人の日誌")(unreadReportCount(this.state)), action: () => this.openJournal() },
       { label: "操作", action: () => this.openHelp() },
       { label: "手動保存 1", action: () => { void this.saveManual("manual-1"); } },
       { label: "手動保存 2", action: () => { void this.saveManual("manual-2"); } },
@@ -1936,6 +1938,21 @@ export class MerchantScene extends Phaser.Scene {
         return `${itemName(item)} — ${latest?.detail ?? "記録なし"}`;
       });
     this.openMenu("商人の記録", lines, [{ label: "閉じる", action: () => this.closeMenu() }]);
+  }
+
+  /**
+   * 商人の日誌。
+   *
+   * 届いた報せだけが並ぶ。世界で起きたことの一覧ではない —— 地下にいるあいだの出来事は、
+   * 帰って誰かに聞くまでここには載らない。起きた日と聞いた日が違えば、その隔たりも書く。
+   */
+  private openJournal(): void {
+    const entries = journalEntries(this.state, 12);
+    const body = entries.length
+      ? entries.map(journalLine)
+      : ["まだ何も聞いていない。"];
+    markJournalRead(this.state);
+    this.openMenu("商人の日誌", body, [{ label: "閉じる", action: () => this.closeMenu() }]);
   }
 
   private render(): void {

@@ -6,6 +6,7 @@ import { initializeMerchantWorld, pruneCampaignRecords, registerWorldItem } from
 import { ensureRosterPopulation } from "./npcRoster";
 import { STARTING_BAG_ID, bagCapacityOf, createInitialNpcs } from "./merchantContent";
 import { initializeGuardProfiles } from "./guardProfiles";
+import { emptyKnowledge } from "./playerKnowledge";
 import { deriveDungeonSeed, DUNGEON_THEME_FALLBACK_ID } from "./dungeonThemes";
 /** v1-v3 saves always used the fixed 32x20, 16px home. */
 const HOME_SPAWN_PIXEL = { x: HOME_SPAWN.x * 16 + 8, y: HOME_SPAWN.y * 16 + 8 };
@@ -35,7 +36,7 @@ const DATABASE_NAME = "dungeon-curio-merchant";
 const STORE_NAME = "campaigns";
 
 export function isSupportedSaveVersion(version: unknown): version is number {
-  return typeof version === "number" && Number.isInteger(version) && version >= 5 && version <= 14;
+  return typeof version === "number" && Number.isInteger(version) && version >= 5 && version <= 15;
 }
 
 function activeHomeMapForSave(): MapDocument {
@@ -156,11 +157,17 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
   const state = raw as unknown as GameState;
   const oldLocation = (state as unknown as { location?: string }).location;
   if (oldLocation === "town" || oldLocation === "interior") state.location = "home";
-  state.version = 14;
+  state.version = 15;
   state.campaignId ??= `legacy-${Date.now()}`;
   state.status ??= "active";
   if (state.status === "gameOver") state.status = "active";
   state.vaultGold ??= 0;
+  // v15: 世界の事実と、主人公が知っていることを分ける。旧セーブは「いま町で知った」ところから始める。
+  state.knowledge ??= emptyKnowledge();
+  state.knowledge.pending ??= [];
+  state.knowledge.received ??= [];
+  state.knowledge.unread ??= [];
+  state.knowledge.deaths ??= {};
   // 追加した任意項目を補い、既存のブラウザ保存を壊さない。
   state.returnStones ??= 0;
   state.smokeBombs ??= 1;
@@ -320,7 +327,7 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
   stripRetiredFields(state);
   // 探索中でなければ、旧セーブに溜まった床の品と通りすがりの記録もここで捨てる。
   if (!state.run) pruneCampaignRecords(state);
-  (state as { version: number }).version = 14;
+  (state as { version: number }).version = 15;
   return state;
 }
 

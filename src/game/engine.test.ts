@@ -963,7 +963,7 @@ describe("save migration", () => {
     const migrated = migrateSaveState(legacy as never);
     const carried = migrated as unknown as Record<string, unknown>;
 
-    expect(migrated.version).toBe(14);
+    expect(migrated.version).toBe(15);
     for (const key of ["quests", "customers", "guards", "story", "refusedOffers", "guildReputation"]) {
       expect(carried[key]).toBeUndefined();
     }

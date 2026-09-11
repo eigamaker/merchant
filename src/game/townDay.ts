@@ -162,6 +162,8 @@ function recordOffscreenDeath(state: GameState, npc: NpcRecord, floor: number, c
     text: npc.retainedSince !== undefined
       ? `${npc.name}が地下${floor}階から戻らなかった。あなたの店の者だった。${name ? `${name}は、まだあの深さにある。` : ""}`
       : `${npc.name}が地下${floor}階から戻らなかったと、ギルドに報せがあった。${name ? `${name}は、まだあの深さにある。` : ""}`,
+    // 訃報が届いて初めて、商人はこの人を失ったことを知る。序列表はこちらを見る。
+    subject: { kind: "npcDeath", npcId: npc.id, floor },
   });
 }
 

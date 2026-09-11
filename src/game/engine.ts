@@ -17,6 +17,7 @@ import { adjustGuardProfile, ensureGuardProfile, guardStand, recordGuardEvent } 
 import { recordBond } from "./npcBonds";
 import { wantsItem } from "./npcDemand";
 import { advanceTime, bagCapacity, canReorganizeHomeInventory, consumeDungeonTime, inventoryItemCount, processDayEvents, recoverMerchantAfterDeath, resetDailySystems, unequipIfNeeded } from "./merchantSystems";
+import { emptyKnowledge, witnessNpcDeath } from "./playerKnowledge";
 import { generateDungeonFloor, generatedPlacementCells } from "./dungeonGenerator";
 import { closeStall, openStall, stallAttraction, stallPhase } from "./dungeonStall";
 import { betrayalPhase, payDemand, refuseDemand, rewardLoyalty } from "./guardBetrayal";
@@ -93,7 +94,7 @@ export const DIRECTION: Record<"up" | "down" | "left" | "right", Vec> = {
 
 export function createNewGame(): GameState {
   const state: GameState = {
-    version: 14,
+    version: 15,
     campaignId: typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `campaign-${Date.now()}`,
     status: "active",
     day: 1,
@@ -117,6 +118,7 @@ export function createNewGame(): GameState {
     archive: [],
     display: [],
     events: [],
+    knowledge: emptyKnowledge(),
     dungeonCorpses: [],
     lastSimulatedDay: 1,
     message: "商品を探しにダンジョンへ向かおう。護衛は探索準備から募集できる。",
@@ -966,6 +968,8 @@ function enemyPhase(state: GameState, events: DungeonEvent[]): void {
           profile.career.deathFloor = run.floor;
           recordGuardEvent(state, npc, "died", `地下${run.floor}階で死亡`, run.floor);
           recordBond(state, npc, "lost", `護衛の契約中に地下${run.floor}階で死亡した`, run.floor);
+          // 目の前で倒れた。この死だけは報せを待たずに知る。
+          witnessNpcDeath(state, npc.id, npc.name, run.floor);
           // 遺銘は品がまだ引ける今のうちに刻む。預かりの記録だけ外し、品は遺体へ流す。
           recordGearDeed(state, npc, { died: true });
           delete npc.gear;
@@ -1022,6 +1026,8 @@ function defeatDungeonAdventurer(state: GameState, adventurer: DungeonAdventurer
   const npc = state.npcs.find((entry) => entry.id === adventurer.npcId);
   if (!npc) return;
   npc.status = "dead";
+  // 居合わせて見ていた死。ギルドの報せより先に商人が知る。
+  witnessNpcDeath(state, npc.id, npc.name, run.floor);
   recordGearDeed(state, npc, { died: true });
   delete npc.gear;
   const loot = npc.inventoryIds.map((id) => state.itemsById[id]).filter((item): item is ItemInstance => Boolean(item));
@@ -1230,6 +1236,8 @@ function performInspectBody(state: GameState, bodyId: string): TurnResult {
   body.inspected = true;
   if (body.npcId) markCorpseInspected(state, body.npcId);
   const deadNpc = body.npcId ? state.npcs.find((npc) => npc.id === body.npcId) : undefined;
+  // 遺体を検めた。町の報せが届いていなくても、ここで確かめたことは知識になる。
+  if (deadNpc) witnessNpcDeath(state, deadNpc.id, deadNpc.name, run.floor);
   const entrusted = body.loot.find((item) => wasEntrusted(item));
   const found = entrusted
     ? `${deadNpc?.name ?? "冒険者"}だ。あなたが預けた${itemName(entrusted)}が、まだ握られている。`
