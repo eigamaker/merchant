@@ -12,8 +12,8 @@ describe("Craftpix actor catalog", () => {
     expect(Object.keys(CRAFTPIX_ACTORS)).not.toContain("player");
     expect(Object.keys(CRAFTPIX_ACTORS)).not.toContain("merchant-protagonist");
     expect(Object.keys(CRAFTPIX_NPC_ACTORS)).toEqual(["swordsman_lvl1", "swordsman_lvl2", "swordsman_lvl3"]);
-    expect(CRAFTPIX_NPC_ACTORS.swordsman_lvl3.clips.walk?.path).toContain("Swordsman_lvl3");
-    expect(CRAFTPIX_NPC_ACTORS.swordsman_lvl2.clips.runAttack?.path).toContain("Run_Attack");
+    expect(CRAFTPIX_NPC_ACTORS.swordsman_lvl3.clips.walk?.path).toContain("unified/swordsman_lvl3/walk.png");
+    expect(CRAFTPIX_NPC_ACTORS.swordsman_lvl2.clips.runAttack?.path).toContain("/runAttack.png");
     expect(Object.keys(CRAFTPIX_ENEMY_ACTORS)).toHaveLength(12);
     expect(CRAFTPIX_ENEMY_POOLS.deep).toContain("vampire3");
     expect([CRAFTPIX_ENEMY_ACTORS.vampire1.id, CRAFTPIX_ENEMY_ACTORS.vampire2.id, CRAFTPIX_ENEMY_ACTORS.vampire3.id]).toEqual(["vampire1", "vampire2", "vampire3"]);

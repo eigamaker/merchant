@@ -4,7 +4,7 @@ export const GENERATED_ACTOR_SETTINGS: ActorSettingsCatalog = {
   "version": 1,
   "actors": {
     "citizen2": {
-      "label": "町人2",
+      "label": "商人",
       "roles": [
         "player"
       ],

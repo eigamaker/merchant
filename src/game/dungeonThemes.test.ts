@@ -109,22 +109,22 @@ describe("dungeon walls", () => {
 /** A theme wearing a two-cell face, whatever the shipped themes carry today. */
 function facedTheme(): DungeonThemeDefinition {
   const cave = dungeonTheme("cave");
-  return { ...cave, wall: { assetId: cave.wall!.assetId, face: { assetId: "mapchip2-mapchip-base-s17", frame: 56 }, faceHeight: 2 } } as DungeonThemeDefinition;
+  return { ...cave, wall: { assetId: cave.wall!.assetId, face: { assetId: "unified.wall-faces", frame: 0 }, faceHeight: 2 } } as DungeonThemeDefinition;
 }
 
 describe("two-cell wall faces", () => {
   const map = wallStrip();
 
   it("reads the lower half one row below the reference on the sheet", () => {
-    // mapchip2-mapchip-base-s17 is eight tiles wide.
-    const wall = { assetId: "w", face: { assetId: "mapchip2-mapchip-base-s17", frame: 56 }, faceHeight: 2 } as const;
+    // unified.wall-faces is eight tiles wide.
+    const wall = { assetId: "w", face: { assetId: "unified.wall-faces", frame: 0 }, faceHeight: 2 } as const;
     expect(dungeonWallFaceHalves(wall)).toEqual({
-      upper: { assetId: "mapchip2-mapchip-base-s17", frame: 56 },
-      lower: { assetId: "mapchip2-mapchip-base-s17", frame: 64 },
+      upper: { assetId: "unified.wall-faces", frame: 0 },
+      lower: { assetId: "unified.wall-faces", frame: 8 },
     });
     // A one-cell face occupies its own cell only.
-    expect(dungeonWallFaceHalves({ assetId: "w", face: { assetId: "mapchip2-mapchip-base-s17", frame: 56 } }))
-      .toEqual({ upper: { assetId: "mapchip2-mapchip-base-s17", frame: 56 }, lower: { assetId: "mapchip2-mapchip-base-s17", frame: 56 } });
+    expect(dungeonWallFaceHalves({ assetId: "w", face: { assetId: "unified.wall-faces", frame: 0 } }))
+      .toEqual({ upper: { assetId: "unified.wall-faces", frame: 0 }, lower: { assetId: "unified.wall-faces", frame: 0 } });
     expect(dungeonWallFaceHalves(undefined)).toBeUndefined();
   });
 
@@ -170,16 +170,16 @@ describe("two-cell wall faces", () => {
 
 describe("two-cell stairs", () => {
   it("takes the upper half from the row above the reference, and only when asked", () => {
-    // mapchip2-mapchip-base-s08 is eight tiles wide, so frame 14 sits below 6.
-    const stair = { assetId: "mapchip2-mapchip-base-s08", frame: 14 } as const;
+    // unified.stairs is eight tiles wide, so frame 14 sits below 6.
+    const stair = { assetId: "unified.stairs", frame: 14 } as const;
     expect(dungeonPieceHalves({ ...stair, height: 2 })).toEqual({
       lower: { ...stair },
-      upper: { assetId: "mapchip2-mapchip-base-s08", frame: 6 },
+      upper: { assetId: "unified.stairs", frame: 6 },
     });
     expect(dungeonPieceHalves(stair)).toEqual({ lower: { ...stair } });
     expect(dungeonPieceHalves({ ...stair, height: 1 })).toEqual({ lower: { ...stair } });
     // The top row of a sheet has nothing above it to borrow.
-    expect(dungeonPieceHalves({ assetId: "mapchip2-mapchip-base-s08", frame: 6, height: 2 })).toEqual({ lower: { assetId: "mapchip2-mapchip-base-s08", frame: 6 } });
+    expect(dungeonPieceHalves({ assetId: "unified.stairs", frame: 6, height: 2 })).toEqual({ lower: { assetId: "unified.stairs", frame: 6 } });
     // An unknown asset has no known width, so it cannot be split.
     expect(dungeonPieceHalves({ assetId: "missing-sheet", frame: 14, height: 2 })).toEqual({ lower: { assetId: "missing-sheet", frame: 14 } });
   });
@@ -257,7 +257,7 @@ describe("wall-mounted decorations", () => {
     const survey = (placement: "wall" | "wallFace") => {
       const theme = {
         ...base,
-        decorations: base.decorations.map((rule) => (rule.placement === "wall" ? { ...rule, placement, enabled: true } : rule)),
+        decorations: base.decorations.map((rule) => (["wall", "wallFace"].includes(rule.placement) ? { ...rule, placement, enabled: true } : rule)),
       } as DungeonThemeDefinition;
       let total = 0, facing = 0;
       for (let seed = 1; seed <= 30; seed += 1) {

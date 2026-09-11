@@ -3,6 +3,12 @@
 更新日: 2026-08-18
 状態: Web版を本開発対象とする方針整理
 
+## 2026-09-11 コアストーリー追加
+
+この文書の以下の本文は2026-08-18時点の初期計画として残す。以後の追加改善は [CORE_STORY.md](CORE_STORY.md) の物語・世界・時間・情報の基準と、[STORY_SYSTEM_ROADMAP.md](STORY_SYSTEM_ROADMAP.md) の実装照合・改善順を参照する。本文の操作・枠数・実装順を現在の実装仕様として扱わず、コードとテストで確認する。
+
+迷宮を攻略するために他者を支える商人、その商いで変わる町、取り戻せない過去を軸とする。世界の出来事と主人公の知識を分け、原文に含まれる構想は詳細設計を経て段階的に追加する。
+
 ## 1. 対象プロジェクト
 
 この文書は、Phaser/Viteで動作するWeb版だけを対象とする。Unity版の実装計画は `C:\development\merchan-Unity\docs\GAMEPLAY_IMPLEMENTATION_PLAN.md` に置く。Web版からUnityのコード、Prefab、Scene、Packageを参照しない。

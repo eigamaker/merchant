@@ -97,3287 +97,6 @@ export const MAP_ASSET_CATALOG = [
     "path": "/assets/map-tiles/generated/home.wall.png"
   },
   {
-    "id": "png-decorative-cracks-coasts-animation",
-    "label": "decorative_cracks_coasts_animation",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 16,
-    "rows": 21,
-    "frameCount": 336,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-decorative-cracks-coasts-animation.png"
-  },
-  {
-    "id": "png-decorative-cracks-floor",
-    "label": "decorative_cracks_floor",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 15,
-    "frameCount": 120,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-decorative-cracks-floor.png"
-  },
-  {
-    "id": "png-decorative-cracks-walls",
-    "label": "decorative_cracks_walls",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 32,
-    "frameCount": 256,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-decorative-cracks-walls.png"
-  },
-  {
-    "id": "png-doors-lever-chest-animation",
-    "label": "doors_lever_chest_animation",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 10,
-    "rows": 12,
-    "frameCount": 120,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-doors-lever-chest-animation.png"
-  },
-  {
-    "id": "png-fire-animation",
-    "label": "fire_animation",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 11,
-    "rows": 18,
-    "frameCount": 198,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-fire-animation.png"
-  },
-  {
-    "id": "png-fire-animation2",
-    "label": "fire_animation2",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 6,
-    "rows": 12,
-    "frameCount": 72,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-fire-animation2.png"
-  },
-  {
-    "id": "png-objects",
-    "label": "Objects",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 24,
-    "rows": 6,
-    "frameCount": 144,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-objects.png"
-  },
-  {
-    "id": "png-trap-animation",
-    "label": "trap_animation",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 9,
-    "rows": 25,
-    "frameCount": 225,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-trap-animation.png"
-  },
-  {
-    "id": "png-walls-floor",
-    "label": "walls_floor",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 13,
-    "rows": 23,
-    "frameCount": 299,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-walls-floor.png"
-  },
-  {
-    "id": "png-water-coasts-animation",
-    "label": "Water_coasts_animation",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 22,
-    "rows": 28,
-    "frameCount": 616,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-water-coasts-animation.png"
-  },
-  {
-    "id": "png-water-detilazation-v2",
-    "label": "water_detilazation_v2",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 43,
-    "rows": 36,
-    "frameCount": 1548,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-water-detilazation-v2.png"
-  },
-  {
-    "id": "tiled-files-water-details-animation",
-    "label": "water_details_animation",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 37,
-    "rows": 78,
-    "frameCount": 2886,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/tiled-files-water-details-animation.png"
-  },
-  {
-    "id": "png-attacked-manequin2-with-shadow",
-    "label": "Attacked_Manequin2_with_shadow",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 8,
-    "frameCount": 64,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-attacked-manequin2-with-shadow.png"
-  },
-  {
-    "id": "png-attacked-manequin3-with-shadow",
-    "label": "Attacked_Manequin3_with_shadow",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 8,
-    "frameCount": 64,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-attacked-manequin3-with-shadow.png"
-  },
-  {
-    "id": "png-attacked-manequin3-without-shadow",
-    "label": "Attacked_Manequin3_without_shadow",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 8,
-    "frameCount": 64,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-attacked-manequin3-without-shadow.png"
-  },
-  {
-    "id": "png-citizen1-idle-without-shadow",
-    "label": "Citizen1_Idle_without_shadow",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 24,
-    "rows": 8,
-    "frameCount": 192,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-citizen1-idle-without-shadow.png"
-  },
-  {
-    "id": "png-citizen1-idle",
-    "label": "Citizen1_Idle",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 24,
-    "rows": 8,
-    "frameCount": 192,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-citizen1-idle.png"
-  },
-  {
-    "id": "png-citizen1-walk-without-shadow",
-    "label": "Citizen1_Walk_without_shadow",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 12,
-    "rows": 8,
-    "frameCount": 96,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-citizen1-walk-without-shadow.png"
-  },
-  {
-    "id": "png-citizen1-walk",
-    "label": "Citizen1_Walk",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 12,
-    "rows": 8,
-    "frameCount": 96,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-citizen1-walk.png"
-  },
-  {
-    "id": "png-citizen2-idle",
-    "label": "Citizen2_Idle",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 24,
-    "rows": 8,
-    "frameCount": 192,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-citizen2-idle.png"
-  },
-  {
-    "id": "png-citizen2-walk-without-shadow",
-    "label": "Citizen2_Walk_without_shadow",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 12,
-    "rows": 8,
-    "frameCount": 96,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-citizen2-walk-without-shadow.png"
-  },
-  {
-    "id": "png-decorative-cracks",
-    "label": "Decorative_cracks",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 19,
-    "rows": 15,
-    "frameCount": 285,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-decorative-cracks.png"
-  },
-  {
-    "id": "png-different-characters-shadow",
-    "label": "Different_characters_shadow",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 2,
-    "rows": 2,
-    "frameCount": 4,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-different-characters-shadow.png"
-  },
-  {
-    "id": "png-exterior",
-    "label": "Exterior",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 28,
-    "rows": 9,
-    "frameCount": 252,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-exterior.png"
-  },
-  {
-    "id": "png-fighter-sword-with-shadow",
-    "label": "Fighter_sword_with_shadow",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 24,
-    "rows": 16,
-    "frameCount": 384,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-fighter-sword-with-shadow.png"
-  },
-  {
-    "id": "png-fighter2-idle-without-shadow",
-    "label": "Fighter2_Idle_without_shadow",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 24,
-    "rows": 8,
-    "frameCount": 192,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-fighter2-idle-without-shadow.png"
-  },
-  {
-    "id": "png-fighter2-idle",
-    "label": "Fighter2_Idle",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 24,
-    "rows": 8,
-    "frameCount": 192,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-fighter2-idle.png"
-  },
-  {
-    "id": "png-fighter2-walk-without-shadow",
-    "label": "Fighter2_Walk_without_shadow",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 12,
-    "rows": 8,
-    "frameCount": 96,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-fighter2-walk-without-shadow.png"
-  },
-  {
-    "id": "png-fighter2-walk",
-    "label": "Fighter2_Walk",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 12,
-    "rows": 8,
-    "frameCount": 96,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-fighter2-walk.png"
-  },
-  {
-    "id": "png-fire",
-    "label": "Fire",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 24,
-    "rows": 3,
-    "frameCount": 72,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-fire.png"
-  },
-  {
-    "id": "png-flags-animation",
-    "label": "Flags_animation",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 6,
-    "rows": 36,
-    "frameCount": 216,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-flags-animation.png"
-  },
-  {
-    "id": "png-mage1-without-shadow",
-    "label": "Mage1_without_shadow",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 28,
-    "rows": 13,
-    "frameCount": 364,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-mage1-without-shadow.png"
-  },
-  {
-    "id": "png-mage1",
-    "label": "Mage1",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 28,
-    "rows": 13,
-    "frameCount": 364,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-mage1.png"
-  },
-  {
-    "id": "png-mage2-without-shadow",
-    "label": "Mage2_without_shadow",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 28,
-    "rows": 13,
-    "frameCount": 364,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-mage2-without-shadow.png"
-  },
-  {
-    "id": "png-mage3-without-shadow",
-    "label": "Mage3_without_shadow",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 28,
-    "rows": 13,
-    "frameCount": 364,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-mage3-without-shadow.png"
-  },
-  {
-    "id": "png-mages-shadow",
-    "label": "Mages_shadow",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 2,
-    "rows": 3,
-    "frameCount": 6,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-mages-shadow.png"
-  },
-  {
-    "id": "png-reader1",
-    "label": "Reader1",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 22,
-    "rows": 3,
-    "frameCount": 66,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-reader1.png"
-  },
-  {
-    "id": "png-reader2",
-    "label": "Reader2",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 2,
-    "rows": 2,
-    "frameCount": 4,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-reader2.png"
-  },
-  {
-    "id": "png-shadow-fighter",
-    "label": "Shadow_fighter",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 2,
-    "rows": 1,
-    "frameCount": 2,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-shadow-fighter.png"
-  },
-  {
-    "id": "png-shadow-manequin",
-    "label": "shadow_manequin",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 2,
-    "rows": 2,
-    "frameCount": 4,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-shadow-manequin.png"
-  },
-  {
-    "id": "png-talking-people-shadow",
-    "label": "Talking_people_shadow",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 5,
-    "rows": 2,
-    "frameCount": 10,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-talking-people-shadow.png"
-  },
-  {
-    "id": "png-talking-people-without-shadow",
-    "label": "Talking_people_without_shadow",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 36,
-    "rows": 3,
-    "frameCount": 108,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-talking-people-without-shadow.png"
-  },
-  {
-    "id": "png-talking-person1-without-shadow",
-    "label": "Talking_person1_without_shadow",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 24,
-    "rows": 2,
-    "frameCount": 48,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-talking-person1-without-shadow.png"
-  },
-  {
-    "id": "png-talking-person1",
-    "label": "Talking_person1",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 24,
-    "rows": 2,
-    "frameCount": 48,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-talking-person1.png"
-  },
-  {
-    "id": "png-talking-person2-without-shadow",
-    "label": "Talking_person2_without_shadow",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 24,
-    "rows": 2,
-    "frameCount": 48,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-talking-person2-without-shadow.png"
-  },
-  {
-    "id": "png-walls-interior",
-    "label": "Walls_interior",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 24,
-    "rows": 8,
-    "frameCount": 192,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-walls-interior.png"
-  },
-  {
-    "id": "png-walls-street",
-    "label": "Walls_street",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 21,
-    "rows": 18,
-    "frameCount": 378,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-walls-street.png"
-  },
-  {
-    "id": "png-windows-doors",
-    "label": "Windows_doors",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 18,
-    "rows": 18,
-    "frameCount": 324,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-windows-doors.png"
-  },
-  {
-    "id": "png-fire-trap",
-    "label": "fire_trap",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 63,
-    "rows": 8,
-    "frameCount": 504,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-fire-trap.png"
-  },
-  {
-    "id": "png-full",
-    "label": "full",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 69,
-    "rows": 26,
-    "frameCount": 1794,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-full.png"
-  },
-  {
-    "id": "png-other-objects",
-    "label": "Other_objects",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 22,
-    "rows": 7,
-    "frameCount": 154,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-other-objects.png"
-  },
-  {
-    "id": "png-pedestals",
-    "label": "pedestals",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 35,
-    "rows": 8,
-    "frameCount": 280,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-pedestals.png"
-  },
-  {
-    "id": "png-supplies-objects",
-    "label": "supplies_objects",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 13,
-    "rows": 37,
-    "frameCount": 481,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-supplies-objects.png"
-  },
-  {
-    "id": "png-trap-plate",
-    "label": "trap_plate",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 7,
-    "rows": 15,
-    "frameCount": 105,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-trap-plate.png"
-  },
-  {
-    "id": "png-trap-saw",
-    "label": "trap_saw",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 24,
-    "rows": 16,
-    "frameCount": 384,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/png-trap-saw.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s02",
-    "label": "地面",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 1,
-    "frameCount": 8,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s02.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s03",
-    "label": "木・地面装飾",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 8,
-    "frameCount": 64,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s03.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s04",
-    "label": "崖",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 10,
-    "frameCount": 80,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s04.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s05",
-    "label": "畑",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 3,
-    "frameCount": 24,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s05.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s06",
-    "label": "柵",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 6,
-    "frameCount": 48,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s06.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s07",
-    "label": "橋・看板",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 8,
-    "frameCount": 64,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s07.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s08",
-    "label": "床・階段",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 8,
-    "frameCount": 64,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s08.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s09",
-    "label": "家・壁・屋根",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 30,
-    "frameCount": 240,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s09.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s10",
-    "label": "壁装飾",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 8,
-    "frameCount": 64,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s10.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s11",
-    "label": "店看板",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 2,
-    "frameCount": 16,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s11.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s12",
-    "label": "カウンター・カーテン",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 5,
-    "frameCount": 40,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s12.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s13",
-    "label": "家具",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 18,
-    "frameCount": 144,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s13.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s14",
-    "label": "置物",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 12,
-    "frameCount": 96,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s14.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s15",
-    "label": "小物",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 12,
-    "frameCount": 96,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s15.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s16",
-    "label": "小物（位置微調整用）",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 12,
-    "frameCount": 96,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s16.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s17",
-    "label": "ダンジョン 床・壁・階段",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 24,
-    "frameCount": 192,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s17.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s18",
-    "label": "ダンジョン 装飾",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 8,
-    "frameCount": 64,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s18.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s19",
-    "label": "雪 木・地面装飾",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 6,
-    "frameCount": 48,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s19.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s20",
-    "label": "雪 崖",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 7,
-    "frameCount": 56,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s20.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s21",
-    "label": "雪 柵",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 6,
-    "frameCount": 48,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s21.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s22",
-    "label": "雪 橋・看板",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 11,
-    "frameCount": 88,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s22.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s23",
-    "label": "雪 屋根・テント",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 6,
-    "frameCount": 48,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s23.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s24",
-    "label": "雪 店看板・置物",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 11,
-    "frameCount": 88,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s24.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s25",
-    "label": "破壊 地面・床用",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 3,
-    "frameCount": 24,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s25.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s26",
-    "label": "破壊 壁用",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 6,
-    "frameCount": 48,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s26.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s27",
-    "label": "破壊 畑・看板",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 4,
-    "frameCount": 32,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s27.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s28",
-    "label": "破壊 窓・壁装飾",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 4,
-    "frameCount": 32,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s28.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s29",
-    "label": "破壊 家具",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 8,
-    "frameCount": 64,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s29.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s30",
-    "label": "破壊 置物",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 8,
-    "frameCount": 64,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s30.png"
-  },
-  {
-    "id": "mapchip2-mapchip-base-s31",
-    "label": "破壊 小物",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 4,
-    "frameCount": 32,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-base-s31.png"
-  },
-  {
-    "id": "mapchip2-mapchip-hana",
-    "label": "花",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-hana.png"
-  },
-  {
-    "id": "mapchip2-mapchip-kabe-ue-doukutu1",
-    "label": "洞窟の壁1",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-kabe-ue-doukutu1.png"
-  },
-  {
-    "id": "mapchip2-mapchip-kabe-ue-doukutu2",
-    "label": "洞窟の壁2",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-kabe-ue-doukutu2.png"
-  },
-  {
-    "id": "mapchip2-mapchip-kabe-ue-doukutu3",
-    "label": "洞窟の壁3",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-kabe-ue-doukutu3.png"
-  },
-  {
-    "id": "mapchip2-mapchip-kabe-ue-doukutu4",
-    "label": "洞窟の壁4",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-kabe-ue-doukutu4.png"
-  },
-  {
-    "id": "mapchip2-mapchip-kabe-ue-doukutu5",
-    "label": "洞窟の壁5",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-kabe-ue-doukutu5.png"
-  },
-  {
-    "id": "mapchip2-mapchip-kabe-ue-dungeon1",
-    "label": "ダンジョンの壁1",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-kabe-ue-dungeon1.png"
-  },
-  {
-    "id": "mapchip2-mapchip-kabe-ue-dungeon2",
-    "label": "ダンジョンの壁2",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-kabe-ue-dungeon2.png"
-  },
-  {
-    "id": "mapchip2-mapchip-kabe-ue-mori1",
-    "label": "森の壁1",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-kabe-ue-mori1.png"
-  },
-  {
-    "id": "mapchip2-mapchip-kabe-ue-mori2",
-    "label": "森の壁2",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-kabe-ue-mori2.png"
-  },
-  {
-    "id": "mapchip2-mapchip-kabe-ue-yuki",
-    "label": "雪の壁",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-kabe-ue-yuki.png"
-  },
-  {
-    "id": "mapchip2-mapchip-kabe-ue1",
-    "label": "壁1",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-kabe-ue1.png"
-  },
-  {
-    "id": "mapchip2-mapchip-kabe-ue2",
-    "label": "壁2",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-kabe-ue2.png"
-  },
-  {
-    "id": "mapchip2-mapchip-koke",
-    "label": "苔",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-koke.png"
-  },
-  {
-    "id": "mapchip2-mapchip-koori1",
-    "label": "氷1",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-koori1.png"
-  },
-  {
-    "id": "mapchip2-mapchip-koori2",
-    "label": "氷2",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-koori2.png"
-  },
-  {
-    "id": "mapchip2-mapchip-kusa1-kusa2",
-    "label": "草1→草2",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-kusa1-kusa2.png"
-  },
-  {
-    "id": "mapchip2-mapchip-kusa1-kusa3",
-    "label": "草1→草3",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-kusa1-kusa3.png"
-  },
-  {
-    "id": "mapchip2-mapchip-kusa1-kusa4",
-    "label": "草1→草4",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-kusa1-kusa4.png"
-  },
-  {
-    "id": "mapchip2-mapchip-kusa1-tuti1",
-    "label": "草1→土1",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-kusa1-tuti1.png"
-  },
-  {
-    "id": "mapchip2-mapchip-kusa1-tuti2",
-    "label": "草1→土2",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-kusa1-tuti2.png"
-  },
-  {
-    "id": "mapchip2-mapchip-kusa1-tuti3",
-    "label": "草1→土3",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-kusa1-tuti3.png"
-  },
-  {
-    "id": "mapchip2-mapchip-kusa1-tuti4",
-    "label": "草1→土4",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-kusa1-tuti4.png"
-  },
-  {
-    "id": "mapchip2-mapchip-kusa1",
-    "label": "草1",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-kusa1.png"
-  },
-  {
-    "id": "mapchip2-mapchip-kusa2",
-    "label": "草2",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-kusa2.png"
-  },
-  {
-    "id": "mapchip2-mapchip-kusa3",
-    "label": "草3",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-kusa3.png"
-  },
-  {
-    "id": "mapchip2-mapchip-kusa4",
-    "label": "草4",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-kusa4.png"
-  },
-  {
-    "id": "mapchip2-mapchip-mizu1-doukutu1",
-    "label": "水1・洞窟1",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-mizu1-doukutu1.png"
-  },
-  {
-    "id": "mapchip2-mapchip-mizu1-doukutu2",
-    "label": "水1・洞窟2",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-mizu1-doukutu2.png"
-  },
-  {
-    "id": "mapchip2-mapchip-mizu1-doukutu3",
-    "label": "水1・洞窟3",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-mizu1-doukutu3.png"
-  },
-  {
-    "id": "mapchip2-mapchip-mizu1-doukutu4",
-    "label": "水1・洞窟4",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-mizu1-doukutu4.png"
-  },
-  {
-    "id": "mapchip2-mapchip-mizu1-doukutu5",
-    "label": "水1・洞窟5",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-mizu1-doukutu5.png"
-  },
-  {
-    "id": "mapchip2-mapchip-mizu1",
-    "label": "水1",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-mizu1.png"
-  },
-  {
-    "id": "mapchip2-mapchip-mizu2-doukutu1",
-    "label": "水2・洞窟1",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-mizu2-doukutu1.png"
-  },
-  {
-    "id": "mapchip2-mapchip-mizu2-doukutu2",
-    "label": "水2・洞窟2",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-mizu2-doukutu2.png"
-  },
-  {
-    "id": "mapchip2-mapchip-mizu2-doukutu3",
-    "label": "水2・洞窟3",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-mizu2-doukutu3.png"
-  },
-  {
-    "id": "mapchip2-mapchip-mizu2-doukutu4",
-    "label": "水2・洞窟4",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-mizu2-doukutu4.png"
-  },
-  {
-    "id": "mapchip2-mapchip-mizu2-doukutu5",
-    "label": "水2・洞窟5",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-mizu2-doukutu5.png"
-  },
-  {
-    "id": "mapchip2-mapchip-mizu2",
-    "label": "水2",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-mizu2.png"
-  },
-  {
-    "id": "mapchip2-mapchip-mizu3-doukutu1",
-    "label": "水3・洞窟1",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-mizu3-doukutu1.png"
-  },
-  {
-    "id": "mapchip2-mapchip-mizu3-doukutu2",
-    "label": "水3・洞窟2",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-mizu3-doukutu2.png"
-  },
-  {
-    "id": "mapchip2-mapchip-mizu3-doukutu3",
-    "label": "水3・洞窟3",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-mizu3-doukutu3.png"
-  },
-  {
-    "id": "mapchip2-mapchip-mizu3-doukutu4",
-    "label": "水3・洞窟4",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-mizu3-doukutu4.png"
-  },
-  {
-    "id": "mapchip2-mapchip-mizu3-doukutu5",
-    "label": "水3・洞窟5",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-mizu3-doukutu5.png"
-  },
-  {
-    "id": "mapchip2-mapchip-mizu3",
-    "label": "水3",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-mizu3.png"
-  },
-  {
-    "id": "mapchip2-mapchip-mizu4",
-    "label": "水4",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-mizu4.png"
-  },
-  {
-    "id": "mapchip2-mapchip-mizu5",
-    "label": "水5",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-mizu5.png"
-  },
-  {
-    "id": "mapchip2-mapchip-mizu6",
-    "label": "水6",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-mizu6.png"
-  },
-  {
-    "id": "mapchip2-mapchip-mizu7",
-    "label": "水7",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 4,
-    "frameCount": 188,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 4
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-mizu7.png"
-  },
-  {
-    "id": "mapchip2-mapchip-taki1",
-    "label": "滝1",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 4,
-    "frameCount": 188,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 4
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-taki1.png"
-  },
-  {
-    "id": "mapchip2-mapchip-taki2",
-    "label": "滝2",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 4,
-    "frameCount": 188,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 4
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-taki2.png"
-  },
-  {
-    "id": "mapchip2-mapchip-taki3",
-    "label": "滝3",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 4,
-    "frameCount": 188,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 4
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-taki3.png"
-  },
-  {
-    "id": "mapchip2-mapchip-tuti1-tuti2",
-    "label": "土1→土2",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-tuti1-tuti2.png"
-  },
-  {
-    "id": "mapchip2-mapchip-tuti1-tuti3",
-    "label": "土1→土3",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-tuti1-tuti3.png"
-  },
-  {
-    "id": "mapchip2-mapchip-tuti1-tuti4",
-    "label": "土1→土4",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-tuti1-tuti4.png"
-  },
-  {
-    "id": "mapchip2-mapchip-tuti1",
-    "label": "土1",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-tuti1.png"
-  },
-  {
-    "id": "mapchip2-mapchip-tuti2",
-    "label": "土2",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-tuti2.png"
-  },
-  {
-    "id": "mapchip2-mapchip-tuti3",
-    "label": "土3",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-tuti3.png"
-  },
-  {
-    "id": "mapchip2-mapchip-tuti4",
-    "label": "土4",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-tuti4.png"
-  },
-  {
-    "id": "mapchip2-mapchip-world-kusa-kusa",
-    "label": "ワールド 草→草",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-world-kusa-kusa.png"
-  },
-  {
-    "id": "mapchip2-mapchip-world-kusa-miti",
-    "label": "ワールド 草→道",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-world-kusa-miti.png"
-  },
-  {
-    "id": "mapchip2-mapchip-world-kusa-sabaku",
-    "label": "ワールド 草→砂漠",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-world-kusa-sabaku.png"
-  },
-  {
-    "id": "mapchip2-mapchip-world-kusa-sitti",
-    "label": "ワールド 草→湿地",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-world-kusa-sitti.png"
-  },
-  {
-    "id": "mapchip2-mapchip-world-kusa-tuti",
-    "label": "ワールド 草→土",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-world-kusa-tuti.png"
-  },
-  {
-    "id": "mapchip2-mapchip-world-kusa-yuki",
-    "label": "ワールド 草→雪",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-world-kusa-yuki.png"
-  },
-  {
-    "id": "mapchip2-mapchip-world-mori-kareki",
-    "label": "ワールド 森→枯木",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-world-mori-kareki.png"
-  },
-  {
-    "id": "mapchip2-mapchip-world-mori-yuki",
-    "label": "ワールド 森→雪",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-world-mori-yuki.png"
-  },
-  {
-    "id": "mapchip2-mapchip-world-mori",
-    "label": "ワールド 森",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-world-mori.png"
-  },
-  {
-    "id": "mapchip2-mapchip-world-s02",
-    "label": "ワールド 地面",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 1,
-    "frameCount": 8,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-world-s02.png"
-  },
-  {
-    "id": "mapchip2-mapchip-world-s03",
-    "label": "ワールド 木・岩",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 2,
-    "frameCount": 16,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-world-s03.png"
-  },
-  {
-    "id": "mapchip2-mapchip-world-s04",
-    "label": "ワールド 街・ダンジョン",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 8,
-    "rows": 14,
-    "frameCount": 112,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-world-s04.png"
-  },
-  {
-    "id": "mapchip2-mapchip-world-sabaku-tuti",
-    "label": "ワールド 砂漠→土",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-world-sabaku-tuti.png"
-  },
-  {
-    "id": "mapchip2-mapchip-world-umi1",
-    "label": "ワールド 海1",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-world-umi1.png"
-  },
-  {
-    "id": "mapchip2-mapchip-world-umi2",
-    "label": "ワールド 海2",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-world-umi2.png"
-  },
-  {
-    "id": "mapchip2-mapchip-world-umi3",
-    "label": "ワールド 海3",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-world-umi3.png"
-  },
-  {
-    "id": "mapchip2-mapchip-world-umi4",
-    "label": "ワールド 海4",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 2,
-    "frameCount": 94,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 2
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-world-umi4.png"
-  },
-  {
-    "id": "mapchip2-mapchip-world-yama1-yuki",
-    "label": "ワールド 山1→雪",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-world-yama1-yuki.png"
-  },
-  {
-    "id": "mapchip2-mapchip-world-yama1",
-    "label": "ワールド 山1",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-world-yama1.png"
-  },
-  {
-    "id": "mapchip2-mapchip-world-yama2-yuki",
-    "label": "ワールド 山2→雪",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-world-yama2-yuki.png"
-  },
-  {
-    "id": "mapchip2-mapchip-world-yama2",
-    "label": "ワールド 山2",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-world-yama2.png"
-  },
-  {
-    "id": "mapchip2-mapchip-world-yuki-tuti",
-    "label": "ワールド 雪→土",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-world-yuki-tuti.png"
-  },
-  {
-    "id": "mapchip2-mapchip-world-yuki",
-    "label": "ワールド 雪",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-world-yuki.png"
-  },
-  {
-    "id": "mapchip2-mapchip-yougan",
-    "label": "溶岩",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 6,
-    "frameCount": 282,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 6
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-yougan.png"
-  },
-  {
-    "id": "mapchip2-mapchip-yuki-kusa1",
-    "label": "雪→草1",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-yuki-kusa1.png"
-  },
-  {
-    "id": "mapchip2-mapchip-yuki-kusa4",
-    "label": "雪→草4",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-yuki-kusa4.png"
-  },
-  {
-    "id": "mapchip2-mapchip-yuki-tuti2",
-    "label": "雪→土2",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-yuki-tuti2.png"
-  },
-  {
-    "id": "mapchip2-mapchip-yuki-tuti4",
-    "label": "雪→土4",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-yuki-tuti4.png"
-  },
-  {
-    "id": "mapchip2-mapchip-yuki",
-    "label": "雪",
-    "tileSize": 16,
-    "margin": 0,
-    "spacing": 0,
-    "columns": 47,
-    "rows": 1,
-    "frameCount": 47,
-    "mapKinds": [
-      "home",
-      "dungeon"
-    ],
-    "defaultLayer": "decoration",
-    "defaultWalkable": false,
-    "autotile": {
-      "scheme": "blob47",
-      "animationFrames": 1
-    },
-    "path": "/assets/map-tiles/generated/mapchip2-mapchip-yuki.png"
-  },
-  {
     "id": "home.merchant-barrel",
     "label": "樽",
     "tileSize": 16,
@@ -3416,8 +135,8 @@ export const MAP_ASSET_CATALOG = [
     "margin": 0,
     "spacing": 0,
     "columns": 2,
-    "rows": 1,
-    "frameCount": 2,
+    "rows": 2,
+    "frameCount": 4,
     "mapKinds": [
       "home"
     ],
@@ -3432,8 +151,8 @@ export const MAP_ASSET_CATALOG = [
     "margin": 0,
     "spacing": 0,
     "columns": 4,
-    "rows": 2,
-    "frameCount": 8,
+    "rows": 3,
+    "frameCount": 12,
     "mapKinds": [
       "home"
     ],
@@ -3544,8 +263,8 @@ export const MAP_ASSET_CATALOG = [
     "margin": 0,
     "spacing": 0,
     "columns": 3,
-    "rows": 2,
-    "frameCount": 6,
+    "rows": 3,
+    "frameCount": 9,
     "mapKinds": [
       "home"
     ],
@@ -3600,6 +319,528 @@ export const MAP_ASSET_CATALOG = [
     "defaultLayer": "structure",
     "defaultWalkable": false,
     "path": "/assets/map-tiles/generated/home.merchant-wall.png"
+  },
+  {
+    "id": "unified.bones",
+    "label": "骨の山（洞窟・遺跡・火山）",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 3,
+    "rows": 1,
+    "frameCount": 3,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": true,
+    "path": "/assets/map-tiles/generated/unified.bones.png"
+  },
+  {
+    "id": "unified.boulder",
+    "label": "岩",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 2,
+    "rows": 2,
+    "frameCount": 4,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": false,
+    "path": "/assets/map-tiles/generated/unified.boulder.png"
+  },
+  {
+    "id": "unified.building-wall",
+    "label": "建物の正面壁（2×2）",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 2,
+    "rows": 2,
+    "frameCount": 4,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "structure",
+    "defaultWalkable": false,
+    "path": "/assets/map-tiles/generated/unified.building-wall.png"
+  },
+  {
+    "id": "unified.cave-floor",
+    "label": "洞窟の床",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 1,
+    "frameCount": 1,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "ground",
+    "defaultWalkable": true,
+    "path": "/assets/map-tiles/generated/unified.cave-floor.png"
+  },
+  {
+    "id": "unified.cave-wall",
+    "label": "洞窟の岩壁",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 47,
+    "rows": 1,
+    "frameCount": 47,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "structure",
+    "defaultWalkable": false,
+    "autotile": {
+      "scheme": "blob47",
+      "animationFrames": 1
+    },
+    "path": "/assets/map-tiles/generated/unified.cave-wall.png"
+  },
+  {
+    "id": "unified.chest",
+    "label": "宝箱",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 1,
+    "frameCount": 1,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": true,
+    "path": "/assets/map-tiles/generated/unified.chest.png"
+  },
+  {
+    "id": "unified.coins",
+    "label": "散らばった硬貨",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 1,
+    "frameCount": 1,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": true,
+    "path": "/assets/map-tiles/generated/unified.coins.png"
+  },
+  {
+    "id": "unified.compat-stairs32",
+    "label": "旧32pxマップ用・階段",
+    "tileSize": 32,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 2,
+    "rows": 1,
+    "frameCount": 2,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": true,
+    "path": "/assets/map-tiles/generated/unified.compat-stairs32.png"
+  },
+  {
+    "id": "unified.door",
+    "label": "開いた建物のドア",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 2,
+    "rows": 2,
+    "frameCount": 4,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": true,
+    "path": "/assets/map-tiles/generated/unified.door.png"
+  },
+  {
+    "id": "unified.grass",
+    "label": "街の草地",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 1,
+    "frameCount": 1,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "ground",
+    "defaultWalkable": true,
+    "path": "/assets/map-tiles/generated/unified.grass.png"
+  },
+  {
+    "id": "unified.lever",
+    "label": "壁のレバー",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 1,
+    "frameCount": 1,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": false,
+    "path": "/assets/map-tiles/generated/unified.lever.png"
+  },
+  {
+    "id": "unified.pot",
+    "label": "壺",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 1,
+    "frameCount": 1,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": false,
+    "path": "/assets/map-tiles/generated/unified.pot.png"
+  },
+  {
+    "id": "unified.road",
+    "label": "街道",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 1,
+    "frameCount": 1,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "ground",
+    "defaultWalkable": true,
+    "path": "/assets/map-tiles/generated/unified.road.png"
+  },
+  {
+    "id": "unified.roof",
+    "label": "赤い屋根",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 1,
+    "frameCount": 1,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "ground",
+    "defaultWalkable": false,
+    "path": "/assets/map-tiles/generated/unified.roof.png"
+  },
+  {
+    "id": "unified.rubble",
+    "label": "小さな瓦礫",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 1,
+    "frameCount": 1,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": true,
+    "path": "/assets/map-tiles/generated/unified.rubble.png"
+  },
+  {
+    "id": "unified.ruins-floor",
+    "label": "遺跡の床",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 1,
+    "frameCount": 1,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "ground",
+    "defaultWalkable": true,
+    "path": "/assets/map-tiles/generated/unified.ruins-floor.png"
+  },
+  {
+    "id": "unified.ruins-wall",
+    "label": "遺跡の石壁",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 47,
+    "rows": 1,
+    "frameCount": 47,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "structure",
+    "defaultWalkable": false,
+    "autotile": {
+      "scheme": "blob47",
+      "animationFrames": 1
+    },
+    "path": "/assets/map-tiles/generated/unified.ruins-wall.png"
+  },
+  {
+    "id": "unified.spell",
+    "label": "魔法の光",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 1,
+    "frameCount": 1,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": true,
+    "path": "/assets/map-tiles/generated/unified.spell.png"
+  },
+  {
+    "id": "unified.spikes",
+    "label": "棘（通行不可の装飾）",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 1,
+    "frameCount": 1,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": false,
+    "path": "/assets/map-tiles/generated/unified.spikes.png"
+  },
+  {
+    "id": "unified.stairs",
+    "label": "石の階段（上りは2タイル）",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 8,
+    "rows": 3,
+    "frameCount": 24,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": true,
+    "path": "/assets/map-tiles/generated/unified.stairs.png"
+  },
+  {
+    "id": "unified.torch",
+    "label": "壁の松明",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 1,
+    "frameCount": 1,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": false,
+    "path": "/assets/map-tiles/generated/unified.torch.png"
+  },
+  {
+    "id": "unified.town-wall",
+    "label": "街の木組み壁",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 47,
+    "rows": 1,
+    "frameCount": 47,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "structure",
+    "defaultWalkable": false,
+    "autotile": {
+      "scheme": "blob47",
+      "animationFrames": 1
+    },
+    "path": "/assets/map-tiles/generated/unified.town-wall.png"
+  },
+  {
+    "id": "unified.tree",
+    "label": "街路樹",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 2,
+    "rows": 3,
+    "frameCount": 6,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": false,
+    "path": "/assets/map-tiles/generated/unified.tree.png"
+  },
+  {
+    "id": "unified.compat-floor32",
+    "label": "旧32pxマップ用・floor",
+    "tileSize": 32,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 1,
+    "frameCount": 1,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "ground",
+    "defaultWalkable": true,
+    "path": "/assets/map-tiles/generated/unified.compat-floor32.png"
+  },
+  {
+    "id": "unified.compat-prop32",
+    "label": "旧32pxマップ用・prop",
+    "tileSize": 32,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 1,
+    "frameCount": 1,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": true,
+    "path": "/assets/map-tiles/generated/unified.compat-prop32.png"
+  },
+  {
+    "id": "unified.compat-wall32",
+    "label": "旧32pxマップ用・wall",
+    "tileSize": 32,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 1,
+    "frameCount": 1,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "structure",
+    "defaultWalkable": false,
+    "path": "/assets/map-tiles/generated/unified.compat-wall32.png"
+  },
+  {
+    "id": "unified.volcanic-floor",
+    "label": "冷えた火山岩",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 1,
+    "frameCount": 1,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "ground",
+    "defaultWalkable": true,
+    "path": "/assets/map-tiles/generated/unified.volcanic-floor.png"
+  },
+  {
+    "id": "unified.wall-faces",
+    "label": "二段の壁面",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 8,
+    "rows": 2,
+    "frameCount": 16,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "structure",
+    "defaultWalkable": false,
+    "path": "/assets/map-tiles/generated/unified.wall-faces.png"
+  },
+  {
+    "id": "unified.water",
+    "label": "深い水",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 1,
+    "frameCount": 1,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "ground",
+    "defaultWalkable": false,
+    "path": "/assets/map-tiles/generated/unified.water.png"
+  },
+  {
+    "id": "unified.window",
+    "label": "建物の窓",
+    "tileSize": 16,
+    "margin": 0,
+    "spacing": 0,
+    "columns": 1,
+    "rows": 1,
+    "frameCount": 1,
+    "mapKinds": [
+      "home",
+      "dungeon"
+    ],
+    "defaultLayer": "decoration",
+    "defaultWalkable": false,
+    "path": "/assets/map-tiles/generated/unified.window.png"
   }
 ] as const;
 export const MAP_ASSET_IDS = MAP_ASSET_CATALOG.map((asset) => asset.id);
@@ -3714,7 +955,7 @@ export const DEFAULT_PALETTE_LAYOUT = {
       "mapKind": "home",
       "tileSize": 16,
       "width": 16,
-      "height": 11,
+      "height": 36,
       "cells": [
         {
           "x": 0,
@@ -3722,7 +963,7 @@ export const DEFAULT_PALETTE_LAYOUT = {
           "assetId": "home.merchant-shelf",
           "frame": 0,
           "layer": "decoration",
-          "walkable": false,
+          "walkable": true,
           "role": "prop",
           "status": "ready",
           "note": "商品棚 3×2タイル"
@@ -3733,7 +974,7 @@ export const DEFAULT_PALETTE_LAYOUT = {
           "assetId": "home.merchant-shelf",
           "frame": 1,
           "layer": "decoration",
-          "walkable": false,
+          "walkable": true,
           "role": "prop",
           "status": "ready",
           "note": "商品棚 3×2タイル"
@@ -3744,7 +985,7 @@ export const DEFAULT_PALETTE_LAYOUT = {
           "assetId": "home.merchant-shelf",
           "frame": 2,
           "layer": "decoration",
-          "walkable": false,
+          "walkable": true,
           "role": "prop",
           "status": "ready",
           "note": "商品棚 3×2タイル"
@@ -3783,30 +1024,63 @@ export const DEFAULT_PALETTE_LAYOUT = {
           "note": "商品棚 3×2タイル"
         },
         {
-          "x": 4,
-          "y": 0,
+          "x": 0,
+          "y": 2,
+          "assetId": "home.merchant-shelf",
+          "frame": 6,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "商品棚 3×2タイル"
+        },
+        {
+          "x": 1,
+          "y": 2,
+          "assetId": "home.merchant-shelf",
+          "frame": 7,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "商品棚 3×2タイル"
+        },
+        {
+          "x": 2,
+          "y": 2,
+          "assetId": "home.merchant-shelf",
+          "frame": 8,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "商品棚 3×2タイル"
+        },
+        {
+          "x": 0,
+          "y": 4,
           "assetId": "home.merchant-bed",
           "frame": 0,
           "layer": "decoration",
-          "walkable": false,
+          "walkable": true,
           "role": "prop",
           "status": "ready",
           "note": "ベッド 2×3タイル"
         },
         {
-          "x": 5,
-          "y": 0,
+          "x": 1,
+          "y": 4,
           "assetId": "home.merchant-bed",
           "frame": 1,
           "layer": "decoration",
-          "walkable": false,
+          "walkable": true,
           "role": "prop",
           "status": "ready",
           "note": "ベッド 2×3タイル"
         },
         {
-          "x": 4,
-          "y": 1,
+          "x": 0,
+          "y": 5,
           "assetId": "home.merchant-bed",
           "frame": 2,
           "layer": "decoration",
@@ -3816,8 +1090,8 @@ export const DEFAULT_PALETTE_LAYOUT = {
           "note": "ベッド 2×3タイル"
         },
         {
-          "x": 5,
-          "y": 1,
+          "x": 1,
+          "y": 5,
           "assetId": "home.merchant-bed",
           "frame": 3,
           "layer": "decoration",
@@ -3827,8 +1101,8 @@ export const DEFAULT_PALETTE_LAYOUT = {
           "note": "ベッド 2×3タイル"
         },
         {
-          "x": 4,
-          "y": 2,
+          "x": 0,
+          "y": 6,
           "assetId": "home.merchant-bed",
           "frame": 4,
           "layer": "decoration",
@@ -3838,8 +1112,8 @@ export const DEFAULT_PALETTE_LAYOUT = {
           "note": "ベッド 2×3タイル"
         },
         {
-          "x": 5,
-          "y": 2,
+          "x": 1,
+          "y": 6,
           "assetId": "home.merchant-bed",
           "frame": 5,
           "layer": "decoration",
@@ -3849,10 +1123,32 @@ export const DEFAULT_PALETTE_LAYOUT = {
           "note": "ベッド 2×3タイル"
         },
         {
-          "x": 7,
-          "y": 0,
+          "x": 0,
+          "y": 8,
           "assetId": "home.merchant-chest",
           "frame": 0,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "宝箱 2×1タイル"
+        },
+        {
+          "x": 1,
+          "y": 8,
+          "assetId": "home.merchant-chest",
+          "frame": 1,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "宝箱 2×1タイル"
+        },
+        {
+          "x": 0,
+          "y": 9,
+          "assetId": "home.merchant-chest",
+          "frame": 2,
           "layer": "decoration",
           "walkable": false,
           "role": "prop",
@@ -3860,10 +1156,10 @@ export const DEFAULT_PALETTE_LAYOUT = {
           "note": "宝箱 2×1タイル"
         },
         {
-          "x": 8,
-          "y": 0,
+          "x": 1,
+          "y": 9,
           "assetId": "home.merchant-chest",
-          "frame": 1,
+          "frame": 3,
           "layer": "decoration",
           "walkable": false,
           "role": "prop",
@@ -3871,30 +1167,30 @@ export const DEFAULT_PALETTE_LAYOUT = {
           "note": "宝箱 2×1タイル"
         },
         {
-          "x": 10,
-          "y": 0,
+          "x": 0,
+          "y": 11,
           "assetId": "home.merchant-table",
           "frame": 0,
           "layer": "decoration",
-          "walkable": false,
+          "walkable": true,
           "role": "prop",
           "status": "ready",
           "note": "テーブル 2×2タイル"
         },
         {
-          "x": 11,
-          "y": 0,
+          "x": 1,
+          "y": 11,
           "assetId": "home.merchant-table",
           "frame": 1,
           "layer": "decoration",
-          "walkable": false,
+          "walkable": true,
           "role": "prop",
           "status": "ready",
           "note": "テーブル 2×2タイル"
         },
         {
-          "x": 10,
-          "y": 1,
+          "x": 0,
+          "y": 12,
           "assetId": "home.merchant-table",
           "frame": 2,
           "layer": "decoration",
@@ -3904,8 +1200,8 @@ export const DEFAULT_PALETTE_LAYOUT = {
           "note": "テーブル 2×2タイル"
         },
         {
-          "x": 11,
-          "y": 1,
+          "x": 1,
+          "y": 12,
           "assetId": "home.merchant-table",
           "frame": 3,
           "layer": "decoration",
@@ -3916,7 +1212,7 @@ export const DEFAULT_PALETTE_LAYOUT = {
         },
         {
           "x": 0,
-          "y": 4,
+          "y": 14,
           "assetId": "home.merchant-rug",
           "frame": 0,
           "layer": "structure",
@@ -3927,7 +1223,7 @@ export const DEFAULT_PALETTE_LAYOUT = {
         },
         {
           "x": 1,
-          "y": 4,
+          "y": 14,
           "assetId": "home.merchant-rug",
           "frame": 1,
           "layer": "structure",
@@ -3938,7 +1234,7 @@ export const DEFAULT_PALETTE_LAYOUT = {
         },
         {
           "x": 2,
-          "y": 4,
+          "y": 14,
           "assetId": "home.merchant-rug",
           "frame": 2,
           "layer": "structure",
@@ -3949,7 +1245,7 @@ export const DEFAULT_PALETTE_LAYOUT = {
         },
         {
           "x": 3,
-          "y": 4,
+          "y": 14,
           "assetId": "home.merchant-rug",
           "frame": 3,
           "layer": "structure",
@@ -3960,7 +1256,7 @@ export const DEFAULT_PALETTE_LAYOUT = {
         },
         {
           "x": 0,
-          "y": 5,
+          "y": 15,
           "assetId": "home.merchant-rug",
           "frame": 4,
           "layer": "structure",
@@ -3971,7 +1267,7 @@ export const DEFAULT_PALETTE_LAYOUT = {
         },
         {
           "x": 1,
-          "y": 5,
+          "y": 15,
           "assetId": "home.merchant-rug",
           "frame": 5,
           "layer": "structure",
@@ -3982,7 +1278,7 @@ export const DEFAULT_PALETTE_LAYOUT = {
         },
         {
           "x": 2,
-          "y": 5,
+          "y": 15,
           "assetId": "home.merchant-rug",
           "frame": 6,
           "layer": "structure",
@@ -3993,7 +1289,7 @@ export const DEFAULT_PALETTE_LAYOUT = {
         },
         {
           "x": 3,
-          "y": 5,
+          "y": 15,
           "assetId": "home.merchant-rug",
           "frame": 7,
           "layer": "structure",
@@ -4004,7 +1300,7 @@ export const DEFAULT_PALETTE_LAYOUT = {
         },
         {
           "x": 0,
-          "y": 6,
+          "y": 16,
           "assetId": "home.merchant-rug",
           "frame": 8,
           "layer": "structure",
@@ -4015,7 +1311,7 @@ export const DEFAULT_PALETTE_LAYOUT = {
         },
         {
           "x": 1,
-          "y": 6,
+          "y": 16,
           "assetId": "home.merchant-rug",
           "frame": 9,
           "layer": "structure",
@@ -4026,7 +1322,7 @@ export const DEFAULT_PALETTE_LAYOUT = {
         },
         {
           "x": 2,
-          "y": 6,
+          "y": 16,
           "assetId": "home.merchant-rug",
           "frame": 10,
           "layer": "structure",
@@ -4037,7 +1333,7 @@ export const DEFAULT_PALETTE_LAYOUT = {
         },
         {
           "x": 3,
-          "y": 6,
+          "y": 16,
           "assetId": "home.merchant-rug",
           "frame": 11,
           "layer": "structure",
@@ -4047,52 +1343,52 @@ export const DEFAULT_PALETTE_LAYOUT = {
           "note": "カーペット 4×3タイル"
         },
         {
-          "x": 5,
-          "y": 4,
+          "x": 0,
+          "y": 18,
           "assetId": "home.merchant-counter",
           "frame": 0,
           "layer": "decoration",
-          "walkable": false,
+          "walkable": true,
           "role": "prop",
           "status": "ready",
           "note": "店のカウンター 4×2タイル"
         },
         {
-          "x": 6,
-          "y": 4,
+          "x": 1,
+          "y": 18,
           "assetId": "home.merchant-counter",
           "frame": 1,
           "layer": "decoration",
-          "walkable": false,
+          "walkable": true,
           "role": "prop",
           "status": "ready",
           "note": "店のカウンター 4×2タイル"
         },
         {
-          "x": 7,
-          "y": 4,
+          "x": 2,
+          "y": 18,
           "assetId": "home.merchant-counter",
           "frame": 2,
           "layer": "decoration",
-          "walkable": false,
+          "walkable": true,
           "role": "prop",
           "status": "ready",
           "note": "店のカウンター 4×2タイル"
         },
         {
-          "x": 8,
-          "y": 4,
+          "x": 3,
+          "y": 18,
           "assetId": "home.merchant-counter",
           "frame": 3,
           "layer": "decoration",
-          "walkable": false,
+          "walkable": true,
           "role": "prop",
           "status": "ready",
           "note": "店のカウンター 4×2タイル"
         },
         {
-          "x": 5,
-          "y": 5,
+          "x": 0,
+          "y": 19,
           "assetId": "home.merchant-counter",
           "frame": 4,
           "layer": "decoration",
@@ -4102,8 +1398,8 @@ export const DEFAULT_PALETTE_LAYOUT = {
           "note": "店のカウンター 4×2タイル"
         },
         {
-          "x": 6,
-          "y": 5,
+          "x": 1,
+          "y": 19,
           "assetId": "home.merchant-counter",
           "frame": 5,
           "layer": "decoration",
@@ -4113,8 +1409,8 @@ export const DEFAULT_PALETTE_LAYOUT = {
           "note": "店のカウンター 4×2タイル"
         },
         {
-          "x": 7,
-          "y": 5,
+          "x": 2,
+          "y": 19,
           "assetId": "home.merchant-counter",
           "frame": 6,
           "layer": "decoration",
@@ -4124,8 +1420,8 @@ export const DEFAULT_PALETTE_LAYOUT = {
           "note": "店のカウンター 4×2タイル"
         },
         {
-          "x": 8,
-          "y": 5,
+          "x": 3,
+          "y": 19,
           "assetId": "home.merchant-counter",
           "frame": 7,
           "layer": "decoration",
@@ -4135,19 +1431,63 @@ export const DEFAULT_PALETTE_LAYOUT = {
           "note": "店のカウンター 4×2タイル"
         },
         {
-          "x": 10,
-          "y": 4,
+          "x": 0,
+          "y": 20,
+          "assetId": "home.merchant-counter",
+          "frame": 8,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "店のカウンター 4×2タイル"
+        },
+        {
+          "x": 1,
+          "y": 20,
+          "assetId": "home.merchant-counter",
+          "frame": 9,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "店のカウンター 4×2タイル"
+        },
+        {
+          "x": 2,
+          "y": 20,
+          "assetId": "home.merchant-counter",
+          "frame": 10,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "店のカウンター 4×2タイル"
+        },
+        {
+          "x": 3,
+          "y": 20,
+          "assetId": "home.merchant-counter",
+          "frame": 11,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "店のカウンター 4×2タイル"
+        },
+        {
+          "x": 0,
+          "y": 22,
           "assetId": "home.merchant-barrel",
           "frame": 0,
           "layer": "decoration",
-          "walkable": false,
+          "walkable": true,
           "role": "prop",
           "status": "ready",
           "note": "樽 1×2タイル"
         },
         {
-          "x": 10,
-          "y": 5,
+          "x": 0,
+          "y": 23,
           "assetId": "home.merchant-barrel",
           "frame": 1,
           "layer": "decoration",
@@ -4157,8 +1497,8 @@ export const DEFAULT_PALETTE_LAYOUT = {
           "note": "樽 1×2タイル"
         },
         {
-          "x": 12,
-          "y": 4,
+          "x": 0,
+          "y": 25,
           "assetId": "home.merchant-crate",
           "frame": 0,
           "layer": "decoration",
@@ -4169,7 +1509,7 @@ export const DEFAULT_PALETTE_LAYOUT = {
         },
         {
           "x": 0,
-          "y": 8,
+          "y": 27,
           "assetId": "home.merchant-door",
           "frame": 0,
           "layer": "decoration",
@@ -4180,7 +1520,7 @@ export const DEFAULT_PALETTE_LAYOUT = {
         },
         {
           "x": 1,
-          "y": 8,
+          "y": 27,
           "assetId": "home.merchant-door",
           "frame": 1,
           "layer": "decoration",
@@ -4191,7 +1531,7 @@ export const DEFAULT_PALETTE_LAYOUT = {
         },
         {
           "x": 0,
-          "y": 9,
+          "y": 28,
           "assetId": "home.merchant-door",
           "frame": 2,
           "layer": "decoration",
@@ -4202,7 +1542,7 @@ export const DEFAULT_PALETTE_LAYOUT = {
         },
         {
           "x": 1,
-          "y": 9,
+          "y": 28,
           "assetId": "home.merchant-door",
           "frame": 3,
           "layer": "decoration",
@@ -4212,8 +1552,8 @@ export const DEFAULT_PALETTE_LAYOUT = {
           "note": "開いたドア 2×2タイル"
         },
         {
-          "x": 3,
-          "y": 8,
+          "x": 0,
+          "y": 30,
           "assetId": "home.merchant-stool",
           "frame": 0,
           "layer": "decoration",
@@ -4223,8 +1563,8 @@ export const DEFAULT_PALETTE_LAYOUT = {
           "note": "スツール 1×1タイル"
         },
         {
-          "x": 5,
-          "y": 8,
+          "x": 0,
+          "y": 32,
           "assetId": "home.merchant-desk",
           "frame": 0,
           "layer": "decoration",
@@ -4234,8 +1574,8 @@ export const DEFAULT_PALETTE_LAYOUT = {
           "note": "探索準備の机 2×1タイル"
         },
         {
-          "x": 6,
-          "y": 8,
+          "x": 1,
+          "y": 32,
           "assetId": "home.merchant-desk",
           "frame": 1,
           "layer": "decoration",
@@ -4245,8 +1585,8 @@ export const DEFAULT_PALETTE_LAYOUT = {
           "note": "探索準備の机 2×1タイル"
         },
         {
-          "x": 8,
-          "y": 8,
+          "x": 0,
+          "y": 34,
           "assetId": "home.merchant-lantern",
           "frame": 0,
           "layer": "decoration",
@@ -4254,6 +1594,4842 @@ export const DEFAULT_PALETTE_LAYOUT = {
           "role": "prop",
           "status": "ready",
           "note": "壁のランタン 1×1タイル"
+        }
+      ]
+    },
+    {
+      "id": "unified-terrain",
+      "label": "統一・街とダンジョン",
+      "mapKind": "home",
+      "tileSize": 16,
+      "width": 52,
+      "height": 26,
+      "cells": [
+        {
+          "x": 0,
+          "y": 0,
+          "assetId": "unified.grass",
+          "frame": 0,
+          "layer": "ground",
+          "walkable": true,
+          "role": "floor",
+          "status": "ready",
+          "note": "街の草地"
+        },
+        {
+          "x": 0,
+          "y": 2,
+          "assetId": "unified.road",
+          "frame": 0,
+          "layer": "ground",
+          "walkable": true,
+          "role": "floor",
+          "status": "ready",
+          "note": "街道"
+        },
+        {
+          "x": 0,
+          "y": 4,
+          "assetId": "unified.cave-floor",
+          "frame": 0,
+          "layer": "ground",
+          "walkable": true,
+          "role": "floor",
+          "status": "ready",
+          "note": "洞窟の床"
+        },
+        {
+          "x": 0,
+          "y": 6,
+          "assetId": "unified.ruins-floor",
+          "frame": 0,
+          "layer": "ground",
+          "walkable": true,
+          "role": "floor",
+          "status": "ready",
+          "note": "遺跡の床"
+        },
+        {
+          "x": 0,
+          "y": 8,
+          "assetId": "unified.volcanic-floor",
+          "frame": 0,
+          "layer": "ground",
+          "walkable": true,
+          "role": "floor",
+          "status": "ready",
+          "note": "冷えた火山岩"
+        },
+        {
+          "x": 0,
+          "y": 10,
+          "assetId": "unified.roof",
+          "frame": 0,
+          "layer": "ground",
+          "walkable": false,
+          "role": "floor",
+          "status": "ready",
+          "note": "赤い屋根"
+        },
+        {
+          "x": 0,
+          "y": 12,
+          "assetId": "unified.water",
+          "frame": 0,
+          "layer": "ground",
+          "walkable": false,
+          "role": "floor",
+          "status": "ready",
+          "note": "深い水"
+        },
+        {
+          "x": 0,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 0,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 1,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 1,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 2,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 2,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 3,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 3,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 4,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 4,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 5,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 5,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 6,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 6,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 7,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 7,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 8,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 8,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 9,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 9,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 10,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 10,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 11,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 11,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 12,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 12,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 13,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 13,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 14,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 14,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 15,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 15,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 16,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 16,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 17,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 17,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 18,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 18,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 19,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 19,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 20,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 20,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 21,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 21,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 22,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 22,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 23,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 23,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 24,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 24,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 25,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 25,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 26,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 26,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 27,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 27,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 28,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 28,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 29,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 29,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 30,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 30,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 31,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 31,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 32,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 32,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 33,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 33,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 34,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 34,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 35,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 35,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 36,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 36,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 37,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 37,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 38,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 38,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 39,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 39,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 40,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 40,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 41,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 41,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 42,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 42,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 43,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 43,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 44,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 44,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 45,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 45,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 46,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 46,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 0,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 0,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 1,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 1,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 2,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 2,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 3,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 3,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 4,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 4,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 5,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 5,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 6,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 6,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 7,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 7,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 8,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 8,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 9,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 9,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 10,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 10,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 11,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 11,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 12,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 12,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 13,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 13,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 14,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 14,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 15,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 15,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 16,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 16,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 17,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 17,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 18,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 18,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 19,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 19,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 20,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 20,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 21,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 21,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 22,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 22,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 23,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 23,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 24,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 24,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 25,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 25,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 26,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 26,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 27,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 27,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 28,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 28,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 29,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 29,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 30,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 30,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 31,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 31,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 32,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 32,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 33,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 33,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 34,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 34,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 35,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 35,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 36,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 36,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 37,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 37,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 38,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 38,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 39,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 39,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 40,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 40,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 41,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 41,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 42,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 42,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 43,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 43,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 44,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 44,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 45,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 45,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 46,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 46,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 0,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 0,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 1,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 1,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 2,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 2,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 3,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 3,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 4,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 4,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 5,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 5,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 6,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 6,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 7,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 7,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 8,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 8,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 9,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 9,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 10,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 10,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 11,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 11,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 12,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 12,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 13,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 13,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 14,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 14,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 15,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 15,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 16,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 16,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 17,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 17,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 18,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 18,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 19,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 19,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 20,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 20,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 21,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 21,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 22,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 22,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 23,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 23,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 24,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 24,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 25,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 25,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 26,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 26,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 27,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 27,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 28,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 28,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 29,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 29,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 30,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 30,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 31,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 31,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 32,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 32,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 33,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 33,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 34,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 34,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 35,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 35,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 36,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 36,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 37,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 37,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 38,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 38,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 39,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 39,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 40,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 40,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 41,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 41,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 42,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 42,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 43,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 43,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 44,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 44,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 45,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 45,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 46,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 46,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 0,
+          "y": 20,
+          "assetId": "unified.building-wall",
+          "frame": 0,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "建物の正面壁（2×2）"
+        },
+        {
+          "x": 1,
+          "y": 20,
+          "assetId": "unified.building-wall",
+          "frame": 1,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "建物の正面壁（2×2）"
+        },
+        {
+          "x": 0,
+          "y": 21,
+          "assetId": "unified.building-wall",
+          "frame": 2,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "建物の正面壁（2×2）"
+        },
+        {
+          "x": 1,
+          "y": 21,
+          "assetId": "unified.building-wall",
+          "frame": 3,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "建物の正面壁（2×2）"
+        },
+        {
+          "x": 0,
+          "y": 23,
+          "assetId": "unified.wall-faces",
+          "frame": 0,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 1,
+          "y": 23,
+          "assetId": "unified.wall-faces",
+          "frame": 1,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 2,
+          "y": 23,
+          "assetId": "unified.wall-faces",
+          "frame": 2,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 3,
+          "y": 23,
+          "assetId": "unified.wall-faces",
+          "frame": 3,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 4,
+          "y": 23,
+          "assetId": "unified.wall-faces",
+          "frame": 4,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 5,
+          "y": 23,
+          "assetId": "unified.wall-faces",
+          "frame": 5,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 6,
+          "y": 23,
+          "assetId": "unified.wall-faces",
+          "frame": 6,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 7,
+          "y": 23,
+          "assetId": "unified.wall-faces",
+          "frame": 7,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 0,
+          "y": 24,
+          "assetId": "unified.wall-faces",
+          "frame": 8,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 1,
+          "y": 24,
+          "assetId": "unified.wall-faces",
+          "frame": 9,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 2,
+          "y": 24,
+          "assetId": "unified.wall-faces",
+          "frame": 10,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 3,
+          "y": 24,
+          "assetId": "unified.wall-faces",
+          "frame": 11,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 4,
+          "y": 24,
+          "assetId": "unified.wall-faces",
+          "frame": 12,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 5,
+          "y": 24,
+          "assetId": "unified.wall-faces",
+          "frame": 13,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 6,
+          "y": 24,
+          "assetId": "unified.wall-faces",
+          "frame": 14,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 7,
+          "y": 24,
+          "assetId": "unified.wall-faces",
+          "frame": 15,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        }
+      ]
+    },
+    {
+      "id": "unified-props",
+      "label": "統一・建物と装飾",
+      "mapKind": "home",
+      "tileSize": 16,
+      "width": 52,
+      "height": 34,
+      "cells": [
+        {
+          "x": 0,
+          "y": 0,
+          "assetId": "unified.tree",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "街路樹"
+        },
+        {
+          "x": 1,
+          "y": 0,
+          "assetId": "unified.tree",
+          "frame": 1,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "街路樹"
+        },
+        {
+          "x": 0,
+          "y": 1,
+          "assetId": "unified.tree",
+          "frame": 2,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "街路樹"
+        },
+        {
+          "x": 1,
+          "y": 1,
+          "assetId": "unified.tree",
+          "frame": 3,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "街路樹"
+        },
+        {
+          "x": 0,
+          "y": 2,
+          "assetId": "unified.tree",
+          "frame": 4,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "街路樹"
+        },
+        {
+          "x": 1,
+          "y": 2,
+          "assetId": "unified.tree",
+          "frame": 5,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "街路樹"
+        },
+        {
+          "x": 0,
+          "y": 4,
+          "assetId": "unified.boulder",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "岩"
+        },
+        {
+          "x": 1,
+          "y": 4,
+          "assetId": "unified.boulder",
+          "frame": 1,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "岩"
+        },
+        {
+          "x": 0,
+          "y": 5,
+          "assetId": "unified.boulder",
+          "frame": 2,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "岩"
+        },
+        {
+          "x": 1,
+          "y": 5,
+          "assetId": "unified.boulder",
+          "frame": 3,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "岩"
+        },
+        {
+          "x": 0,
+          "y": 7,
+          "assetId": "unified.door",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "開いた建物のドア"
+        },
+        {
+          "x": 1,
+          "y": 7,
+          "assetId": "unified.door",
+          "frame": 1,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "開いた建物のドア"
+        },
+        {
+          "x": 0,
+          "y": 8,
+          "assetId": "unified.door",
+          "frame": 2,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "開いた建物のドア"
+        },
+        {
+          "x": 1,
+          "y": 8,
+          "assetId": "unified.door",
+          "frame": 3,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "開いた建物のドア"
+        },
+        {
+          "x": 0,
+          "y": 10,
+          "assetId": "unified.window",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "建物の窓"
+        },
+        {
+          "x": 0,
+          "y": 12,
+          "assetId": "unified.stairs",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 1,
+          "y": 12,
+          "assetId": "unified.stairs",
+          "frame": 1,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 2,
+          "y": 12,
+          "assetId": "unified.stairs",
+          "frame": 2,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 3,
+          "y": 12,
+          "assetId": "unified.stairs",
+          "frame": 3,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 4,
+          "y": 12,
+          "assetId": "unified.stairs",
+          "frame": 4,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 5,
+          "y": 12,
+          "assetId": "unified.stairs",
+          "frame": 5,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 6,
+          "y": 12,
+          "assetId": "unified.stairs",
+          "frame": 6,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 7,
+          "y": 12,
+          "assetId": "unified.stairs",
+          "frame": 7,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 0,
+          "y": 13,
+          "assetId": "unified.stairs",
+          "frame": 8,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 1,
+          "y": 13,
+          "assetId": "unified.stairs",
+          "frame": 9,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 2,
+          "y": 13,
+          "assetId": "unified.stairs",
+          "frame": 10,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 3,
+          "y": 13,
+          "assetId": "unified.stairs",
+          "frame": 11,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 4,
+          "y": 13,
+          "assetId": "unified.stairs",
+          "frame": 12,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 5,
+          "y": 13,
+          "assetId": "unified.stairs",
+          "frame": 13,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 6,
+          "y": 13,
+          "assetId": "unified.stairs",
+          "frame": 14,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 7,
+          "y": 13,
+          "assetId": "unified.stairs",
+          "frame": 15,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 0,
+          "y": 14,
+          "assetId": "unified.stairs",
+          "frame": 16,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 1,
+          "y": 14,
+          "assetId": "unified.stairs",
+          "frame": 17,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 2,
+          "y": 14,
+          "assetId": "unified.stairs",
+          "frame": 18,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 3,
+          "y": 14,
+          "assetId": "unified.stairs",
+          "frame": 19,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 4,
+          "y": 14,
+          "assetId": "unified.stairs",
+          "frame": 20,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 5,
+          "y": 14,
+          "assetId": "unified.stairs",
+          "frame": 21,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 6,
+          "y": 14,
+          "assetId": "unified.stairs",
+          "frame": 22,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 7,
+          "y": 14,
+          "assetId": "unified.stairs",
+          "frame": 23,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 0,
+          "y": 16,
+          "assetId": "unified.chest",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "宝箱"
+        },
+        {
+          "x": 0,
+          "y": 18,
+          "assetId": "unified.rubble",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "小さな瓦礫"
+        },
+        {
+          "x": 0,
+          "y": 20,
+          "assetId": "unified.pot",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "壺"
+        },
+        {
+          "x": 0,
+          "y": 22,
+          "assetId": "unified.torch",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "壁の松明"
+        },
+        {
+          "x": 0,
+          "y": 24,
+          "assetId": "unified.spikes",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "棘（通行不可の装飾）"
+        },
+        {
+          "x": 0,
+          "y": 26,
+          "assetId": "unified.lever",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "壁のレバー"
+        },
+        {
+          "x": 0,
+          "y": 28,
+          "assetId": "unified.coins",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "散らばった硬貨"
+        },
+        {
+          "x": 0,
+          "y": 30,
+          "assetId": "unified.spell",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "魔法の光"
+        },
+        {
+          "x": 0,
+          "y": 32,
+          "assetId": "unified.bones",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "骨の山（洞窟・遺跡・火山）"
+        },
+        {
+          "x": 1,
+          "y": 32,
+          "assetId": "unified.bones",
+          "frame": 1,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "骨の山（洞窟・遺跡・火山）"
+        },
+        {
+          "x": 2,
+          "y": 32,
+          "assetId": "unified.bones",
+          "frame": 2,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "骨の山（洞窟・遺跡・火山）"
+        }
+      ]
+    },
+    {
+      "id": "unified-dungeon-terrain",
+      "label": "統一・街とダンジョン",
+      "mapKind": "dungeon",
+      "tileSize": 16,
+      "width": 52,
+      "height": 26,
+      "cells": [
+        {
+          "x": 0,
+          "y": 0,
+          "assetId": "unified.grass",
+          "frame": 0,
+          "layer": "ground",
+          "walkable": true,
+          "role": "floor",
+          "status": "ready",
+          "note": "街の草地"
+        },
+        {
+          "x": 0,
+          "y": 2,
+          "assetId": "unified.road",
+          "frame": 0,
+          "layer": "ground",
+          "walkable": true,
+          "role": "floor",
+          "status": "ready",
+          "note": "街道"
+        },
+        {
+          "x": 0,
+          "y": 4,
+          "assetId": "unified.cave-floor",
+          "frame": 0,
+          "layer": "ground",
+          "walkable": true,
+          "role": "floor",
+          "status": "ready",
+          "note": "洞窟の床"
+        },
+        {
+          "x": 0,
+          "y": 6,
+          "assetId": "unified.ruins-floor",
+          "frame": 0,
+          "layer": "ground",
+          "walkable": true,
+          "role": "floor",
+          "status": "ready",
+          "note": "遺跡の床"
+        },
+        {
+          "x": 0,
+          "y": 8,
+          "assetId": "unified.volcanic-floor",
+          "frame": 0,
+          "layer": "ground",
+          "walkable": true,
+          "role": "floor",
+          "status": "ready",
+          "note": "冷えた火山岩"
+        },
+        {
+          "x": 0,
+          "y": 10,
+          "assetId": "unified.roof",
+          "frame": 0,
+          "layer": "ground",
+          "walkable": false,
+          "role": "floor",
+          "status": "ready",
+          "note": "赤い屋根"
+        },
+        {
+          "x": 0,
+          "y": 12,
+          "assetId": "unified.water",
+          "frame": 0,
+          "layer": "ground",
+          "walkable": false,
+          "role": "floor",
+          "status": "ready",
+          "note": "深い水"
+        },
+        {
+          "x": 0,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 0,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 1,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 1,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 2,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 2,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 3,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 3,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 4,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 4,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 5,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 5,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 6,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 6,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 7,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 7,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 8,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 8,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 9,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 9,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 10,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 10,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 11,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 11,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 12,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 12,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 13,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 13,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 14,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 14,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 15,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 15,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 16,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 16,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 17,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 17,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 18,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 18,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 19,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 19,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 20,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 20,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 21,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 21,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 22,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 22,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 23,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 23,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 24,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 24,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 25,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 25,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 26,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 26,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 27,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 27,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 28,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 28,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 29,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 29,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 30,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 30,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 31,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 31,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 32,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 32,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 33,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 33,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 34,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 34,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 35,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 35,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 36,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 36,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 37,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 37,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 38,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 38,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 39,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 39,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 40,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 40,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 41,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 41,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 42,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 42,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 43,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 43,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 44,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 44,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 45,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 45,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 46,
+          "y": 14,
+          "assetId": "unified.cave-wall",
+          "frame": 46,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "洞窟の岩壁"
+        },
+        {
+          "x": 0,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 0,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 1,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 1,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 2,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 2,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 3,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 3,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 4,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 4,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 5,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 5,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 6,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 6,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 7,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 7,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 8,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 8,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 9,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 9,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 10,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 10,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 11,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 11,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 12,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 12,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 13,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 13,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 14,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 14,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 15,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 15,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 16,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 16,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 17,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 17,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 18,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 18,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 19,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 19,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 20,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 20,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 21,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 21,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 22,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 22,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 23,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 23,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 24,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 24,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 25,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 25,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 26,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 26,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 27,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 27,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 28,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 28,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 29,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 29,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 30,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 30,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 31,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 31,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 32,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 32,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 33,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 33,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 34,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 34,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 35,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 35,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 36,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 36,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 37,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 37,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 38,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 38,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 39,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 39,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 40,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 40,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 41,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 41,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 42,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 42,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 43,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 43,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 44,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 44,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 45,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 45,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 46,
+          "y": 16,
+          "assetId": "unified.ruins-wall",
+          "frame": 46,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "遺跡の石壁"
+        },
+        {
+          "x": 0,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 0,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 1,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 1,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 2,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 2,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 3,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 3,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 4,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 4,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 5,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 5,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 6,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 6,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 7,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 7,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 8,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 8,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 9,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 9,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 10,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 10,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 11,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 11,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 12,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 12,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 13,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 13,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 14,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 14,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 15,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 15,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 16,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 16,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 17,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 17,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 18,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 18,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 19,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 19,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 20,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 20,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 21,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 21,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 22,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 22,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 23,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 23,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 24,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 24,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 25,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 25,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 26,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 26,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 27,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 27,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 28,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 28,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 29,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 29,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 30,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 30,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 31,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 31,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 32,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 32,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 33,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 33,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 34,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 34,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 35,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 35,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 36,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 36,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 37,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 37,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 38,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 38,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 39,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 39,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 40,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 40,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 41,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 41,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 42,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 42,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 43,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 43,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 44,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 44,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 45,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 45,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 46,
+          "y": 18,
+          "assetId": "unified.town-wall",
+          "frame": 46,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "街の木組み壁"
+        },
+        {
+          "x": 0,
+          "y": 20,
+          "assetId": "unified.building-wall",
+          "frame": 0,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "建物の正面壁（2×2）"
+        },
+        {
+          "x": 1,
+          "y": 20,
+          "assetId": "unified.building-wall",
+          "frame": 1,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "建物の正面壁（2×2）"
+        },
+        {
+          "x": 0,
+          "y": 21,
+          "assetId": "unified.building-wall",
+          "frame": 2,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "建物の正面壁（2×2）"
+        },
+        {
+          "x": 1,
+          "y": 21,
+          "assetId": "unified.building-wall",
+          "frame": 3,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "建物の正面壁（2×2）"
+        },
+        {
+          "x": 0,
+          "y": 23,
+          "assetId": "unified.wall-faces",
+          "frame": 0,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 1,
+          "y": 23,
+          "assetId": "unified.wall-faces",
+          "frame": 1,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 2,
+          "y": 23,
+          "assetId": "unified.wall-faces",
+          "frame": 2,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 3,
+          "y": 23,
+          "assetId": "unified.wall-faces",
+          "frame": 3,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 4,
+          "y": 23,
+          "assetId": "unified.wall-faces",
+          "frame": 4,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 5,
+          "y": 23,
+          "assetId": "unified.wall-faces",
+          "frame": 5,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 6,
+          "y": 23,
+          "assetId": "unified.wall-faces",
+          "frame": 6,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 7,
+          "y": 23,
+          "assetId": "unified.wall-faces",
+          "frame": 7,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 0,
+          "y": 24,
+          "assetId": "unified.wall-faces",
+          "frame": 8,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 1,
+          "y": 24,
+          "assetId": "unified.wall-faces",
+          "frame": 9,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 2,
+          "y": 24,
+          "assetId": "unified.wall-faces",
+          "frame": 10,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 3,
+          "y": 24,
+          "assetId": "unified.wall-faces",
+          "frame": 11,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 4,
+          "y": 24,
+          "assetId": "unified.wall-faces",
+          "frame": 12,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 5,
+          "y": 24,
+          "assetId": "unified.wall-faces",
+          "frame": 13,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 6,
+          "y": 24,
+          "assetId": "unified.wall-faces",
+          "frame": 14,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        },
+        {
+          "x": 7,
+          "y": 24,
+          "assetId": "unified.wall-faces",
+          "frame": 15,
+          "layer": "structure",
+          "walkable": false,
+          "role": "wall",
+          "status": "ready",
+          "note": "二段の壁面"
+        }
+      ]
+    },
+    {
+      "id": "unified-dungeon-props",
+      "label": "統一・建物と装飾",
+      "mapKind": "dungeon",
+      "tileSize": 16,
+      "width": 52,
+      "height": 34,
+      "cells": [
+        {
+          "x": 0,
+          "y": 0,
+          "assetId": "unified.tree",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "街路樹"
+        },
+        {
+          "x": 1,
+          "y": 0,
+          "assetId": "unified.tree",
+          "frame": 1,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "街路樹"
+        },
+        {
+          "x": 0,
+          "y": 1,
+          "assetId": "unified.tree",
+          "frame": 2,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "街路樹"
+        },
+        {
+          "x": 1,
+          "y": 1,
+          "assetId": "unified.tree",
+          "frame": 3,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "街路樹"
+        },
+        {
+          "x": 0,
+          "y": 2,
+          "assetId": "unified.tree",
+          "frame": 4,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "街路樹"
+        },
+        {
+          "x": 1,
+          "y": 2,
+          "assetId": "unified.tree",
+          "frame": 5,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "街路樹"
+        },
+        {
+          "x": 0,
+          "y": 4,
+          "assetId": "unified.boulder",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "岩"
+        },
+        {
+          "x": 1,
+          "y": 4,
+          "assetId": "unified.boulder",
+          "frame": 1,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "岩"
+        },
+        {
+          "x": 0,
+          "y": 5,
+          "assetId": "unified.boulder",
+          "frame": 2,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "岩"
+        },
+        {
+          "x": 1,
+          "y": 5,
+          "assetId": "unified.boulder",
+          "frame": 3,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "岩"
+        },
+        {
+          "x": 0,
+          "y": 7,
+          "assetId": "unified.door",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "開いた建物のドア"
+        },
+        {
+          "x": 1,
+          "y": 7,
+          "assetId": "unified.door",
+          "frame": 1,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "開いた建物のドア"
+        },
+        {
+          "x": 0,
+          "y": 8,
+          "assetId": "unified.door",
+          "frame": 2,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "開いた建物のドア"
+        },
+        {
+          "x": 1,
+          "y": 8,
+          "assetId": "unified.door",
+          "frame": 3,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "開いた建物のドア"
+        },
+        {
+          "x": 0,
+          "y": 10,
+          "assetId": "unified.window",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "建物の窓"
+        },
+        {
+          "x": 0,
+          "y": 12,
+          "assetId": "unified.stairs",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 1,
+          "y": 12,
+          "assetId": "unified.stairs",
+          "frame": 1,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 2,
+          "y": 12,
+          "assetId": "unified.stairs",
+          "frame": 2,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 3,
+          "y": 12,
+          "assetId": "unified.stairs",
+          "frame": 3,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 4,
+          "y": 12,
+          "assetId": "unified.stairs",
+          "frame": 4,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 5,
+          "y": 12,
+          "assetId": "unified.stairs",
+          "frame": 5,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 6,
+          "y": 12,
+          "assetId": "unified.stairs",
+          "frame": 6,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 7,
+          "y": 12,
+          "assetId": "unified.stairs",
+          "frame": 7,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 0,
+          "y": 13,
+          "assetId": "unified.stairs",
+          "frame": 8,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 1,
+          "y": 13,
+          "assetId": "unified.stairs",
+          "frame": 9,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 2,
+          "y": 13,
+          "assetId": "unified.stairs",
+          "frame": 10,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 3,
+          "y": 13,
+          "assetId": "unified.stairs",
+          "frame": 11,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 4,
+          "y": 13,
+          "assetId": "unified.stairs",
+          "frame": 12,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 5,
+          "y": 13,
+          "assetId": "unified.stairs",
+          "frame": 13,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 6,
+          "y": 13,
+          "assetId": "unified.stairs",
+          "frame": 14,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 7,
+          "y": 13,
+          "assetId": "unified.stairs",
+          "frame": 15,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 0,
+          "y": 14,
+          "assetId": "unified.stairs",
+          "frame": 16,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 1,
+          "y": 14,
+          "assetId": "unified.stairs",
+          "frame": 17,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 2,
+          "y": 14,
+          "assetId": "unified.stairs",
+          "frame": 18,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 3,
+          "y": 14,
+          "assetId": "unified.stairs",
+          "frame": 19,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 4,
+          "y": 14,
+          "assetId": "unified.stairs",
+          "frame": 20,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 5,
+          "y": 14,
+          "assetId": "unified.stairs",
+          "frame": 21,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 6,
+          "y": 14,
+          "assetId": "unified.stairs",
+          "frame": 22,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 7,
+          "y": 14,
+          "assetId": "unified.stairs",
+          "frame": 23,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "石の階段（上りは2タイル）"
+        },
+        {
+          "x": 0,
+          "y": 16,
+          "assetId": "unified.chest",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "宝箱"
+        },
+        {
+          "x": 0,
+          "y": 18,
+          "assetId": "unified.rubble",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "小さな瓦礫"
+        },
+        {
+          "x": 0,
+          "y": 20,
+          "assetId": "unified.pot",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "壺"
+        },
+        {
+          "x": 0,
+          "y": 22,
+          "assetId": "unified.torch",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "壁の松明"
+        },
+        {
+          "x": 0,
+          "y": 24,
+          "assetId": "unified.spikes",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "棘（通行不可の装飾）"
+        },
+        {
+          "x": 0,
+          "y": 26,
+          "assetId": "unified.lever",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": false,
+          "role": "prop",
+          "status": "ready",
+          "note": "壁のレバー"
+        },
+        {
+          "x": 0,
+          "y": 28,
+          "assetId": "unified.coins",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "散らばった硬貨"
+        },
+        {
+          "x": 0,
+          "y": 30,
+          "assetId": "unified.spell",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "魔法の光"
+        },
+        {
+          "x": 0,
+          "y": 32,
+          "assetId": "unified.bones",
+          "frame": 0,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "骨の山（洞窟・遺跡・火山）"
+        },
+        {
+          "x": 1,
+          "y": 32,
+          "assetId": "unified.bones",
+          "frame": 1,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "骨の山（洞窟・遺跡・火山）"
+        },
+        {
+          "x": 2,
+          "y": 32,
+          "assetId": "unified.bones",
+          "frame": 2,
+          "layer": "decoration",
+          "walkable": true,
+          "role": "prop",
+          "status": "ready",
+          "note": "骨の山（洞窟・遺跡・火山）"
         }
       ]
     }

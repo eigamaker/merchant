@@ -15,7 +15,7 @@ export const ACTOR_MANUAL_DIR = path.resolve("assets-src/actors/imported/manual"
 export const ACTOR_REGISTER_API = "/__map-editor/actors/register";
 
 /** Mirrors ActorAction in src/game/craftpixActors.ts. */
-export const ACTOR_ACTIONS = ["idle", "walk", "run", "attack", "walkAttack", "runAttack", "hurt", "death"];
+export const ACTOR_ACTIONS = ["idle", "walk", "run", "attack", "walkAttack", "runAttack", "hurt", "death", "interact", "cast"];
 /** Mirrors ActorRole in src/game/actorSettings.ts. */
 export const ACTOR_ROLES = ["player", "npc", "enemy", "townsfolk", "adventurer"];
 /**

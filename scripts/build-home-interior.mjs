@@ -91,3 +91,5 @@ palettes.pages = palettes.pages.filter(p=>p.id!==furniture.id);
 palettes.pages.push(furniture);
 fs.writeFileSync(palettePath,JSON.stringify(palettes,null,2)+"\n");
 console.log(`Built ${definitions.length} independent furniture sheets and reusable floor/wall tiles.`);
+// Restore independently generated empty display surfaces after the legacy cutouts.
+await import('./build-shop-art.mjs');

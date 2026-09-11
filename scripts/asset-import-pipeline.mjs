@@ -26,7 +26,7 @@ const xmlParser = new XMLParser({
   htmlEntities: false,
 });
 
-const ACTIONS = ["idle", "walk", "run", "attack", "walkAttack", "runAttack", "hurt", "death"];
+const ACTIONS = ["idle", "walk", "run", "attack", "walkAttack", "runAttack", "hurt", "death", "interact", "cast"];
 const IMAGE_EXTENSIONS = new Set([".png"]);
 const normalizeName = (value) => String(value ?? "").replaceAll("\\", "/").replace(/^\.\//, "");
 const array = (value) => value === undefined ? [] : Array.isArray(value) ? value : [value];
@@ -105,7 +105,7 @@ function slug(value, fallback = "asset") {
 function actionFromName(name) {
   const lower = name.toLowerCase().replaceAll("-", "_");
   const candidates = [
-    ["walk_attack", "walkAttack"], ["run_attack", "runAttack"], ["idle", "idle"], ["walk", "walk"], ["run", "run"], ["attack", "attack"], ["hurt", "hurt"], ["death", "death"],
+    ["walk_attack", "walkAttack"], ["run_attack", "runAttack"], ["idle", "idle"], ["walk", "walk"], ["run", "run"], ["attack", "attack"], ["hurt", "hurt"], ["death", "death"], ["interact", "interact"], ["cast", "cast"],
   ];
   return candidates.find(([token]) => lower.includes(token))?.[1];
 }

@@ -1,12 +1,5 @@
-# Craftpix import
+# 旧Craftpix素材
 
-Import the supplied archives from the download directory and build the web-runtime copies:
+キャラクターとマップ素材は[統一ピクセルアート](UNIFIED_PIXEL_ART.md)に移行済み。旧原本・重複コピー・専用生成スクリプトは削除した。
 
-```powershell
-python scripts/import_craftpix_packs.py --source-root C:\Users\takao\Downloads
-python scripts/build_craftpix_runtime.py
-```
-
-The original source files and license notices stay under `assets-src/vendor/craftpix`. The browser uses deduplicated art under `public/assets/craftpix`, actor sheets under `public/assets/actors/craftpix`, and UI sheets under `public/assets/ui/craftpix`.
-
-The map editor's `Environment` palette exposes the imported home, guild hall, glassblower, and dungeon-object sheets. These are visual stamps; walkability is still stored separately in the manual collision and boundary tools.
+現在使用するCraftpix素材は `public/assets/ui/craftpix/` のウィンドウなどのUIのみ。対応する原本とライセンスは `assets-src/vendor/craftpix/rpg-ui/` に保存している。

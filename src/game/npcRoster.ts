@@ -28,9 +28,14 @@ const ADVENTURER_PROFESSIONS: readonly NpcProfession[] = ["swordsman", "scout", 
  * everyone met in the dungeon is wearing something that was chosen for the job.
  * With nothing marked, the seed's appearance is still the sensible fallback.
  */
-function adventurerAppearanceId(seedAppearanceId: string, key: string): string {
+function adventurerAppearanceId(seedAppearanceId: string, key: string, roster: readonly NpcRecord[]): string {
   const pool = npcActorIds("adventurer");
-  return pool.length ? pool[hash(key) % pool.length]! : seedAppearanceId;
+  if (!pool.length) return seedAppearanceId;
+  // Give every approved appearance a place in town before repeating a sheet.
+  const counts = pool.map(id => roster.filter(npc => npc.adventurer && npc.status !== "dead" && npc.appearanceId === id).length);
+  const minimum = Math.min(...counts);
+  const candidates = pool.filter((_, index) => counts[index] === minimum);
+  return candidates[hash(key) % candidates.length]!;
 }
 
 function hash(value: string): number {
@@ -94,7 +99,7 @@ export function createRosterAdventurer(state: GameState, options: RosterAdventur
     ...template,
     id: `adventurer-${serial}`,
     name,
-    appearanceId: adventurerAppearanceId(template.appearanceId, `${state.campaignId}:${name}:appearance`),
+    appearanceId: adventurerAppearanceId(template.appearanceId, `${state.campaignId}:${name}:appearance`, state.npcs),
     rank: options.rank,
     baseFee: rankStats.escortFee,
     maxHp: rankStats.baseHp + variation % 4,

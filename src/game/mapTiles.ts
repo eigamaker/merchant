@@ -33,6 +33,13 @@ export function isMapPositionWalkable(map: TileMapLike, position: { x: number; y
   return true;
 }
 export function moveMapPosition(map: TileMapLike, position: { x: number; y: number }, delta: { x: number; y: number }, radius = 0): { x: number; y: number } {
+  // Sample the route as well as the destination: a slow frame must not jump a wall.
+  const steps = Math.max(1, Math.ceil(Math.max(Math.abs(delta.x), Math.abs(delta.y)) / (map.tileSize / 2)));
+  let next = position;
+  for (let step = 0; step < steps; step++) next = moveMapStep(map, next, { x: delta.x / steps, y: delta.y / steps }, radius);
+  return next;
+}
+function moveMapStep(map: TileMapLike, position: { x: number; y: number }, delta: { x: number; y: number }, radius: number): { x: number; y: number } {
   const diagonal = { x: position.x + delta.x, y: position.y + delta.y };
   if (isMapPositionWalkable(map, diagonal, radius)) return diagonal;
   const horizontal = { x: diagonal.x, y: position.y };

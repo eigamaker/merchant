@@ -3,125 +3,25 @@
   "actors": [
     {
       "version": 1,
-      "id": "characters-attacked",
-      "label": "attacked (Characters.tmx)",
-      "roles": [
-        "enemy"
-      ],
-      "clips": {
-        "attack": {
-          "action": "attack",
-          "path": "/assets/actors/generated/characters-attacked/attack.png",
-          "width": 128,
-          "height": 128,
-          "frameWidth": 32,
-          "frameHeight": 32,
-          "columns": 4,
-          "rows": 4,
-          "tileSize": 16,
-          "directions": [
-            "down",
-            "up",
-            "left",
-            "right"
-          ],
-          "frameRate": 6.67,
-          "durationsMs": [
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150,
-            150
-          ]
-        }
-      },
-      "scale": 1,
-      "origin": {
-        "x": 0.5,
-        "y": 0.72
-      },
-      "enemyStats": {
-        "baseHp": 3,
-        "hpPerFloor": 1,
-        "damage": 1
-      }
-    },
-    {
-      "version": 1,
       "id": "citizen1",
-      "label": "町人1",
+      "label": "宿の女主人",
+      "sourcePack": "unified-pixel-2026",
       "roles": [
         "npc",
         "townsfolk"
       ],
+      "scale": 1,
+      "origin": {
+        "x": 0.5,
+        "y": 0.875
+      },
       "clips": {
         "idle": {
           "action": "idle",
           "path": "/assets/actors/generated/citizen1/idle.png",
-          "width": 384,
-          "height": 128,
           "frameWidth": 32,
           "frameHeight": 32,
-          "columns": 12,
+          "columns": 4,
           "rows": 4,
           "directions": [
             "down",
@@ -129,16 +29,15 @@
             "right",
             "up"
           ],
-          "frameRate": 8
+          "frameRate": 4,
+          "repeat": -1
         },
         "walk": {
           "action": "walk",
           "path": "/assets/actors/generated/citizen1/walk.png",
-          "width": 192,
-          "height": 128,
           "frameWidth": 32,
           "frameHeight": 32,
-          "columns": 6,
+          "columns": 4,
           "rows": 4,
           "directions": [
             "down",
@@ -146,32 +45,159 @@
             "right",
             "up"
           ],
-          "frameRate": 8
+          "frameRate": 8,
+          "repeat": -1
+        },
+        "run": {
+          "action": "run",
+          "path": "/assets/actors/generated/citizen1/run.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 12,
+          "repeat": -1
+        },
+        "attack": {
+          "action": "attack",
+          "path": "/assets/actors/generated/citizen1/attack.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "walkAttack": {
+          "action": "walkAttack",
+          "path": "/assets/actors/generated/citizen1/walkAttack.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "runAttack": {
+          "action": "runAttack",
+          "path": "/assets/actors/generated/citizen1/runAttack.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "hurt": {
+          "action": "hurt",
+          "path": "/assets/actors/generated/citizen1/hurt.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "death": {
+          "action": "death",
+          "path": "/assets/actors/generated/citizen1/death.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "interact": {
+          "action": "interact",
+          "path": "/assets/actors/generated/citizen1/interact.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "cast": {
+          "action": "cast",
+          "path": "/assets/actors/generated/citizen1/cast.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
         }
-      },
-      "scale": 1,
-      "origin": {
-        "x": 0.5,
-        "y": 0.72
       }
     },
     {
       "version": 1,
       "id": "citizen2",
-      "label": "町人2",
+      "label": "商人",
+      "sourcePack": "unified-pixel-2026",
       "roles": [
-        "npc",
-        "townsfolk"
+        "player"
       ],
+      "scale": 1,
+      "origin": {
+        "x": 0.5,
+        "y": 0.875
+      },
       "clips": {
         "idle": {
           "action": "idle",
           "path": "/assets/actors/generated/citizen2/idle.png",
-          "width": 384,
-          "height": 128,
           "frameWidth": 32,
           "frameHeight": 32,
-          "columns": 12,
+          "columns": 4,
           "rows": 4,
           "directions": [
             "down",
@@ -179,16 +205,15 @@
             "right",
             "up"
           ],
-          "frameRate": 8
+          "frameRate": 4,
+          "repeat": -1
         },
         "walk": {
           "action": "walk",
           "path": "/assets/actors/generated/citizen2/walk.png",
-          "width": 192,
-          "height": 128,
           "frameWidth": 32,
           "frameHeight": 32,
-          "columns": 6,
+          "columns": 4,
           "rows": 4,
           "directions": [
             "down",
@@ -196,101 +221,668 @@
             "right",
             "up"
           ],
-          "frameRate": 8
+          "frameRate": 8,
+          "repeat": -1
+        },
+        "run": {
+          "action": "run",
+          "path": "/assets/actors/generated/citizen2/run.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 12,
+          "repeat": -1
+        },
+        "attack": {
+          "action": "attack",
+          "path": "/assets/actors/generated/citizen2/attack.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "walkAttack": {
+          "action": "walkAttack",
+          "path": "/assets/actors/generated/citizen2/walkAttack.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "runAttack": {
+          "action": "runAttack",
+          "path": "/assets/actors/generated/citizen2/runAttack.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "hurt": {
+          "action": "hurt",
+          "path": "/assets/actors/generated/citizen2/hurt.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "death": {
+          "action": "death",
+          "path": "/assets/actors/generated/citizen2/death.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "interact": {
+          "action": "interact",
+          "path": "/assets/actors/generated/citizen2/interact.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "cast": {
+          "action": "cast",
+          "path": "/assets/actors/generated/citizen2/cast.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
         }
-      },
-      "scale": 1,
-      "origin": {
-        "x": 0.5,
-        "y": 0.72
       }
     },
     {
       "version": 1,
       "id": "fighter2",
-      "label": "剣士2",
+      "label": "斥候",
+      "sourcePack": "unified-pixel-2026",
       "roles": [
         "npc",
         "adventurer"
       ],
+      "scale": 1,
+      "origin": {
+        "x": 0.5,
+        "y": 0.875
+      },
       "clips": {
         "idle": {
           "action": "idle",
           "path": "/assets/actors/generated/fighter2/idle.png",
-          "width": 384,
-          "height": 128,
-          "frameWidth": 32,
-          "frameHeight": 32,
-          "columns": 12,
-          "rows": 4,
-          "directions": [
-            "down",
-            "left",
-            "right",
-            "up"
-          ],
-          "frameRate": 8
-        },
-        "walk": {
-          "action": "walk",
-          "path": "/assets/actors/generated/fighter2/walk.png",
-          "width": 192,
-          "height": 128,
-          "frameWidth": 32,
-          "frameHeight": 32,
-          "columns": 6,
-          "rows": 4,
-          "directions": [
-            "down",
-            "left",
-            "right",
-            "up"
-          ],
-          "frameRate": 8
-        }
-      },
-      "scale": 1,
-      "origin": {
-        "x": 0.5,
-        "y": 0.72
-      }
-    },
-    {
-      "version": 1,
-      "id": "interior-2nd-floor-attacked",
-      "label": "attacked (Interior_2nd_floor.tmx)",
-      "roles": [
-        "enemy"
-      ],
-      "clips": {
-        "attack": {
-          "action": "attack",
-          "path": "/assets/actors/generated/interior-2nd-floor-attacked/attack.png",
-          "width": 128,
-          "height": 128,
           "frameWidth": 32,
           "frameHeight": 32,
           "columns": 4,
           "rows": 4,
-          "tileSize": 16,
           "directions": [
             "down",
-            "up",
             "left",
-            "right"
+            "right",
+            "up"
           ],
-          "frameRate": 6.67
+          "frameRate": 4,
+          "repeat": -1
+        },
+        "walk": {
+          "action": "walk",
+          "path": "/assets/actors/generated/fighter2/walk.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": -1
+        },
+        "run": {
+          "action": "run",
+          "path": "/assets/actors/generated/fighter2/run.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 12,
+          "repeat": -1
+        },
+        "attack": {
+          "action": "attack",
+          "path": "/assets/actors/generated/fighter2/attack.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "walkAttack": {
+          "action": "walkAttack",
+          "path": "/assets/actors/generated/fighter2/walkAttack.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "runAttack": {
+          "action": "runAttack",
+          "path": "/assets/actors/generated/fighter2/runAttack.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "hurt": {
+          "action": "hurt",
+          "path": "/assets/actors/generated/fighter2/hurt.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "death": {
+          "action": "death",
+          "path": "/assets/actors/generated/fighter2/death.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "interact": {
+          "action": "interact",
+          "path": "/assets/actors/generated/fighter2/interact.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "cast": {
+          "action": "cast",
+          "path": "/assets/actors/generated/fighter2/cast.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
         }
-      },
+      }
+    },
+    {
+      "version": 1,
+      "id": "scholar",
+      "label": "学者",
+      "sourcePack": "unified-pixel-2026",
+      "roles": [
+        "npc",
+        "townsfolk"
+      ],
       "scale": 1,
       "origin": {
         "x": 0.5,
-        "y": 0.72
+        "y": 0.875
       },
-      "enemyStats": {
-        "baseHp": 3,
-        "hpPerFloor": 1,
-        "damage": 1
+      "clips": {
+        "idle": {
+          "action": "idle",
+          "path": "/assets/actors/generated/scholar/idle.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 4,
+          "repeat": -1
+        },
+        "walk": {
+          "action": "walk",
+          "path": "/assets/actors/generated/scholar/walk.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": -1
+        },
+        "run": {
+          "action": "run",
+          "path": "/assets/actors/generated/scholar/run.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 12,
+          "repeat": -1
+        },
+        "attack": {
+          "action": "attack",
+          "path": "/assets/actors/generated/scholar/attack.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "walkAttack": {
+          "action": "walkAttack",
+          "path": "/assets/actors/generated/scholar/walkAttack.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "runAttack": {
+          "action": "runAttack",
+          "path": "/assets/actors/generated/scholar/runAttack.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "hurt": {
+          "action": "hurt",
+          "path": "/assets/actors/generated/scholar/hurt.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "death": {
+          "action": "death",
+          "path": "/assets/actors/generated/scholar/death.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "interact": {
+          "action": "interact",
+          "path": "/assets/actors/generated/scholar/interact.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "cast": {
+          "action": "cast",
+          "path": "/assets/actors/generated/scholar/cast.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        }
+      }
+    },
+    {
+      "version": 1,
+      "id": "town-mage",
+      "label": "街の魔術師",
+      "sourcePack": "unified-pixel-2026",
+      "roles": [
+        "npc",
+        "townsfolk"
+      ],
+      "scale": 1,
+      "origin": {
+        "x": 0.5,
+        "y": 0.875
+      },
+      "clips": {
+        "idle": {
+          "action": "idle",
+          "path": "/assets/actors/generated/town-mage/idle.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 4,
+          "repeat": -1
+        },
+        "walk": {
+          "action": "walk",
+          "path": "/assets/actors/generated/town-mage/walk.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": -1
+        },
+        "run": {
+          "action": "run",
+          "path": "/assets/actors/generated/town-mage/run.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 12,
+          "repeat": -1
+        },
+        "attack": {
+          "action": "attack",
+          "path": "/assets/actors/generated/town-mage/attack.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "walkAttack": {
+          "action": "walkAttack",
+          "path": "/assets/actors/generated/town-mage/walkAttack.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "runAttack": {
+          "action": "runAttack",
+          "path": "/assets/actors/generated/town-mage/runAttack.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "hurt": {
+          "action": "hurt",
+          "path": "/assets/actors/generated/town-mage/hurt.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "death": {
+          "action": "death",
+          "path": "/assets/actors/generated/town-mage/death.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "interact": {
+          "action": "interact",
+          "path": "/assets/actors/generated/town-mage/interact.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        },
+        "cast": {
+          "action": "cast",
+          "path": "/assets/actors/generated/town-mage/cast.png",
+          "frameWidth": 32,
+          "frameHeight": 32,
+          "columns": 4,
+          "rows": 4,
+          "directions": [
+            "down",
+            "left",
+            "right",
+            "up"
+          ],
+          "frameRate": 8,
+          "repeat": 0
+        }
       }
     }
   ]

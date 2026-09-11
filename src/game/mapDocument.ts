@@ -1,6 +1,8 @@
 import type { DungeonMap, MapKind } from "./types";
+import { applyPropCollision } from './propGeometry';
 import { tileWalkable } from "./mapTiles";
 import { MAP_ASSET_CATALOG } from "./mapAssetCatalog.generated";
+import { replacementMapArt } from "./retiredMapArt";
 import { actorDefinition, actorHasEnemyStats, actorSupportsDirectionalMovement } from "./actorCatalog";
 
 export const MAP_DOCUMENT_VERSION = 6 as const;
@@ -127,7 +129,26 @@ function migrateLegacy(value: LegacyMap): MapDocument {
   const collision = Array.isArray(value.collision) && value.collision.length === size && value.collision.every((walkable) => typeof walkable === "boolean") ? [...value.collision] : terrain.map((assetId, index) => defaultWalkable(layers.decoration[index]?.assetId ?? layers.structure[index]?.assetId ?? layers.ground[index]?.assetId ?? assetId));
   return { version: 6, id: value.id, name: value.name, kind: value.kind, floor: Math.max(0, Math.floor(value.floor ?? (value.kind === "home" ? 0 : 1))), width, height, tileSize: value.tileSize === 32 ? 32 : 16, terrain, collision, layers, markers, enemyRoster: Array.isArray(value.enemyRoster) ? [...value.enemyRoster] : [], createdAt: value.createdAt, updatedAt: value.updatedAt };
 }
-export function normalizeMap(value: unknown): MapDocument { if (!value || typeof value !== "object") throw new Error("invalid MapDocument v3/v4/v5/v6: document object"); const raw = value as { version?: number }; const map = raw.version === 3 || raw.version === 4 || raw.version === 5 ? migrateLegacy(value as LegacyMap) : cloneMap(value as MapDocument); if (map.kind === "home") map.markers = map.markers.filter((marker) => marker.kind !== "homeStorage"); const errors = validateStructure(map); if (errors.length) throw new Error(`invalid MapDocument v3/v4/v5/v6: ${errors.join(", ")}`); return map; }
+export function normalizeMap(value: unknown): MapDocument {
+  if (!value || typeof value !== "object") throw new Error("invalid MapDocument v3/v4/v5/v6: document object");
+  const raw = value as { version?: number };
+  const map = raw.version === 3 || raw.version === 4 || raw.version === 5 ? migrateLegacy(value as LegacyMap) : cloneMap(value as MapDocument);
+  if (map.kind === "home") map.markers = map.markers.filter(marker => marker.kind !== "homeStorage");
+  for (const layer of LAYERS) map.layers[layer] = map.layers[layer].map(cell => {
+    const replacement = cell && replacementMapArt(cell.assetId, layer, map.tileSize);
+    return replacement ? {assetId: replacement, frame: 0} : cell;
+  });
+  map.terrain = map.terrain.map(id => id ? replacementMapArt(id, undefined, map.tileSize) ?? id : null);
+  for (const marker of map.markers) if (marker.visual && replacementMapArt(marker.visual.assetId)) {
+    marker.visual = ["stairsUp", "stairsDown", "dungeonEntrance"].includes(marker.kind)
+      ? {assetId: map.tileSize === 32 ? "unified.compat-stairs32" : "unified.stairs", frame: map.tileSize === 32 ? marker.kind === "stairsUp" ? 0 : 1 : marker.kind === "stairsUp" ? 14 : 22}
+      : {assetId: replacementMapArt(marker.visual.assetId, "decoration", map.tileSize)!, frame: 0};
+  }
+  const errors = validateStructure(map);
+  if (errors.length) throw new Error(`invalid MapDocument v3/v4/v5/v6: ${errors.join(", ")}`);
+  applyPropCollision(map);
+  return map;
+}
 export function compileMap(input: MapDocument): DungeonMap { const map = normalizeMap(input), tiles = Array.from({ length: map.height }, (_, y) => Array.from({ length: map.width }, (_, x) => cellWalkable(map, x, y) ? 0 : 1)), up = map.markers.find((marker) => marker.kind === "stairsUp") ?? map.markers.find((marker) => marker.kind === "homeSpawn"), down = map.markers.find((marker) => marker.kind === "stairsDown") ?? map.markers.find((marker) => marker.kind === "dungeonEntrance"), stairsUp = up ? { x: up.x, y: up.y } : { x: 1, y: 1 }, stairsDown = down ? { x: down.x, y: down.y } : undefined; return { width: map.width, height: map.height, tileSize: map.tileSize, tiles, stairsUp, stairsDown, stairsUpVisual: up?.visual ? { ...up.visual } : undefined, stairsDownVisual: down?.visual ? { ...down.visual } : undefined, enemyRoster: [...map.enemyRoster], authoredLayers: Object.fromEntries(LAYERS.map((layer) => [layer, map.layers[layer].map((cell) => cell ? { ...cell } : null)])) as DungeonMap["authoredLayers"] }; }
 export function validateTrialMapPack(pack: TrialMapPack): string[] { const errors = [...validateMap(pack.home)]; if (pack.home.kind !== "home") errors.push("trial home kind"); const floors = [...pack.dungeons].sort((a, b) => a.floor - b.floor); if (!floors.length) errors.push("trial dungeon floors"); floors.forEach((map, index) => { errors.push(...validateMap(map)); if (map.kind !== "dungeon") errors.push("trial dungeon kind"); if (map.floor !== index + 1) errors.push("dungeon floors must be unique and contiguous"); const down = map.markers.filter((marker) => marker.kind === "stairsDown").length; if (index < floors.length - 1 && down !== 1) errors.push(`floor ${map.floor} marker stairsDown`); if (index === floors.length - 1 && down > 1) errors.push(`floor ${map.floor} marker stairsDown`); }); return [...new Set(errors)]; }
 

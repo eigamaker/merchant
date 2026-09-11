@@ -1,5 +1,9 @@
 # 商人ゲームループ v15
 
+## 2026-09-11 設計基準の追加
+
+今後の追加改善は [CORE_STORY.md](CORE_STORY.md) を基準にする。本書は既存の商人ループの説明であり、プロローグ、遠征報告の遅延、所有の問いなどの追加構想を実装済みとして扱わない。現状との差分と移行案は [STORY_SYSTEM_ROADMAP.md](STORY_SYSTEM_ROADMAP.md) にまとめた。以下の数値・過去の説明と現在の挙動が違う場合は、コードとテストで確認する。
+
 ## 実装済みの最小ループ
 
 1. 自宅兼店舗から、1日に1回だけダンジョンへ出発する。出発時に時間帯が1段階進み、帰還が早ければ同じ日に営業できるが、再遠征は翌日までできない。
@@ -169,7 +173,7 @@
 - NPC初期データ: 同ファイルの `NPC_SEEDS`
 - 職業別外見参照: 同ファイルの `NPC_APPEARANCES`
 - 実行用画像: `public/assets/items/<item-id>.png`
-- 生成原本: `assets-src/items/generated-originals/<item-id>.png`
+- 生成原本: `assets-src/unified/props.png`（変換: `scripts/build-unified-world.mjs`）
 
 ゲームデータは画像のファイル名を直接保持せず、アイテムは `visualId`、NPCは `appearanceId` を保持する。今後のアセット差し替えでは対応表だけを変更し、セーブデータ上のNPC・アイテムIDを維持する。
 

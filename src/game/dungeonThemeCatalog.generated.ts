@@ -7,33 +7,33 @@ export const DUNGEON_THEME_CATALOG = [
     "enabled": true,
     "tileSize": 16,
     "wall": {
-      "assetId": "mapchip2-mapchip-kabe-ue-doukutu3"
+      "assetId": "unified.cave-wall"
     },
     "floorVariants": [
       {
-        "assetId": "mapchip2-mapchip-base-s17",
-        "frame": 16,
+        "assetId": "unified.cave-floor",
+        "frame": 0,
         "weight": 8
       },
       {
-        "assetId": "mapchip2-mapchip-base-s17",
-        "frame": 17,
+        "assetId": "unified.cave-floor",
+        "frame": 0,
         "weight": 3
       },
       {
-        "assetId": "mapchip2-mapchip-base-s17",
-        "frame": 16,
+        "assetId": "unified.cave-floor",
+        "frame": 0,
         "weight": 1
       }
     ],
     "stairsUp": {
-      "assetId": "mapchip2-mapchip-base-s17",
-      "frame": 26,
+      "assetId": "unified.stairs",
+      "frame": 14,
       "height": 2
     },
     "stairsDown": {
-      "assetId": "mapchip2-mapchip-base-s17",
-      "frame": 24
+      "assetId": "unified.stairs",
+      "frame": 22
     },
     "decorations": [
       {
@@ -41,18 +41,18 @@ export const DUNGEON_THEME_CATALOG = [
         "placement": "corner",
         "variants": [
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 33,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 34,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 35,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           }
         ],
@@ -65,23 +65,23 @@ export const DUNGEON_THEME_CATALOG = [
         "placement": "floor",
         "variants": [
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 16,
+            "assetId": "unified.bones",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 17,
+            "assetId": "unified.bones",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 24,
+            "assetId": "unified.bones",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 25,
+            "assetId": "unified.bones",
+            "frame": 0,
             "weight": 1
           }
         ],
@@ -94,18 +94,18 @@ export const DUNGEON_THEME_CATALOG = [
         "placement": "floor",
         "variants": [
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 26,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 27,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 31,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           }
         ],
@@ -118,18 +118,18 @@ export const DUNGEON_THEME_CATALOG = [
         "placement": "deadEnd",
         "variants": [
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 40,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 46,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 47,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           }
         ],
@@ -142,13 +142,13 @@ export const DUNGEON_THEME_CATALOG = [
         "placement": "floor",
         "variants": [
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 50,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 51,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           }
         ],
@@ -158,16 +158,16 @@ export const DUNGEON_THEME_CATALOG = [
       },
       {
         "id": "cave-lever",
-        "placement": "wall",
+        "placement": "wallFace",
         "variants": [
           {
-            "assetId": "mapchip2-mapchip-base-s18",
+            "assetId": "unified.torch",
             "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 2,
+            "assetId": "unified.torch",
+            "frame": 0,
             "weight": 1
           }
         ],
@@ -226,12 +226,12 @@ export const DUNGEON_THEME_CATALOG = [
     ],
     "objects": {
       "chest": {
-        "assetId": "mapchip2-mapchip-base-s14",
-        "frame": 5
+        "assetId": "unified.chest",
+        "frame": 0
       },
       "corpse": {
-        "assetId": "mapchip2-mapchip-base-s18",
-        "frame": 24
+        "assetId": "unified.bones",
+        "frame": 0
       }
     }
   },
@@ -242,33 +242,33 @@ export const DUNGEON_THEME_CATALOG = [
     "enabled": true,
     "tileSize": 16,
     "wall": {
-      "assetId": "mapchip2-mapchip-kabe-ue-doukutu1"
+      "assetId": "unified.ruins-wall"
     },
     "floorVariants": [
       {
-        "assetId": "mapchip2-mapchip-base-s17",
+        "assetId": "unified.ruins-floor",
         "frame": 0,
         "weight": 8
       },
       {
-        "assetId": "mapchip2-mapchip-base-s17",
-        "frame": 1,
+        "assetId": "unified.ruins-floor",
+        "frame": 0,
         "weight": 3
       },
       {
-        "assetId": "mapchip2-mapchip-base-s17",
+        "assetId": "unified.ruins-floor",
         "frame": 0,
         "weight": 1
       }
     ],
     "stairsUp": {
-      "assetId": "mapchip2-mapchip-base-s17",
-      "frame": 10,
+      "assetId": "unified.stairs",
+      "frame": 14,
       "height": 2
     },
     "stairsDown": {
-      "assetId": "mapchip2-mapchip-base-s17",
-      "frame": 8
+      "assetId": "unified.stairs",
+      "frame": 22
     },
     "decorations": [
       {
@@ -276,13 +276,13 @@ export const DUNGEON_THEME_CATALOG = [
         "placement": "corner",
         "variants": [
           {
-            "assetId": "mapchip2-mapchip-base-s25",
-            "frame": 20,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s25",
-            "frame": 21,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           }
         ],
@@ -295,23 +295,23 @@ export const DUNGEON_THEME_CATALOG = [
         "placement": "floor",
         "variants": [
           {
-            "assetId": "mapchip2-mapchip-base-s25",
+            "assetId": "unified.rubble",
             "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s25",
-            "frame": 1,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s25",
-            "frame": 22,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s25",
-            "frame": 23,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           }
         ],
@@ -324,23 +324,23 @@ export const DUNGEON_THEME_CATALOG = [
         "placement": "floor",
         "variants": [
           {
-            "assetId": "mapchip2-mapchip-base-s25",
-            "frame": 8,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s25",
-            "frame": 10,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s25",
-            "frame": 12,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s25",
-            "frame": 14,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           }
         ],
@@ -353,13 +353,13 @@ export const DUNGEON_THEME_CATALOG = [
         "placement": "deadEnd",
         "variants": [
           {
-            "assetId": "mapchip2-mapchip-base-s25",
-            "frame": 16,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s25",
-            "frame": 17,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           }
         ],
@@ -371,23 +371,23 @@ export const DUNGEON_THEME_CATALOG = [
         "placement": "floor",
         "variants": [
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 50,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 51,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 58,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 59,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           }
         ],
@@ -397,16 +397,16 @@ export const DUNGEON_THEME_CATALOG = [
       },
       {
         "id": "ruins-door",
-        "placement": "wall",
+        "placement": "wallFace",
         "variants": [
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 48,
+            "assetId": "unified.torch",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 56,
+            "assetId": "unified.torch",
+            "frame": 0,
             "weight": 1
           }
         ],
@@ -465,12 +465,12 @@ export const DUNGEON_THEME_CATALOG = [
     ],
     "objects": {
       "chest": {
-        "assetId": "mapchip2-mapchip-base-s14",
-        "frame": 5
+        "assetId": "unified.chest",
+        "frame": 0
       },
       "corpse": {
-        "assetId": "mapchip2-mapchip-base-s18",
-        "frame": 16
+        "assetId": "unified.bones",
+        "frame": 1
       }
     }
   },
@@ -481,33 +481,33 @@ export const DUNGEON_THEME_CATALOG = [
     "enabled": true,
     "tileSize": 16,
     "wall": {
-      "assetId": "mapchip2-mapchip-kabe-ue-doukutu2"
+      "assetId": "unified.cave-wall"
     },
     "floorVariants": [
       {
-        "assetId": "mapchip2-mapchip-base-s17",
-        "frame": 4,
+        "assetId": "unified.volcanic-floor",
+        "frame": 0,
         "weight": 8
       },
       {
-        "assetId": "mapchip2-mapchip-base-s17",
-        "frame": 5,
+        "assetId": "unified.volcanic-floor",
+        "frame": 0,
         "weight": 3
       },
       {
-        "assetId": "mapchip2-mapchip-base-s17",
-        "frame": 4,
+        "assetId": "unified.volcanic-floor",
+        "frame": 0,
         "weight": 1
       }
     ],
     "stairsUp": {
-      "assetId": "mapchip2-mapchip-base-s17",
+      "assetId": "unified.stairs",
       "frame": 14,
       "height": 2
     },
     "stairsDown": {
-      "assetId": "mapchip2-mapchip-base-s17",
-      "frame": 12
+      "assetId": "unified.stairs",
+      "frame": 22
     },
     "decorations": [
       {
@@ -515,18 +515,18 @@ export const DUNGEON_THEME_CATALOG = [
         "placement": "corner",
         "variants": [
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 36,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 37,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 40,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           }
         ],
@@ -539,13 +539,13 @@ export const DUNGEON_THEME_CATALOG = [
         "placement": "floor",
         "variants": [
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 28,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 29,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           }
         ],
@@ -558,13 +558,13 @@ export const DUNGEON_THEME_CATALOG = [
         "placement": "floor",
         "variants": [
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 44,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 45,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           }
         ],
@@ -577,13 +577,13 @@ export const DUNGEON_THEME_CATALOG = [
         "placement": "deadEnd",
         "variants": [
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 26,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 30,
+            "assetId": "unified.rubble",
+            "frame": 0,
             "weight": 1
           }
         ],
@@ -596,13 +596,13 @@ export const DUNGEON_THEME_CATALOG = [
         "placement": "floor",
         "variants": [
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 16,
+            "assetId": "unified.bones",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 24,
+            "assetId": "unified.bones",
+            "frame": 0,
             "weight": 1
           }
         ],
@@ -612,16 +612,16 @@ export const DUNGEON_THEME_CATALOG = [
       },
       {
         "id": "lava-lever",
-        "placement": "wall",
+        "placement": "wallFace",
         "variants": [
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 1,
+            "assetId": "unified.torch",
+            "frame": 0,
             "weight": 1
           },
           {
-            "assetId": "mapchip2-mapchip-base-s18",
-            "frame": 3,
+            "assetId": "unified.torch",
+            "frame": 0,
             "weight": 1
           }
         ],
@@ -680,12 +680,12 @@ export const DUNGEON_THEME_CATALOG = [
     ],
     "objects": {
       "chest": {
-        "assetId": "mapchip2-mapchip-base-s14",
-        "frame": 5
+        "assetId": "unified.chest",
+        "frame": 0
       },
       "corpse": {
-        "assetId": "mapchip2-mapchip-base-s18",
-        "frame": 25
+        "assetId": "unified.bones",
+        "frame": 2
       }
     }
   }

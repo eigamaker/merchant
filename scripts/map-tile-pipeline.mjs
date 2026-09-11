@@ -505,7 +505,7 @@ export function buildMapTileAssets(options = {}) {
   // Keep the dedicated directory itself in place. This makes repeated Vite
   // watcher/API generations safe on Windows, where removing a directory while
   // another generation has a file open can report ENOTEMPTY.
-  for (const entry of fs.readdirSync(outputDir)) fs.rmSync(path.join(outputDir, entry), { recursive: true, force: true });
+  for (const entry of fs.readdirSync(outputDir)) fs.rmSync(path.join(outputDir, entry), { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   for (const asset of assets) fs.copyFileSync(asset.sourceFile, path.join(outputDir, `${asset.id}.png`));
   const definitions = assets.map(({ sourceFile, ...asset }) => ({ ...asset, path: `/assets/map-tiles/generated/${asset.id}.png` }));
   fs.writeFileSync(path.join(outputDir, "catalog.json"), JSON.stringify({ version: 1, assets: definitions }, null, 2) + "\n", "utf8");

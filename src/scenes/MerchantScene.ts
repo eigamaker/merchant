@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { propFrameGeometry } from '../game/propGeometry';
 import {
   ACTOR_WALK_FRAMES,
   ASSET_MANIFEST,
@@ -18,6 +19,7 @@ import {
   buyMedicineAtApothecary,
   canBeginExpedition,
   createNewGame,
+  createItem,
   currentItemCount,
   dungeonAdventurerBuyPrice,
   dungeonProvisionBuyPrice,
@@ -54,6 +56,8 @@ import { rankAdventurers, rankingLine, recentLosses } from "../game/adventurerRa
 import { SaveRepository, type SaveSlot } from "../game/save";
 import { HOME_POI, HOME_SPAWN, createHomeMap } from "../game/homeMap";
 import { moveMapPosition } from "../game/mapTiles";
+import { shopDisplaySlots, reconcileShopDisplay, moveShopDisplayItem, displayItemTransform } from "../game/shopDisplay";
+import { ITEM_ART } from "../game/itemArtCatalog.generated";
 import { assignHomeVisitorCells, findHomeVisitorPath } from "../game/homeVisitors";
 import { compileMap, loadTrialMap, loadTrialMapPack } from "../game/mapDocument";
 import { MISSING_MAP_ASSET_TEXTURE, authoredMapAssetIds, mapAssetDefinitions, mapAssetFootprint, resolveMapAssetFrame } from "../game/mapAssetRuntime";
@@ -358,6 +362,15 @@ export class MerchantScene extends Phaser.Scene {
     this.createPlaceholderTextures();
     this.createActorAnimations();
     const params = new URLSearchParams(window.location.search);
+    if (import.meta.env.DEV && params.get('preview') === 'shop') {
+      this.state = createNewGame();
+      this.state.store = ['herb', 'iron-helmet', 'blue-gem', 'moon-fungus', 'gold-ore', 'antidote', 'old-ring', 'rune-tablet'].map(id => createItem(this.state, id));
+      this.state.display = this.state.store.map(item => item.uuid);
+      if (params.get('position') === 'behind-counter') this.state.homePos = {x: 136, y: 72};
+      this.gameStarted = true;
+      this.render();
+      return;
+    }
     if (params.get("autostart") === "world") {
       const pack = loadTrialMapPack();
       const trial = pack?.home ?? loadTrialMap();
@@ -593,6 +606,10 @@ export class MerchantScene extends Phaser.Scene {
       if (!protagonist || !this.playCraftpixActor(this.homePlayer, protagonist, "idle", this.playerFacing, true, this.homeScale())) this.homePlayer.play(`player.idle-${this.playerFacing}`, true);
     }
     this.updateHomeNpcs(delta);
+    this.homeWorld?.list.forEach(child => {
+      if (child instanceof Phaser.GameObjects.Sprite) child.setDepth(child.y);
+    });
+    this.homeWorld?.sort('depth');
     if (investigate || talk || inventory || shop) this.render();
   }
 
@@ -601,6 +618,7 @@ export class MerchantScene extends Phaser.Scene {
     const events: DungeonEvent[] = [];
     const beforePlayer = this.state.run ? { ...this.state.run.player } : undefined;
     const beforeEnemies = new Map(this.state.run?.enemies.map((enemy) => [enemy.id, { ...enemy.pos }]) ?? []);
+    const beforeActors = this.dungeonActorDefinitions();
     const beforeGuard = this.state.run?.guard ? { id: this.state.run.guard.guardId, pos: { ...this.state.run.guard.pos } } : undefined;
     if (this.just("up") || this.just("w")) { this.playerFacing = "up"; events.push(...movePlayer(this.state, DIRECTION.up).events); acted = true; }
     else if (this.just("down") || this.just("s")) { this.playerFacing = "down"; events.push(...movePlayer(this.state, DIRECTION.down).events); acted = true; }
@@ -613,7 +631,7 @@ export class MerchantScene extends Phaser.Scene {
     if (acted) this.captureDungeonWalkAnimations(beforePlayer, beforeEnemies, beforeGuard);
     if (acted || inventory) {
       this.render();
-      this.animateDungeonEvents(events);
+      this.animateDungeonEvents(events, beforeActors);
     }
   }
 
@@ -725,6 +743,7 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private executeDungeonCommand(command: DungeonCommand): void {
+    const beforeActors = this.dungeonActorDefinitions();
     const beforePlayer = this.state.run ? { ...this.state.run.player } : undefined;
     const beforeEnemies = new Map(this.state.run?.enemies.map((enemy) => [enemy.id, { ...enemy.pos }]) ?? []);
     const beforeGuard = this.state.run?.guard ? { id: this.state.run.guard.guardId, pos: { ...this.state.run.guard.pos } } : undefined;
@@ -747,7 +766,7 @@ export class MerchantScene extends Phaser.Scene {
       return;
     }
     this.render();
-    this.animateDungeonEvents(result.events);
+    this.animateDungeonEvents(result.events, beforeActors);
   }
 
   private openGuardDescentPrompt(assessment: GuardDescentAssessment): void {
@@ -978,6 +997,11 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private async saveManual(slot: SaveSlot): Promise<void> {
+    if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('preview') === 'shop') {
+      this.state.message = '陳列プレビューでは保存しません。';
+      this.closeMenu();
+      return;
+    }
     const label = slot.replace("manual-", "手動保存 ");
     try {
       await this.saves.save(slot, this.state);
@@ -995,6 +1019,7 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private saveAuto(): void {
+    if (import.meta.env.DEV && new URLSearchParams(window.location.search).get('preview') === 'shop') return;
     if (!this.gameStarted) return;
     const now = performance.now();
     if (now - this.lastAutoSaveAt < 750) return;
@@ -1070,6 +1095,7 @@ export class MerchantScene extends Phaser.Scene {
       this.state.homePos = target;
       this.state.shopSession.status = "waiting";
       this.render();
+      this.playHomeTradeAnimation();
       this.time.delayedCall(900, () => this.callNextCustomer());
     };
     if (this.homePlayer) this.tweens.add({ targets: this.homePlayer, x: target.x, y: target.y + this.homeMap.tileSize / 2, duration: 550, ease: "Sine.InOut", onComplete: ready });
@@ -1101,6 +1127,7 @@ export class MerchantScene extends Phaser.Scene {
     this.modal = undefined;
     if (!npcId) return;
     this.render();
+    this.playHomeTradeAnimation();
     const sprite = this.homeWorld?.getByName(`customer:${npcId}`) as Phaser.GameObjects.Sprite | undefined;
     const entry = this.homeMap.markers.find((marker) => marker.kind === "homeVisitors");
     const counter = this.homeMap.markers.find((marker) => marker.kind === "customerCounter");
@@ -1114,6 +1141,15 @@ export class MerchantScene extends Phaser.Scene {
     if (!sprite || !entry || !counter) { complete(); return; }
     this.customerWalking = true;
     this.walkCustomerPath(sprite, npcId, findHomeVisitorPath(this.homeMap, counter, entry), complete);
+  }
+
+  private playHomeTradeAnimation(): void {
+    const sprite = this.homePlayer, actor = playerActor();
+    if (!sprite || !actor || !actor.clips.interact) return;
+    this.playCraftpixActor(sprite, actor, "interact", "down", false, this.homeScale());
+    sprite.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+      if (sprite.scene) this.playCraftpixActor(sprite, actor, "idle", "down", false, this.homeScale());
+    });
   }
 
   private walkCustomerPath(sprite: Phaser.GameObjects.Sprite, npcId: string, path: Vec[], onComplete: () => void): void {
@@ -2079,8 +2115,9 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   private renderHome(): void {
-    this.drawHomeBackdrop();
     const world = this.add.container(0, 0);
+    this.drawHomeBackdrop(world);
+    this.renderShopDisplay(world);
     this.homeNpcs = [];
     const protagonist = playerActor();
     const playerTexture = (protagonist && this.craftpixActorTexture(protagonist)) ?? ASSET_MANIFEST.player.textureKey;
@@ -2094,6 +2131,7 @@ export class MerchantScene extends Phaser.Scene {
       const position = this.poiPosition(poi);
       const label = this.add.text(position.x, position.y - 14 * homeScale, poi.name, { fontSize: "10px", color: UI_INK.title, stroke: UI_INK.outline, strokeThickness: 3 }).setOrigin(0.5);
       world.add(label);
+      label.setDepth(100000);
     }
     this.homeWorld = world;
     this.dungeonMaskShape = this.make.graphics({ x: 0, y: 0 });
@@ -2102,6 +2140,75 @@ export class MerchantScene extends Phaser.Scene {
     world.setMask(mask);
     this.homeBackdrop?.setMask(mask);
     this.updateHomePresentation(true);
+  }
+
+  /** Furniture is in the map; contact shadows and stock are independent world layers. */
+  private renderShopDisplay(world: Phaser.GameObjects.Container): void {
+    const slots = shopDisplaySlots(this.homeMap);
+    const placements = reconcileShopDisplay(this.state, slots);
+    for (const slot of slots) {
+      const shadows = this.add.graphics().setName('shop:contact-shadows').setDepth(slot.depth + .1);
+      const products = this.add.container(0, 0).setName('shop:products').setDepth(slot.depth + .2);
+      const targets = this.add.container(0, 0).setName('shop:placement-targets').setDepth(slot.depth + .3);
+      world.add([shadows, products, targets]);
+      const id = Object.keys(placements).find(uuid => placements[uuid] === slot.id);
+      const item = id ? this.state.store.find(entry => entry.uuid === id) : undefined;
+      const definition = item && itemDefinition(item);
+      if (item && definition) {
+        const art = ITEM_ART[item.definitionId];
+        const transform = displayItemTransform(art?.bounds ?? { x: 4, y: 4, width: 24, height: 24 }, slot);
+        const { x, y, shadowWidth: width } = transform;
+        shadows.fillStyle(0x201710, .18).fillRect(Math.round(x - width / 2), y - 1, width, 2);
+        shadows.fillStyle(0x201710, .30).fillRect(Math.round(x - width / 2) - 1, y - 1, width + 2, 1);
+        const sprite = this.add.image(x, y, `merchant.${definition.visualId}`)
+          .setOrigin(transform.originX, transform.originY).setScale(transform.scale).setName(`shop:item:${id}`);
+        products.add(sprite);
+      }
+      const hit = this.add.rectangle(slot.x, slot.y - slot.height / 2, slot.width, slot.height, 0xf3da9e, 1)
+        .setAlpha(.001).setName(`shop:slot:${slot.id}`).setInteractive({ useHandCursor: true });
+      hit.on("pointerover", () => { if (!this.modal && !this.inventoryView) hit.setAlpha(.18); });
+      hit.on("pointerout", () => hit.setAlpha(.001));
+      hit.on("pointerdown", () => {
+        if (this.modal || this.inventoryView) return;
+        this.openDisplaySlot(slot.id);
+      });
+      targets.add(hit);
+    }
+  }
+
+  private openDisplaySlot(slotId: string, page = 0): void {
+    const slots = shopDisplaySlots(this.homeMap);
+    const slot = slots.find(candidate => candidate.id === slotId);
+    if (!slot) return;
+    const placements = reconcileShopDisplay(this.state, slots);
+    const current = this.state.store.find(item => placements[item.uuid] === slotId);
+    const locked = !canReorganizeHomeInventory(this.state);
+    const candidates = this.state.store.filter(item => canSellInHomeShop(item) && item.uuid !== current?.uuid);
+    const choices: MenuChoice[] = [];
+    if (current) {
+      choices.push({ label: "値を付ける", disabled: locked, action: () => this.openShelfPriceMenu(current) });
+      choices.push({ label: "商品を取り下げる", disabled: locked, action: () => { toggleDisplay(this.state, current); this.closeMenu(); } });
+    }
+    for (const item of candidates.slice(page * 4, page * 4 + 4)) choices.push({
+      label: `${this.state.display.includes(item.uuid) ? "移す" : "置く"}：${itemName(item)}`,
+      disabled: locked || (!this.state.display.includes(item.uuid) && !current && this.state.display.length >= DISPLAY_CAPACITY),
+      action: () => {
+        if (!this.state.display.includes(item.uuid)) {
+          if (current) toggleDisplay(this.state, current);
+          toggleDisplay(this.state, item);
+        }
+        moveShopDisplayItem(this.state, slots, item.uuid, slotId);
+        this.state.message = `${itemName(item)}を${slot.label}に置いた。`;
+        this.closeMenu();
+        this.playHomeTradeAnimation();
+      },
+    });
+    if (page > 0) choices.push({ label: "前の商品", action: () => this.openDisplaySlot(slotId, page - 1) });
+    if ((page + 1) * 4 < candidates.length) choices.push({ label: "次の商品", action: () => this.openDisplaySlot(slotId, page + 1) });
+    if (!candidates.length && !current) choices.push({ label: "在庫管理を開く", action: () => { this.modal = undefined; this.openInventory(); this.render(); } });
+    choices.push({ label: "閉じる", action: () => this.closeMenu() });
+    this.openMenu(slot.label, [current ? `${itemName(current)}　${askingPriceFor(current)}G` : "空いている陳列場所", locked ? "営業中は配置を変更できない。" : "保管庫の商品を置ける。陳列中の商品を選ぶと場所を交換する。"], choices);
+    this.render();
   }
 
   private renderDungeon(): void {
@@ -2377,15 +2484,25 @@ export class MerchantScene extends Phaser.Scene {
     );
   }
 
-  private animateDungeonEvents(events: DungeonEvent[]): void {
+  private dungeonActorDefinitions(): Map<string, CraftpixActorDefinition> {
+    const definitions = new Map<string, CraftpixActorDefinition>();
+    const ids = ["player", ...this.state.npcs.map(npc => npc.id), ...(this.state.run?.enemies.map(enemy => enemy.id) ?? [])];
+    for (const id of ids) {
+      const appearance = dungeonActorAppearance(this.state, id);
+      const definition = appearance ? actorDefinition(appearance) : undefined;
+      if (definition) definitions.set(id, definition);
+    }
+    return definitions;
+  }
+
+  private animateDungeonEvents(events: DungeonEvent[], beforeActors = new Map<string, CraftpixActorDefinition>()): void {
     const world = this.dungeonWorld;
     if (!world || this.state.location !== "dungeon") return;
     const actor = (id: string): Phaser.GameObjects.Sprite | undefined => world.getByName(`actor:${id}`) as Phaser.GameObjects.Sprite | undefined;
     const actorDefinitionFor = (id: string): CraftpixActorDefinition | undefined => {
       // 名簿の人物を敵の表から引かないこと。詳細は dungeonActorAppearance を参照。
       const appearance = dungeonActorAppearance(this.state, id);
-      if (!appearance) return undefined;
-      return actorDefinition(appearance);
+      return (appearance ? actorDefinition(appearance) : undefined) ?? beforeActors.get(id);
     };
     const actorOffset = (id: string): Vec => {
       const guard = this.state.run?.guard;
@@ -2416,6 +2533,19 @@ export class MerchantScene extends Phaser.Scene {
         if (!sprite) continue;
         const from = event.from;
         const to = event.to;
+        const id = event.type === "move" ? event.actorId : event.enemyId;
+        const definition = actorDefinitionFor(id);
+        const dx = to.x - from.x, dy = to.y - from.y;
+        const facing = Math.abs(dx) > Math.abs(dy) ? dx < 0 ? "left" : "right" : dy < 0 ? "up" : "down";
+        this.dungeonWalkAnimations.set(id, facing);
+        if (definition && event.type === "move") {
+          const action = Math.max(Math.abs(dx), Math.abs(dy)) > 1 ? "run" : "walk";
+          this.playCraftpixActor(sprite, definition, action, facing, false);
+          const key = this.craftpixAnimationKey(definition.id, action, facing);
+          this.time.delayedCall(450, () => {
+            if (sprite.scene && sprite.anims.currentAnim?.key === key) this.playCraftpixActor(sprite, definition, "idle", facing, false);
+          });
+        }
         const center = tile / 2;
         const offset = actorOffset(event.type === "move" ? event.actorId : event.enemyId);
         sprite.setPosition(from.x * tile + center + offset.x, from.y * tile + tile + offset.y);
@@ -2425,6 +2555,14 @@ export class MerchantScene extends Phaser.Scene {
         if (sprite) this.tweens.add({ targets: sprite, x: sprite.x + 2, duration: 45, yoyo: true, repeat: 1 });
       } else if (event.type === "defeated") {
         if (event.pos) {
+          const definition = actorDefinitionFor(event.actorId);
+          const texture = definition && this.craftpixActorTexture(definition, "death");
+          if (definition && texture && definition.clips.death) {
+            const dying = this.add.sprite(event.pos.x * tile + tile / 2, event.pos.y * tile + tile, texture).setName(`effect:death:${event.actorId}`);
+            world.add(dying);
+            this.playCraftpixActor(dying, definition, "death", this.dungeonWalkAnimations.get(event.actorId) ?? "down", false);
+            dying.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => dying.destroy());
+          }
           world.add(addDefeatBurst(this, event.pos.x * tile + tile / 2, event.pos.y * tile + tile / 2, tile));
         }
       } else if (event.type === "guardMode") {
@@ -2439,13 +2577,24 @@ export class MerchantScene extends Phaser.Scene {
         if (event.targetId === "player") addEdgeFlash(this, 0, 0, MAP_W, MAP_H, 0xd83b32);
         const attacker = actor(event.attackerId);
         const target = actor(event.targetId);
-        if (!attacker || !target) continue;
+        if (!attacker) continue;
         const attackerDefinition = actorDefinitionFor(event.attackerId);
         const targetDefinition = actorDefinitionFor(event.targetId);
         const attackerDirection = this.dungeonWalkAnimations.get(event.attackerId) ?? this.playerFacing;
         const targetDirection = this.dungeonWalkAnimations.get(event.targetId) ?? "down";
-        if (attackerDefinition) this.playCraftpixActor(attacker, attackerDefinition, "attack", attackerDirection, false);
-        if (targetDefinition) this.playCraftpixActor(target, targetDefinition, "hurt", targetDirection, false);
+        if (attackerDefinition) {
+          this.playCraftpixActor(attacker, attackerDefinition, attackerDefinition.archetype === "caster" ? "cast" : "attack", attackerDirection, false);
+          attacker.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+            if (attacker.scene) this.playCraftpixActor(attacker, attackerDefinition, "idle", attackerDirection, false);
+          });
+        }
+        if (!target) continue;
+        if (targetDefinition) {
+          this.playCraftpixActor(target, targetDefinition, "hurt", targetDirection, false);
+          target.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
+            if (target.scene) this.playCraftpixActor(target, targetDefinition, "idle", targetDirection, false);
+          });
+        }
         const dx = Math.sign(target.x - attacker.x) * 5;
         const dy = Math.sign(target.y - attacker.y) * 5;
         this.tweens.add({ targets: attacker, x: attacker.x + dx, y: attacker.y + dy, duration: 55, yoyo: true, ease: "Quad.Out" });
@@ -2453,7 +2602,6 @@ export class MerchantScene extends Phaser.Scene {
         this.time.delayedCall(220, () => {
           if (!target.scene) return;
           target.clearTint();
-          if (targetDefinition) this.playCraftpixActor(target, targetDefinition, "idle", targetDirection, false);
         });
       }
     }
@@ -2533,8 +2681,12 @@ export class MerchantScene extends Phaser.Scene {
   private updateHomePresentation(immediate = false): void {
     if (!this.homeWorld || !this.homePlayer) return;
     this.homePlayer.setPosition(this.state.homePos.x, this.state.homePos.y + this.homeMap.tileSize / 2);
+    this.homeWorld.list.forEach(child => {
+      if (child instanceof Phaser.GameObjects.Sprite) child.setDepth(child.y);
+    });
+    this.homeWorld.sort('depth');
     // Small interiors use integer pixel enlargement without changing save coordinates.
-    const zoom = this.homeMap.width * this.homeMap.tileSize <= MAP_W / 2 ? 2 : 1;
+    const zoom = this.homeMap.tileSize === 16 ? 2 : 1;
     this.homeWorld.setScale(zoom);
     this.homeBackdrop?.setScale(zoom);
     const width = this.homeMap.width * this.homeMap.tileSize * zoom;
@@ -2550,9 +2702,9 @@ export class MerchantScene extends Phaser.Scene {
   }
 
   /** 家の手動レイヤーを、保存されたフレーム番号のまま描画する。 */
-  private drawHomeBackdrop(): void {
+  private drawHomeBackdrop(front: Phaser.GameObjects.Container): void {
     const map = this.homeMap;
-    const world = this.add.container(0, 0);
+    const world = this.add.container(0, 0).setDepth(-1);
     const authored = map.layers;
     const hasAuthored = authored && Object.values(authored).some((values) => values?.some(Boolean));
     for (let y = 0; y < map.height; y += 1) for (let x = 0; x < map.width; x += 1) {
@@ -2561,7 +2713,10 @@ export class MerchantScene extends Phaser.Scene {
         const cell = authored[name]?.[index];
         if (cell) {
           const resolved = resolveMapAssetFrame(cell.assetId, cell.frame, (key) => this.textures.exists(key));
-          world.add(this.add.image(x * map.tileSize + map.tileSize / 2, y * map.tileSize + map.tileSize / 2, resolved.textureKey, resolved.frame).setDisplaySize(map.tileSize, map.tileSize));
+          const geometry = propFrameGeometry(cell.assetId, cell.frame);
+          const sprite = this.add.image(x * map.tileSize + map.tileSize / 2, y * map.tileSize + map.tileSize / 2, resolved.textureKey, resolved.frame).setDisplaySize(map.tileSize, map.tileSize);
+          if (geometry) front.add(sprite.setDepth((y + geometry.depthOffset) * map.tileSize));
+          else world.add(sprite);
         }
       }
       else {
@@ -2634,8 +2789,12 @@ export class MerchantScene extends Phaser.Scene {
       const targetY = npc.center.y + Math.cos(seconds * 0.53 + npc.phase) * npc.radius.y;
       const previousX = npc.sprite.x;
       const previousY = npc.sprite.y;
-      npc.sprite.x = Phaser.Math.Linear(previousX, targetX, Math.min(1, delta / 850));
-      npc.sprite.y = Phaser.Math.Linear(previousY, targetY, Math.min(1, delta / 850));
+      const feetOffset = this.homeMap.tileSize / 2;
+      const next = moveMapPosition(this.homeMap, { x: previousX, y: previousY - feetOffset }, {
+        x: (targetX - previousX) * Math.min(1, delta / 850),
+        y: (targetY - previousY) * Math.min(1, delta / 850),
+      }, 5 * this.homeScale());
+      npc.sprite.setPosition(next.x, next.y + feetOffset);
       const horizontal = npc.sprite.x - previousX;
       const vertical = npc.sprite.y - previousY;
       const animation = Math.abs(horizontal) > Math.abs(vertical)

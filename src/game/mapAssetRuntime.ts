@@ -1,4 +1,5 @@
 import { MAP_ASSET_CATALOG } from "./mapAssetCatalog.generated";
+import { replacementMapArt } from "./retiredMapArt";
 
 export const MISSING_MAP_ASSET_TEXTURE = "map.asset.missing";
 
@@ -23,13 +24,13 @@ const MAP_ASSETS = new Map<string, typeof MAP_ASSET_CATALOG[number]>(
  * anchor is the top-left cell.
  */
 export function mapAssetFootprint(assetId: string, mapTileSize: number): number {
-  const asset = MAP_ASSETS.get(assetId);
+  const asset = MAP_ASSETS.get(replacementMapArt(assetId) ?? assetId);
   if (!asset || mapTileSize <= 0) return 1;
   return Math.max(1, Math.round(asset.tileSize / mapTileSize));
 }
 
 export function mapAssetDefinitions(assetIds: Iterable<string>): Array<typeof MAP_ASSET_CATALOG[number]> {
-  const requested = new Set(assetIds);
+  const requested = new Set([...assetIds].map(id => replacementMapArt(id) ?? id));
   return MAP_ASSET_CATALOG.filter((asset) => requested.has(asset.id));
 }
 
@@ -61,6 +62,8 @@ export function resolveMapAssetFrame(
   frame: number,
   textureAvailable: (textureKey: string) => boolean,
 ): ResolvedMapAssetFrame {
+  const replacement = replacementMapArt(assetId);
+  if (replacement) { assetId = replacement; frame = 0; }
   const asset = MAP_ASSETS.get(assetId);
   if (!asset) return warningFrame("unknown-asset");
   if (!Number.isInteger(frame) || frame < 0 || frame >= asset.frameCount) return warningFrame("invalid-frame");

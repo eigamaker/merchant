@@ -70,7 +70,7 @@ describe("canonical dungeon stairs", () => {
     map.enemyRoster = ["slime1"];
     const enemies = buildInitialEnemies(map, 1, 42);
     expect(enemies).toHaveLength(7);
-    expect(enemies.every((enemy) => enemy.actorId === "slime1" && enemy.name === "Slime1" && enemy.hp === 4 && enemy.damage === 1)).toBe(true);
+    expect(enemies.every((enemy) => enemy.actorId === "slime1" && enemy.name === "スライム 1" && enemy.hp === 4 && enemy.damage === 1)).toBe(true);
     expect(new Set(enemies.map((enemy) => `${enemy.pos.x},${enemy.pos.y}`)).size).toBe(enemies.length);
   });
 

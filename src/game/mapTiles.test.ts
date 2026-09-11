@@ -24,4 +24,11 @@ describe("logical map tiles", () => {
     expect(moveMapPosition(map, { x: 24, y: 40 }, { x: 16, y: 0 }, 3)).toEqual({ x: 24, y: 40 });
     expect(moveMapPosition(map, { x: 24, y: 24 }, { x: 16, y: 0 }, 3)).toEqual({ x: 40, y: 24 });
   });
+  it("cannot tunnel through a one-cell wall during a long frame", () => {
+    const map = { width: 8, height: 3, tileSize: 16, terrain: Array(24).fill("home.floor"), collision: Array(24).fill(true) };
+    for (let y = 0; y < 3; y++) map.collision[y * 8 + 3] = false;
+    const result = moveMapPosition(map, { x: 24, y: 24 }, { x: 80, y: 0 }, 3);
+    expect(result.x).toBeLessThan(48 - 3);
+    expect(isMapPositionWalkable(map, result, 3)).toBe(true);
+  });
 });

@@ -1,0 +1,177 @@
+{
+  "version": 1,
+  "id": "town-mage",
+  "label": "街の魔術師",
+  "sourcePack": "unified-pixel-2026",
+  "roles": [
+    "npc",
+    "townsfolk"
+  ],
+  "scale": 1,
+  "origin": {
+    "x": 0.5,
+    "y": 0.875
+  },
+  "clips": {
+    "idle": {
+      "action": "idle",
+      "path": "imported/town-mage/idle.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "columns": 4,
+      "rows": 4,
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "frameRate": 4,
+      "repeat": -1
+    },
+    "walk": {
+      "action": "walk",
+      "path": "imported/town-mage/walk.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "columns": 4,
+      "rows": 4,
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "frameRate": 8,
+      "repeat": -1
+    },
+    "run": {
+      "action": "run",
+      "path": "imported/town-mage/run.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "columns": 4,
+      "rows": 4,
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "frameRate": 12,
+      "repeat": -1
+    },
+    "attack": {
+      "action": "attack",
+      "path": "imported/town-mage/attack.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "columns": 4,
+      "rows": 4,
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "frameRate": 8,
+      "repeat": 0
+    },
+    "walkAttack": {
+      "action": "walkAttack",
+      "path": "imported/town-mage/walkAttack.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "columns": 4,
+      "rows": 4,
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "frameRate": 8,
+      "repeat": 0
+    },
+    "runAttack": {
+      "action": "runAttack",
+      "path": "imported/town-mage/runAttack.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "columns": 4,
+      "rows": 4,
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "frameRate": 8,
+      "repeat": 0
+    },
+    "hurt": {
+      "action": "hurt",
+      "path": "imported/town-mage/hurt.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "columns": 4,
+      "rows": 4,
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "frameRate": 8,
+      "repeat": 0
+    },
+    "death": {
+      "action": "death",
+      "path": "imported/town-mage/death.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "columns": 4,
+      "rows": 4,
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "frameRate": 8,
+      "repeat": 0
+    },
+    "interact": {
+      "action": "interact",
+      "path": "imported/town-mage/interact.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "columns": 4,
+      "rows": 4,
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "frameRate": 8,
+      "repeat": 0
+    },
+    "cast": {
+      "action": "cast",
+      "path": "imported/town-mage/cast.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "columns": 4,
+      "rows": 4,
+      "directions": [
+        "down",
+        "left",
+        "right",
+        "up"
+      ],
+      "frameRate": 8,
+      "repeat": 0
+    }
+  }
+}

@@ -2,7 +2,12 @@
 
 ## Web版ゲーム設計・実装計画
 
-- [GAMEPLAY_IMPLEMENTATION_PLAN.md](GAMEPLAY_IMPLEMENTATION_PLAN.md) — Web版の自宅店舗⇄ダンジョンのゲームループ、直接操作、インベントリ、店舗運営、実装順序
+今後のゲーム追加改善では、まず `CORE_STORY.md` と `STORY_SYSTEM_ROADMAP.md` を参照する。設計の方向と現在の実装は区別し、旧資料と衝突する場合は更新日と判断履歴を確認する。
+
+- [CORE_STORY.md](CORE_STORY.md) — 2026-09-11のコアストーリー、商人の動機、喪失・所有・町の変化、時間と情報の基準、未確定事項
+- [STORY_SYSTEM_ROADMAP.md](STORY_SYSTEM_ROADMAP.md) — コアストーリーと既存コードの照合、旧判断との差分、構成提案、段階的な改善順。次の設計対象は冒険者の遠征
+- 提供原文: [初期コンセプト](design-sources/2026-09-11/CORE_CONCEPT_DRAFT.md) / [ストーリー・時間・情報・所有の更新版](design-sources/2026-09-11/STORY_SYSTEM_UPDATE.md)。矛盾する内容は更新版を優先する
+- [GAMEPLAY_IMPLEMENTATION_PLAN.md](GAMEPLAY_IMPLEMENTATION_PLAN.md) — Web版の初期実装計画。自宅店舗⇄ダンジョン、直接操作、インベントリ、店舗運営の出発点
 - [HOME_DUNGEON_AUTOTILE_PLAN.md](HOME_DUNGEON_AUTOTILE_PLAN.md) — 旧街一枚絵を廃止し、家／複数階層ダンジョンと手動配置レイヤーへ移行する実装仕様
 - [DUNGEON_THEMES.md](DUNGEON_THEMES.md) — 手続き生成ダンジョン、テーマ契約、壁マスク順、アセット差し替え・検証手順
 - [MERCHANT_LOOP.md](MERCHANT_LOOP.md) — 商人ゲームループの仕様。道具袋、護衛、露店、値付け、名簿、銘、遺体

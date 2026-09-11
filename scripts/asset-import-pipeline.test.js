@@ -90,7 +90,7 @@ describe("asset import pipeline", () => {
     expect(report.actors[0].clips).toHaveProperty("attack");
     expect(report.actors[1].clips).not.toHaveProperty("attack");
     expect(report.mapTiles.filter((entry) => entry.selected)).toHaveLength(0);
-  });
+  }, 30000); // A real ZIP with hundreds of PNGs can exceed 5s on Windows under load.
 
   it("parses a static TMX tileset and its image geometry", () => {
     const files = {

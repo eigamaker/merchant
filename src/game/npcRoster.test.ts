@@ -83,7 +83,7 @@ describe("who a generated adventurer looks like", () => {
   it("spreads the roster across every approved sheet", () => {
     const state = createNewGame();
     const worn = new Set(state.npcs.filter((npc) => npc.id.startsWith("adventurer-")).map((npc) => npc.appearanceId));
-    // Thirty people over three sheets: a table this small should use them all.
+    // New sheets must appear in the roster, even when random name hashes cluster.
     expect(worn).toEqual(new Set(npcActorIds("adventurer")));
   });
 

@@ -300,6 +300,7 @@ function applyStampCell(map: StampMap, x: number, y: number, cell: PaletteCell, 
   map.layers[targetLayer][index] = { assetId: cell.assetId, frame: cell.frame };
   const collision = attributes.mode === "palette" ? (cell.walkable ? "walkable" : "blocked") : attributes.collision;
   if (collision !== "unchanged") map.collision[index] = collision === "walkable";
+  if (attributes.mode === 'palette') applyPropCollision(map);
 }
 
 /** Atomically paints a sparse stamp at its top-left origin. */
@@ -369,3 +370,4 @@ export class PaletteHistory {
   markSaved(): void { this.saved = JSON.stringify(this.layout); }
   reload(layout: PaletteLayout): void { this.layout = clonePaletteLayout(layout); this.undoStack = []; this.redoStack = []; this.markSaved(); }
 }
+import { applyPropCollision } from '../game/propGeometry';

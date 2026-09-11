@@ -659,6 +659,8 @@ export interface GameState {
   store: ItemInstance[];
   archive: ItemInstance[];
   display: string[];
+  /** Product UUID -> furniture-local display position. Optional for old saves. */
+  displayPlacements?: Record<string, string>;
   events: TimedEvent[];
   /** 迷宮に残る遺体。階の再生成を越えて持ち越す。 */
   dungeonCorpses: DungeonCorpse[];

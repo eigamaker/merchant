@@ -228,7 +228,7 @@ describe("stacked frame detection", () => {
   });
 
   it("reads the built-in stair sheet the way the art is drawn", () => {
-    const asset = readTileSheets(path.resolve("assets-src/map-tiles/sheets")).find((entry) => entry.id === "mapchip2-mapchip-base-s08");
+    const asset = readTileSheets(path.resolve("assets-src/map-tiles/sheets")).find((entry) => entry.id === "unified.stairs");
     const detected = new Set(detectStackedFrames(PNG.sync.read(fs.readFileSync(asset.sourceFile)), asset));
     // Frames 6+14 and 7+15 are ladders two cells tall.
     expect(detected.has(14)).toBe(true);
@@ -277,7 +277,7 @@ describe("stacked frame detection", () => {
       expect(theme.objects.corpse.height).toBeUndefined();
     }
     const unknownKind = structuredClone(themes);
-    unknownKind.themes[0].objects.lantern = { assetId: "mapchip2-mapchip-base-s18", frame: 0 };
+    unknownKind.themes[0].objects.lantern = { assetId: "unified.rubble", frame: 0 };
     expect(() => validateDungeonThemes(unknownKind, assets)).toThrow(/objects has unknown kind lantern/);
     const unknownAsset = structuredClone(themes);
     unknownAsset.themes[0].objects.chest.assetId = "removed-sheet";
@@ -291,9 +291,9 @@ describe("stacked frame detection", () => {
   it("rejects a two-cell stair with no room above it on the sheet", () => {
     const assets = readTileSheets(path.resolve("assets-src/map-tiles/sheets"));
     const themes = structuredClone(readDungeonThemes(DUNGEON_THEME_FILE, assets));
-    themes.themes[0].stairsUp = { assetId: "mapchip2-mapchip-base-s08", frame: 3, height: 2 };
+    themes.themes[0].stairsUp = { assetId: "unified.stairs", frame: 3, height: 2 };
     expect(() => validateDungeonThemes(themes, assets)).toThrow(/height 2 has no upper half/);
-    themes.themes[0].stairsUp = { assetId: "mapchip2-mapchip-base-s08", frame: 14, height: 3 };
+    themes.themes[0].stairsUp = { assetId: "unified.stairs", frame: 14, height: 3 };
     expect(() => validateDungeonThemes(themes, assets)).toThrow(/height must be 1 or 2/);
   });
 });

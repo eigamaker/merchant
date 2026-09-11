@@ -31,7 +31,7 @@ export function buildActorAssets({ sourceDir = ACTOR_SOURCE_DIR, outputDir = ACT
   const records = readDefinitions(sourceDir);
   const actorSettings = readActorSettings(actorSettingsFile);
   fs.mkdirSync(outputDir, { recursive: true });
-  for (const entry of fs.readdirSync(outputDir)) fs.rmSync(path.join(outputDir, entry), { recursive: true, force: true });
+  for (const entry of fs.readdirSync(outputDir)) fs.rmSync(path.join(outputDir, entry), { recursive: true, force: true, maxRetries: 5, retryDelay: 100 });
   const definitions = [];
   for (const { root, definition } of records) {
     if (!definition || typeof definition.id !== "string" || !definition.id) throw new Error("actor definition id is required");

@@ -291,7 +291,7 @@ async function submitActorRegistration(): Promise<void> {
 
 const ACTOR_REGISTER_API = "/__map-editor/actors/register";
 const ACTOR_SHEET_ROWS = 4;
-const ACTOR_ACTIONS = ["idle", "walk", "run", "attack", "walkAttack", "runAttack", "hurt", "death"] as const;
+const ACTOR_ACTIONS = ["idle", "walk", "run", "attack", "walkAttack", "runAttack", "hurt", "death", "interact", "cast"] as const;
 const ACTOR_REGISTER_ROLES = ["townsfolk", "adventurer", "enemy"] as const;
 /** Mirrors MONSTER/HUMAN_DIRECTION_ROWS in scripts/actor-registration.mjs. */
 const DIRECTION_ROW_ORDERS = { human: ["down", "left", "right", "up"], monster: ["down", "up", "left", "right"] } as const;
