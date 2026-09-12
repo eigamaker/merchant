@@ -2,6 +2,7 @@ import { isWalkableCell, samePosition } from "./dungeonRules";
 import { MERCHANT_ITEM_DEFINITIONS } from "./merchantContent";
 import { adjustGuardProfile, ensureGuardProfile } from "./guardProfiles";
 import { recordBond } from "./npcBonds";
+import { markMerchantGoods } from "./npcGear";
 import { wantsItem } from "./npcDemand";
 import { bagCapacity } from "./merchantSystems";
 import { dungeonVerdict } from "./pricing";
@@ -298,6 +299,7 @@ function completeStallSale(
   item.history.push({ day: state.day, type: "sold", detail: `地下${run.floor}階の露店で${npc.name}へ売却`, value: price });
   item.historyV2 ??= [];
   item.historyV2.push({ day: state.day, type: "sold", npcId: npc.id, price, detail: `地下${run.floor}階の露店で売却` });
+  markMerchantGoods(state, npc, item, "sold");
 
   // 同じ値でも、誰に売ったかで残るものが変わる。
   const profile = ensureGuardProfile(state, npc);

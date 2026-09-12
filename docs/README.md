@@ -6,6 +6,7 @@
 
 - [CORE_STORY.md](CORE_STORY.md) — 2026-09-11のコアストーリー、商人の動機、喪失・所有・町の変化、時間と情報の基準、未確定事項
 - [STORY_SYSTEM_ROADMAP.md](STORY_SYSTEM_ROADMAP.md) — コアストーリーと既存コードの照合、旧判断との差分、構成提案、段階的な改善順。次の設計対象は冒険者の遠征
+- [STORY_SYSTEM_PROPOSALS.md](STORY_SYSTEM_PROPOSALS.md) — 段階2以降の設計提案（S-2〜S-10）。コードで確認した差分、案ごとの規模と乗せ先、投入順、保存と移行、判断が必要な点
 - 提供原文: [初期コンセプト](design-sources/2026-09-11/CORE_CONCEPT_DRAFT.md) / [ストーリー・時間・情報・所有の更新版](design-sources/2026-09-11/STORY_SYSTEM_UPDATE.md)。矛盾する内容は更新版を優先する
 - [GAMEPLAY_IMPLEMENTATION_PLAN.md](GAMEPLAY_IMPLEMENTATION_PLAN.md) — Web版の初期実装計画。自宅店舗⇄ダンジョン、直接操作、インベントリ、店舗運営の出発点
 - [HOME_DUNGEON_AUTOTILE_PLAN.md](HOME_DUNGEON_AUTOTILE_PLAN.md) — 旧街一枚絵を廃止し、家／複数階層ダンジョンと手動配置レイヤーへ移行する実装仕様

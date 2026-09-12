@@ -69,7 +69,7 @@ import { ensureGuardProfile, guardConditionLabel, guardObservationLines, guardTr
 import { bondSummary, npcBonds } from "../game/npcBonds";
 import { demandFor, demandLabel } from "../game/npcDemand";
 import { acceptBulkOffer, bulkOrders, canDeliverBulkOrder, declineBulkOffer, deliverBulkOrder, refreshBulkOffer, stockedFor } from "../game/bulkOrders";
-import { carriedGearItems, entrustGear, gearSlots, gearSlotFor, isRetained, npcCombatStats, reclaimGear, type GearSlotName } from "../game/npcGear";
+import { carriedGearItems, entrustGear, entrustedSlots, gearSlotFor, isRetained, npcCombatStats, reclaimGear, type GearSlotName } from "../game/npcGear";
 import { itemLegendLines, wasEntrusted } from "../game/itemLegend";
 import {
   SUPPLY_RULES,
@@ -1394,8 +1394,9 @@ export class MerchantScene extends Phaser.Scene {
     const adventurer = this.state.run?.adventurers.find((entry) => entry.npcId === npcId);
     const npc = this.state.npcs.find((entry) => entry.id === npcId);
     if (!adventurer || !npc) { this.closeMenu(); return; }
-    // 預けた装備は商品ではない。引き取るものであって、8割の値で買い戻すものではない。
-    const entrustedIds = new Set(gearSlots(npc).map((slot) => slot.itemId));
+    // 託した装備は商品ではない。引き取るものであって、8割の値で買い戻すものではない。
+    // 売った品は別。代金を受け取った以上、買い戻すのが筋である。
+    const entrustedIds = new Set(entrustedSlots(this.state, npc).map((slot) => slot.itemId));
     const stock = npc.inventoryIds
       .filter((id) => !entrustedIds.has(id))
       .map((id) => this.state.itemsById[id])
@@ -1824,16 +1825,16 @@ export class MerchantScene extends Phaser.Scene {
     const terms = carried.map((item) => {
       const slot = gearSlotFor(item);
       const entry = slot ? npc.gear?.[slot] : undefined;
-      return `${itemName(item)}（${entry?.withheld ? "未返却" : entry?.term === "given" ? "譲渡" : "貸与"}）`;
+      return entry?.withheld ? `${itemName(item)}（返却拒否）` : itemName(item);
     });
-    return `預けた装備: ${terms.join("　")}`;
+    return `託した装備: ${terms.join("　")}`;
   }
 
   /**
-   * 装備の預け入れ画面。
+   * 装備を託す画面。
    *
-   * 貸与は次に町で会ったときに返ってくる。譲渡は返らないが、信頼が大きく動き、
-   * その武器が持ち主の物語を背負っていく。
+   * 貸すか譲るかは選ばせない。決めるのは手放すかどうかだけで、返ってくるかどうかは
+   * 引き取りを申し出たときに相手が決める。
    */
   private openNpcGear(npcId: string, onBack: () => void = () => this.openEscortProfile(npcId)): void {
     const npc = this.state.npcs.find((entry) => entry.id === npcId);
@@ -1844,24 +1845,25 @@ export class MerchantScene extends Phaser.Scene {
       const label = slot === "weapon" ? "武器" : "防具";
       if (!entry) {
         return [{
-          label: `${label}を預ける`,
+          label: `${label}を託す`,
           disabled: !reorganizable,
           action: () => this.openEntrustGear(npc.id, slot, onBack),
         }];
       }
       const item = this.state.itemsById[entry.itemId];
+      const name = item ? itemName(item) : "?";
       return [{
-        label: entry.term === "given" ? `${label}: ${item ? itemName(item) : "?"}（譲渡済み）` : `${label}を引き取る: ${item ? itemName(item) : "?"}`,
-        disabled: entry.term === "given" || !reorganizable,
+        label: entry.withheld ? `${label}: ${name}（返してもらえない）` : `${label}を引き取る: ${name}`,
+        disabled: Boolean(entry.withheld) || !reorganizable,
         action: () => {
           this.state.message = reclaimGear(this.state, npc, slot).message;
           this.openNpcGear(npc.id, onBack);
         },
       }];
     });
-    this.openMenu(`${npc.name}へ預ける`, [
-      reorganizable ? "貸した品は次に町で会ったときに返してもらう。譲った品は返らない。" : "接客中は在庫を動かせない。",
-      this.gearSummaryLine(npc) || "まだ何も預けていない。",
+    this.openMenu(`${npc.name}へ託す`, [
+      reorganizable ? "託した品は自動では戻らない。返してほしければ、こちらから申し出る。" : "接客中は在庫を動かせない。",
+      this.gearSummaryLine(npc) || "まだ何も託していない。",
     ], [...slotChoices, { label: "戻る", action: onBack }]);
   }
 
@@ -1872,20 +1874,17 @@ export class MerchantScene extends Phaser.Scene {
     // 迷宮では鞄の中の物しか渡せない。保管庫は家にある。
     const source = this.state.location === "home" ? [...this.state.inventory, ...this.state.store] : this.state.inventory;
     const candidates = source.filter((item) => gearSlotFor(item) === slot).slice(0, 12);
-    const hand = (itemId: string, term: "lent" | "given"): void => {
-      this.state.message = entrustGear(this.state, npc, itemId, term).message;
+    const hand = (itemId: string): void => {
+      this.state.message = entrustGear(this.state, npc, itemId).message;
       this.openNpcGear(npc.id, onBack);
     };
     this.openMenu(`${slot === "weapon" ? "武器" : "防具"}を選ぶ`, [
-      candidates.length ? "貸すか譲るかを選ぶ。譲ると信頼が大きく上がる。" : "預けられる品を持っていない。",
+      candidates.length ? "託した品は、返してくれと言うまで相手の手にある。" : "託せる品を持っていない。",
     ], [
-      ...candidates.flatMap((item) => {
+      ...candidates.map((item) => {
         const definition = itemDefinition(item);
         const power = slot === "weapon" ? `攻+${definition.attack ?? 0}` : `防+${definition.defense ?? 0}`;
-        return [
-          { label: `貸す: ${itemName(item)}（${power}）`, action: () => hand(item.uuid, "lent") },
-          { label: `譲る: ${itemName(item)}（${power}）`, action: () => hand(item.uuid, "given") },
-        ];
+        return { label: `託す: ${itemName(item)}（${power}）`, action: () => hand(item.uuid) };
       }),
       { label: "戻る", action: () => this.openNpcGear(npc.id, onBack) },
     ]);

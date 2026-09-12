@@ -648,6 +648,66 @@ describe("independent dungeon adventurers", () => {
     expect(npc.inventoryIds).not.toContain(potion.uuid);
   });
 
+  it("drains a multi-charge flask one sip at a time", () => {
+    const state = createNewGame();
+    const adventurer = placeBesidePlayer(state);
+    const npc = state.npcs.find((entry) => entry.id === adventurer.npcId)!;
+    npc.inventoryIds = npc.inventoryIds.filter((id) => state.itemsById[id]?.definitionId !== "minor-healing-potion");
+    adventurer.maxHp = 12;
+    adventurer.hp = 2;
+    adventurer.gold = 20_000;
+    const flask = createItem(state, "field-flask");
+    state.inventory.push(flask);
+
+    performDungeonCommand(state, { type: "sellToAdventurer", npcId: npc.id, itemId: flask.uuid });
+    expect(npc.inventoryIds).toContain(flask.uuid);
+
+    // 携行薬瓶は5回ぶん。一口飲んでも手を離れない。
+    expect(flask.chargesLeft).toBe(4);
+    expect(npc.inventoryIds).toContain(flask.uuid);
+    expect(flask.location).toEqual({ kind: "npcInventory", npcId: npc.id });
+  });
+
+  it("tells a sold blade from an entrusted one on the body", () => {
+    const state = createNewGame();
+    const adventurer = placeBesidePlayer(state);
+    const npc = state.npcs.find((entry) => entry.id === adventurer.npcId)!;
+    const sold = createItem(state, "iron-sword");
+    sold.merchantOrigin = "sold";
+    npc.inventoryIds.push(sold.uuid);
+    const run = state.run!;
+    run.bodies.push({ id: "body-sold", name: npc.name, pos: { ...run.player }, loot: [sold], inspected: false, npcId: npc.id });
+
+    performDungeonCommand(state, { type: "inspectBody", bodyId: "body-sold" });
+    // 代金を受け取った剣を「預けた品」とは呼べない。
+    expect(state.message).not.toContain("あなたが預けた");
+
+    sold.merchantOrigin = "entrusted";
+    run.bodies[run.bodies.length - 1]!.inspected = false;
+    performDungeonCommand(state, { type: "inspectBody", bodyId: "body-sold" });
+    expect(state.message).toContain("あなたが預けた");
+  });
+
+  it("will not drink from an empty flask", () => {
+    const state = createNewGame();
+    const adventurer = placeBesidePlayer(state);
+    const npc = state.npcs.find((entry) => entry.id === adventurer.npcId)!;
+    npc.inventoryIds = npc.inventoryIds.filter((id) => state.itemsById[id]?.definitionId !== "minor-healing-potion");
+    adventurer.maxHp = 12;
+    adventurer.hp = 2;
+    adventurer.gold = 20_000;
+    const flask = createItem(state, "field-flask");
+    flask.chargesLeft = 0;
+    state.inventory.push(flask);
+
+    performDungeonCommand(state, { type: "sellToAdventurer", npcId: npc.id, itemId: flask.uuid });
+    expect(npc.inventoryIds).toContain(flask.uuid);
+
+    expect(adventurer.hp).toBe(2);
+    expect(flask.chargesLeft).toBe(0);
+    expect(npc.inventoryIds).toContain(flask.uuid);
+  });
+
   it("creates almost no supply demand in the shallows and sells batches at a deep-floor premium", () => {
     const state = createNewGame();
     const adventurer = placeBesidePlayer(state);
@@ -963,7 +1023,7 @@ describe("save migration", () => {
     const migrated = migrateSaveState(legacy as never);
     const carried = migrated as unknown as Record<string, unknown>;
 
-    expect(migrated.version).toBe(15);
+    expect(migrated.version).toBe(16);
     for (const key of ["quests", "customers", "guards", "story", "refusedOffers", "guildReputation"]) {
       expect(carried[key]).toBeUndefined();
     }

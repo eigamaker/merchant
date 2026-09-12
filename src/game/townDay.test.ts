@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { beginExpedition, createItem, createNewGame } from "./engine";
 import { restUntilMorning } from "./merchantSystems";
-import { FLOOR_ADVENTURER_MAX, announceSingularFind, preferredDelveFloor, resolveDelveOutcome, simulateTownDay } from "./townDay";
+import { FLOOR_ADVENTURER_MAX, MEDICINE_SAVE_BAND, announceSingularFind, delveDeathChance, preferredDelveFloor, resolveDelveOutcome, simulateTownDay } from "./townDay";
 import { ensureGuardProfile } from "./guardProfiles";
 import { ADVENTURER_ROSTER_TARGET } from "./npcRoster";
 import { escortFeeForNpc } from "./merchantEconomy";
 import { ADVENTURER_RANKS } from "./merchantContent";
 import { DUNGEON_MAX_FLOOR } from "./dungeonDifficulty";
-import type { GameState } from "./types";
+import type { GameState, NpcRecord, NpcStatus } from "./types";
 
 /** 夜まで進めてから寝る。町の一日が回る唯一の入口。 */
 function sleepUntilNextMorning(state: GameState): void {
@@ -220,5 +220,104 @@ describe("一品物の噂", () => {
     const sword = createItem(state, "iron-sword", 3);
     expect(announceSingularFind(state, sword)).toBe(false);
     expect(state.npcs.some((npc) => npc.profession === "collector")).toBe(false);
+  });
+});
+
+describe("the merchant's medicine, out of sight", () => {
+  /** 商人が渡した薬を一本持たせる。 */
+  function handMedicine(state: GameState, npc: NpcRecord, definitionId = "field-flask"): void {
+    const medicine = createItem(state, definitionId);
+    medicine.owner = npc.id;
+    medicine.location = { kind: "npcInventory", npcId: npc.id };
+    medicine.merchantOrigin = "sold";
+    medicine.merchantDay = state.day;
+    npc.inventoryIds.push(medicine.uuid);
+  }
+
+  /** その日その人を、危うい深さへ潜らせて決着させる。乱数は日付とIDから決まる。 */
+  function runDelve(base: GameState, npcId: string, day: number, hand?: (state: GameState, npc: NpcRecord) => void): { status: NpcStatus; state: GameState } {
+    const state = structuredClone(base);
+    state.day = day;
+    state.lastSimulatedDay = day - 1;
+    const npc = state.npcs.find((entry) => entry.id === npcId)!;
+    npc.status = "delving";
+    npc.delve = { floor: DUNGEON_MAX_FLOOR, departedDay: day - 1 };
+    npc.conditionHp = 1;
+    hand?.(state, npc);
+    simulateTownDay(state);
+    return { status: state.npcs.find((entry) => entry.id === npcId)!.status, state };
+  }
+
+  /** 素手なら死ぬ日を探す。薬を持たせたときにどうなるかで、帯の内か外かが分かる。 */
+  function findDeadlyDay(base: GameState, npcId: string, savedByMedicine: boolean): number {
+    for (let day = base.day + 1; day < base.day + 300; day += 1) {
+      if (runDelve(base, npcId, day).status !== "dead") continue;
+      const rescued = runDelve(base, npcId, day, (state, npc) => handMedicine(state, npc)).status !== "dead";
+      if (rescued === savedByMedicine) return day;
+    }
+    throw new Error("該当する日が見つからなかった");
+  }
+
+  function victim(state: GameState): NpcRecord {
+    return state.npcs.filter((npc) => npc.adventurer && npc.id.startsWith("adventurer-"))[0]!;
+  }
+
+  it("spends a charge of the merchant's medicine instead of dying", () => {
+    const base = createNewGame();
+    const npc = victim(base);
+    const day = findDeadlyDay(base, npc.id, true);
+
+    const { status, state } = runDelve(base, npc.id, day, (inner, entry) => handMedicine(inner, entry));
+
+    expect(status).toBe("recovering");
+    const flask = Object.values(state.itemsById).find((item) => item.definitionId === "field-flask")!;
+    // 携行薬瓶は5回ぶん。一口だけ減り、まだ手元にある。
+    expect(flask.chargesLeft).toBe(4);
+    expect(state.events.some((event) => event.id.startsWith(`medicine-${npc.id}-`))).toBe(true);
+  });
+
+  it("does not spend a potion the merchant never sold", () => {
+    const base = createNewGame();
+    const npc = victim(base);
+    const day = findDeadlyDay(base, npc.id, true);
+
+    // 同じ日、同じ薬。ただし出どころが無い —— 迷宮で自分が拾った一本である。
+    const { status } = runDelve(base, npc.id, day, (state, entry) => {
+      const potion = createItem(state, "field-flask");
+      potion.owner = entry.id;
+      potion.location = { kind: "npcInventory", npcId: entry.id };
+      entry.inventoryIds.push(potion.uuid);
+    });
+
+    expect(status).toBe("dead");
+  });
+
+  it("cannot buy back a death that was never close", () => {
+    const base = createNewGame();
+    const npc = victim(base);
+    // 帯の外で死ぬ日。薬を持たせても覆らない。
+    const day = findDeadlyDay(base, npc.id, false);
+
+    const { status, state } = runDelve(base, npc.id, day, (inner, entry) => handMedicine(inner, entry));
+
+    expect(status).toBe("dead");
+    // 覆らなかったのだから、薬も減らない。
+    const flask = Object.values(state.itemsById).find((item) => item.definitionId === "field-flask")!;
+    expect(flask.chargesLeft).toBeUndefined();
+  });
+
+  it("keeps delveDeathChance and resolveDelveOutcome in agreement", () => {
+    for (const rank of ["E", "C", "A"] as const) {
+      for (const floor of [1, 8, 20]) {
+        for (const hpRatio of [0.2, 1]) {
+          const input = { rank, floor, hpRatio, courage: 50, discipline: 50, gearPower: 4 };
+          const death = delveDeathChance(input);
+          expect(resolveDelveOutcome({ ...input, roll: death - 0.0001 })).toBe("died");
+          expect(resolveDelveOutcome({ ...input, roll: death })).not.toBe("died");
+          // 帯の下half は薬でも覆せない領域である。
+          expect(death * MEDICINE_SAVE_BAND).toBeLessThan(death);
+        }
+      }
+    }
   });
 });

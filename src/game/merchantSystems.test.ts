@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { DISPLAY_CAPACITY, beginExpedition, createItem, createNewGame, moveInventoryItems, moveStoreItemsToInventory, setDisplayedItems } from "./engine";
 import { prepareCustomerPurchaseRequest } from "./merchantEconomy";
+import { ensureGuardProfile } from "./guardProfiles";
 import {
+  advanceTime,
+  advanceWorldDay,
   buySupply,
   canOpenShop,
   closeShopSession,
@@ -121,6 +124,38 @@ describe("v6 merchant systems", () => {
     expect(restUntilMorning(state)).toBe(true);
     expect(state.day).toBe(day + 1);
     expect(state.timeSlot).toBe("morning");
+  });
+
+  it("runs the same day whether the merchant slept or the clock rolled over", () => {
+    // 宿で朝を迎えるのと、町で時計が一巡するのは、世界にとって同じ一日でなければならない。
+    // 遠征と報せの遅延を載せる前に、この一致をテストで縛っておく。
+    const slept = createNewGame();
+    const ticked = structuredClone(slept);
+
+    restUntilMorning(slept);
+    advanceTime(ticked, 4);
+
+    expect(ticked.day).toBe(slept.day);
+    expect(ticked.timeSlot).toBe(slept.timeSlot);
+    expect(JSON.stringify(ticked.npcs)).toBe(JSON.stringify(slept.npcs));
+    expect(JSON.stringify(ticked.knowledge)).toBe(JSON.stringify(slept.knowledge));
+    expect(JSON.stringify(ticked.events)).toBe(JSON.stringify(slept.events));
+  });
+
+  it("decays stress before anyone decides to depart", () => {
+    // 消耗が抜けるのは、冒険者が今日を決める前でなければならない。順序を入れ替えると
+    // すべての出発判定が変わるので、暗黙だった依存をここで固定する。
+    const state = createNewGame();
+    const resting = state.npcs.filter((npc) => npc.adventurer && npc.status === "inTown");
+    expect(resting.length).toBeGreaterThan(0);
+    for (const npc of resting) ensureGuardProfile(state, npc).stress = 12;
+
+    advanceWorldDay(state);
+
+    // resetDailySystems が町の滞在者から12を抜くので、朝を迎えた時点で消耗は残らない。
+    for (const npc of resting) expect(ensureGuardProfile(state, npc).stress).toBe(0);
+    // そのうえで、その朝の出発判断が行われている。
+    expect(state.lastSimulatedDay).toBe(state.day);
   });
 
   it("leaves weapons and armour as merchandise, since the merchant cannot wear them", () => {

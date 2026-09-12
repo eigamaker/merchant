@@ -17,11 +17,16 @@ export const CORPSE_LEDGER_LIMIT = 12;
 /** 銘や功績を負った品が残っている遺体は、長く待ってくれる。 */
 export const KEEPSAKE_PERSIST_DAYS = 14;
 
-/** 物語を背負った品を抱えているか。抱えていれば、迷宮はすぐには呑まない。 */
+/**
+ * 物語を背負った品を抱えているか。抱えていれば、迷宮はすぐには呑まない。
+ *
+ * 銘を得た品か、商人が託した品だけ。**売った品は数えない** —— 売った革鎧まで形見に
+ * すると、12件の台帳が並の遺体で埋まり、本当に取りに行きたい遺体が押し出される。
+ */
 function holdsKeepsake(state: GameState, lootIds: readonly string[]): boolean {
   return lootIds.some((id) => {
     const item = state.itemsById[id];
-    return Boolean(item && (item.currentName || item.deeds));
+    return Boolean(item && (item.currentName || item.merchantOrigin === "entrusted"));
   });
 }
 

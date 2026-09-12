@@ -152,13 +152,13 @@ export function assignCounterName(state: GameState, item: ItemInstance, npc: Npc
 }
 
 /**
- * 商人が預けた装備か。
+ * 商人が託した品か。
  *
- * 功績は `recordGearDeed` でしか付かず、それは預かった装備にしか走らない。
- * だから功績の有無が、そのまま「これは自分が託した品だ」の印になる。
+ * 以前は功績の有無で代用していたが、`assignCounterName` が店頭で売った一点物にも
+ * 功績を作るため、**売った品を「預けた」と呼んでいた。** 出どころを直接見る。
  */
 export function wasEntrusted(item: ItemInstance): boolean {
-  return item.deeds !== undefined;
+  return item.merchantOrigin === "entrusted";
 }
 
 /** インベントリ詳細に出す由来。最大3行。 */

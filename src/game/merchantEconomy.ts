@@ -4,7 +4,7 @@ import { hasBond, recordBond, retainedNpcIds } from "./npcBonds";
 import { ensureRosterPopulation, seedOpeningRosterActivity } from "./npcRoster";
 import { corpseLootIds } from "./dungeonCorpses";
 import { pruneKnowledge } from "./playerKnowledge";
-import { gearSlots, isRetained, RETAINER_FEE_RATE } from "./npcGear";
+import { entrustedSlots, gearSlots, isRetained, markMerchantGoods, merchantMedicine, RETAINER_FEE_RATE } from "./npcGear";
 import { assignCounterName } from "./itemLegend";
 import { marketPrice, shopVerdict, type ShopReaction } from "./pricing";
 import { demandMultiplier, wantsItem } from "./npcDemand";
@@ -52,6 +52,41 @@ export function reconcileSingularLedger(state: GameState): void {
   state.singularItemIds = state.singularItemIds.filter((id) => alive.has(id));
 }
 
+/**
+ * 売った品のうち、世界が覚えている数。
+ *
+ * 託した装備には `ENTRUSTED_NPC_LIMIT` という上限があるが、売るほうには無い。
+ * 全部覚えていると生存者30人 × 2枠でセーブが跳ねるので、ここで蓋をする。
+ * 忘れられた品は相手の手からも消える —— 世界が忘れた、ということである。
+ */
+export const MERCHANT_TRACE_LIMIT = 8;
+
+/**
+ * いま覚えておく「商人が売った品」。
+ *
+ * 生きている相手が持っている、装備している武器防具と、まだ残量のある薬。新しい順に
+ * `MERCHANT_TRACE_LIMIT` 件まで。薬は一人一本だけ数える —— 命を拾えるのは一本で足りる。
+ *
+ * 薬の選び方は `spendMerchantMedicine` と同じ規則（残量の多い順）でなければならない。
+ * 剪定で消える薬が使われる予定の一本だったら、その日に世界が食い違う。
+ */
+function merchantTraces(state: GameState): string[] {
+  const traces: Array<{ itemId: string; day: number }> = [];
+  for (const npc of state.npcs) {
+    if (npc.status === "dead") continue;
+    for (const slot of gearSlots(npc)) {
+      const item = state.itemsById[slot.itemId];
+      if (item?.merchantOrigin === "sold") traces.push({ itemId: item.uuid, day: item.merchantDay ?? slot.since });
+    }
+    const medicine = merchantMedicine(state, npc);
+    if (medicine) traces.push({ itemId: medicine.uuid, day: medicine.merchantDay ?? state.day });
+  }
+  return traces
+    .sort((a, b) => b.day - a.day || a.itemId.localeCompare(b.itemId))
+    .slice(0, MERCHANT_TRACE_LIMIT)
+    .map((trace) => trace.itemId);
+}
+
 export function pruneCampaignRecords(state: GameState): void {
   const liveItemIds = new Set<string>();
   for (const item of [...state.inventory, ...state.store, ...state.archive]) liveItemIds.add(item.uuid);
@@ -62,9 +97,9 @@ export function pruneCampaignRecords(state: GameState): void {
   for (const id of corpseLootIds(state)) liveItemIds.add(id);
   for (const npc of state.npcs) {
     if (npc.status === "dead") continue;
-    // 預けた装備は、相手が誰であれ、どこで拾った品であれ残す。
+    // 託した装備は、相手が誰であれ、どこで拾った品であれ残す。数は ENTRUSTED_NPC_LIMIT が縛る。
     // 故人のぶんは遺体台帳（corpseLootIds）が引き継ぐので、ここでは飛ばす。
-    for (const slot of gearSlots(npc)) liveItemIds.add(slot.itemId);
+    for (const slot of entrustedSlots(state, npc)) liveItemIds.add(slot.itemId);
     // 台本の15人が町で持っていた品だけが持ち物として残る。
     // 迷宮へ担いでいった在庫は階と一緒に消える。見分けは discoveredFloor。
     if (!SEED_NPC_IDS.has(npc.id)) continue;
@@ -72,6 +107,7 @@ export function pruneCampaignRecords(state: GameState): void {
       if (state.itemsById[id]?.discoveredFloor === undefined) liveItemIds.add(id);
     }
   }
+  for (const trace of merchantTraces(state)) liveItemIds.add(trace);
 
   const keptItems: Record<string, ItemInstance> = {};
   const namedNpcIds = new Set<string>();
@@ -285,12 +321,14 @@ export function acceptCustomerPurchaseRequest(state: GameState): { accepted: boo
   item.historyV2 ??= [];
   item.historyV2.push({ day: state.day, type: "sold", npcId, price, detail: `${npc.name}へ売却` });
   npc.inventoryIds.push(item.uuid);
+  markMerchantGoods(state, npc, item, "sold");
   state.inventory = state.inventory.filter((entry) => entry.uuid !== item.uuid);
   state.store = state.store.filter((entry) => entry.uuid !== item.uuid);
   state.display = state.display.filter((id) => id !== item.uuid);
   // 命名は itemLegend が一手に引き受ける。接尾辞を「の剣」に決め打ちしていた不具合もここで消える。
   assignCounterName(state, item, npc);
-  state.archive.push(item);
+  // 同じ品が二度archiveへ入りうる（売る→持ち主が死ぬ→遺体から回収→また売る）。
+  if (!state.archive.some((entry) => entry.uuid === item.uuid)) state.archive.push(item);
   npc.relation = Math.min(100, npc.relation + 1);
   recordBond(state, npc, "served", `${merchantItemName(item) ?? item.definitionId}を${price}Gで買っていった`);
   return { accepted: true, message: `${merchantItemName(item) ?? item.definitionId}を${npc.name}へ${price}Gで売却した。` };

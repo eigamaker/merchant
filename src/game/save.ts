@@ -1,4 +1,4 @@
-import type { DungeonBody, DungeonChest, DungeonHeight, DungeonMap, Enemy, GameState, ItemInstance, LegacyDungeonMap, Vec } from "./types";
+import type { DungeonBody, DungeonChest, DungeonHeight, DungeonMap, Enemy, GameState, ItemInstance, LegacyDungeonMap, NpcGearSlot, Vec } from "./types";
 import { HOME_SPAWN, createHomeMap } from "./homeMap";
 import { loadTrialMapPack, type MapDocument } from "./mapDocument";
 import { isMapPositionWalkable } from "./mapTiles";
@@ -36,7 +36,7 @@ const DATABASE_NAME = "dungeon-curio-merchant";
 const STORE_NAME = "campaigns";
 
 export function isSupportedSaveVersion(version: unknown): version is number {
-  return typeof version === "number" && Number.isInteger(version) && version >= 5 && version <= 15;
+  return typeof version === "number" && Number.isInteger(version) && version >= 5 && version <= 16;
 }
 
 function activeHomeMapForSave(): MapDocument {
@@ -138,6 +138,42 @@ function migrateToBagEquipment(state: GameState): void {
   }
 }
 
+/**
+ * v16 で貸与を廃止した。
+ *
+ * `lent` も `given` も「託した」に畳む。信頼や関係を遡って払い直すことはしない ——
+ * 起きた取引は、そのときのルールで起きている。
+ *
+ * `withheld` は残す。旧規則では自動精算で返さなかった印、新規則では引き取りを断られた印で、
+ * どちらも「商人の品は戻ってこない」であり、お抱えの道を閉じる役目も変わらない。
+ *
+ * 返却直前だった貸与も、畳むだけで何もしない。ロードしただけで在庫が動いては困る。
+ * そのぶん、明日返るはずだった剣は、頼みに行くまで戻らないものに変わる。
+ */
+function migrateToSingleEntrustment(state: GameState): void {
+  const entrusted = new Set<string>();
+  for (const npc of state.npcs ?? []) {
+    for (const key of ["weapon", "armor"] as const) {
+      const slot = npc.gear?.[key] as (NpcGearSlot & { term?: string }) | undefined;
+      if (!slot) continue;
+      delete slot.term;
+      slot.since ??= state.day;
+      entrusted.add(slot.itemId);
+    }
+  }
+  // 出どころを刻み直せる唯一の機会。v15 まで功績は `recordGearDeed` でしか付かず、
+  // それは預かった装備にしか走らなかったので、担がれた跡があれば託した品だと言える。
+  // `assignCounterName` が作る功績は全カウンタ0なので、店頭で名付けただけの品は巻き込まない。
+  for (const item of Object.values(state.itemsById ?? {})) {
+    if (item.merchantOrigin !== undefined) continue;
+    if (entrusted.has(item.uuid)) { item.merchantOrigin = "entrusted"; continue; }
+    const deeds = item.deeds;
+    if (deeds && (deeds.deepestFloor > 0 || deeds.kills > 0 || deeds.returns > 0 || deeds.ownersLost > 0)) {
+      item.merchantOrigin = "entrusted";
+    }
+  }
+}
+
 /** v8 で撤去した旧クエスト・旧護衛・罠の残骸を、読み込んだ時点で捨てる。 */
 function stripRetiredFields(state: GameState): void {
   const legacy = state as unknown as Record<string, unknown>;
@@ -157,7 +193,7 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
   const state = raw as unknown as GameState;
   const oldLocation = (state as unknown as { location?: string }).location;
   if (oldLocation === "town" || oldLocation === "interior") state.location = "home";
-  state.version = 15;
+  state.version = 16;
   state.campaignId ??= `legacy-${Date.now()}`;
   state.status ??= "active";
   if (state.status === "gameOver") state.status = "active";
@@ -324,10 +360,11 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
     }
   }
   migrateToBagEquipment(state);
+  migrateToSingleEntrustment(state);
   stripRetiredFields(state);
   // 探索中でなければ、旧セーブに溜まった床の品と通りすがりの記録もここで捨てる。
   if (!state.run) pruneCampaignRecords(state);
-  (state as { version: number }).version = 15;
+  (state as { version: number }).version = 16;
   return state;
 }
 

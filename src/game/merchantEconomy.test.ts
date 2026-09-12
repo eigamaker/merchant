@@ -303,3 +303,32 @@ describe("campaign record pruning", () => {
     expect(state.itemsById[sold.uuid]).toBeDefined();
   });
 });
+
+describe("the archive keeps one line per item", () => {
+  it("never files the same item twice", () => {
+    const state = createNewGame();
+    const buyer = state.npcs.find((npc) => npc.status === "inTown")!;
+    const item = createItem(state, "old-ring");
+    state.itemsById[item.uuid] = item;
+    item.location = { kind: "shopStock" };
+    item.owner = "store";
+    state.store.push(item);
+    state.display.push(item.uuid);
+
+    const sell = (): void => {
+      state.shopSession = { day: state.day, status: "serving", queueNpcIds: [], servedNpcIds: [], currentNpcId: buyer.id, requestedItemId: item.uuid, requestedPrice: 10 };
+      expect(acceptCustomerPurchaseRequest(state).accepted).toBe(true);
+    };
+    sell();
+    // 持ち主を看取って手元へ戻り、もう一度売られる —— 同じ品が二度、記録に並んではいけない。
+    buyer.inventoryIds = buyer.inventoryIds.filter((id) => id !== item.uuid);
+    state.archive = state.archive.filter((entry) => entry.uuid !== item.uuid);
+    state.store.push(item);
+    state.display.push(item.uuid);
+    item.location = { kind: "shopStock" };
+    state.archive.push(item);
+    sell();
+
+    expect(state.archive.filter((entry) => entry.uuid === item.uuid)).toHaveLength(1);
+  });
+});

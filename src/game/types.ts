@@ -85,6 +85,16 @@ export interface ItemInstance {
   deeds?: ItemDeeds;
   /** 商人が付けた値。棚から下げても覚えている。未設定なら相場で並ぶ。 */
   askingPrice?: number;
+  /**
+   * 商人の手を離れて誰かのものになったときの、その離れ方。
+   *
+   * **品が持つ。** 持ち主が死ねば `npc.gear` の枠は消えるが、遺体の上に残るのは品のほうで、
+   * 「これは自分が託した剣だ」と言えるかどうかはそこでしか分からない。
+   * 奪われた品には刻まない —— 渡したのではないからである。
+   */
+  merchantOrigin?: "sold" | "entrusted";
+  /** 商人の手を離れた日。剪定で何を覚えておくかの順序に使う。 */
+  merchantDay?: number;
   namedByNpcId?: string;
   historyV2?: ItemHistoryEvent[];
 }
@@ -296,22 +306,21 @@ export interface NpcBond {
   floor?: number;
 }
 
-/** 預けた条件。貸与は返す約束、譲渡は返らない。 */
-export type NpcGearTerm = "lent" | "given";
-
 /**
- * 預けた装備の枠。
+ * 商人の手から相手の手へ渡った装備の枠。
  *
  * `itemId` は `NpcRecord.inventoryIds` の中の品を指す参照であって、別の置き場ではない。
- * 品の `location` は貸与も譲渡も `npcInventory` で、両者の違いは `term` だけが持つ。
  * 所有を `location` から判断する新しいコードは、必ず `gear` も見ること。
+ *
+ * 貸与と譲渡の区別は持たない。**託すか、託さないか**しかなく、返ってくるかどうかは
+ * 商人が引き取りを申し出たときに、相手が決める。出どころ（売った／託した）は
+ * 枠ではなく品の `merchantOrigin` が持つ —— 死ねば枠は消えるが、品は残るからである。
  */
 export interface NpcGearSlot {
   itemId: string;
-  term: NpcGearTerm;
-  /** 預けた日。貸与の精算は翌日以降に起きる。 */
+  /** 相手の手に渡った日。 */
   since: number;
-  /** 返す約束を破った。お抱えの道はここで閉じる。 */
+  /** 引き取りを申し出て、断られた。お抱えの道はここで閉じる。 */
   withheld?: true;
 }
 
@@ -692,7 +701,7 @@ export interface BulkOrder {
 }
 
 export interface GameState {
-  version: 15;
+  version: 16;
   campaignId: string;
   status: "active" | "gameOver";
   day: number;

@@ -3,9 +3,10 @@ import { adjustGuardProfile, ensureGuardProfile } from "./guardProfiles";
 import { hasBond } from "./npcBonds";
 import { recordCorpse } from "./dungeonCorpses";
 import { ADVENTURER_ROSTER_TARGET, createRosterAdventurer, createTownsperson, thinnestRank } from "./npcRoster";
-import { carriedGearItems, gearPower, isRetained, recordGearDeed, settleLentGear, updateRetainer } from "./npcGear";
+import { carriedGearItems, gearPower, isRetained, merchantMedicine, recordGearDeed, updateRetainer } from "./npcGear";
 import { applySurvivalGrowth } from "./adventurerGrowth";
 import { DUNGEON_MAX_FLOOR } from "./dungeonDifficulty";
+import { itemCharges } from "./merchantContent";
 import type { AdventurerRank, GameState, GuardProfile, ItemInstance, NpcRecord } from "./types";
 
 /**
@@ -53,16 +54,28 @@ export interface DelveInput {
  * 勇気は戦いの腕、規律は退き際の判断として、どちらも生存側に効く。
  * ただし勇気の高い者は `preferredDelveFloor` でより深くを選ぶので、差し引きで危険が増す。
  */
-export function resolveDelveOutcome(input: DelveInput): DelveOutcome {
+export function delveDeathChance(input: Omit<DelveInput, "roll">): number {
   const recommended = ADVENTURER_RANKS[input.rank].recommendedFloor;
   const excess = Math.max(0, input.floor - recommended);
   // 装備の効きには上限を置く。良い装備だけで最深部が作業になっては、深さが意味を失う。
   const gear = Math.min(0.10, (input.gearPower ?? 0) * 0.012);
-  const death = clamp(
+  return clamp(
     0.05 + excess * 0.09 + (1 - clamp(input.hpRatio, 0, 1)) * 0.25 - input.courage / 1000 - input.discipline / 800 - gear,
     0.01,
     0.6,
   );
+}
+
+/**
+ * 薬が肩代わりできる死の範囲。
+ *
+ * 決定的な一撃までは覆せない。無条件に効かせると、霊薬一本が8回ぶんの確定生還になる。
+ * 際どい死だけを買い戻せる、という帯にする。
+ */
+export const MEDICINE_SAVE_BAND = 0.5;
+
+export function resolveDelveOutcome(input: DelveInput): DelveOutcome {
+  const death = delveDeathChance(input);
   if (input.roll < death) return "died";
   if (input.roll < death + death * 2.2) return "injured";
   return "returned";
@@ -92,10 +105,23 @@ function payoutFor(rank: AdventurerRank, floor: number): number {
   return Math.floor(ADVENTURER_RANKS[rank].escortFee * 0.5 + floor * 20);
 }
 
+/**
+ * 商人が渡した薬を一口ぶん使う。
+ *
+ * 使えたら、その一本を返す。空になっても品は消さない —— 誰の手に何が残っているかは、
+ * 遺体や買い戻しのために世界が覚えておく（剪定が忘れるのはまた別の話である）。
+ */
+function spendMerchantMedicine(state: GameState, npc: NpcRecord): ItemInstance | undefined {
+  const medicine = merchantMedicine(state, npc);
+  if (!medicine) return undefined;
+  medicine.chargesLeft = itemCharges(medicine) - 1;
+  return medicine;
+}
+
 function finishDelve(state: GameState, npc: NpcRecord, profile: GuardProfile): void {
   const floor = npc.delve?.floor ?? 1;
   const maxHp = npc.maxHp ?? 10;
-  const outcome = resolveDelveOutcome({
+  const input = {
     rank: npc.rank ?? "E",
     floor,
     hpRatio: (npc.conditionHp ?? maxHp) / maxHp,
@@ -103,7 +129,16 @@ function finishDelve(state: GameState, npc: NpcRecord, profile: GuardProfile): v
     discipline: profile.personality.discipline,
     roll: roll(state, npc.id, "delve"),
     gearPower: gearPower(state, npc),
-  });
+  } satisfies DelveInput;
+  let outcome = resolveDelveOutcome(input);
+  // 際どい死なら、商人が渡した薬が一本、命を買い戻す。決定的な一撃は覆せない。
+  if (outcome === "died" && input.roll >= delveDeathChance(input) * MEDICINE_SAVE_BAND) {
+    const spent = spendMerchantMedicine(state, npc);
+    if (spent) {
+      outcome = "injured";
+      recordMedicineSave(state, npc, floor, spent);
+    }
+  }
   delete npc.delve;
 
   recordGearDeed(state, npc, { floor, returned: outcome === "returned" });
@@ -144,16 +179,34 @@ function finishDelve(state: GameState, npc: NpcRecord, profile: GuardProfile): v
 }
 
 /**
+ * 商人の薬が命を拾った日。
+ *
+ * 画面外の探索は普段なにも報せない —— 1日9件も決着するので、全部届けば日誌が潰れる。
+ * ここだけは別で、**自分が渡した一本が効いたときにだけ**、担ぎ込まれた話が耳に入る。
+ * 売った時点で必ず縁ができているので、面識の有無は改めて見なくてよい。
+ */
+function recordMedicineSave(state: GameState, npc: NpcRecord, floor: number, medicine: ItemInstance): void {
+  const name = medicine.currentName ?? MERCHANT_ITEM_DEFINITIONS[medicine.definitionId]?.trueName ?? "薬";
+  state.events.push({
+    // 一人の決着は一日一度なので、これで衝突しない。
+    id: `medicine-${npc.id}-${state.day}`,
+    dueDay: state.day,
+    text: `${npc.name}が地下${floor}階から担ぎ込まれた。あなたが渡した${name}を使って、辛うじて戻ったという。`,
+  });
+}
+
+/**
  * 画面外の死。
  *
  * 面識のある相手なら訃報が耳に入る。見知らぬ誰かの死は、遺体に行き当たるまで知りようがない。
  */
 function recordOffscreenDeath(state: GameState, npc: NpcRecord, floor: number, carried: readonly ItemInstance[] = []): void {
   if (!hasBond(npc)) return;
-  // 預けた品があるなら、それがどこにあるかまで伝える。取りに行くかどうかは商人が決める。
-  const keepsake = carried[0];
+  // 商人の手を離れた品があるなら、それがどこにあるかまで伝える。取りに行くかは商人が決める。
+  // 託したのか売ったのかで言い方が変わる —— 売った剣を「預けた品」とは呼べない。
+  const keepsake = carried.find((item) => item.merchantOrigin !== undefined);
   const name = keepsake
-    ? keepsake.currentName ?? MERCHANT_ITEM_DEFINITIONS[keepsake.definitionId]?.trueName ?? "預けた品"
+    ? `${keepsake.merchantOrigin === "sold" ? "あなたが売った" : ""}${keepsake.currentName ?? MERCHANT_ITEM_DEFINITIONS[keepsake.definitionId]?.trueName ?? "預けた品"}`
     : undefined;
   state.events.push({
     id: `death-${npc.id}`,
@@ -204,11 +257,9 @@ export function simulateTownDay(state: GameState): void {
     if (!npc.adventurer || busy.has(npc.id)) continue;
     if (npc.status === "dead" || npc.status === "escorting" || npc.status === "contracted" || npc.status === "traveling") continue;
     const profile = ensureGuardProfile(state, npc);
-    // 町で顔を合わせたときが精算の機会。護衛帰還・単独帰還・療養明けを一箇所で賄う。
-    if (npc.status === "inTown" || npc.status === "recovering") {
-      settleLentGear(state, npc);
-      updateRetainer(state, npc);
-    }
+    // 町で顔を合わせたときが、囲いの話が持ち上がる機会。託した装備は自動では戻らない ——
+    // 返るかどうかは、商人が引き取りを申し出たときに決まる。
+    if (npc.status === "inTown" || npc.status === "recovering") updateRetainer(state, npc);
     if (npc.status === "recovering") { recoverInTown(npc); continue; }
     if (npc.status === "delving") { finishDelve(state, npc, profile); continue; }
     if (npc.status !== "inTown") continue;

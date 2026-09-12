@@ -17,12 +17,13 @@ describe("save migration", () => {
     expect(isSupportedSaveVersion(13)).toBe(true);
     expect(isSupportedSaveVersion(14)).toBe(true);
     expect(isSupportedSaveVersion(15)).toBe(true);
-    expect(isSupportedSaveVersion(16)).toBe(false);
+    expect(isSupportedSaveVersion(16)).toBe(true);
+    expect(isSupportedSaveVersion(17)).toBe(false);
   });
   it.each([1,2,3])("migrates v%d town/interior saves to home", (version) => {
     const state:any = createNewGame(); state.version=version; state.location=version===2?"interior":"town"; state.townPos={x:4,y:4}; delete state.homePos; delete state.homeMapRevision;
     const migrated=migrateSaveState(state);
-    expect(migrated.version).toBe(15); expect(migrated.location).toBe("home"); expect(migrated.homePos).toEqual({x:HOME_SPAWN.x*16+8,y:HOME_SPAWN.y*16+8});
+    expect(migrated.version).toBe(16); expect(migrated.location).toBe("home"); expect(migrated.homePos).toEqual({x:HOME_SPAWN.x*16+8,y:HOME_SPAWN.y*16+8});
   });
   it("migrates legacy dungeon connector fields and adds the floor snapshot dictionary", () => {
     const state:any = createNewGame(); beginExpedition(state);
@@ -46,7 +47,7 @@ describe("save migration", () => {
 
     const migrated: any = migrateSaveState(state);
 
-    expect(migrated.version).toBe(15);
+    expect(migrated.version).toBe(16);
     expect(migrated.vaultGold).toBe(0);
     expect(migrated.npcs.find((npc: any) => npc.id === escort.id).status).toBe("escorting");
     const migratedSolo = migrated.npcs.find((npc: any) => npc.id === solo.id);
@@ -146,7 +147,7 @@ describe("save migration", () => {
 
     const migrated = migrateSaveState(state as never);
 
-    expect(migrated.version).toBe(15);
+    expect(migrated.version).toBe(16);
     expect((migrated.equipment as unknown as Record<string, unknown>).weaponItemId).toBeUndefined();
     expect((migrated.equipment as unknown as Record<string, unknown>).armorItemId).toBeUndefined();
     expect(migrated.equipment.bagItemId).toBeDefined();
@@ -161,5 +162,32 @@ describe("save migration", () => {
     const survivors = new Set([...migrated.inventory, ...migrated.store].map((item) => item.uuid));
     expect(survivors.has(carried[0]!.uuid)).toBe(true);
     expect(survivors.has(carried[1]!.uuid)).toBe(true);
+  });
+  it("folds lent and given into one entrustment and keeps the refusal", () => {
+    const state: any = createNewGame();
+    const [borrower, keeper] = state.npcs.filter((npc: any) => npc.adventurer).slice(0, 2);
+    const sword = createItem(state, "iron-sword");
+    const armor = createItem(state, "leather-armor");
+    for (const [npc, item, slot, extra] of [[borrower, sword, "weapon", { term: "lent" }], [keeper, armor, "armor", { term: "given", withheld: true }]] as const) {
+      item.owner = npc.id;
+      item.location = { kind: "npcInventory", npcId: npc.id };
+      npc.inventoryIds.push(item.uuid);
+      npc.gear = { ...(npc.gear ?? {}), [slot]: { itemId: item.uuid, since: state.day, ...extra } };
+    }
+    state.version = 15;
+
+    const migrated: any = migrateSaveState(state);
+
+    const migratedBorrower = migrated.npcs.find((npc: any) => npc.id === borrower.id);
+    const migratedKeeper = migrated.npcs.find((npc: any) => npc.id === keeper.id);
+    // 貸与も譲渡も、ただ「託した」になる。
+    expect(migratedBorrower.gear.weapon.term).toBeUndefined();
+    expect(migratedKeeper.gear.armor.term).toBeUndefined();
+    expect(migratedBorrower.gear.weapon.itemId).toBe(sword.uuid);
+    expect(migratedBorrower.gear.weapon.since).toBe(state.day);
+    // 返ってこないという事実だけは引き継ぐ。
+    expect(migratedKeeper.gear.armor.withheld).toBe(true);
+    // 読み込んだだけで在庫は動かない。明日返るはずだった剣も、相手の手にある。
+    expect(migrated.store.some((item: any) => item.uuid === sword.uuid)).toBe(false);
   });
 });

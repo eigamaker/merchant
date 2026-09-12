@@ -7,7 +7,7 @@ import { actorDefinition, actorEnemyCost, actorEnemyStatsAt, actorHasEnemyStats 
 import { ADVENTURER_RANKS, CHEST_LOOT, GROUND_LOOT, MERCHANT_ITEM_DEFINITIONS, STARTING_BAG_ID, itemCharges, lootEntriesFor, type LootEntry } from "./merchantContent";
 import { SEED_NPC_IDS, canSellInHomeShop, initializeMerchantWorld, pruneCampaignRecords, registerWorldItem } from "./merchantEconomy";
 import { announceSingularFind, selectFloorDelvers } from "./townDay";
-import { npcCombatStats, recordGearDeed } from "./npcGear";
+import { markMerchantGoods, npcCombatStats, recordGearDeed } from "./npcGear";
 import { applySurvivalGrowth } from "./adventurerGrowth";
 import { corpsesOnFloor, markCorpseInspected, pruneCorpses, recordCorpse, removeCorpseLoot } from "./dungeonCorpses";
 import { markExplored } from "./dungeonVision";
@@ -94,7 +94,7 @@ export const DIRECTION: Record<"up" | "down" | "left" | "right", Vec> = {
 
 export function createNewGame(): GameState {
   const state: GameState = {
-    version: 15,
+    version: 16,
     campaignId: typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `campaign-${Date.now()}`,
     status: "active",
     day: 1,
@@ -826,12 +826,18 @@ function consumeNpcMedicine(state: GameState, adventurer: DungeonAdventurer): bo
   const npc = state.npcs.find((entry) => entry.id === adventurer.npcId);
   const medicine = npc?.inventoryIds
     .map((id) => state.itemsById[id])
-    .find((item) => item && (itemDefinition(item).healing ?? 0) > 0);
+    .find((item) => item && (itemDefinition(item).healing ?? 0) > 0 && itemCharges(item) > 0);
   if (!npc || !medicine) return false;
   const healing = itemDefinition(medicine).healing ?? 0;
   adventurer.hp = Math.min(adventurer.maxHp, adventurer.hp + healing);
-  npc.inventoryIds = npc.inventoryIds.filter((id) => id !== medicine.uuid);
-  medicine.location = { kind: "consumed", actorId: adventurer.npcId };
+  // 回数のある薬は、冒険者の手でも一口ずつ減る。主人公の `performUseMedicine` と同じ扱いで、
+  // 空になって初めて手を離れる —— そうでないと霊薬が一口で消える。
+  const remaining = itemCharges(medicine) - 1;
+  medicine.chargesLeft = remaining;
+  if (remaining <= 0) {
+    npc.inventoryIds = npc.inventoryIds.filter((id) => id !== medicine.uuid);
+    medicine.location = { kind: "consumed", actorId: adventurer.npcId };
+  }
   state.message = `${npc.name}は${itemName(medicine)}を使い、HPを${healing}回復した。`;
   return true;
 }
@@ -1422,6 +1428,9 @@ function performSellToAdventurer(state: GameState, npcId: string, itemId: string
   item.owner = npc.id;
   item.location = { kind: "npcInventory", npcId: npc.id };
   item.history.push({ day: state.day, type: "sold", detail: `${npc.name}へダンジョン内で売却`, value: price });
+  item.historyV2 ??= [];
+  item.historyV2.push({ day: state.day, type: "sold", npcId: npc.id, price, detail: `地下${floor}階で売却` });
+  markMerchantGoods(state, npc, item, "sold");
   // 同じ取引でも、相手の受け取り方で残るものが変わる。
   if (verdict.sentiment === "resented") {
     recordBond(state, npc, "gouged", `${itemName(item)}を${price}Gで買わされた`, floor);
