@@ -12,16 +12,17 @@ import {
   gearSlots,
   hasEntrustedGear,
   isRetained,
+  markMerchantGoods,
+  merchantMedicine,
   npcCombatStats,
   reclaimGear,
   recordGearDeed,
+  refusesToReturnGear,
   retainerReady,
-  settleLentGear,
   updateRetainer,
-  withholdsLentGear,
 } from "./npcGear";
 import { hasBond, principalBond } from "./npcBonds";
-import { escortFeeForNpc } from "./merchantEconomy";
+import { MERCHANT_TRACE_LIMIT, escortFeeForNpc, pruneCampaignRecords } from "./merchantEconomy";
 import type { GameState, NpcRecord } from "./types";
 
 /** 町にいる名簿の冒険者（台本の15人ではない側）を選ぶ。 */
@@ -44,10 +45,10 @@ function sleepOneNight(state: GameState): void {
  * 返す／返さないは決定論だが確率なので、当たり日を探してからそこで検証する。
  * campaignId はキャンペーンごとに違うため、日を固定打ちすると不安定になる。
  */
-function findDay(state: GameState, npc: NpcRecord, withholding: boolean): number {
+function findDay(state: GameState, npc: NpcRecord, refusing: boolean, slot: "weapon" | "armor" = "weapon"): number {
   for (let day = state.day + 1; day < state.day + 200; day += 1) {
     const probe = { ...state, day };
-    if (withholdsLentGear(probe as GameState, npc) === withholding) return day;
+    if (refusesToReturnGear(probe as GameState, npc, slot) === refusing) return day;
   }
   throw new Error("該当する日が見つからなかった");
 }
@@ -58,11 +59,11 @@ describe("entrusting gear", () => {
     const favourite = rosterFavourite(state);
     const sword = giveMerchantItem(state, "iron-sword");
 
-    const result = entrustGear(state, favourite, sword.uuid, "given");
+    const result = entrustGear(state, favourite, sword.uuid);
 
     expect(result.ok).toBe(true);
     expect(state.inventory).not.toContain(sword);
-    expect(favourite.gear?.weapon).toMatchObject({ itemId: sword.uuid, term: "given", since: state.day });
+    expect(favourite.gear?.weapon).toMatchObject({ itemId: sword.uuid, since: state.day });
     // 参照であって別の置き場ではない —— 品は inventoryIds の中にいる。
     expect(favourite.inventoryIds).toContain(sword.uuid);
     expect(sword.location).toEqual({ kind: "npcInventory", npcId: favourite.id });
@@ -74,16 +75,16 @@ describe("entrusting gear", () => {
     const state = createNewGame();
     const favourite = rosterFavourite(state);
     const potion = giveMerchantItem(state, "minor-healing-potion");
-    expect(entrustGear(state, favourite, potion.uuid, "lent").ok).toBe(false);
-    expect(hasEntrustedGear(favourite)).toBe(false);
+    expect(entrustGear(state, favourite, potion.uuid).ok).toBe(false);
+    expect(hasEntrustedGear(state, favourite)).toBe(false);
   });
 
   it("keeps one weapon and one armour per person", () => {
     const state = createNewGame();
     const favourite = rosterFavourite(state);
-    expect(entrustGear(state, favourite, giveMerchantItem(state, "iron-sword").uuid, "given").ok).toBe(true);
-    expect(entrustGear(state, favourite, giveMerchantItem(state, "bronze-spear").uuid, "given").ok).toBe(false);
-    expect(entrustGear(state, favourite, giveMerchantItem(state, "leather-armor").uuid, "given").ok).toBe(true);
+    expect(entrustGear(state, favourite, giveMerchantItem(state, "iron-sword").uuid).ok).toBe(true);
+    expect(entrustGear(state, favourite, giveMerchantItem(state, "bronze-spear").uuid).ok).toBe(false);
+    expect(entrustGear(state, favourite, giveMerchantItem(state, "leather-armor").uuid).ok).toBe(true);
     expect(carriedGearItems(state, favourite)).toHaveLength(2);
   });
 
@@ -91,10 +92,10 @@ describe("entrusting gear", () => {
     const state = createNewGame();
     for (let index = 0; index < ENTRUSTED_NPC_LIMIT; index += 1) {
       const npc = rosterFavourite(state, index);
-      expect(entrustGear(state, npc, giveMerchantItem(state, "iron-sword").uuid, "given").ok).toBe(true);
+      expect(entrustGear(state, npc, giveMerchantItem(state, "iron-sword").uuid).ok).toBe(true);
     }
     const oneTooMany = rosterFavourite(state, ENTRUSTED_NPC_LIMIT);
-    expect(entrustGear(state, oneTooMany, giveMerchantItem(state, "iron-sword").uuid, "given").ok).toBe(false);
+    expect(entrustGear(state, oneTooMany, giveMerchantItem(state, "iron-sword").uuid).ok).toBe(false);
     expect(entrustedNpcCount(state)).toBe(ENTRUSTED_NPC_LIMIT);
   });
 
@@ -106,8 +107,8 @@ describe("entrusting gear", () => {
     expect(before).toEqual({ maxHp: bare.maxHp, damage: bare.damage, defense: 0 });
     expect(gearPower(state, bare)).toBe(0);
 
-    entrustGear(state, armed, giveMerchantItem(state, "bronze-spear").uuid, "given");   // attack 3
-    entrustGear(state, armed, giveMerchantItem(state, "round-shield").uuid, "given");   // defense 3
+    entrustGear(state, armed, giveMerchantItem(state, "bronze-spear").uuid);   // attack 3
+    entrustGear(state, armed, giveMerchantItem(state, "round-shield").uuid);   // defense 3
 
     expect(npcCombatStats(state, armed)).toEqual({
       maxHp: armed.maxHp! + 9,
@@ -124,7 +125,7 @@ describe("entrusted gear outlives the expedition", () => {
     const favourite = rosterFavourite(state);
     // 迷宮由来の品。以前の剪定規則ではこれが真っ先に消えていた。
     const blade = giveMerchantItem(state, "round-shield", 6);
-    expect(entrustGear(state, favourite, blade.uuid, "given").ok).toBe(true);
+    expect(entrustGear(state, favourite, blade.uuid).ok).toBe(true);
 
     for (let visit = 0; visit < 3; visit += 1) {
       state.timeSlot = "morning";
@@ -142,97 +143,100 @@ describe("entrusted gear outlives the expedition", () => {
   });
 });
 
-describe("lending and reclaiming", () => {
+describe("asking for it back", () => {
   it("will not pull gear out of the dungeon", () => {
     const state = createNewGame();
     const favourite = rosterFavourite(state);
-    const lent = giveMerchantItem(state, "iron-sword");
-    entrustGear(state, favourite, lent.uuid, "lent");
+    const entrusted = giveMerchantItem(state, "iron-sword");
+    entrustGear(state, favourite, entrusted.uuid);
+    // 返す気のある相手に固定する。ここで見たいのは場所の条件だけである。
+    Object.assign(favourite.guardProfile!.personality, { integrity: 100, greed: 0 });
+    favourite.guardProfile!.trust = 100;
+    state.day = findDay(state, favourite, false);
+
     favourite.status = "delving";
     expect(reclaimGear(state, favourite, "weapon").ok).toBe(false);
     favourite.status = "inTown";
     expect(reclaimGear(state, favourite, "weapon").ok).toBe(true);
-    expect(state.store.some((item) => item.uuid === lent.uuid)).toBe(true);
-    expect(favourite.inventoryIds).not.toContain(lent.uuid);
-    expect(hasEntrustedGear(favourite)).toBe(false);
+    expect(state.store.some((item) => item.uuid === entrusted.uuid)).toBe(true);
+    expect(favourite.inventoryIds).not.toContain(entrusted.uuid);
+    expect(hasEntrustedGear(state, favourite)).toBe(false);
   });
 
-  it("settles a loan the day after it was made, and never a gift", () => {
+  it("hands it back when the merchant asks", () => {
     const state = createNewGame();
-    const borrower = rosterFavourite(state, 0);
-    const keeper = rosterFavourite(state, 1);
-    const lent = giveMerchantItem(state, "iron-sword");
-    const given = giveMerchantItem(state, "leather-armor");
-    entrustGear(state, borrower, lent.uuid, "lent");
-    entrustGear(state, keeper, given.uuid, "given");
+    const holder = rosterFavourite(state);
+    Object.assign(holder.guardProfile!.personality, { integrity: 100, greed: 0 });
+    holder.guardProfile!.trust = 100;
+    const entrusted = giveMerchantItem(state, "iron-sword");
+    entrustGear(state, holder, entrusted.uuid);
 
-    // 預けた当日は精算しない。
-    settleLentGear(state, borrower);
-    expect(borrower.gear?.weapon).toBeDefined();
+    state.day = findDay(state, holder, false);
+    expect(reclaimGear(state, holder, "weapon").ok).toBe(true);
 
-    // 返す相手にしておき、実際に返す日を選ぶ。
-    Object.assign(borrower.guardProfile!.personality, { integrity: 100, greed: 0 });
-    borrower.guardProfile!.trust = 100;
-    state.day = findDay(state, borrower, false);
-    settleLentGear(state, borrower);
-    settleLentGear(state, keeper);
-
-    expect(hasEntrustedGear(borrower)).toBe(false);
-    expect(state.store.some((item) => item.uuid === lent.uuid)).toBe(true);
-    // 譲った品は精算の対象にならない。
-    expect(keeper.gear?.armor?.itemId).toBe(given.uuid);
+    expect(hasEntrustedGear(state, holder)).toBe(false);
+    expect(state.store.some((item) => item.uuid === entrusted.uuid)).toBe(true);
+    // 託した事実は縁として残る。
+    expect(hasBond(holder)).toBe(true);
   });
 
-  it("lets a greedy borrower keep it, and remembers that they did", () => {
+  it("refuses to give it back, and remembers being asked", () => {
     const state = createNewGame();
-    const borrower = rosterFavourite(state);
-    const lent = giveMerchantItem(state, "iron-sword");
-    entrustGear(state, borrower, lent.uuid, "lent");
-    Object.assign(borrower.guardProfile!.personality, { integrity: 0, greed: 100 });
-    borrower.guardProfile!.trust = 0;
-    const relationBefore = borrower.relation;
+    const holder = rosterFavourite(state);
+    const entrusted = giveMerchantItem(state, "iron-sword");
+    entrustGear(state, holder, entrusted.uuid);
+    Object.assign(holder.guardProfile!.personality, { integrity: 0, greed: 100 });
+    holder.guardProfile!.trust = 0;
+    const relationBefore = holder.relation;
 
-    state.day = findDay(state, borrower, true);
-    settleLentGear(state, borrower);
+    state.day = findDay(state, holder, true);
+    expect(reclaimGear(state, holder, "weapon").ok).toBe(false);
 
-    expect(borrower.gear?.weapon?.withheld).toBe(true);
-    expect(borrower.relation).toBe(relationBefore - 8);
+    expect(holder.gear?.weapon?.withheld).toBe(true);
+    expect(holder.inventoryIds).toContain(entrusted.uuid);
+    expect(holder.relation).toBe(relationBefore - 8);
     expect(state.events.some((event) => event.id.startsWith("withheld-"))).toBe(true);
-    // 二度は取り立てない。
-    state.day = findDay(state, borrower, true);
-    settleLentGear(state, borrower);
+    // 二度は頼めない。同じ返事を何度も取り立てない。
+    state.day = findDay(state, holder, false);
+    expect(reclaimGear(state, holder, "weapon").ok).toBe(false);
     expect(state.events.filter((event) => event.id.startsWith("withheld-"))).toHaveLength(1);
   });
 
-  it("returns a loan on a day the borrower means to return it", () => {
+  it("answers for one slot at a time", () => {
     const state = createNewGame();
-    const borrower = rosterFavourite(state);
-    Object.assign(borrower.guardProfile!.personality, { integrity: 100, greed: 0 });
-    borrower.guardProfile!.trust = 100;
-    const lent = giveMerchantItem(state, "iron-sword");
-    entrustGear(state, borrower, lent.uuid, "lent");
+    const holder = rosterFavourite(state);
+    entrustGear(state, holder, giveMerchantItem(state, "iron-sword").uuid);
+    entrustGear(state, holder, giveMerchantItem(state, "leather-armor").uuid);
+    Object.assign(holder.guardProfile!.personality, { integrity: 0, greed: 100 });
+    holder.guardProfile!.trust = 0;
 
-    state.day = findDay(state, borrower, false);
-    settleLentGear(state, borrower);
-
-    expect(hasEntrustedGear(borrower)).toBe(false);
-    expect(state.store.some((item) => item.uuid === lent.uuid)).toBe(true);
-    // 貸した事実は縁として残る。
-    expect(hasBond(borrower)).toBe(true);
+    // 剣を断られた日でも、盾の返事は別に引く。
+    state.day = findDay(state, holder, true, "weapon");
+    expect(reclaimGear(state, holder, "weapon").ok).toBe(false);
+    expect(holder.gear?.weapon?.withheld).toBe(true);
+    expect(holder.gear?.armor?.withheld).toBeUndefined();
   });
 
-  it("settles loans through the ordinary passage of days", () => {
+  it("stays with its holder night after night until the merchant asks", () => {
     const state = createNewGame();
-    const borrower = rosterFavourite(state);
-    Object.assign(borrower.guardProfile!.personality, { integrity: 100, greed: 0 });
-    borrower.guardProfile!.trust = 100;
-    entrustGear(state, borrower, giveMerchantItem(state, "iron-sword").uuid, "lent");
+    const holder = rosterFavourite(state);
+    Object.assign(holder.guardProfile!.personality, { integrity: 0, greed: 100 });
+    holder.guardProfile!.trust = 0;
+    const entrusted = giveMerchantItem(state, "iron-sword");
+    entrustGear(state, holder, entrusted.uuid);
 
-    // 返すか、返さないと決めるか。どちらでも「宙ぶらりんのまま」にはならない。
-    for (let night = 0; night < 8 && hasEntrustedGear(borrower) && !borrower.gear?.weapon?.withheld; night += 1) {
+    // 自動では戻らない。日が過ぎるだけで手元へ帰ってくることはもう無い。
+    // 毎晩、町にいる状態へ戻してから寝る —— 旧規則が精算していたのはまさにこの状態で、
+    // 自分で潜って死ぬかどうかはここで見たい話ではない。
+    for (let night = 0; night < 8; night += 1) {
+      holder.status = "inTown";
+      delete holder.delve;
       sleepOneNight(state);
     }
-    expect(!hasEntrustedGear(borrower) || borrower.gear?.weapon?.withheld).toBeTruthy();
+
+    expect(hasEntrustedGear(state, holder)).toBe(true);
+    expect(holder.gear?.weapon?.withheld).toBeUndefined();
+    expect(state.store.some((item) => item.uuid === entrusted.uuid)).toBe(false);
   });
 });
 
@@ -241,7 +245,7 @@ describe("the whole chain", () => {
     const state = createNewGame();
     const hero = rosterFavourite(state);
     const blade = giveMerchantItem(state, "nameless-black-blade", 8);
-    expect(entrustGear(state, hero, blade.uuid, "given").ok).toBe(true);
+    expect(entrustGear(state, hero, blade.uuid).ok).toBe(true);
 
     // 深くまで担がれ、銘が育つ。
     recordGearDeed(state, hero, { floor: 8 });
@@ -251,7 +255,6 @@ describe("the whole chain", () => {
 
     // 商人の見ていないところで死ぬ。
     Object.assign(hero.guardProfile!.personality, { courage: 0, discipline: 0 });
-    let deathNotice = "";
     // sleepOneNight の中で状態が変わるので、毎回名簿から読み直す。
     const statusOf = (): string => state.npcs.find((npc) => npc.id === hero.id)!.status;
     for (let night = 0; night < 60 && statusOf() !== "dead"; night += 1) {
@@ -259,9 +262,10 @@ describe("the whole chain", () => {
       hero.delve = { floor: 2, departedDay: state.day };
       hero.conditionHp = 1;
       sleepOneNight(state);
-      if (statusOf() === "dead") deathNotice = state.message;
     }
     expect(statusOf()).toBe("dead");
+    // 同じ朝に何件も届くと一行の要約に畳まれるので、訃報そのものは日誌から読む。
+    const deathNotice = state.knowledge.received.find((entry) => entry.id === `death-${hero.id}`)?.text ?? "";
 
     // 預けた品は、確かにその階に残っている。
     const corpse = state.dungeonCorpses.find((entry) => entry.npcId === hero.id)!;
@@ -300,24 +304,29 @@ describe("the whole chain", () => {
 describe("keeping someone on retainer", () => {
   function readyRetainer(state: GameState): NpcRecord {
     const npc = rosterFavourite(state);
-    entrustGear(state, npc, giveMerchantItem(state, "iron-sword").uuid, "given");
+    entrustGear(state, npc, giveMerchantItem(state, "iron-sword").uuid);
     const profile = npc.guardProfile!;
     profile.trust = RETAINER_TRUST;
     profile.career.successfulReturns = RETAINER_SURVIVALS;
     return npc;
   }
 
-  it("asks for a gift, deep trust and a record of coming home", () => {
+  it("asks for gear still in their hands, deep trust and a record of coming home", () => {
     const state = createNewGame();
     const npc = rosterFavourite(state);
-    // 貸しただけでは足りない。
-    entrustGear(state, npc, giveMerchantItem(state, "iron-sword").uuid, "lent");
+    Object.assign(npc.guardProfile!.personality, { integrity: 100, greed: 0 });
+    entrustGear(state, npc, giveMerchantItem(state, "iron-sword").uuid);
     npc.guardProfile!.trust = 100;
     npc.guardProfile!.career.successfulReturns = 20;
+    expect(retainerReady(state, npc)).toBe(true);
+
+    // 返せと言ってしまえば、その関係は積み上がらない。
+    state.day = findDay(state, npc, false);
+    expect(reclaimGear(state, npc, "weapon").ok).toBe(true);
     expect(retainerReady(state, npc)).toBe(false);
 
-    const given = readyRetainer(createNewGame());
-    expect(given.retainedSince).toBeUndefined();
+    const held = readyRetainer(createNewGame());
+    expect(held.retainedSince).toBeUndefined();
   });
 
   it("will not keep someone who kept the merchant's sword", () => {
@@ -352,8 +361,8 @@ describe("the save stays bounded with favourites", () => {
     const state = createNewGame();
     for (let index = 0; index < ENTRUSTED_NPC_LIMIT; index += 1) {
       const npc = rosterFavourite(state, index);
-      entrustGear(state, npc, giveMerchantItem(state, "bronze-spear", 6).uuid, "given");
-      entrustGear(state, npc, giveMerchantItem(state, "round-shield", 6).uuid, "given");
+      entrustGear(state, npc, giveMerchantItem(state, "bronze-spear", 6).uuid);
+      entrustGear(state, npc, giveMerchantItem(state, "round-shield", 6).uuid);
     }
 
     for (let night = 0; night < 60; night += 1) sleepOneNight(state);
@@ -371,7 +380,7 @@ describe("the moment of recovery", () => {
     const state = createNewGame();
     const hero = rosterFavourite(state);
     const blade = giveMerchantItem(state, "nameless-black-blade", 8);
-    entrustGear(state, hero, blade.uuid, "given");
+    entrustGear(state, hero, blade.uuid);
     recordGearDeed(state, hero, { floor: 8 });
 
     Object.assign(hero.guardProfile!.personality, { courage: 0, discipline: 0 });
@@ -394,5 +403,116 @@ describe("the moment of recovery", () => {
     // 敵や同行者の行動がこのターンに起きても、取り戻した一行は残る。
     expect(state.message).toContain("取り戻した");
     expect(state.message).toContain(blade.currentName!);
+  });
+});
+
+describe("goods the merchant handed over", () => {
+  /** 台本の冒険者と、その人が最初から鞄に持っている得物。 */
+  function scripted(state: GameState): { npc: NpcRecord; sword: NonNullable<ReturnType<typeof createItem>> } {
+    const npc = state.npcs.find((entry) => entry.profession === "swordsman" && entry.adventurer)!;
+    const sword = npc.inventoryIds.map((id) => state.itemsById[id]!).find((item) => item.definitionId === "iron-sword")!;
+    return { npc, sword };
+  }
+
+  it("arms a sold sword, and leaves a scripted adventurer's own kit alone", () => {
+    const state = createNewGame();
+    const { npc, sword } = scripted(state);
+    // 最初から持っている剣は鞄の中の私物。能力値には一切乗らない。
+    expect(npc.gear).toBeUndefined();
+    expect(gearPower(state, npc)).toBe(0);
+
+    markMerchantGoods(state, npc, sword, "sold");
+
+    // 同じ剣でも、商人から買ったものなら担いで潜る。
+    expect(npc.gear?.weapon?.itemId).toBe(sword.uuid);
+    expect(gearPower(state, npc)).toBe(2);
+    expect(npcCombatStats(state, npc).damage).toBe((npc.damage ?? 1) + 2);
+    // それでも「託した」相手ではない。囲いの話にはならない。
+    expect(hasEntrustedGear(state, npc)).toBe(false);
+  });
+
+  it("does not arm someone who bought a sword to resell", () => {
+    const state = createNewGame();
+    const dealer = state.npcs.find((npc) => npc.profession === "merchant")!;
+    const sword = createItem(state, "iron-sword");
+    dealer.inventoryIds.push(sword.uuid);
+
+    markMerchantGoods(state, dealer, sword, "sold");
+
+    expect(sword.merchantOrigin).toBe("sold");
+    expect(dealer.gear).toBeUndefined();
+  });
+
+  it("does not let a sale take a slot the merchant already filled", () => {
+    const state = createNewGame();
+    const favourite = rosterFavourite(state);
+    const spear = giveMerchantItem(state, "bronze-spear");
+    entrustGear(state, favourite, spear.uuid);
+
+    const bought = createItem(state, "iron-sword");
+    favourite.inventoryIds.push(bought.uuid);
+    markMerchantGoods(state, favourite, bought, "sold");
+
+    // 託した槍のまま。買った剣は鞄で眠る。
+    expect(favourite.gear?.weapon?.itemId).toBe(spear.uuid);
+    expect(gearPower(state, favourite)).toBe(3);
+  });
+
+  it("will not take back something that was paid for", () => {
+    const state = createNewGame();
+    const favourite = rosterFavourite(state);
+    const sword = createItem(state, "iron-sword");
+    favourite.inventoryIds.push(sword.uuid);
+    markMerchantGoods(state, favourite, sword, "sold");
+    const relationBefore = favourite.relation;
+
+    const result = reclaimGear(state, favourite, "weapon");
+
+    expect(result.ok).toBe(false);
+    expect(favourite.gear?.weapon?.itemId).toBe(sword.uuid);
+    // 頼むほうが筋違いなので、断られた記録にもならない。
+    expect(favourite.gear?.weapon?.withheld).toBeUndefined();
+    expect(favourite.relation).toBe(relationBefore);
+  });
+
+  it("remembers one flask per person, and the one that would be drunk first", () => {
+    const state = createNewGame();
+    const favourite = rosterFavourite(state);
+    const drained = createItem(state, "field-flask");
+    drained.chargesLeft = 1;
+    const full = createItem(state, "field-flask");
+    for (const item of [drained, full]) {
+      favourite.inventoryIds.push(item.uuid);
+      markMerchantGoods(state, favourite, item, "sold");
+    }
+
+    // 残量の多い一本を選ぶ。剪定が覚えておくのも同じ一本である。
+    expect(merchantMedicine(state, favourite)?.uuid).toBe(full.uuid);
+    full.chargesLeft = 0;
+    expect(merchantMedicine(state, favourite)?.uuid).toBe(drained.uuid);
+  });
+
+  it("holds under sixty kilobytes after sixty nights of selling gear", () => {
+    const state = createNewGame();
+    for (let night = 0; night < 60; night += 1) {
+      // 台本の15人は町で買った品をずっと持っている（既存の規則）。上限が効くのは
+      // 人数の決まっていない名簿側で、売った数だけ膨らむのはそちらである。
+      const buyers = state.npcs.filter((npc) => npc.adventurer && npc.status !== "dead" && npc.id.startsWith("adventurer-"));
+      const buyer = buyers[night % buyers.length]!;
+      const sold = createItem(state, night % 2 === 0 ? "iron-sword" : "leather-armor");
+      buyer.inventoryIds.push(sold.uuid);
+      markMerchantGoods(state, buyer, sold, "sold");
+      sleepOneNight(state);
+      pruneCampaignRecords(state);
+    }
+
+    const remembered = Object.values(state.itemsById)
+      .filter((item) => item.merchantOrigin === "sold" && typeof item.owner === "string" && item.owner.startsWith("adventurer-"));
+    expect(remembered.length).toBeLessThanOrEqual(MERCHANT_TRACE_LIMIT);
+    expect(JSON.stringify(state).length).toBeLessThan(60_000);
+    // 忘れた品を枠が指し続けていない。
+    for (const npc of state.npcs) {
+      for (const slot of gearSlots(npc)) expect(state.itemsById[slot.itemId]).toBeDefined();
+    }
   });
 });

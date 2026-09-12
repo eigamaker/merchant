@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { beginExpedition, createNewGame, performDungeonCommand, returnHome } from "./engine";
+import { beginExpedition, createItem, createNewGame, performDungeonCommand, returnHome } from "./engine";
 import { restUntilMorning } from "./merchantSystems";
 import { CORPSE_PERSIST_DAYS, corpsesOnFloor, recordCorpse } from "./dungeonCorpses";
 import type { GameState, NpcRecord } from "./types";
@@ -87,5 +87,47 @@ describe("the corpse ledger", () => {
 
     // 未回収の遺品は剪定を生き延びる。次に潜ったとき同じ品が置かれている。
     for (const id of lootIds) expect(state.itemsById[id]).toBeDefined();
+  });
+});
+
+describe("what makes a body worth coming back for", () => {
+  /** 商人の手を離れた品を一つ持たせてから、画面外で死なせる。 */
+  function dieCarrying(state: GameState, origin: "sold" | "entrusted", definitionId: string): NpcRecord {
+    const victim = state.npcs.find((npc) => npc.adventurer && npc.status !== "dead")!;
+    const item = createItem(state, definitionId);
+    item.owner = victim.id;
+    item.location = { kind: "npcInventory", npcId: victim.id };
+    victim.inventoryIds.push(item.uuid);
+    victim.gear = { armor: { itemId: item.uuid, since: state.day } };
+    item.merchantOrigin = origin;
+    victim.status = "delving";
+    victim.delve = { floor: 2, departedDay: state.day };
+    victim.conditionHp = 1;
+    // 死ぬまで日を送る。単独潜行の決着は毎朝の町処理で起きる。
+    const living = (): NpcRecord => state.npcs.find((npc) => npc.id === victim.id)!;
+    for (let night = 0; night < 200 && living().status !== "dead"; night += 1) {
+      const current = living();
+      if (current.status !== "delving") {
+        current.status = "delving";
+        current.delve = { floor: 2, departedDay: state.day };
+        current.conditionHp = 1;
+      }
+      sleepOneNight(state);
+    }
+    expect(living().status).toBe("dead");
+    return living();
+  }
+
+  // 地下2階では功績が段に届かないので、品は銘を得ない。銘を得た品はどちらでも形見になる
+  // —— ここで分けたいのは「何も背負っていない売り物」と「託した品」である。
+  it("does not make a corpse a keepsake just because a jerkin was sold", () => {
+    const sold = createNewGame();
+    const soldVictim = dieCarrying(sold, "sold", "leather-armor");
+    expect(sold.dungeonCorpses.find((corpse) => corpse.npcId === soldVictim.id)?.keepsake).toBeUndefined();
+
+    const entrusted = createNewGame();
+    const entrustedVictim = dieCarrying(entrusted, "entrusted", "leather-armor");
+    // 託した品なら、迷宮はしばらく待ってくれる。
+    expect(entrusted.dungeonCorpses.find((corpse) => corpse.npcId === entrustedVictim.id)?.keepsake).toBe(true);
   });
 });

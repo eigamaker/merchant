@@ -171,28 +171,43 @@ export function resetDailySystems(state: GameState): void {
   }
 }
 
+/**
+ * 世界の一日を進める、ただ一つの入口。
+ *
+ * 宿で朝を迎えても、地下で時計が回り切っても、世界にとっては同じ一日である。
+ * だから順序はここ一箇所にしか無い。
+ *
+ * 1. 日を跨ぐ
+ * 2. 期限の精算と、その日の店じまい（`resetDailySystems`）
+ * 3. 町の一日（`simulateTownDay`）
+ * 4. 期日の来た出来事を世界へ反映し、届く報せだけを渡す（`processDayEvents`）
+ *
+ * **この順序は崩せない。** 消耗が抜けるのは冒険者が今日を決める前でなければならないし
+ * （`shouldDepart` がそれを読む）、画面外の訃報はその日の町を回した後でなければ積まれない。
+ *
+ * 戻り値はその日に**届いた**本文で、起きたこと全部ではない。地下にいれば何も返らない。
+ */
+export function advanceWorldDay(state: GameState): string | undefined {
+  state.day += 1;
+  state.timeSlot = "morning";
+  resetDailySystems(state);
+  simulateTownDay(state);
+  return processDayEvents(state);
+}
+
 export function advanceTime(state: GameState, bands = 1): void {
   for (let index = 0; index < bands; index += 1) {
     const current = TIME_ORDER.indexOf(state.timeSlot);
-    if (current >= TIME_ORDER.length - 1) {
-      state.day += 1;
-      state.timeSlot = "morning";
-      resetDailySystems(state);
-      simulateTownDay(state);
-      processDayEvents(state);
-    } else state.timeSlot = TIME_ORDER[current + 1]!;
+    if (current >= TIME_ORDER.length - 1) advanceWorldDay(state);
+    else state.timeSlot = TIME_ORDER[current + 1]!;
   }
 }
 
 export function restUntilMorning(state: GameState): boolean {
   if (state.location !== "home") return false;
-  state.day += 1;
-  state.timeSlot = "morning";
   state.hp = state.maxHp;
-  resetDailySystems(state);
-  simulateTownDay(state);
   // 報せを朝の定型文で塗り潰さない。訃報も到着も、寝て起きた朝に届く。
-  const news = processDayEvents(state);
+  const news = advanceWorldDay(state);
   state.message = news
     ? `${state.day}日目の朝。${news}`
     : `${state.day}日目の朝。十分に休み、体力が回復した。`;

@@ -2,6 +2,7 @@ import { ADVENTURER_RANKS, MERCHANT_ITEM_DEFINITIONS } from "./merchantContent";
 import { adjustGuardProfile, ensureGuardProfile, recordGuardEvent } from "./guardProfiles";
 import { hasBond, npcBonds, recordBond } from "./npcBonds";
 import { carriedValue } from "./guardBetrayal";
+import { gearAttackBonus, gearDefenseBonus } from "./npcGear";
 import type {
   DungeonAdventurer,
   DungeonEvent,
@@ -122,14 +123,19 @@ function admit(state: GameState, npc: NpcRecord, place: () => { x: number; y: nu
   const pos = place();
   if (!pos) return false;
   const rank = ADVENTURER_RANKS[npc.rank ?? "E"];
-  const maxHp = npc.maxHp ?? rank.baseHp;
+  // 商人から受け取った装備を数える。階の入口で行き合った人と、途中から入ってきた人が
+  // 別人になってはいけない（`buildRun` は最初からこれを数えている）。
+  // `npcCombatStats` を使わないのは、素の値が無いときの下敷きが等級ごとに違うため。
+  const defense = gearDefenseBonus(state, npc);
+  const maxHp = (npc.maxHp ?? rank.baseHp) + defense * 3;
   run.adventurers.push({
     npcId: npc.id,
     pos,
     arrivedTurn: run.turn,
     hp: Math.max(1, Math.min(maxHp, npc.conditionHp ?? maxHp)),
     maxHp,
-    damage: npc.damage ?? rank.baseDamage,
+    damage: (npc.damage ?? rank.baseDamage) + gearAttackBonus(state, npc),
+    ...(defense > 0 ? { defense } : {}),
     gold: Math.max(200, Math.floor(npc.budget * 0.6)),
   });
   const profile = ensureGuardProfile(state, npc);
