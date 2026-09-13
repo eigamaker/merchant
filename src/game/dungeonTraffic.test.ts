@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { createExpedition } from "./expeditions";
 import { beginExpedition, createItem, createNewGame, performDungeonCommand, waitTurn } from "./engine";
 import { postEscortCommission } from "./merchantEconomy";
 import { ensureGuardProfile } from "./guardProfiles";
@@ -266,7 +267,7 @@ describe("dungeon traffic", () => {
     state.run!.floor = 1;
     for (const npc of state.npcs.filter((entry) => entry.adventurer).slice(0, 8)) {
       npc.status = "delving";
-      npc.delve = { floor: 1, departedDay: state.day };
+      npc.expedition = createExpedition(npc, state.day, 1, 1);
     }
     for (let turn = 0; turn < 60; turn += 1) {
       if (state.run?.holdup) performDungeonCommand(state, { type: "answerHoldup", hand: true });

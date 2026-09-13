@@ -3,6 +3,7 @@ import { beginExpedition, createItem, createNewGame, descend } from "./engine";
 import { ADVENTURER_RANKS, NPC_SEEDS } from "./merchantContent";
 import { ADVENTURER_ROSTER_TARGET } from "./npcRoster";
 import { isSupportedSaveVersion, migrateSaveState, normalizeHomePositionForMap } from "./save";
+import { reachedFloorOf } from "./expeditions";
 import { addMarker, createManualMap } from "./mapDocument";
 import { HOME_SPAWN } from "./homeMap";
 describe("save migration", () => {
@@ -18,12 +19,13 @@ describe("save migration", () => {
     expect(isSupportedSaveVersion(14)).toBe(true);
     expect(isSupportedSaveVersion(15)).toBe(true);
     expect(isSupportedSaveVersion(16)).toBe(true);
-    expect(isSupportedSaveVersion(17)).toBe(false);
+    expect(isSupportedSaveVersion(17)).toBe(true);
+    expect(isSupportedSaveVersion(18)).toBe(false);
   });
   it.each([1,2,3])("migrates v%d town/interior saves to home", (version) => {
     const state:any = createNewGame(); state.version=version; state.location=version===2?"interior":"town"; state.townPos={x:4,y:4}; delete state.homePos; delete state.homeMapRevision;
     const migrated=migrateSaveState(state);
-    expect(migrated.version).toBe(16); expect(migrated.location).toBe("home"); expect(migrated.homePos).toEqual({x:HOME_SPAWN.x*16+8,y:HOME_SPAWN.y*16+8});
+    expect(migrated.version).toBe(17); expect(migrated.location).toBe("home"); expect(migrated.homePos).toEqual({x:HOME_SPAWN.x*16+8,y:HOME_SPAWN.y*16+8});
   });
   it("migrates legacy dungeon connector fields and adds the floor snapshot dictionary", () => {
     const state:any = createNewGame(); beginExpedition(state);
@@ -47,12 +49,12 @@ describe("save migration", () => {
 
     const migrated: any = migrateSaveState(state);
 
-    expect(migrated.version).toBe(16);
+    expect(migrated.version).toBe(17);
     expect(migrated.vaultGold).toBe(0);
     expect(migrated.npcs.find((npc: any) => npc.id === escort.id).status).toBe("escorting");
     const migratedSolo = migrated.npcs.find((npc: any) => npc.id === solo.id);
     expect(migratedSolo.status).toBe("delving");
-    expect(migratedSolo.delve).toEqual({ floor: 1, departedDay: migrated.day });
+    expect(migratedSolo.expedition).toMatchObject({ declaredFloor: 1, departedDay: migrated.day, plannedDays: 1 });
     expect(migrated.npcs.find((npc: any) => npc.id === other.id).status).toBe("inTown");
     expect(migrated.dungeonCorpses).toEqual([]);
     // 読み込んだ瞬間に1日回さない。
@@ -147,7 +149,7 @@ describe("save migration", () => {
 
     const migrated = migrateSaveState(state as never);
 
-    expect(migrated.version).toBe(16);
+    expect(migrated.version).toBe(17);
     expect((migrated.equipment as unknown as Record<string, unknown>).weaponItemId).toBeUndefined();
     expect((migrated.equipment as unknown as Record<string, unknown>).armorItemId).toBeUndefined();
     expect(migrated.equipment.bagItemId).toBeDefined();
@@ -189,5 +191,25 @@ describe("save migration", () => {
     expect(migratedKeeper.gear.armor.withheld).toBe(true);
     // 読み込んだだけで在庫は動かない。明日返るはずだった剣も、相手の手にある。
     expect(migrated.store.some((item: any) => item.uuid === sword.uuid)).toBe(false);
+  });
+  it("folds a one-day delve into a one-day expedition without settling it", () => {
+    const state: any = createNewGame();
+    state.day = 10;
+    const npc = state.npcs.find((entry: any) => entry.adventurer)!;
+    npc.status = "delving";
+    delete npc.expedition;
+    // v16 までの形。出発中の潜行が、読み込んだだけで決着してはいけない。
+    npc.delve = { floor: 6, departedDay: 9 };
+    state.version = 16;
+
+    const migrated: any = migrateSaveState(state);
+
+    const moved = migrated.npcs.find((entry: any) => entry.id === npc.id);
+    expect(moved.delve).toBeUndefined();
+    expect(moved.status).toBe("delving");
+    expect(moved.expedition).toMatchObject({ declaredFloor: 6, departedDay: 9, plannedDays: 1 });
+    // 旧セーブに「告げた目標」と「到達した階」の区別は無い。差が無かったことにする。
+    expect(reachedFloorOf(moved.expedition)).toBe(6);
+    expect(moved.expedition.outcome).toBeUndefined();
   });
 });

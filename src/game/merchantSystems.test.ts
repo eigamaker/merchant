@@ -326,7 +326,9 @@ describe("v6 merchant systems", () => {
 
 describe("familiar customers", () => {
   it("brings people we have dealt with to the counter more often", () => {
-    const state = createNewGame();
+    // 来客は campaignId から引くので、固定しないと日によって顔ぶれが変わり、
+    // 「顔なじみのほうが多く来る」という統計の検査がときどき裏返る。
+    const state = createNewGame("familiar-customers");
     const [familiar, stranger] = state.npcs.filter((npc) => npc.adventurer && npc.status === "inTown");
     familiar!.relation = 20;
     familiar!.bonds = [

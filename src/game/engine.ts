@@ -92,10 +92,18 @@ export const DIRECTION: Record<"up" | "down" | "left" | "right", Vec> = {
   right: { x: 1, y: 0 },
 };
 
-export function createNewGame(): GameState {
+/**
+ * 新しいキャンペーンを始める。
+ *
+ * `campaignId` を渡せるのはテストのためである。名簿も性格も開幕の配置も、すべて
+ * この文字列から引くので、**固定すれば同じ町が再現される** —— セーブ容量のように
+ * 世界全体を測る検査は、これを渡さないと毎回別の町を測ることになる。
+ */
+export function createNewGame(campaignId?: string): GameState {
   const state: GameState = {
-    version: 16,
-    campaignId: typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `campaign-${Date.now()}`,
+    version: 17,
+    campaignId: campaignId
+      ?? (typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `campaign-${Date.now()}`),
     status: "active",
     day: 1,
     timeSlot: "morning",

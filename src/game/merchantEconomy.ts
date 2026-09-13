@@ -3,8 +3,9 @@ import { ensureGuardProfile, initializeGuardProfiles } from "./guardProfiles";
 import { hasBond, recordBond, retainedNpcIds } from "./npcBonds";
 import { ensureRosterPopulation, seedOpeningRosterActivity } from "./npcRoster";
 import { corpseLootIds } from "./dungeonCorpses";
-import { pruneKnowledge } from "./playerKnowledge";
+import { knowsNpcDeath, pruneKnowledge } from "./playerKnowledge";
 import { entrustedSlots, gearSlots, isRetained, markMerchantGoods, merchantMedicine, RETAINER_FEE_RATE } from "./npcGear";
+import { isExpeditionActive } from "./expeditions";
 import { assignCounterName } from "./itemLegend";
 import { marketPrice, shopVerdict, type ShopReaction } from "./pricing";
 import { demandMultiplier, wantsItem } from "./npcDemand";
@@ -108,6 +109,12 @@ export function pruneCampaignRecords(state: GameState): void {
     }
   }
   for (const trace of merchantTraces(state)) liveItemIds.add(trace);
+  // 決着していない遠征へ持たせた品は、上限とは別に必ず残す。送り出した相手が
+  // 地下にいるあいだに、渡した薬が剪定で消えてはいけない。
+  for (const npc of state.npcs) {
+    if (!isExpeditionActive(npc.expedition)) continue;
+    for (const id of npc.expedition.backing?.suppliedItemIds ?? []) liveItemIds.add(id);
+  }
 
   const keptItems: Record<string, ItemInstance> = {};
   const namedNpcIds = new Set<string>();
@@ -135,6 +142,10 @@ export function pruneCampaignRecords(state: GameState): void {
   const remembered = retainedNpcIds(absent);
 
   state.npcs = state.npcs.filter((npc) => required(npc) || remembered.has(npc.id));
+  // 訃報が届いたなら、予定表はもう誰も読まない。掲示はその人を死んだ者として扱う。
+  for (const npc of state.npcs) {
+    if (npc.expedition?.outcome === "died" && knowsNpcDeath(state, npc.id)) delete npc.expedition;
+  }
   // 名簿から消えた相手の訃報まで覚えていても、もう誰も参照しない。
   pruneKnowledge(state, new Set(state.npcs.map((npc) => npc.id)));
   for (const npc of state.npcs) {

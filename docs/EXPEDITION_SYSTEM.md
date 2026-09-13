@@ -4,7 +4,7 @@
 
 対象: Dungeon Curio Merchant / Merchan のWeb版
 
-状態: 設計提案。実装着手・数値の確定を意味しない。[STORY_SYSTEM_ROADMAP.md](STORY_SYSTEM_ROADMAP.md) §7「次の設計単位: 冒険者の遠征」の9項目に答える文書として書いた。
+状態: **実装済**（2026-09-13）。下の「実装で原案から変えたこと」を併せて読む。[STORY_SYSTEM_ROADMAP.md](STORY_SYSTEM_ROADMAP.md) §7「次の設計単位: 冒険者の遠征」の9項目に答える文書として書いた。
 
 前提: [CORE_STORY.md](CORE_STORY.md)・[INTRO_SCENARIO.md](INTRO_SCENARIO.md) の2026-09-13更新（迷宮の発見が導入の後半まで来ないこと、攻略後に町が戻らないこと）を踏まえる。また、装備の「託す」一本化と、売買した品が画面外の生死に効く仕組み（`merchantOrigin`）は、未マージの `feat/merchant-goods-entrustment` ブランチを土台にする。本書はそのブランチの型・関数名で書く。マージ前に本設計へ着手する場合は、`main` の `NpcGearTerm` 版に合わせて読み替える。
 
@@ -35,9 +35,6 @@
 
 ```ts
 export interface Expedition {
-  /** 報告IDに使う。`expedition-${npcId}-${departedDay}` で足りる（1人1回のみ有効なため）。 */
-  id: string;
-  npcId: string;
   departedDay: number;
   /** 出発時に決め、以後は書き換えない。掲示が読んでよいのはここまで。 */
   declaredFloor: number;
@@ -45,7 +42,8 @@ export interface Expedition {
   /** 商人が出発前に支援したときだけ持つ。自発的な出発には無い。 */
   backing?: ExpeditionBacking;
   /** ここから下は世界の真値。掲示・報告生成以外のコードから直接読まない。 */
-  reachedFloor: number;
+  /** 告げた目標と同じなら持たない。読むときは `reachedFloorOf` を通す。 */
+  reachedFloor?: number;
   settledDay?: number;
   outcome?: "returned" | "injured" | "died";
 }
@@ -149,6 +147,23 @@ export interface ExpeditionBacking {
 - バージョンは、[feat/merchant-goods-entrustment](https://github.com/eigamaker/merchant/pull/new/feat/merchant-goods-entrustment) の v16 が先にマージされる前提で v17 とする。まだマージされていない状態でこちらから着手する場合は、その版の移行と競合しないよう先にマージ順を決める
 - `pruneCampaignRecords` の保持対象に `expedition.backing?.suppliedItemIds` を加える。未決着の遠征に渡した装備・薬を、探索と無関係な剪定で消さない
 
+## 7.5 実装で原案から変えたこと
+
+| 変更 | 理由 |
+|---|---|
+| `Expedition` から `id` と `npcId` を落とした | どちらも導出できる。記録は `npc.expedition` にぶら下がっているので `npcId` は重複で、`id` は人物と出発日から組める（`expeditionReportId`）。名簿の全員が毎回保存する欄なので、導出できるものを持たせない |
+| `reachedFloor` を省略可能にした | 告げた目標と同じであることが大半で、差が出たときだけ書けば足りる。読むのは `reachedFloorOf` に集約した |
+| 決着後の記録を、**死んだ場合だけ**残すことにした | 生きて戻った相手の予定表はもう誰も読まない。「第何日に戻る予定だったか」が要るのは、訃報が届く前の沈黙を掲示が言うときだけである。訃報が届いたら剪定が落とす |
+| 断りの傾きに `BACKING_RISK_PER_FLOOR`（16）を置いた | 当初案の係数では推奨+4が誰にも受けてもらえず、選択肢が飾りになっていた。推奨+2は誰でも、推奨+4は信頼を積んだ相手だけが受ける幅にした |
+| `createNewGame(campaignId?)` を受け取れるようにした | セーブ容量の検査が毎回別の町を測っていた（後述） |
+| 出資は金銭ではなく食料代にした | 額面の出資はC-2「借金を作らない」と地続きになりやすい。日数ぶんの食料を持たせる形なら、渡した時点で手を離れる |
+
+### 見つけた既存の問題: セーブ容量の検査が当てにならなかった
+
+`npcGear.test.ts` の「60KBを割らない」検査は、**乱数まかせで毎回別の町を測っていた。** 実測すると同じ検査が48,796〜58,470字の幅で振れ、上限60,000に対して常に1,500字しか余裕が無い状態だった。つまり、この検査は回帰を捕まえるより先に、campaignId の引き次第で落ちる仕掛けになっていた。
+
+遠征の記録を足したことで振れ幅が上限を越えるようになったため、`createNewGame` にキャンペーンIDを渡せるようにし、容量の検査だけキャンペーンを固定した。固定後の実測は 51,420 / 51,755 / 54,936 / 58,503 字である。**上限まで1,500字を切る場面が残っている**ので、次に名簿へ欄を足すときは、同じ検査が先に落ちることを見込んでおく。
+
 ## 8. 今回は作らないもの
 
 - パーティ（複数人の遠征）— B-2 と合わせて次回
@@ -158,7 +173,7 @@ export interface ExpeditionBacking {
 - 出資の金銭化・借金 — C-2 の判断を維持
 - 噂・誤情報の経路（S-8）— 今回は成功／死亡の二値報告のみ
 
-## 9. 実装順の提案
+## 9. 実装順（完了）
 
 1. `NpcRecord.delve` → `expedition` の改名とセーブ移行（挙動は変えない一段）
 2. `advanceExpeditions` を `simulateTownDay` の中へ切り出し、`plannedDays: 1` の自発的出発が今までと同じ結果になることをテストで固定する
@@ -167,4 +182,6 @@ export interface ExpeditionBacking {
 5. 生還報告の新設
 6. 掲示（`adventurerStanding`）の「帰還遅延」表示
 
-各段で `npm test` と `npm run build` を通し、既存の30人規模の背景シミュレーションのテスト（[townDay.test.ts](../src/game/townDay.test.ts)）が崩れていないことを都度確認する。
+各段で `npm test` と `npm run build` を通し、既存の30人規模の背景シミュレーションのテスト（[townDay.test.ts](../src/game/townDay.test.ts)）が崩れていないことを都度確認した。1〜2の時点で既存511件が1件も落ちていないことを確かめてから、3以降へ進んでいる。
+
+実機では、Eランク（推奨 地下3階）のミナを地下7階へ3日で送り出し、第2〜3日は何も報せが来ず、第4日の朝に「戻らなかった」という報せが届くところまで確認した。

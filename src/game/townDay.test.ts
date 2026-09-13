@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { beginExpedition, createItem, createNewGame } from "./engine";
 import { restUntilMorning } from "./merchantSystems";
-import { FLOOR_ADVENTURER_MAX, MEDICINE_SAVE_BAND, announceSingularFind, delveDeathChance, preferredDelveFloor, resolveDelveOutcome, simulateTownDay } from "./townDay";
+import { FLOOR_ADVENTURER_MAX, MEDICINE_SAVE_BAND, announceSingularFind, delveDeathChance, noteSeenOnFloor, preferredDelveFloor, resolveDelveOutcome, simulateTownDay } from "./townDay";
+import { adventurerStanding } from "./adventurerRanking";
+import { knowsNpcDeath } from "./playerKnowledge";
 import { ensureGuardProfile } from "./guardProfiles";
 import { ADVENTURER_ROSTER_TARGET } from "./npcRoster";
+import { backExpedition, createExpedition, expeditionDueDay, expeditionReportId, isExpeditionOverdue, quoteBacking } from "./expeditions";
 import { escortFeeForNpc } from "./merchantEconomy";
 import { ADVENTURER_RANKS } from "./merchantContent";
 import { DUNGEON_MAX_FLOOR } from "./dungeonDifficulty";
@@ -106,12 +109,14 @@ describe("the town turns on its own", () => {
     }
   });
 
-  it("leaves nobody stuck on yesterday's plan", () => {
+  it("leaves nobody stuck past the plan they declared", () => {
     const state = createNewGame();
     for (let night = 0; night < 6; night += 1) sleepUntilNextMorning(state);
-    const stale = state.npcs.filter((npc) => npc.status === "delving" && (npc.delve?.departedDay ?? 0) < state.day);
+    // 自発的な潜行はすべて予定日数1なので、予定日を越えて潜りっぱなしの者は出ない。
+    const stale = state.npcs.filter((npc) => npc.status === "delving"
+      && (npc.expedition === undefined || state.day > expeditionDueDay(npc.expedition)));
     expect(stale).toEqual([]);
-    expect(state.npcs.every((npc) => npc.status !== "delving" || npc.delve !== undefined)).toBe(true);
+    expect(state.npcs.every((npc) => npc.status !== "delving" || npc.expedition !== undefined)).toBe(true);
   });
 
   it("keeps people moving between the town and the dungeon", () => {
@@ -159,7 +164,7 @@ describe("newcomers arrive to fill the gaps", () => {
   });
 
   it("keeps a long campaign staffed", () => {
-    const state = createNewGame();
+    const state = createNewGame("long-campaign");
     for (let night = 0; night < 60; night += 1) sleepUntilNextMorning(state);
     const living = state.npcs.filter((npc) => npc.adventurer && npc.status !== "dead").length;
     expect(living).toBeGreaterThanOrEqual(20);
@@ -241,7 +246,7 @@ describe("the merchant's medicine, out of sight", () => {
     state.lastSimulatedDay = day - 1;
     const npc = state.npcs.find((entry) => entry.id === npcId)!;
     npc.status = "delving";
-    npc.delve = { floor: DUNGEON_MAX_FLOOR, departedDay: day - 1 };
+    npc.expedition = createExpedition(npc, day - 1, DUNGEON_MAX_FLOOR, 1);
     npc.conditionHp = 1;
     hand?.(state, npc);
     simulateTownDay(state);
@@ -319,5 +324,163 @@ describe("the merchant's medicine, out of sight", () => {
         }
       }
     }
+  });
+});
+
+describe("backing a multi-day expedition", () => {
+  /** 町にいて、まだ遠征に出ていない冒険者。 */
+  function candidate(state: GameState): NpcRecord {
+    return state.npcs.find((npc) => npc.adventurer && npc.status === "inTown")!;
+  }
+
+  it("sends them out on a declared plan and takes the food money once", () => {
+    const state = createNewGame();
+    const npc = candidate(state);
+    const recommended = ADVENTURER_RANKS[npc.rank ?? "E"].recommendedFloor;
+    const quote = quoteBacking(state, npc, recommended);
+    const purse = state.gold;
+
+    expect(backExpedition(state, npc, recommended).ok).toBe(true);
+
+    expect(state.gold).toBe(purse - quote.cost);
+    expect(npc.status).toBe("delving");
+    expect(npc.expedition).toMatchObject({ declaredFloor: recommended, departedDay: state.day });
+    expect(npc.expedition!.backing?.paidGold).toBe(quote.cost);
+    // 二重には送り出せない。
+    expect(backExpedition(state, npc, recommended).ok).toBe(false);
+  });
+
+  it("refuses a depth that is out of the question, and charges nothing for asking", () => {
+    const state = createNewGame();
+    const npc = candidate(state);
+    const profile = ensureGuardProfile(state, npc);
+    Object.assign(profile.personality, { courage: 0 });
+    profile.stress = 100;
+    const purse = state.gold;
+
+    const result = backExpedition(state, npc, DUNGEON_MAX_FLOOR);
+
+    expect(result.ok).toBe(false);
+    expect(state.gold).toBe(purse);
+    expect(npc.expedition).toBeUndefined();
+    expect(npc.status).toBe("inTown");
+  });
+
+  it("stays underground until the declared day, then settles once", () => {
+    const state = createNewGame();
+    const npc = candidate(state);
+    // 予定日数が2日以上になる深さを選ぶ。
+    const deep = ADVENTURER_RANKS[npc.rank ?? "E"].recommendedFloor + 2;
+    const quote = quoteBacking(state, npc, deep);
+    expect(quote.plannedDays).toBeGreaterThan(1);
+    Object.assign(ensureGuardProfile(state, npc).personality, { courage: 100 });
+    ensureGuardProfile(state, npc).trust = 100;
+    expect(backExpedition(state, npc, deep).ok).toBe(true);
+    const due = expeditionDueDay(npc.expedition!);
+
+    // 予定日の前日までは、まだ地下にいる。
+    while (state.day < due) {
+      sleepUntilNextMorning(state);
+      if (state.day < due) expect(npc.status).toBe("delving");
+    }
+
+    // 予定日の朝に一度だけ決着する。
+    expect(npc.status).not.toBe("delving");
+    expect(npc.expedition?.outcome ?? "returned").not.toBe(undefined);
+  });
+
+  it("says the return is overdue once the promised day has passed", () => {
+    const state = createNewGame();
+    const npc = candidate(state);
+    npc.expedition = createExpedition(npc, state.day - 3, 5, 1);
+    npc.status = "delving";
+
+    // 予定日を過ぎている。掲示は、実際の居場所ではなく予定の超過を言う。
+    expect(isExpeditionOverdue(state, npc.expedition)).toBe(true);
+    expect(adventurerStanding(state, npc).status).toContain("帰還予定日を過ぎている");
+  });
+
+  it("does not leak where they actually are while they are still out", () => {
+    const state = createNewGame();
+    const npc = candidate(state);
+    npc.expedition = createExpedition(npc, state.day, 4, 3);
+    npc.status = "delving";
+    // 実際には深くまで行っている。掲示が読むのは告げられた目標だけ。
+    npc.expedition.reachedFloor = 19;
+
+    expect(adventurerStanding(state, npc).status).toContain("地下4階");
+    expect(adventurerStanding(state, npc).status).not.toContain("19");
+  });
+
+  it("keeps the promised day readable after a death nobody has heard about", () => {
+    const state = createNewGame();
+    const npc = candidate(state);
+    npc.expedition = createExpedition(npc, state.day - 5, 8, 1);
+    npc.expedition.outcome = "died";
+    npc.status = "dead";
+
+    // 訃報は届いていない。それでも「戻る予定だった日」は商人が出発時に聞いている。
+    expect(knowsNpcDeath(state, npc.id)).toBe(false);
+    expect(adventurerStanding(state, npc).status).toContain("戻る予定だった");
+  });
+
+  it("reports a backed return, and stays quiet about the ordinary ones", () => {
+    // 生還は確率なので、生きて帰るキャンペーンを一つ探してから確かめる。
+    for (let attempt = 0; attempt < 40; attempt += 1) {
+      const state = createNewGame();
+      state.campaignId = `backed-${attempt}`;
+      const npc = candidate(state);
+      const recommended = ADVENTURER_RANKS[npc.rank ?? "E"].recommendedFloor;
+      Object.assign(ensureGuardProfile(state, npc).personality, { courage: 100, discipline: 100 });
+      expect(backExpedition(state, npc, recommended).ok).toBe(true);
+      const expeditionId = expeditionReportId(npc, npc.expedition!);
+
+      for (let night = 0; night < 6 && npc.status === "delving"; night += 1) sleepUntilNextMorning(state);
+      if (npc.status !== "inTown") continue;
+
+      // 支援した相手の生還は、必ず一行返ってくる。これが無いと支援に手応えが無い。
+      const told = state.knowledge.received.some((entry) => entry.id === `${expeditionId}-returned`)
+        || state.knowledge.pending.some((entry) => entry.id === `${expeditionId}-returned`);
+      expect(told).toBe(true);
+      return;
+    }
+    throw new Error("生還するキャンペーンが見つからなかった");
+  });
+
+  it("says nothing when an unbacked delver walks home", () => {
+    const state = createNewGame();
+    for (let night = 0; night < 6; night += 1) sleepUntilNextMorning(state);
+    // 自分の判断で出た潜行は、帰っても報せにならない。毎日何人も決着するので、
+    // 全部届けば日誌が埋まる。
+    const chatter = [...state.knowledge.received, ...state.knowledge.pending]
+      .filter((entry) => entry.id.endsWith("-returned"));
+    expect(chatter).toEqual([]);
+  });
+
+  it("remembers the floor where the merchant actually met them", () => {
+    const state = createNewGame();
+    const npc = candidate(state);
+    npc.expedition = createExpedition(npc, state.day, 2, 1);
+    npc.status = "delving";
+
+    noteSeenOnFloor(npc, 9);
+
+    expect(npc.expedition.reachedFloor).toBe(9);
+    // 決着がこの階を読むように、告げた目標も引き上げる —— 出発時の古い2階ではない。
+    expect(npc.expedition.declaredFloor).toBe(9);
+  });
+
+  it("forgets the plan of someone who walked back into town", () => {
+    const state = createNewGame();
+    const npc = candidate(state);
+    const recommended = ADVENTURER_RANKS[npc.rank ?? "E"].recommendedFloor;
+    Object.assign(ensureGuardProfile(state, npc).personality, { courage: 100, discipline: 100 });
+    expect(backExpedition(state, npc, recommended).ok).toBe(true);
+
+    for (let night = 0; night < 6 && npc.status === "delving"; night += 1) sleepUntilNextMorning(state);
+
+    // 生きて戻った相手の予定表は、もう誰も読まない。死んだ場合だけ残す。
+    if (npc.status !== "dead") expect(npc.expedition).toBeUndefined();
+    else expect(npc.expedition?.outcome).toBe("died");
   });
 });
