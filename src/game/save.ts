@@ -8,6 +8,7 @@ import { STARTING_BAG_ID, bagCapacityOf, createInitialNpcs } from "./merchantCon
 import { initializeGuardProfiles } from "./guardProfiles";
 import { emptyKnowledge } from "./playerKnowledge";
 import { deriveDungeonSeed, DUNGEON_THEME_FALLBACK_ID } from "./dungeonThemes";
+import { createExpedition } from "./expeditions";
 /** v1-v3 saves always used the fixed 32x20, 16px home. */
 const HOME_SPAWN_PIXEL = { x: HOME_SPAWN.x * 16 + 8, y: HOME_SPAWN.y * 16 + 8 };
 
@@ -36,7 +37,7 @@ const DATABASE_NAME = "dungeon-curio-merchant";
 const STORE_NAME = "campaigns";
 
 export function isSupportedSaveVersion(version: unknown): version is number {
-  return typeof version === "number" && Number.isInteger(version) && version >= 5 && version <= 16;
+  return typeof version === "number" && Number.isInteger(version) && version >= 5 && version <= 17;
 }
 
 function activeHomeMapForSave(): MapDocument {
@@ -174,6 +175,27 @@ function migrateToSingleEntrustment(state: GameState): void {
   }
 }
 
+/**
+ * v17 で潜行を遠征へ一般化した。
+ *
+ * 旧 `delve`（1日で決着する今日の予定）は、そのまま `plannedDays: 1` の遠征に畳める。
+ * 出発中の潜行は出発中のまま引き継ぎ、読み込んだ日に勝手に決着させない。
+ *
+ * 目標階は旧 `floor` をそのまま `declaredFloor` と `reachedFloor` の両方に置く ——
+ * 旧セーブには「告げた目標」と「実際に到達した階」の区別が無いので、
+ * 差が無かったことにするのが唯一嘘をつかない扱いである。
+ */
+function migrateToExpeditions(state: GameState): void {
+  for (const npc of state.npcs ?? []) {
+    const legacy = npc as unknown as { delve?: { floor: number; departedDay: number } };
+    if (!legacy.delve) continue;
+    const { floor, departedDay } = legacy.delve;
+    delete legacy.delve;
+    if (npc.expedition) continue;
+    npc.expedition = createExpedition(npc, departedDay ?? state.day, floor ?? 1, 1);
+  }
+}
+
 /** v8 で撤去した旧クエスト・旧護衛・罠の残骸を、読み込んだ時点で捨てる。 */
 function stripRetiredFields(state: GameState): void {
   const legacy = state as unknown as Record<string, unknown>;
@@ -193,7 +215,7 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
   const state = raw as unknown as GameState;
   const oldLocation = (state as unknown as { location?: string }).location;
   if (oldLocation === "town" || oldLocation === "interior") state.location = "home";
-  state.version = 16;
+  state.version = 17;
   state.campaignId ??= `legacy-${Date.now()}`;
   state.status ??= "active";
   if (state.status === "gameOver") state.status = "active";
@@ -251,7 +273,7 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
       if (npc.id === escortingId) npc.status = "escorting";
       else {
         npc.status = "delving";
-        npc.delve ??= { floor: state.run?.floor ?? 1, departedDay: state.day };
+        npc.expedition ??= createExpedition(npc, state.day, state.run?.floor ?? 1, 1);
       }
     }
   }
@@ -361,10 +383,11 @@ export function migrateSaveState(raw: GameState | LegacyGameState | VersionTwoGa
   }
   migrateToBagEquipment(state);
   migrateToSingleEntrustment(state);
+  migrateToExpeditions(state);
   stripRetiredFields(state);
   // 探索中でなければ、旧セーブに溜まった床の品と通りすがりの記録もここで捨てる。
   if (!state.run) pruneCampaignRecords(state);
-  (state as { version: number }).version = 16;
+  (state as { version: number }).version = 17;
   return state;
 }
 

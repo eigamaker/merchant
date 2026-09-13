@@ -3,6 +3,7 @@ import { adjustGuardProfile, ensureGuardProfile, recordGuardEvent } from "./guar
 import { hasBond, npcBonds, recordBond } from "./npcBonds";
 import { carriedValue } from "./guardBetrayal";
 import { gearAttackBonus, gearDefenseBonus } from "./npcGear";
+import { noteSeenOnFloor } from "./townDay";
 import type {
   DungeonAdventurer,
   DungeonEvent,
@@ -78,7 +79,7 @@ function pickArrival(state: GameState, exclude: ReadonlySet<string>): NpcRecord 
     npc.adventurer
     && npc.status === "delving"
     && !exclude.has(npc.id)
-    && Math.abs((npc.delve?.floor ?? 0) - run.floor) <= 2);
+    && Math.abs((npc.expedition?.declaredFloor ?? 0) - run.floor) <= 2);
   if (!candidates.length) return undefined;
   return candidates
     .map((npc) => {
@@ -123,6 +124,9 @@ function admit(state: GameState, npc: NpcRecord, place: () => { x: number; y: nu
   const pos = place();
   if (!pos) return false;
   const rank = ADVENTURER_RANKS[npc.rank ?? "E"];
+  // 行き合った以上、この人は今日ここにいた。足止めが解けた朝の決着が、出発時の
+  // 古い目標ではなく実際に見た場所を読むように控えておく。
+  noteSeenOnFloor(npc, run.floor);
   // 商人から受け取った装備を数える。階の入口で行き合った人と、途中から入ってきた人が
   // 別人になってはいけない（`buildRun` は最初からこれを数えている）。
   // `npcCombatStats` を使わないのは、素の値が無いときの下敷きが等級ごとに違うため。

@@ -22,6 +22,7 @@ import {
   updateRetainer,
 } from "./npcGear";
 import { hasBond, principalBond } from "./npcBonds";
+import { createExpedition } from "./expeditions";
 import { MERCHANT_TRACE_LIMIT, escortFeeForNpc, pruneCampaignRecords } from "./merchantEconomy";
 import type { GameState, NpcRecord } from "./types";
 
@@ -230,7 +231,7 @@ describe("asking for it back", () => {
     // 自分で潜って死ぬかどうかはここで見たい話ではない。
     for (let night = 0; night < 8; night += 1) {
       holder.status = "inTown";
-      delete holder.delve;
+      delete holder.expedition;
       sleepOneNight(state);
     }
 
@@ -259,7 +260,7 @@ describe("the whole chain", () => {
     const statusOf = (): string => state.npcs.find((npc) => npc.id === hero.id)!.status;
     for (let night = 0; night < 60 && statusOf() !== "dead"; night += 1) {
       hero.status = "delving";
-      hero.delve = { floor: 2, departedDay: state.day };
+      hero.expedition = createExpedition(hero, state.day, 2, 1);
       hero.conditionHp = 1;
       sleepOneNight(state);
     }
@@ -357,8 +358,10 @@ describe("keeping someone on retainer", () => {
 });
 
 describe("the save stays bounded with favourites", () => {
-  it("holds under sixty kilobytes after sixty nights with five armed adventurers", () => {
-    const state = createNewGame();
+  // キャンペーンを固定する。名簿の入れ替わりだけで1万字ほど振れるので、
+  // 乱数まかせでは「60KBを割らない」という約束が毎回別のことを測ってしまう。
+  it.each(["bounded-a", "bounded-b", "bounded-c"])("holds under sixty kilobytes after sixty nights with five armed adventurers (%s)", (campaignId) => {
+    const state = createNewGame(campaignId);
     for (let index = 0; index < ENTRUSTED_NPC_LIMIT; index += 1) {
       const npc = rosterFavourite(state, index);
       entrustGear(state, npc, giveMerchantItem(state, "bronze-spear", 6).uuid);
@@ -387,7 +390,7 @@ describe("the moment of recovery", () => {
     const statusOf = (): string => state.npcs.find((npc) => npc.id === hero.id)!.status;
     for (let night = 0; night < 60 && statusOf() !== "dead"; night += 1) {
       hero.status = "delving";
-      hero.delve = { floor: 2, departedDay: state.day };
+      hero.expedition = createExpedition(hero, state.day, 2, 1);
       hero.conditionHp = 1;
       sleepOneNight(state);
     }
@@ -493,7 +496,7 @@ describe("goods the merchant handed over", () => {
   });
 
   it("holds under sixty kilobytes after sixty nights of selling gear", () => {
-    const state = createNewGame();
+    const state = createNewGame("selling-gear");
     for (let night = 0; night < 60; night += 1) {
       // 台本の15人は町で買った品をずっと持っている（既存の規則）。上限が効くのは
       // 人数の決まっていない名簿側で、売った数だけ膨らむのはそちらである。

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { beginExpedition, createItem, createNewGame, performDungeonCommand, returnHome } from "./engine";
 import { restUntilMorning } from "./merchantSystems";
 import { CORPSE_PERSIST_DAYS, corpsesOnFloor, recordCorpse } from "./dungeonCorpses";
+import { createExpedition } from "./expeditions";
 import type { GameState, NpcRecord } from "./types";
 
 function sleepOneNight(state: GameState): void {
@@ -101,7 +102,7 @@ describe("what makes a body worth coming back for", () => {
     victim.gear = { armor: { itemId: item.uuid, since: state.day } };
     item.merchantOrigin = origin;
     victim.status = "delving";
-    victim.delve = { floor: 2, departedDay: state.day };
+    victim.expedition = createExpedition(victim, state.day, 2, 1);
     victim.conditionHp = 1;
     // 死ぬまで日を送る。単独潜行の決着は毎朝の町処理で起きる。
     const living = (): NpcRecord => state.npcs.find((npc) => npc.id === victim.id)!;
@@ -109,7 +110,7 @@ describe("what makes a body worth coming back for", () => {
       const current = living();
       if (current.status !== "delving") {
         current.status = "delving";
-        current.delve = { floor: 2, departedDay: state.day };
+        current.expedition = createExpedition(current, state.day, 2, 1);
         current.conditionHp = 1;
       }
       sleepOneNight(state);

@@ -6,8 +6,9 @@ import { ADVENTURER_ROSTER_TARGET, createRosterAdventurer, createTownsperson, th
 import { carriedGearItems, gearPower, isRetained, merchantMedicine, recordGearDeed, updateRetainer } from "./npcGear";
 import { applySurvivalGrowth } from "./adventurerGrowth";
 import { DUNGEON_MAX_FLOOR } from "./dungeonDifficulty";
+import { createExpedition, expeditionDueDay, expeditionReportId, isExpeditionActive } from "./expeditions";
 import { itemCharges } from "./merchantContent";
-import type { AdventurerRank, GameState, GuardProfile, ItemInstance, NpcRecord } from "./types";
+import type { AdventurerRank, Expedition, GameState, GuardProfile, ItemInstance, NpcRecord } from "./types";
 
 /**
  * 町の一日を回す。
@@ -118,8 +119,27 @@ function spendMerchantMedicine(state: GameState, npc: NpcRecord): ItemInstance |
   return medicine;
 }
 
-function finishDelve(state: GameState, npc: NpcRecord, profile: GuardProfile): void {
-  const floor = npc.delve?.floor ?? 1;
+/**
+ * 遠征を一日進める。
+ *
+ * 帰還予定日に達していなければ、何も起こらない —— まだ地下にいる、というだけである。
+ * 予定日に達した日に、一度だけ結末を引く。`plannedDays: 1` の日帰りなら、これは
+ * 出発の翌朝に一度引くのと同じで、旧来の挙動をそのまま保つ。
+ */
+function advanceExpedition(state: GameState, npc: NpcRecord, profile: GuardProfile): void {
+  const expedition = npc.expedition;
+  // 記録の無い潜行者は、移行前のセーブか、画面側が状態だけ動かした場合。日帰り扱いで決着させる。
+  if (!expedition) {
+    npc.expedition = createExpedition(npc, state.day - 1, ADVENTURER_RANKS[npc.rank ?? "E"].recommendedFloor, 1);
+    settleExpedition(state, npc, profile, npc.expedition);
+    return;
+  }
+  if (state.day < expeditionDueDay(expedition)) return;
+  settleExpedition(state, npc, profile, expedition);
+}
+
+function settleExpedition(state: GameState, npc: NpcRecord, profile: GuardProfile, expedition: Expedition): void {
+  const floor = expedition.declaredFloor;
   const maxHp = npc.maxHp ?? 10;
   const input = {
     rank: npc.rank ?? "E",
@@ -139,7 +159,13 @@ function finishDelve(state: GameState, npc: NpcRecord, profile: GuardProfile): v
       recordMedicineSave(state, npc, floor, spent);
     }
   }
-  delete npc.delve;
+  expedition.outcome = outcome;
+  expedition.settledDay = state.day;
+  if (floor > expedition.declaredFloor) expedition.reachedFloor = floor;
+  // 生きて戻った相手の予定表は、もう誰も読まない。**死んだ場合だけ残す** ——
+  // 「第何日に戻る予定だったか」は、訃報が届く前に掲示が沈黙の重さを言うための
+  // 唯一の根拠であり、それは商人が出発時に聞いた予定なので、死を知らなくても読める。
+  if (outcome !== "died") delete npc.expedition;
 
   recordGearDeed(state, npc, { floor, returned: outcome === "returned" });
   if (outcome === "returned") {
@@ -150,6 +176,7 @@ function finishDelve(state: GameState, npc: NpcRecord, profile: GuardProfile): v
     profile.career.soloDeepest = Math.max(profile.career.soloDeepest, floor);
     adjustGuardProfile(profile, 0, 6);
     applySurvivalGrowth(state, npc, profile, floor);
+    recordBackedReturn(state, npc, expedition);
     return;
   }
   if (outcome === "injured") {
@@ -176,6 +203,39 @@ function finishDelve(state: GameState, npc: NpcRecord, profile: GuardProfile): v
   delete npc.gear;
   recordCorpse(state, npc.id, floor, carried.map((item) => item.uuid), carried.length > 0);
   recordOffscreenDeath(state, npc, floor, carried);
+}
+
+/**
+ * 支援した遠征から生きて帰った日。
+ *
+ * 画面外の生還は普段なにも報せない —— 1日に何人も決着するので、全部届けば日誌が潰れる。
+ * **自分が食料を持たせて送り出した相手のときだけ**、戻ったという話が返ってくる。
+ * これが無いと、支援したこと自体に手応えが無い。
+ */
+function recordBackedReturn(state: GameState, npc: NpcRecord, expedition: Expedition): void {
+  if (!expedition.backing) return;
+  state.events.push({
+    id: `${expeditionReportId(npc, expedition)}-returned`,
+    dueDay: state.day,
+    text: `${npc.name}が地下${expedition.declaredFloor}階から戻った。${
+      expedition.plannedDays > 1 ? `${expedition.plannedDays}日の遠征だった。` : ""
+    }`,
+  });
+}
+
+/**
+ * 画面上で行き合った階を控える。
+ *
+ * これが要るのは、商人が潜っているあいだ、行き合った冒険者が `partyAndFloorNpcIds` で
+ * 足止めされ続けるからである。足止めが解けた朝に決着させるとき、出発時の古い目標ではなく
+ * **実際に見た場所**で決着させたい。
+ */
+export function noteSeenOnFloor(npc: NpcRecord, floor: number): void {
+  const expedition = npc.expedition;
+  if (!isExpeditionActive(expedition)) return;
+  if (floor <= expedition.declaredFloor) return;
+  expedition.reachedFloor = floor;
+  expedition.declaredFloor = floor;
 }
 
 /**
@@ -261,11 +321,13 @@ export function simulateTownDay(state: GameState): void {
     // 返るかどうかは、商人が引き取りを申し出たときに決まる。
     if (npc.status === "inTown" || npc.status === "recovering") updateRetainer(state, npc);
     if (npc.status === "recovering") { recoverInTown(npc); continue; }
-    if (npc.status === "delving") { finishDelve(state, npc, profile); continue; }
+    if (npc.status === "delving") { advanceExpedition(state, npc, profile); continue; }
     if (npc.status !== "inTown") continue;
     if (!shouldDepart(state, npc, profile)) continue;
     npc.status = "delving";
-    npc.delve = { floor: preferredDelveFloor(npc, profile, roll(state, npc.id, "floor"), gearPower(state, npc)), departedDay: state.day };
+    // 自分の判断で出ていく潜行は、予定日数1の遠征である。深さの決め方も頻度も変えない。
+    const target = preferredDelveFloor(npc, profile, roll(state, npc.id, "floor"), gearPower(state, npc));
+    npc.expedition = createExpedition(npc, state.day, target, 1);
   }
 
   scheduleArrival(state);
@@ -373,7 +435,7 @@ export function selectFloorDelvers(
   for (const band of [1, 2]) {
     if (picked.length >= FLOOR_ADVENTURER_MAX) break;
     take(state.npcs.filter((npc) =>
-      eligible(npc) && npc.status === "delving" && Math.abs((npc.delve?.floor ?? 0) - floor) <= band));
+      eligible(npc) && npc.status === "delving" && Math.abs((npc.expedition?.declaredFloor ?? 0) - floor) <= band));
   }
 
   // まだ足りず、深すぎない階なら、町にいる適任者を今日の出発者に繰り上げる。
@@ -385,10 +447,12 @@ export function selectFloorDelvers(
       .slice(0, Math.min(RETROACTIVE_DEPARTURES_PER_DAY, FLOOR_ADVENTURER_MAX - picked.length));
     for (const npc of recruits) {
       npc.status = "delving";
-      npc.delve = { floor, departedDay: state.day };
+      npc.expedition = createExpedition(npc, state.day, floor, 1);
       picked.push(npc);
     }
   }
 
-  return picked.slice(0, FLOOR_ADVENTURER_MAX);
+  const chosen = picked.slice(0, FLOOR_ADVENTURER_MAX);
+  for (const npc of chosen) noteSeenOnFloor(npc, floor);
+  return chosen;
 }

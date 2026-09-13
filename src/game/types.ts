@@ -344,6 +344,56 @@ export interface ItemDeeds {
   stage: number;
 }
 
+/**
+ * 一回の遠征。
+ *
+ * 自分の判断で出ていく日々の潜行も、商人が支援して送り出す数日がかりの遠征も、
+ * **同じ型で表す。** 前者は `plannedDays: 1` の特殊形にすぎない —— 1日で決着する
+ * 処理と複数日の処理を別々のループに分けると、同じ人物を画面内と画面外で
+ * 二度動かす余地がそこに生まれる。
+ *
+ * `declaredFloor` と `plannedDays` は出発時に決まり、以後は書き換えない。
+ * **掲示や報告が読んでよいのはここまでである。** 実際にどこまで潜ったか、
+ * 生きているかは世界の真値で、商人へは報告を通じてしか渡らない。
+ */
+export interface Expedition {
+  departedDay: number;
+  /** 出発時に告げた目標階。掲示が表示するのはこちら。 */
+  declaredFloor: number;
+  /** 予定日数。`departedDay + plannedDays` が帰還予定日になる。 */
+  plannedDays: number;
+  /** 商人が出発前に支援したときだけ持つ。自分の判断で出た潜行には無い。 */
+  backing?: ExpeditionBacking;
+  /**
+   * 世界の真値。実際に到達した最も深い階。掲示から直接読まない。
+   *
+   * 告げた目標と同じなら持たない —— 名簿の全員が毎回保存する欄なので、
+   * 差が出たときだけ書く。読むときは `reachedFloorOf` を通す。
+   */
+  reachedFloor?: number;
+  /** 決着した日。未決着なら持たない。 */
+  settledDay?: number;
+  /** 決着の内容。世界の真値であり、知識の有無とは別。 */
+  outcome?: DelveOutcomeKind;
+}
+
+/**
+ * 商人が遠征へ渡したもの。
+ *
+ * **借金にはしない。** 渡した時点で商人の手を離れ、失敗しても取り立てはない。
+ */
+export interface ExpeditionBacking {
+  /** 何日ぶんの食料を持たせたか。実在庫ではなく、計画してよい日数の裏づけ。 */
+  fundedDays: number;
+  /** 支払った額。記録用で、返ってくることはない。 */
+  paidGold: number;
+  /** 出発時点で相手が持っていた、商人由来の品。未決着のあいだ剪定から守る。 */
+  suppliedItemIds: string[];
+}
+
+/** 遠征の決着。`resolveDelveOutcome` の戻り値と同じ語彙を共有する。 */
+export type DelveOutcomeKind = "returned" | "injured" | "died";
+
 export interface NpcRecord {
   id: string;
   name: string;
@@ -369,8 +419,14 @@ export interface NpcRecord {
   guardProfile?: GuardProfile;
   /** 商人との間に起きたこと。剪定でこの人物を残すかの判断にも使う。 */
   bonds?: NpcBond[];
-  /** 今日の潜行予定。翌朝の町シミュレーションで解決して消える。 */
-  delve?: { floor: number; departedDay: number };
+  /**
+   * いま出ている遠征、あるいは最後に出た遠征。
+   *
+   * 決着しても消さない —— 「第何日に戻る予定だったのか」は、訃報が届く前に
+   * 掲示が「帰還遅延」と言うための唯一の根拠であり、それは商人が出発時に
+   * 知った予定なので、死を知らなくても読んでよい。
+   */
+  expedition?: Expedition;
   /** 前回の潜行で負った傷。満タンなら省略する。 */
   conditionHp?: number;
   /** 町へ来る前から名の知れた冒険者。護衛料に実績分が乗る。 */
@@ -701,7 +757,7 @@ export interface BulkOrder {
 }
 
 export interface GameState {
-  version: 16;
+  version: 17;
   campaignId: string;
   status: "active" | "gameOver";
   day: number;

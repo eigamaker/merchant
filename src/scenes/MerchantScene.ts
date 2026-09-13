@@ -94,6 +94,8 @@ import {
   withdrawGold,
 } from "../game/merchantSystems";
 import { ADVENTURER_RANK_ORDER, ADVENTURER_RANKS, ITEM_VISUALS, MERCHANT_ITEM_DEFINITIONS, NPC_SEEDS, npcAppearanceSprite } from "../game/merchantContent";
+import { backExpedition, canBackExpedition, expeditionDueDay, isExpeditionActive, isExpeditionOverdue, quoteBacking } from "../game/expeditions";
+import { DUNGEON_MAX_FLOOR } from "../game/dungeonDifficulty";
 import type { BulkOrder, AdventurerRank, DungeonCommand, DungeonEvent, DungeonHoldup, GameState, GuardCareer, GuardDemand, GuardDescentAssessment, ItemInstance, ItemRarity, MenuChoice, NpcRecord, Vec } from "../game/types";
 import {
   FLOATING_INK,
@@ -1792,6 +1794,7 @@ export class MerchantScene extends Phaser.Scene {
       this.growthLine(npc),
       isRetained(npc) ? `第${npc.retainedSince}日から、あなたのお抱え。` : "",
       this.gearSummaryLine(npc),
+      this.expeditionLine(npc),
       observations.length ? `観察記録: ${observations.length}件` : "まだ同行経験がなく、戦い方は分からない。",
       ...(recent.length
         ? ["直近の実績:", ...recent.reverse().map((event) => `第${event.day}日: ${event.detail}`)]
@@ -1805,8 +1808,61 @@ export class MerchantScene extends Phaser.Scene {
       { label: "観察記録を読む", disabled: observations.length === 0, action: () => this.openEscortObservations(npc.id) },
       { label: "遠征履歴を見る", disabled: career.events.length === 0, action: () => this.openEscortHistory(npc.id) },
       { label: "護衛装備を整える", action: () => this.openNpcGear(npc.id) },
+      {
+        label: "遠征を支援する",
+        disabled: !canBackExpedition(this.state, npc).ok,
+        action: () => this.openExpeditionBacking(npc.id),
+      },
       { label: "この人との縁を読む", disabled: npcBonds(npc).length === 0, action: () => this.openNpcBonds(npc.id) },
       { label: "候補一覧へ戻る", action: () => this.openEscortRank(npc.rank ?? "E") },
+    ]);
+  }
+
+  /** いま遠征に出ているなら、告げられた予定を一行で。実際の居場所は書かない。 */
+  private expeditionLine(npc: NpcRecord): string {
+    const expedition = npc.expedition;
+    if (!isExpeditionActive(expedition)) return "";
+    const due = expeditionDueDay(expedition);
+    return isExpeditionOverdue(this.state, expedition)
+      ? `地下${expedition.declaredFloor}階へ遠征中。第${due}日に戻る予定だった。`
+      : `地下${expedition.declaredFloor}階へ遠征中。帰還予定は第${due}日。`;
+  }
+
+  /**
+   * 遠征を支援する画面。
+   *
+   * 深いほど日数が要り、食料代が増え、断られやすくなる。**断られても損はしない** ——
+   * 払うのは受けてもらえたときだけである。
+   */
+  private openExpeditionBacking(npcId: string, onBack: () => void = () => this.openEscortProfile(npcId)): void {
+    const npc = this.state.npcs.find((entry) => entry.id === npcId);
+    if (!npc) { this.closeMenu(); return; }
+    const allowed = canBackExpedition(this.state, npc);
+    if (!allowed.ok) {
+      this.openMenu("送り出せない", [allowed.message], [{ label: "戻る", action: onBack }]);
+      return;
+    }
+    const recommended = ADVENTURER_RANKS[npc.rank ?? "E"].recommendedFloor;
+    const targets = [recommended, recommended + 2, recommended + 4]
+      .filter((floor) => floor >= 1 && floor <= DUNGEON_MAX_FLOOR);
+    const quotes = targets.map((floor) => quoteBacking(this.state, npc, floor));
+    this.openMenu(`${npc.name}を送り出す`, [
+      "食料を持たせて、目標の階を決める。深いほど日数が要る。",
+      "渡した食料代は戻らない。帰らなかった場合も取り立てはない。",
+      `所持金 ${this.state.gold}G`,
+    ], [
+      ...quotes.map((quote) => ({
+        label: quote.accepted
+          ? `地下${quote.declaredFloor}階へ（${quote.plannedDays}日・${quote.cost}G）`
+          : `地下${quote.declaredFloor}階へ —— 引き受けない`,
+        disabled: !quote.accepted || this.state.gold < quote.cost,
+        action: () => {
+          this.state.message = backExpedition(this.state, npc, quote.declaredFloor).message;
+          this.closeMenu();
+          this.render();
+        },
+      })),
+      { label: "やめる", action: onBack },
     ]);
   }
 

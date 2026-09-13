@@ -2,6 +2,7 @@ import { persistDaysFor } from "./dungeonCorpses";
 import { ADVENTURER_RANKS, ADVENTURER_RANK_ORDER } from "./merchantContent";
 import { isRetained } from "./npcGear";
 import { knowsNpcDeath } from "./playerKnowledge";
+import { expeditionDueDay, isExpeditionActive, isExpeditionOverdue } from "./expeditions";
 import type { AdventurerRank, GameState, NpcRecord } from "./types";
 
 /**
@@ -58,8 +59,11 @@ function restingPlace(state: GameState, npcId: string): number | undefined {
 
 export function adventurerStanding(state: GameState, npc: NpcRecord): { standing: AdventurerStanding; status: string } {
   // 死を知らないあいだは、掲示も町も、その人がまだ戻っていないとしか言えない。
+  // ただし帰還予定日は商人が出発時に聞いている。過ぎていれば、そう言ってよい。
   if (npc.status === "dead" && !knowsNpcDeath(state, npc.id)) {
-    return { standing: "away", status: "消息を聞かない" };
+    return isExpeditionOverdue(state, npc.expedition)
+      ? { standing: "away", status: `第${expeditionDueDay(npc.expedition!)}日に戻る予定だった` }
+      : { standing: "away", status: "消息を聞かない" };
   }
   if (npc.status === "dead") {
     // 遺体がまだ迷宮にあるあいだは「消息不明」—— 取りに行けば連れ戻せる。
@@ -73,9 +77,12 @@ export function adventurerStanding(state: GameState, npc: NpcRecord): { standing
     return { standing: "away", status: isRetained(npc) ? "お抱え・同行中" : "あなたの護衛" };
   }
   if (isRetained(npc)) return { standing: "town", status: "お抱え" };
-  if (npc.status === "delving" || npc.delve) {
-    const floor = npc.delve?.floor ?? ADVENTURER_RANKS[npc.rank ?? "E"].recommendedFloor;
-    return { standing: "away", status: `地下${floor}階へ潜行中` };
+  if (npc.status === "delving" || isExpeditionActive(npc.expedition)) {
+    // 掲示が読んでよいのは出発時に告げた目標まで。実際にどこまで行ったかは報告を待つ。
+    const floor = npc.expedition?.declaredFloor ?? ADVENTURER_RANKS[npc.rank ?? "E"].recommendedFloor;
+    return isExpeditionOverdue(state, npc.expedition)
+      ? { standing: "away", status: `地下${floor}階へ潜行中・帰還予定日を過ぎている` }
+      : { standing: "away", status: `地下${floor}階へ潜行中` };
   }
   if (npc.status === "recovering") return { standing: "town", status: "療養中" };
   if (npc.status === "traveling") return { standing: "away", status: "町へ向かっている" };

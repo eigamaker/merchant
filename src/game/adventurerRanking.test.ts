@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createNewGame } from "./engine";
+import { createExpedition } from "./expeditions";
 import { RANKING_BOARD_SIZE, adventurerStanding, rankAdventurers, rankingLine } from "./adventurerRanking";
 import { ensureGuardProfile } from "./guardProfiles";
 import { witnessNpcDeath } from "./playerKnowledge";
@@ -57,10 +58,10 @@ describe("adventurerRanking", () => {
     expect(adventurerStanding(state, npc).status).toBe("町に滞在中");
 
     npc.status = "delving";
-    npc.delve = { floor: 4, departedDay: state.day };
+    npc.expedition = createExpedition(npc, state.day, 4, 1);
     expect(adventurerStanding(state, npc)).toEqual({ standing: "away", status: "地下4階へ潜行中" });
 
-    npc.delve = undefined;
+    npc.expedition = undefined;
     npc.status = "recovering";
     expect(adventurerStanding(state, npc).status).toBe("療養中");
 

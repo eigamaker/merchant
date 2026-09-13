@@ -2,6 +2,7 @@ import { ADVENTURER_RANKS, ADVENTURER_RANK_ORDER, NPC_SEEDS } from "./merchantCo
 import { npcActorIds } from "./actorCatalog";
 import { ensureGuardProfile } from "./guardProfiles";
 import { generateNpcName } from "./npcNames";
+import { createExpedition } from "./expeditions";
 import type { AdventurerRank, GameState, NpcProfession, NpcRecord, NpcStatus } from "./types";
 
 /**
@@ -172,11 +173,12 @@ export function seedOpeningRosterActivity(state: GameState): void {
     .sort((a, b) => hash(`${state.campaignId}:opening:${a.id}`) - hash(`${state.campaignId}:opening:${b.id}`));
   candidates.slice(0, 5).forEach((npc, index) => {
     npc.status = "delving";
-    npc.delve = { floor: 1 + (hash(`${state.campaignId}:opening-floor:${npc.id}`) % 3), departedDay: state.day };
+    const floor = 1 + (hash(`${state.campaignId}:opening-floor:${npc.id}`) % 3);
+    npc.expedition = createExpedition(npc, state.day, floor, 1);
     if (index >= 3) {
       npc.status = "recovering";
       npc.conditionHp = Math.max(1, Math.floor((npc.maxHp ?? 10) * 0.4));
-      delete npc.delve;
+      delete npc.expedition;
     }
   });
   state.lastSimulatedDay = state.day;
